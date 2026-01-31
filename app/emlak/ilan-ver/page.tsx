@@ -163,11 +163,12 @@ export default function IlanVerPage() {
   }, [user, authLoading, router]);
 
   // Pre-fill email
-  useEffect(() => {
-    if (user?.email) {
-      setFormData(prev => ({ ...prev, contact_email: user.email }));
-    }
-  }, [user]);
+    useEffect(() => {
+        const email = user?.email;
+        if (email) {
+            setFormData(prev => ({ ...prev, contact_email: email }));
+        }
+    }, [user?.email]);
 
   // Validate step
   const validateStep = (currentStep: Step): boolean => {
