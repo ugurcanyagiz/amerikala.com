@@ -1,0 +1,11 @@
+name = "amerikala"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Environment variables buraya eklenir (hassas değilse)
+# Hassas bilgiler için Cloudflare Dashboard kullanın
+
+# Custom domain ayarı için
+# [env.production]
+# routes = [{ pattern = "amerikala.com", custom_domain = true }]
