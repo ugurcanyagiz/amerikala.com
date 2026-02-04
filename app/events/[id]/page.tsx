@@ -1,8 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
+import { supabase } from "@/lib/supabase/client";
+import { useAuth } from "../../contexts/AuthContext";
+import {
+  Event,
+  Profile,
+  EVENT_CATEGORY_LABELS,
+  EVENT_CATEGORY_ICONS,
+  EVENT_CATEGORY_COLORS,
+  US_STATES_MAP
+} from "@/lib/types";
+import {
   Calendar,
   MapPin,
   Clock,
@@ -14,15 +25,12 @@ import {
   MessageCircle,
   ArrowLeft,
   ExternalLink,
-  ChevronRight,
   CheckCircle2,
   AlertCircle,
   Mail,
-  Phone,
   Globe,
-  Facebook,
-  Twitter,
-  Instagram
+  Loader2,
+  Link as LinkIcon
 } from "lucide-react";
 import Sidebar from "../../components/Sidebar";
 import { Button } from "../../components/ui/Button";
@@ -31,31 +39,240 @@ import { Avatar } from "../../components/ui/Avatar";
 import { Badge } from "../../components/ui/Badge";
 import { Textarea } from "../../components/ui/Textarea";
 
+interface EventWithOrganizer extends Event {
+  organizer: Profile;
+}
+
 export default function EventDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { user, profile } = useAuth();
+  const eventId = params.id as string;
+
+  // State
+  const [event, setEvent] = useState<EventWithOrganizer | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isAttending, setIsAttending] = useState(false);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [comment, setComment] = useState("");
+  const [similarEvents, setSimilarEvents] = useState<Event[]>([]);
 
-  const handleJoin = () => {
-    setIsAttending(!isAttending);
-  };
+  // Fetch event data
+  useEffect(() => {
+    const fetchEvent = async () => {
+      setLoading(true);
+      setError(null);
 
-  const handleComment = () => {
-    if (comment.trim()) {
-      console.log("Adding comment:", comment);
-      setComment("");
+      try {
+        // Fetch event with organizer
+        const { data: eventData, error: eventError } = await supabase
+          .from("events")
+          .select(`
+            *,
+            organizer:organizer_id (id, username, full_name, avatar_url, bio)
+          `)
+          .eq("id", eventId)
+          .single();
+
+        if (eventError) {
+          if (eventError.code === "PGRST116") {
+            setError("Etkinlik bulunamadı");
+          } else {
+            setError("Etkinlik yüklenirken bir hata oluştu");
+          }
+          return;
+        }
+
+        setEvent(eventData as EventWithOrganizer);
+
+        // Check if user is attending
+        if (user) {
+          const { data: attendeeData } = await supabase
+            .from("event_attendees")
+            .select("status")
+            .eq("event_id", eventId)
+            .eq("user_id", user.id)
+            .single();
+
+          if (attendeeData) {
+            setIsAttending(attendeeData.status === "going");
+          }
+        }
+
+        // Fetch similar events (same category, different event)
+        const { data: similarData } = await supabase
+          .from("events")
+          .select("*")
+          .eq("category", eventData.category)
+          .eq("status", "approved")
+          .neq("id", eventId)
+          .gte("event_date", new Date().toISOString().split("T")[0])
+          .order("event_date", { ascending: true })
+          .limit(3);
+
+        if (similarData) {
+          setSimilarEvents(similarData);
+        }
+      } catch (err) {
+        console.error("Error fetching event:", err);
+        setError("Bir hata oluştu");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (eventId) {
+      fetchEvent();
+    }
+  }, [eventId, user]);
+
+  // Handle attendance
+  const handleJoin = async () => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    setAttendanceLoading(true);
+    try {
+      if (isAttending) {
+        // Remove attendance
+        await supabase
+          .from("event_attendees")
+          .delete()
+          .eq("event_id", eventId)
+          .eq("user_id", user.id);
+
+        // Decrement attendee count
+        await supabase
+          .from("events")
+          .update({ current_attendees: (event?.current_attendees || 1) - 1 })
+          .eq("id", eventId);
+
+        setIsAttending(false);
+        if (event) {
+          setEvent({ ...event, current_attendees: event.current_attendees - 1 });
+        }
+      } else {
+        // Add attendance
+        await supabase
+          .from("event_attendees")
+          .insert({
+            event_id: eventId,
+            user_id: user.id,
+            status: "going"
+          });
+
+        // Increment attendee count
+        await supabase
+          .from("events")
+          .update({ current_attendees: (event?.current_attendees || 0) + 1 })
+          .eq("id", eventId);
+
+        setIsAttending(true);
+        if (event) {
+          setEvent({ ...event, current_attendees: event.current_attendees + 1 });
+        }
+      }
+    } catch (err) {
+      console.error("Error updating attendance:", err);
+    } finally {
+      setAttendanceLoading(false);
     }
   };
 
+  // Share event
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: event?.title,
+          text: event?.description,
+          url
+        });
+      } catch (err) {
+        // User cancelled or error
+      }
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(url);
+    }
+  };
+
+  // Format date
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("tr-TR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+  };
+
+  // Format time
+  const formatTime = (timeStr: string) => {
+    return timeStr.slice(0, 5);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-surface">
+        <div className="flex">
+          <Sidebar />
+          <main className="flex-1 flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !event) {
+    return (
+      <div className="min-h-screen bg-surface">
+        <div className="flex">
+          <Sidebar />
+          <main className="flex-1">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <Link href="/events">
+                <Button variant="ghost" className="gap-2 mb-6">
+                  <ArrowLeft size={18} />
+                  Etkinliklere Dön
+                </Button>
+              </Link>
+              <Card variant="elevated">
+                <CardContent className="p-12 text-center">
+                  <AlertCircle className="w-16 h-16 text-ink-faint mx-auto mb-4" />
+                  <h2 className="text-xl font-semibold mb-2">{error || "Etkinlik bulunamadı"}</h2>
+                  <p className="text-ink-muted mb-6">
+                    Bu etkinlik silinmiş veya hiç var olmamış olabilir.
+                  </p>
+                  <Link href="/events">
+                    <Button variant="primary">Etkinliklere Dön</Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  const organizer = event.organizer;
+
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="min-h-screen bg-surface">
       <div className="flex">
         <Sidebar />
 
         <main className="flex-1">
-          {/* BACK BUTTON */}
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {/* Back Button */}
             <Link href="/events">
               <Button variant="ghost" className="gap-2 mb-4">
                 <ArrowLeft size={18} />
@@ -64,275 +281,241 @@ export default function EventDetailPage() {
             </Link>
 
             <div className="grid lg:grid-cols-3 gap-8">
-              {/* MAIN CONTENT */}
+              {/* Main Content */}
               <div className="lg:col-span-2 space-y-6">
-                {/* HERO IMAGE */}
-                <Card className="glass overflow-hidden">
-                  <div className="relative h-[400px]">
-                    <img 
-                      src={EVENT.image} 
-                      alt={EVENT.title}
-                      className="w-full h-full object-cover"
-                    />
+                {/* Hero Image */}
+                <Card variant="elevated" className="overflow-hidden">
+                  <div className="relative h-[320px] sm:h-[400px]">
+                    {event.cover_image_url ? (
+                      <img
+                        src={event.cover_image_url}
+                        alt={event.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center">
+                        <span className="text-8xl">{EVENT_CATEGORY_ICONS[event.category]}</span>
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    
+
                     {/* Floating Actions */}
                     <div className="absolute top-4 right-4 flex gap-2">
                       <button
                         onClick={() => setLiked(!liked)}
-                        className="h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-smooth shadow-lg"
+                        className="h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-all shadow-lg"
+                        aria-label={liked ? "Beğeniyi kaldır" : "Beğen"}
                       >
-                        <Heart size={20} className={liked ? "fill-red-500 text-red-500" : "text-neutral-700"} />
+                        <Heart size={20} className={liked ? "fill-red-500 text-red-500" : "text-ink"} />
                       </button>
                       <button
                         onClick={() => setSaved(!saved)}
-                        className="h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-smooth shadow-lg"
+                        className="h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-all shadow-lg"
+                        aria-label={saved ? "Kaydedilenlerden kaldır" : "Kaydet"}
                       >
-                        <Bookmark size={20} className={saved ? "fill-blue-500 text-blue-500" : "text-neutral-700"} />
+                        <Bookmark size={20} className={saved ? "fill-primary text-primary" : "text-ink"} />
                       </button>
-                      <button className="h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-smooth shadow-lg">
-                        <Share2 size={20} className="text-neutral-700" />
+                      <button
+                        onClick={handleShare}
+                        className="h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-all shadow-lg"
+                        aria-label="Paylaş"
+                      >
+                        <Share2 size={20} className="text-ink" />
                       </button>
                     </div>
 
                     {/* Price Badge */}
                     <div className="absolute bottom-4 left-4">
-                      <Badge variant={EVENT.isPaid ? "warning" : "success"} className="text-lg px-4 py-2">
-                        {EVENT.isPaid ? `$${EVENT.price}` : "Ücretsiz"}
+                      <Badge variant={event.is_free ? "success" : "warning"} className="text-lg px-4 py-2">
+                        {event.is_free ? "Ücretsiz" : `$${event.price}`}
                       </Badge>
                     </div>
                   </div>
                 </Card>
 
-                {/* EVENT INFO */}
-                <Card className="glass">
+                {/* Event Info */}
+                <Card variant="elevated">
                   <CardContent className="p-6">
-                    <Badge variant="outline" className="mb-3">{EVENT.category}</Badge>
-                    <h1 className="text-3xl font-bold mb-4">{EVENT.title}</h1>
-                    
+                    <Badge variant="outline" className={`mb-3 ${EVENT_CATEGORY_COLORS[event.category]}`}>
+                      {EVENT_CATEGORY_ICONS[event.category]} {EVENT_CATEGORY_LABELS[event.category]}
+                    </Badge>
+                    <h1 className="text-3xl font-bold mb-4">{event.title}</h1>
+
+                    {/* Organizer */}
                     <div className="flex items-center gap-3 mb-6">
-                      <Avatar 
-                        src={EVENT.organizer.avatar} 
-                        fallback={EVENT.organizer.name}
+                      <Avatar
+                        src={organizer?.avatar_url || undefined}
+                        fallback={organizer?.full_name || organizer?.username || "?"}
                         size="md"
                       />
                       <div>
                         <p className="font-semibold">Organize eden</p>
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                          {EVENT.organizer.name}
+                        <p className="text-sm text-ink-muted">
+                          {organizer?.full_name || organizer?.username || "Anonim"}
                         </p>
                       </div>
-                      {EVENT.organizer.isVerified && (
-                        <CheckCircle2 className="h-5 w-5 text-blue-500 ml-auto" />
-                      )}
                     </div>
 
+                    {/* Description */}
                     <div className="prose prose-neutral dark:prose-invert max-w-none">
-                      <p className="text-neutral-700 dark:text-neutral-300 leading-relaxed">
-                        {EVENT.description}
+                      <p className="text-ink-muted leading-relaxed whitespace-pre-wrap">
+                        {event.description}
                       </p>
                     </div>
+                  </CardContent>
+                </Card>
 
-                    {/* WHAT TO EXPECT */}
-                    <div className="mt-8">
-                      <h3 className="font-bold text-lg mb-4">Neler Yapılacak?</h3>
-                      <ul className="space-y-3">
-                        {EVENT.agenda.map((item, idx) => (
-                          <li key={idx} className="flex items-start gap-3">
-                            <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                            <span className="text-neutral-700 dark:text-neutral-300">{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* REQUIREMENTS */}
-                    {EVENT.requirements && EVENT.requirements.length > 0 && (
-                      <div className="mt-8">
-                        <h3 className="font-bold text-lg mb-4">Gereksinimler</h3>
-                        <ul className="space-y-3">
-                          {EVENT.requirements.map((item, idx) => (
-                            <li key={idx} className="flex items-start gap-3">
-                              <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-neutral-700 dark:text-neutral-300">{item}</span>
-                            </li>
-                          ))}
-                        </ul>
+                {/* Location */}
+                <Card variant="elevated">
+                  <CardHeader>
+                    <CardTitle>Konum</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 pt-0">
+                    {event.is_online ? (
+                      <div className="flex items-start gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
+                          <Globe className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-semibold">Online Etkinlik</p>
+                          {event.online_url && (
+                            <a
+                              href={event.online_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline flex items-center gap-1 mt-1"
+                            >
+                              <LinkIcon size={14} />
+                              Katılım linki
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                          <MapPin className="h-5 w-5 text-red-600" />
+                        </div>
+                        <div>
+                          <p className="font-semibold">{event.location_name}</p>
+                          <p className="text-sm text-ink-muted">
+                            {event.address && `${event.address}, `}
+                            {event.city}, {US_STATES_MAP[event.state] || event.state}
+                            {event.zip_code && ` ${event.zip_code}`}
+                          </p>
+                        </div>
                       </div>
                     )}
                   </CardContent>
                 </Card>
 
-                {/* LOCATION MAP */}
-                <Card className="glass">
-                  <CardHeader>
-                    <CardTitle>Konum</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 pt-0">
-                    <div className="aspect-video bg-neutral-200 dark:bg-neutral-800 rounded-lg overflow-hidden mb-4">
-                      {/* TODO: Google Maps integration */}
-                      <div className="w-full h-full flex items-center justify-center text-neutral-500">
-                        <MapPin className="h-12 w-12" />
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <MapPin className="h-5 w-5 text-red-500 flex-shrink-0 mt-1" />
-                      <div>
-                        <p className="font-semibold">{EVENT.venue}</p>
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                          {EVENT.address}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* ATTENDEES */}
-                <Card className="glass">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>Katılımcılar ({EVENT.attendees.length})</span>
-                      <Link href={`/events/${EVENT.id}/attendees`}>
-                        <Button variant="ghost" size="sm">Tümünü Gör</Button>
-                      </Link>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 pt-0">
-                    <div className="flex flex-wrap gap-3">
-                      {EVENT.attendees.slice(0, 12).map((attendee, idx) => (
-                        <div key={idx} className="text-center">
-                          <Avatar
-                            src={attendee.avatar}
-                            fallback={attendee.name}
-                            size="md"
-                            className="mb-1"
-                          />
-                          <p className="text-xs text-neutral-600 dark:text-neutral-400 max-w-[60px] truncate">
-                            {attendee.name}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* COMMENTS */}
-                <Card className="glass">
-                  <CardHeader>
-                    <CardTitle>Yorumlar ({EVENT.comments.length})</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 pt-0 space-y-4">
-                    {/* Add Comment */}
-                    <div className="flex gap-3">
-                      <Avatar src="/avatar-placeholder.jpg" fallback="Sen" size="md" />
-                      <div className="flex-1">
-                        <Textarea
-                          placeholder="Yorum yaz..."
-                          value={comment}
-                          onChange={(e) => setComment(e.target.value)}
-                          rows={3}
-                        />
-                        <div className="flex justify-end mt-2">
-                          <Button 
-                            variant="primary" 
-                            size="sm"
-                            onClick={handleComment}
-                            disabled={!comment.trim()}
-                          >
-                            Gönder
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Comments List */}
-                    <div className="space-y-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-                      {EVENT.comments.map((comment) => (
-                        <div key={comment.id} className="flex gap-3">
-                          <Avatar src={comment.avatar} fallback={comment.name} size="md" />
-                          <div className="flex-1">
-                            <div className="bg-neutral-100 dark:bg-neutral-900 rounded-lg p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <p className="font-semibold text-sm">{comment.name}</p>
-                                <span className="text-xs text-neutral-500">{comment.timestamp}</span>
-                              </div>
-                              <p className="text-sm text-neutral-700 dark:text-neutral-300">
-                                {comment.text}
+                {/* Similar Events */}
+                {similarEvents.length > 0 && (
+                  <Card variant="elevated">
+                    <CardHeader>
+                      <CardTitle>Benzer Etkinlikler</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6 pt-0 space-y-4">
+                      {similarEvents.map((similarEvent) => (
+                        <Link
+                          key={similarEvent.id}
+                          href={`/events/${similarEvent.id}`}
+                          className="block group"
+                        >
+                          <div className="flex gap-3 p-3 rounded-lg hover:bg-surface-raised transition-colors">
+                            <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-primary-light flex items-center justify-center">
+                              {similarEvent.cover_image_url ? (
+                                <img
+                                  src={similarEvent.cover_image_url}
+                                  alt={similarEvent.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-2xl">{EVENT_CATEGORY_ICONS[similarEvent.category]}</span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm mb-1 truncate group-hover:text-primary transition-colors">
+                                {similarEvent.title}
+                              </h4>
+                              <p className="text-xs text-ink-muted">
+                                {formatDate(similarEvent.event_date)}
+                              </p>
+                              <p className="text-xs text-ink-muted">
+                                {similarEvent.current_attendees} katılımcı
                               </p>
                             </div>
-                            <div className="flex items-center gap-4 mt-2 px-4">
-                              <button className="text-xs text-neutral-500 hover:text-red-500">
-                                Beğen ({comment.likes})
-                              </button>
-                              <button className="text-xs text-neutral-500 hover:text-blue-500">
-                                Yanıtla
-                              </button>
-                            </div>
                           </div>
-                        </div>
+                        </Link>
                       ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
-              {/* SIDEBAR */}
+              {/* Sidebar */}
               <div className="space-y-6">
-                {/* JOIN CARD */}
-                <Card className="glass sticky top-20">
+                {/* Join Card */}
+                <Card variant="elevated" className="sticky top-20">
                   <CardContent className="p-6">
                     <div className="space-y-4">
                       {/* Date & Time */}
                       <div className="flex items-start gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center flex-shrink-0">
-                          <Calendar className="h-5 w-5 text-blue-600" />
+                        <div className="h-10 w-10 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
+                          <Calendar className="h-5 w-5 text-primary" />
                         </div>
                         <div>
                           <p className="font-semibold">Tarih & Saat</p>
-                          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                            {EVENT.date}
+                          <p className="text-sm text-ink-muted">
+                            {formatDate(event.event_date)}
                           </p>
-                          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                            {EVENT.time}
+                          <p className="text-sm text-ink-muted">
+                            {formatTime(event.start_time)}
+                            {event.end_time && ` - ${formatTime(event.end_time)}`}
                           </p>
                         </div>
                       </div>
 
                       {/* Location */}
                       <div className="flex items-start gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
-                          <MapPin className="h-5 w-5 text-red-600" />
+                        <div className="h-10 w-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                          {event.is_online ? (
+                            <Globe className="h-5 w-5 text-red-600" />
+                          ) : (
+                            <MapPin className="h-5 w-5 text-red-600" />
+                          )}
                         </div>
                         <div>
                           <p className="font-semibold">Konum</p>
-                          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                            {EVENT.location}
+                          <p className="text-sm text-ink-muted">
+                            {event.is_online ? "Online" : `${event.city}, ${event.state}`}
                           </p>
                         </div>
                       </div>
 
                       {/* Attendees */}
                       <div className="flex items-start gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-green-50 dark:bg-green-950/30 flex items-center justify-center flex-shrink-0">
+                        <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
                           <Users className="h-5 w-5 text-green-600" />
                         </div>
                         <div>
                           <p className="font-semibold">Katılımcılar</p>
-                          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                            {EVENT.attendees.length} / {EVENT.capacity} kişi
+                          <p className="text-sm text-ink-muted">
+                            {event.current_attendees}
+                            {event.max_attendees && ` / ${event.max_attendees}`} kişi
                           </p>
                         </div>
                       </div>
 
                       {/* Price */}
                       <div className="flex items-start gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center flex-shrink-0">
+                        <div className="h-10 w-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
                           <DollarSign className="h-5 w-5 text-amber-600" />
                         </div>
                         <div>
                           <p className="font-semibold">Fiyat</p>
-                          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                            {EVENT.isPaid ? `$${EVENT.price}` : "Ücretsiz"}
+                          <p className="text-sm text-ink-muted">
+                            {event.is_free ? "Ücretsiz" : `$${event.price}`}
                           </p>
                         </div>
                       </div>
@@ -342,121 +525,66 @@ export default function EventDetailPage() {
                         className="w-full mt-4"
                         size="lg"
                         onClick={handleJoin}
+                        loading={attendanceLoading}
+                        disabled={
+                          attendanceLoading ||
+                          (event.max_attendees !== null &&
+                           event.current_attendees >= event.max_attendees &&
+                           !isAttending)
+                        }
                       >
                         {isAttending ? (
                           <>
                             <CheckCircle2 size={20} className="mr-2" />
                             Katılıyorsun
                           </>
+                        ) : event.max_attendees !== null && event.current_attendees >= event.max_attendees ? (
+                          "Kontenjan Doldu"
                         ) : (
                           "Etkinliğe Katıl"
                         )}
                       </Button>
 
                       {isAttending && (
-                        <p className="text-xs text-center text-neutral-500">
-                          Takvime ekle veya organizatörle iletişime geç
+                        <p className="text-xs text-center text-ink-muted">
+                          Katılımdan vazgeçmek için tekrar tıkla
                         </p>
                       )}
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* ORGANIZER CARD */}
-                <Card className="glass">
+                {/* Organizer Card */}
+                <Card variant="elevated">
                   <CardHeader>
                     <CardTitle>Organizatör</CardTitle>
                   </CardHeader>
                   <CardContent className="p-6 pt-0">
                     <div className="text-center mb-4">
                       <Avatar
-                        src={EVENT.organizer.avatar}
-                        fallback={EVENT.organizer.name}
+                        src={organizer?.avatar_url || undefined}
+                        fallback={organizer?.full_name || organizer?.username || "?"}
                         size="xl"
                         className="mx-auto mb-3"
                       />
-                      <h3 className="font-bold">{EVENT.organizer.name}</h3>
-                      <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                        {EVENT.organizer.title}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-center gap-4 mb-4 text-sm">
-                      <div className="text-center">
-                        <div className="font-bold text-blue-600">{EVENT.organizer.events}</div>
-                        <div className="text-xs text-neutral-500">Etkinlik</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-bold text-green-600">{EVENT.organizer.followers}</div>
-                        <div className="text-xs text-neutral-500">Takipçi</div>
-                      </div>
+                      <h3 className="font-bold">
+                        {organizer?.full_name || organizer?.username || "Anonim"}
+                      </h3>
+                      {organizer?.bio && (
+                        <p className="text-sm text-ink-muted mt-1 line-clamp-2">
+                          {organizer.bio}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
-                      <Button variant="outline" className="w-full gap-2" size="sm">
-                        <MessageCircle size={16} />
-                        Mesaj Gönder
-                      </Button>
-                      <Button variant="outline" className="w-full gap-2" size="sm">
-                        <Users size={16} />
-                        Takip Et
-                      </Button>
-                    </div>
-
-                    {/* Social Links */}
-                    {EVENT.organizer.socialLinks && (
-                      <div className="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-                        {EVENT.organizer.socialLinks.website && (
-                          <a href={EVENT.organizer.socialLinks.website} target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="icon">
-                              <Globe size={18} />
-                            </Button>
-                          </a>
-                        )}
-                        {EVENT.organizer.socialLinks.email && (
-                          <a href={`mailto:${EVENT.organizer.socialLinks.email}`}>
-                            <Button variant="ghost" size="icon">
-                              <Mail size={18} />
-                            </Button>
-                          </a>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* SIMILAR EVENTS */}
-                <Card className="glass">
-                  <CardHeader>
-                    <CardTitle>Benzer Etkinlikler</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 pt-0 space-y-4">
-                    {SIMILAR_EVENTS.map((event) => (
-                      <Link 
-                        key={event.id} 
-                        href={`/events/${event.id}`}
-                        className="block group"
-                      >
-                        <div className="flex gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-smooth">
-                          <img 
-                            src={event.image} 
-                            alt={event.title}
-                            className="w-20 h-20 rounded-lg object-cover"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm mb-1 truncate group-hover:text-blue-600 transition-smooth">
-                              {event.title}
-                            </h4>
-                            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                              {event.date}
-                            </p>
-                            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                              {event.attendees} katılımcı
-                            </p>
-                          </div>
-                        </div>
+                      <Link href={`/profile/${organizer?.username || organizer?.id}`}>
+                        <Button variant="outline" className="w-full gap-2" size="sm">
+                          <Users size={16} />
+                          Profili Görüntüle
+                        </Button>
                       </Link>
-                    ))}
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -467,90 +595,3 @@ export default function EventDetailPage() {
     </div>
   );
 }
-
-// MOCK DATA
-const EVENT = {
-  id: 1,
-  title: "NYC Turkish Coffee & Networking",
-  category: "Sosyal",
-  date: "28 Ocak 2025, Cumartesi",
-  day: "28",
-  month: "JAN",
-  time: "14:00 - 17:00",
-  location: "Manhattan, New York",
-  venue: "Turkish Cultural Center",
-  address: "821 United Nations Plaza, New York, NY 10017",
-  attendees: [
-    { name: "Ahmet Y.", avatar: "/avatars/1.jpg" },
-    { name: "Zeynep K.", avatar: "/avatars/2.jpg" },
-    { name: "Mehmet S.", avatar: "/avatars/3.jpg" },
-    { name: "Elif D.", avatar: "/avatars/4.jpg" },
-    { name: "Can Ö.", avatar: "/avatars/5.jpg" },
-    { name: "Ayşe K.", avatar: "/avatars/6.jpg" },
-    { name: "Burak T.", avatar: "/avatars/7.jpg" },
-    { name: "Selin Y.", avatar: "/avatars/8.jpg" },
-  ],
-  capacity: 50,
-  isPaid: false,
-  price: 0,
-  image: "/events/coffee.jpg",
-  description: "New York'ta yaşayan Türklerle bir araya gelip Türk kahvesi eşliğinde sohbet edeceğimiz, networking yapabileceğimiz keyifli bir etkinlik. Hem yeni insanlarla tanışma hem de mevcut arkadaşlıkları güçlendirme fırsatı!",
-  agenda: [
-    "Türk kahvesi ikramı ve karşılama",
-    "Katılımcılarla tanışma ve networking",
-    "Grup aktiviteleri ve oyunlar",
-    "Serbest sohbet ve fotoğraf çekimi"
-  ],
-  requirements: [
-    "Etkinlik ücretsizdir ancak yer sınırlıdır",
-    "Lütfen zamanında gelin",
-    "Rahat kıyafetler önerilir"
-  ],
-  organizer: {
-    name: "Zeynep Kaya",
-    avatar: "/avatars/zeynep.jpg",
-    title: "Community Manager",
-    isVerified: true,
-    events: 12,
-    followers: 450,
-    socialLinks: {
-      website: "https://example.com",
-      email: "zeynep@example.com"
-    }
-  },
-  comments: [
-    {
-      id: 1,
-      name: "Ahmet Yılmaz",
-      avatar: "/avatars/ahmet.jpg",
-      text: "Harika bir etkinlik olacak gibi! Kesinlikle katılacağım 🎉",
-      timestamp: "2 saat önce",
-      likes: 5
-    },
-    {
-      id: 2,
-      name: "Elif Demir",
-      avatar: "/avatars/elif.jpg",
-      text: "Park yeri var mı acaba?",
-      timestamp: "1 saat önce",
-      likes: 2
-    }
-  ]
-};
-
-const SIMILAR_EVENTS = [
-  {
-    id: 2,
-    title: "Brooklyn Brunch Meetup",
-    date: "5 Şubat",
-    attendees: 18,
-    image: "/events/brunch.jpg"
-  },
-  {
-    id: 3,
-    title: "Central Park Yürüyüşü",
-    date: "12 Şubat",
-    attendees: 25,
-    image: "/events/walk.jpg"
-  }
-];

@@ -628,3 +628,136 @@ export const US_STATES = [
 export const US_STATES_MAP: Record<string, string> = Object.fromEntries(
   US_STATES.map(s => [s.value, s.label])
 );
+
+// =============================================
+// JOB TYPES
+// =============================================
+
+export type JobType = 'fulltime' | 'parttime' | 'contract' | 'freelance' | 'internship';
+export type JobCategory = 'tech' | 'healthcare' | 'finance' | 'service' | 'restaurant' | 'construction' | 'retail' | 'education' | 'other';
+export type JobListingType = 'seeking_job' | 'hiring';
+export type JobStatus = 'pending' | 'approved' | 'rejected' | 'filled' | 'closed';
+
+export interface JobListing {
+  id: string;
+  listing_type: JobListingType;
+  title: string;
+  description: string;
+  category: JobCategory;
+  job_type: JobType;
+  company_name: string | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_type: 'hourly' | 'yearly' | null;
+  city: string;
+  state: string;
+  is_remote: boolean;
+  experience_level: string | null;
+  skills: string[];
+  benefits: string[];
+  contact_email: string | null;
+  contact_phone: string | null;
+  website_url: string | null;
+  status: JobStatus;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  expires_at: string;
+  view_count: number;
+  // Joined data
+  user?: Profile;
+}
+
+export const JOB_TYPE_LABELS: Record<JobType, string> = {
+  fulltime: 'Tam Zamanlı',
+  parttime: 'Yarı Zamanlı',
+  contract: 'Sözleşmeli',
+  freelance: 'Freelance',
+  internship: 'Staj',
+};
+
+export const JOB_CATEGORY_LABELS: Record<JobCategory, string> = {
+  tech: 'Teknoloji',
+  healthcare: 'Sağlık',
+  finance: 'Finans',
+  service: 'Hizmet',
+  restaurant: 'Restoran',
+  construction: 'İnşaat',
+  retail: 'Perakende',
+  education: 'Eğitim',
+  other: 'Diğer',
+};
+
+export const JOB_CATEGORY_ICONS: Record<JobCategory, string> = {
+  tech: '💻',
+  healthcare: '🏥',
+  finance: '📊',
+  service: '🛎️',
+  restaurant: '🍽️',
+  construction: '🔨',
+  retail: '🛒',
+  education: '📚',
+  other: '💼',
+};
+
+export const JOB_LISTING_TYPE_LABELS: Record<JobListingType, string> = {
+  seeking_job: 'İş Arıyorum',
+  hiring: 'İşçi Arıyorum',
+};
+
+// =============================================
+// MARKETPLACE TYPES
+// =============================================
+
+export type MarketplaceCategory = 'araba' | 'elektronik' | 'giyim' | 'mobilya' | 'hizmet' | 'diger';
+export type MarketplaceStatus = 'pending' | 'approved' | 'rejected' | 'sold' | 'closed';
+export type MarketplaceCondition = 'new' | 'like_new' | 'good' | 'fair' | 'for_parts';
+
+export interface MarketplaceListing {
+  id: string;
+  title: string;
+  description: string;
+  category: MarketplaceCategory;
+  condition: MarketplaceCondition;
+  price: number;
+  is_negotiable: boolean;
+  city: string;
+  state: string;
+  images: string[];
+  contact_phone: string | null;
+  contact_email: string | null;
+  status: MarketplaceStatus;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  expires_at: string;
+  view_count: number;
+  // Joined data
+  user?: Profile;
+}
+
+export const MARKETPLACE_CATEGORY_LABELS: Record<MarketplaceCategory, string> = {
+  araba: 'Araba',
+  elektronik: 'Elektronik',
+  giyim: 'Giyim',
+  mobilya: 'Mobilya',
+  hizmet: 'Hizmet',
+  diger: 'Diğer',
+};
+
+export const MARKETPLACE_CATEGORY_ICONS: Record<MarketplaceCategory, string> = {
+  araba: '🚗',
+  elektronik: '💻',
+  giyim: '👕',
+  mobilya: '🛋️',
+  hizmet: '🔧',
+  diger: '📦',
+};
+
+export const MARKETPLACE_CONDITION_LABELS: Record<MarketplaceCondition, string> = {
+  new: 'Sıfır',
+  like_new: 'Sıfır Gibi',
+  good: 'İyi',
+  fair: 'Orta',
+  for_parts: 'Parça İçin',
+};

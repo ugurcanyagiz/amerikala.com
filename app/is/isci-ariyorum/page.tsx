@@ -1,110 +1,257 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { 
-  Users,
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
+import { useAuth } from "../../contexts/AuthContext";
+import {
+  JobListing,
+  JobCategory,
+  JobType,
+  JOB_CATEGORY_LABELS,
+  JOB_CATEGORY_ICONS,
+  JOB_TYPE_LABELS,
+  US_STATES,
+  US_STATES_MAP
+} from "@/lib/types";
+import Sidebar from "../../components/Sidebar";
+import { Button } from "../../components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
+import { Badge } from "../../components/ui/Badge";
+import { Input } from "../../components/ui/Input";
+import { Select } from "../../components/ui/Select";
+import { Textarea } from "../../components/ui/Textarea";
+import {
   Search,
   MapPin,
   DollarSign,
   Clock,
   Building2,
-  Plus,
-  Star,
   ArrowLeft,
+  Plus,
+  Loader2,
   Briefcase,
-  Calendar,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle,
+  X,
+  Mail,
+  Phone,
+  Globe
 } from "lucide-react";
-import Sidebar from "../../components/Sidebar";
-import { Button } from "../../components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import { Avatar } from "../../components/ui/Avatar";
-import { Badge } from "../../components/ui/Badge";
-import { Input } from "../../components/ui/Input";
-import { Select } from "../../components/ui/Select";
-import { Textarea } from "../../components/ui/Textarea";
-import { Modal } from "../../components/ui/Modal";
 
 export default function IsciAriyorumPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const router = useRouter();
+  const { user } = useAuth();
 
-  const categories = [
-    { value: "all", label: "Tümü", icon: "💼" },
-    { value: "tech", label: "Teknoloji", icon: "💻" },
-    { value: "healthcare", label: "Sağlık", icon: "🏥" },
-    { value: "service", label: "Hizmet", icon: "🛎️" },
-    { value: "restaurant", label: "Restoran", icon: "🍽️" },
-    { value: "construction", label: "İnşaat", icon: "🔨" },
-  ];
+  // Listings state
+  const [listings, setListings] = useState<JobListing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedState, setSelectedState] = useState<string>("all");
+  const [selectedJobType, setSelectedJobType] = useState<string>("all");
+
+  // Modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createSuccess, setCreateSuccess] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    company_name: "",
+    category: "other" as JobCategory,
+    job_type: "fulltime" as JobType,
+    salary_min: "",
+    salary_max: "",
+    salary_type: "yearly" as "hourly" | "yearly",
+    city: "",
+    state: "",
+    is_remote: false,
+    experience_level: "",
+    skills: "",
+    benefits: "",
+    contact_email: "",
+    contact_phone: "",
+    website_url: ""
+  });
+
+  // Fetch listings
+  useEffect(() => {
+    const fetchListings = async () => {
+      setLoading(true);
+      try {
+        let query = supabase
+          .from("job_listings")
+          .select("*, user:user_id (id, username, full_name, avatar_url)", { count: "exact" })
+          .eq("listing_type", "hiring")
+          .eq("status", "approved")
+          .order("created_at", { ascending: false });
+
+        if (selectedCategory !== "all") {
+          query = query.eq("category", selectedCategory);
+        }
+        if (selectedState !== "all") {
+          query = query.eq("state", selectedState);
+        }
+        if (selectedJobType !== "all") {
+          query = query.eq("job_type", selectedJobType);
+        }
+
+        const { data, count, error } = await query.limit(50);
+
+        if (error) throw error;
+
+        setListings(data || []);
+        setTotalCount(count || 0);
+      } catch (error) {
+        console.error("Error fetching listings:", error);
+        setListings([]);
+        setTotalCount(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchListings();
+  }, [selectedCategory, selectedState, selectedJobType]);
+
+  // Filter listings by search
+  const filteredListings = listings.filter(listing => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      listing.title.toLowerCase().includes(query) ||
+      listing.description.toLowerCase().includes(query) ||
+      listing.company_name?.toLowerCase().includes(query) ||
+      listing.city.toLowerCase().includes(query)
+    );
+  });
+
+  // Handle form submit
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    setCreating(true);
+    setCreateError(null);
+
+    try {
+      const { error } = await supabase.from("job_listings").insert({
+        listing_type: "hiring",
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        company_name: formData.company_name.trim() || null,
+        category: formData.category,
+        job_type: formData.job_type,
+        salary_min: formData.salary_min ? parseInt(formData.salary_min) : null,
+        salary_max: formData.salary_max ? parseInt(formData.salary_max) : null,
+        salary_type: formData.salary_type,
+        city: formData.city.trim(),
+        state: formData.state,
+        is_remote: formData.is_remote,
+        experience_level: formData.experience_level.trim() || null,
+        skills: formData.skills.split(",").map(s => s.trim()).filter(Boolean),
+        benefits: formData.benefits.split(",").map(s => s.trim()).filter(Boolean),
+        contact_email: formData.contact_email.trim() || null,
+        contact_phone: formData.contact_phone.trim() || null,
+        website_url: formData.website_url.trim() || null,
+        user_id: user.id,
+        status: "pending"
+      });
+
+      if (error) throw error;
+
+      setCreateSuccess(true);
+      setFormData({
+        title: "",
+        description: "",
+        company_name: "",
+        category: "other",
+        job_type: "fulltime",
+        salary_min: "",
+        salary_max: "",
+        salary_type: "yearly",
+        city: "",
+        state: "",
+        is_remote: false,
+        experience_level: "",
+        skills: "",
+        benefits: "",
+        contact_email: "",
+        contact_phone: "",
+        website_url: ""
+      });
+
+      setTimeout(() => {
+        setShowCreateModal(false);
+        setCreateSuccess(false);
+      }, 2000);
+    } catch (error: any) {
+      console.error("Error creating listing:", error);
+      setCreateError(error.message || "Bir hata oluştu");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const formatSalary = (min: number | null, max: number | null, type: string | null) => {
+    if (!min && !max) return "Belirtilmemiş";
+    const suffix = type === "hourly" ? "/saat" : "/yıl";
+    if (min && max) return `$${min.toLocaleString()} - $${max.toLocaleString()}${suffix}`;
+    if (min) return `$${min.toLocaleString()}+${suffix}`;
+    if (max) return `$${max.toLocaleString()}'a kadar${suffix}`;
+    return "Belirtilmemiş";
+  };
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="min-h-screen bg-[var(--color-surface)]">
       <div className="flex">
         <Sidebar />
 
         <main className="flex-1">
-          {/* HERO */}
-          <section className="relative overflow-hidden bg-gradient-to-r from-green-500 to-emerald-600 text-white">
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0 bg-[url('/pattern.svg')]" />
-            </div>
-            
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-              <Link href="/is" className="inline-flex items-center gap-2 text-green-100 hover:text-white mb-4 transition-smooth">
-                <ArrowLeft size={20} />
-                İş İlanlarına Dön
+          {/* Header */}
+          <section className="bg-[var(--color-surface-sunken)] border-b border-[var(--color-border-light)]">
+            <div className="max-w-5xl mx-auto px-6 lg:px-8 py-8">
+              <Link href="/is">
+                <Button variant="ghost" size="sm" className="gap-2 mb-4 -ml-2">
+                  <ArrowLeft size={16} />
+                  İş İlanları
+                </Button>
               </Link>
 
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
-                      <Users className="h-6 w-6" />
-                    </div>
-                    <h1 className="text-4xl font-bold">İşçi Arıyorum</h1>
-                  </div>
-                  <p className="text-green-100 text-lg">
-                    İş ilanı verin, Türk topluluğundan yetenekleri bulun
+                  <h1 className="text-3xl font-semibold text-[var(--color-ink)]">İşçi Arıyorum</h1>
+                  <p className="text-[var(--color-ink-secondary)] mt-1">
+                    {totalCount} iş ilanı
                   </p>
                 </div>
-                <Button 
-                  variant="secondary" 
-                  size="lg" 
-                  className="gap-2 shadow-xl"
-                  onClick={() => setIsModalOpen(true)}
+
+                <Button
+                  variant="primary"
+                  onClick={() => user ? setShowCreateModal(true) : router.push("/login")}
+                  className="gap-2"
                 >
-                  <Plus className="h-5 w-5" />
+                  <Plus size={18} />
                   İlan Ver
                 </Button>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                  <div className="text-3xl font-bold">{JOB_POSTINGS.length * 15}</div>
-                  <div className="text-sm text-green-100">Açık Pozisyon</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                  <div className="text-3xl font-bold">500+</div>
-                  <div className="text-sm text-green-100">Başvuru/Hafta</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                  <div className="text-3xl font-bold">48 Saat</div>
-                  <div className="text-sm text-green-100">Ort. Yanıt</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                  <div className="text-3xl font-bold">92%</div>
-                  <div className="text-sm text-green-100">Memnuniyet</div>
-                </div>
               </div>
             </div>
           </section>
 
-          {/* FILTERS */}
-          <section className="sticky top-16 z-40 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-lg border-b border-neutral-200 dark:border-neutral-800 shadow-sm">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          {/* Filters */}
+          <section className="sticky top-[72px] z-30 bg-[var(--color-surface)] border-b border-[var(--color-border-light)]">
+            <div className="max-w-5xl mx-auto px-6 lg:px-8 py-4">
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1">
                   <Input
@@ -114,271 +261,355 @@ export default function IsciAriyorumPage() {
                     icon={<Search size={18} />}
                   />
                 </div>
-
+                <Select
+                  options={[
+                    { value: "all", label: "Tüm Kategoriler" },
+                    ...Object.entries(JOB_CATEGORY_LABELS).map(([value, label]) => ({ value, label }))
+                  ]}
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                />
                 <Select
                   options={[
                     { value: "all", label: "Tüm Eyaletler" },
-                    { value: "NY", label: "New York" },
-                    { value: "CA", label: "California" },
-                    { value: "TX", label: "Texas" },
+                    ...US_STATES.map(s => ({ value: s.value, label: s.label }))
                   ]}
+                  value={selectedState}
+                  onChange={(e) => setSelectedState(e.target.value)}
                 />
-
                 <Select
                   options={[
                     { value: "all", label: "Çalışma Şekli" },
-                    { value: "fulltime", label: "Tam Zamanlı" },
-                    { value: "parttime", label: "Yarı Zamanlı" },
-                    { value: "remote", label: "Uzaktan" },
+                    ...Object.entries(JOB_TYPE_LABELS).map(([value, label]) => ({ value, label }))
                   ]}
+                  value={selectedJobType}
+                  onChange={(e) => setSelectedJobType(e.target.value)}
                 />
               </div>
+            </div>
+          </section>
 
-              <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
-                {categories.map((cat) => (
-                  <button
-                    key={cat.value}
-                    onClick={() => setSelectedCategory(cat.value)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-smooth whitespace-nowrap ${
-                      selectedCategory === cat.value
-                        ? "bg-green-500 text-white shadow-lg"
-                        : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
-                    }`}
+          {/* Listings */}
+          <section className="max-w-5xl mx-auto px-6 lg:px-8 py-8">
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-[var(--color-primary)]" />
+              </div>
+            ) : filteredListings.length === 0 ? (
+              <Card variant="default">
+                <CardContent className="p-12 text-center">
+                  <Briefcase className="h-16 w-16 text-[var(--color-ink-faint)] mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-[var(--color-ink)] mb-2">
+                    Henüz ilan yok
+                  </h3>
+                  <p className="text-[var(--color-ink-secondary)] mb-6">
+                    İlk ilanı siz verin ve yetenekleri bulun.
+                  </p>
+                  <Button
+                    variant="primary"
+                    onClick={() => user ? setShowCreateModal(true) : router.push("/login")}
+                    className="gap-2"
                   >
-                    <span>{cat.icon}</span>
-                    <span>{cat.label}</span>
-                  </button>
+                    <Plus size={18} />
+                    İlan Ver
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {filteredListings.map((listing) => (
+                  <JobCard key={listing.id} listing={listing} formatSalary={formatSalary} />
                 ))}
               </div>
-            </div>
+            )}
           </section>
-
-          {/* JOB POSTINGS */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Güncel İş İlanları</h2>
-              <div className="text-sm text-neutral-500">{JOB_POSTINGS.length} ilan</div>
-            </div>
-
-            <div className="space-y-4">
-              {JOB_POSTINGS.map((job) => (
-                <Card key={job.id} className="glass hover:shadow-lg transition-smooth">
-                  <CardContent className="p-5">
-                    <div className="flex gap-4">
-                      <div className="h-14 w-14 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
-                        <Building2 className="h-7 w-7 text-neutral-400" />
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <h3 className="font-bold text-lg">{job.title}</h3>
-                            <p className="text-neutral-600 dark:text-neutral-400">{job.company}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {job.urgent && (
-                              <Badge variant="destructive" size="sm">Acil</Badge>
-                            )}
-                            {job.featured && (
-                              <Badge variant="warning" size="sm">
-                                <Star size={12} className="mr-1" />
-                                Öne Çıkan
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-3 mt-3 text-sm text-neutral-600 dark:text-neutral-400">
-                          <div className="flex items-center gap-1">
-                            <MapPin size={14} />
-                            <span>{job.location}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <DollarSign size={14} />
-                            <span>{job.salary}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock size={14} />
-                            <span>{job.type}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Briefcase size={14} />
-                            <span>{job.experience}</span>
-                          </div>
-                        </div>
-
-                        <p className="text-sm text-neutral-700 dark:text-neutral-300 mt-3 line-clamp-2">
-                          {job.description}
-                        </p>
-
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {job.requirements.slice(0, 4).map((req, idx) => (
-                            <Badge key={idx} variant="outline" size="sm">{req}</Badge>
-                          ))}
-                        </div>
-
-                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-                          <div className="flex items-center gap-4 text-sm text-neutral-500">
-                            <div className="flex items-center gap-1">
-                              <Calendar size={14} />
-                              <span>{job.posted}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Users size={14} />
-                              <span>{job.applicants} başvuru</span>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm">Detay</Button>
-                            <Button variant="primary" size="sm">Başvur</Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </section>
-
-          {/* POST JOB MODAL */}
-          <Modal
-            open={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            title="Yeni İş İlanı"
-            description="İş ilanınızı oluşturun ve yetenekleri bulun"
-            size="lg"
-          >
-            <div className="space-y-4">
-              <Input label="Pozisyon Başlığı" placeholder="örn: Software Engineer" />
-              <Input label="Şirket Adı" placeholder="Şirketinizin adı" />
-              
-              <div className="grid grid-cols-2 gap-4">
-                <Select
-                  label="Eyalet"
-                  options={[
-                    { value: "NY", label: "New York" },
-                    { value: "CA", label: "California" },
-                    { value: "TX", label: "Texas" },
-                  ]}
-                />
-                <Select
-                  label="Çalışma Şekli"
-                  options={[
-                    { value: "fulltime", label: "Tam Zamanlı" },
-                    { value: "parttime", label: "Yarı Zamanlı" },
-                    { value: "remote", label: "Uzaktan" },
-                  ]}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="Maaş Aralığı" placeholder="örn: $50K - $70K" />
-                <Select
-                  label="Deneyim"
-                  options={[
-                    { value: "entry", label: "Deneyimsiz" },
-                    { value: "1-3", label: "1-3 Yıl" },
-                    { value: "3-5", label: "3-5 Yıl" },
-                    { value: "5+", label: "5+ Yıl" },
-                  ]}
-                />
-              </div>
-
-              <Textarea 
-                label="İş Tanımı" 
-                placeholder="Pozisyon hakkında detaylı bilgi..."
-                rows={4}
-              />
-
-              <Input label="Gereksinimler" placeholder="React, Node.js, AWS (virgülle ayırın)" />
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button variant="outline" onClick={() => setIsModalOpen(false)}>İptal</Button>
-                <Button variant="primary">İlan Yayınla</Button>
-              </div>
-            </div>
-          </Modal>
         </main>
       </div>
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <Card variant="elevated" className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <CardHeader className="flex flex-row items-center justify-between p-6 border-b border-[var(--color-border-light)]">
+              <CardTitle>Yeni İş İlanı</CardTitle>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-surface-sunken)] transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </CardHeader>
+
+            <CardContent className="p-6">
+              {createSuccess ? (
+                <div className="text-center py-8">
+                  <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">İlanınız Oluşturuldu</h3>
+                  <p className="text-[var(--color-ink-secondary)]">
+                    İlanınız onay için gönderildi. Onaylandıktan sonra yayınlanacaktır.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  {createError && (
+                    <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300">
+                      <AlertCircle size={20} />
+                      <p className="text-sm">{createError}</p>
+                    </div>
+                  )}
+
+                  <Input
+                    label="Pozisyon Başlığı *"
+                    placeholder="örn: Senior Software Engineer"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    required
+                  />
+
+                  <Input
+                    label="Şirket Adı"
+                    placeholder="Şirketinizin adı"
+                    value={formData.company_name}
+                    onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                    icon={<Building2 size={18} />}
+                  />
+
+                  <Textarea
+                    label="İş Tanımı *"
+                    placeholder="Pozisyon hakkında detaylı bilgi, sorumluluklar, beklentiler..."
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={5}
+                    required
+                  />
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <Select
+                      label="Kategori *"
+                      options={Object.entries(JOB_CATEGORY_LABELS).map(([value, label]) => ({ value, label }))}
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value as JobCategory })}
+                    />
+                    <Select
+                      label="Çalışma Şekli *"
+                      options={Object.entries(JOB_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
+                      value={formData.job_type}
+                      onChange={(e) => setFormData({ ...formData, job_type: e.target.value as JobType })}
+                    />
+                  </div>
+
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <Input
+                      label="Min Maaş"
+                      type="number"
+                      placeholder="50000"
+                      value={formData.salary_min}
+                      onChange={(e) => setFormData({ ...formData, salary_min: e.target.value })}
+                    />
+                    <Input
+                      label="Max Maaş"
+                      type="number"
+                      placeholder="80000"
+                      value={formData.salary_max}
+                      onChange={(e) => setFormData({ ...formData, salary_max: e.target.value })}
+                    />
+                    <Select
+                      label="Maaş Türü"
+                      options={[
+                        { value: "yearly", label: "Yıllık" },
+                        { value: "hourly", label: "Saatlik" }
+                      ]}
+                      value={formData.salary_type}
+                      onChange={(e) => setFormData({ ...formData, salary_type: e.target.value as "hourly" | "yearly" })}
+                    />
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <Input
+                      label="Şehir *"
+                      placeholder="örn: New York"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      required
+                    />
+                    <Select
+                      label="Eyalet *"
+                      options={[
+                        { value: "", label: "Seçin..." },
+                        ...US_STATES.map(s => ({ value: s.value, label: s.label }))
+                      ]}
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="is_remote"
+                      checked={formData.is_remote}
+                      onChange={(e) => setFormData({ ...formData, is_remote: e.target.checked })}
+                      className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-primary)]"
+                    />
+                    <label htmlFor="is_remote" className="text-sm font-medium">
+                      Uzaktan çalışma imkanı var
+                    </label>
+                  </div>
+
+                  <Input
+                    label="Deneyim Gereksinimi"
+                    placeholder="örn: 3-5 yıl deneyim"
+                    value={formData.experience_level}
+                    onChange={(e) => setFormData({ ...formData, experience_level: e.target.value })}
+                  />
+
+                  <Input
+                    label="Aranan Yetenekler (virgülle ayırın)"
+                    placeholder="örn: React, Node.js, TypeScript"
+                    value={formData.skills}
+                    onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+                  />
+
+                  <Input
+                    label="Yan Haklar (virgülle ayırın)"
+                    placeholder="örn: Sağlık sigortası, 401k, PTO"
+                    value={formData.benefits}
+                    onChange={(e) => setFormData({ ...formData, benefits: e.target.value })}
+                  />
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <Input
+                      label="E-posta"
+                      type="email"
+                      placeholder="hr@sirket.com"
+                      value={formData.contact_email}
+                      onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                      icon={<Mail size={18} />}
+                    />
+                    <Input
+                      label="Telefon"
+                      type="tel"
+                      placeholder="+1 (555) 123-4567"
+                      value={formData.contact_phone}
+                      onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+                      icon={<Phone size={18} />}
+                    />
+                  </div>
+
+                  <Input
+                    label="Web Sitesi"
+                    type="url"
+                    placeholder="https://sirket.com"
+                    value={formData.website_url}
+                    onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
+                    icon={<Globe size={18} />}
+                  />
+
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowCreateModal(false)}
+                      className="flex-1"
+                    >
+                      İptal
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      loading={creating}
+                      className="flex-1"
+                    >
+                      {creating ? "Oluşturuluyor..." : "İlan Yayınla"}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
 
-const JOB_POSTINGS = [
-  {
-    id: 1,
-    title: "Full Stack Developer",
-    company: "Turkish Tech NYC",
-    location: "New York, NY",
-    salary: "$100K - $140K",
-    type: "Tam Zamanlı",
-    experience: "3+ Yıl",
-    description: "Modern web uygulamaları geliştirmek için deneyimli bir full stack developer arıyoruz. Türkçe bilmek tercih sebebi.",
-    requirements: ["React", "Node.js", "PostgreSQL", "AWS"],
-    posted: "2 gün önce",
-    applicants: 24,
-    featured: true,
-    urgent: false,
-  },
-  {
-    id: 2,
-    title: "Restaurant Manager",
-    company: "Anatolia Restaurant",
-    location: "Los Angeles, CA",
-    salary: "$55K - $70K",
-    type: "Tam Zamanlı",
-    experience: "5+ Yıl",
-    description: "Yoğun bir Türk restoranını yönetecek deneyimli müdür arıyoruz. Türkçe ve İngilizce akıcı olmalı.",
-    requirements: ["F&B Management", "Turkish Speaking", "Leadership"],
-    posted: "1 hafta önce",
-    applicants: 18,
-    featured: true,
-    urgent: true,
-  },
-  {
-    id: 3,
-    title: "Dental Assistant",
-    company: "Smile Dental Clinic",
-    location: "Chicago, IL",
-    salary: "$20 - $25/saat",
-    type: "Tam Zamanlı",
-    experience: "1+ Yıl",
-    description: "Türk doktorumuzun yanında çalışacak deneyimli diş asistanı aranıyor.",
-    requirements: ["Dental Experience", "X-Ray Certified", "Turkish Preferred"],
-    posted: "3 gün önce",
-    applicants: 12,
-    featured: false,
-    urgent: false,
-  },
-  {
-    id: 4,
-    title: "Truck Driver",
-    company: "Anatolian Logistics",
-    location: "Houston, TX",
-    salary: "$60K - $80K",
-    type: "Tam Zamanlı",
-    experience: "2+ Yıl",
-    description: "CDL lisanslı uzun yol şoförü arıyoruz. Rekabetçi maaş ve yan haklar.",
-    requirements: ["CDL License", "Clean Record", "Long Haul Experience"],
-    posted: "5 gün önce",
-    applicants: 8,
-    featured: false,
-    urgent: true,
-  },
-  {
-    id: 5,
-    title: "Part-Time Server",
-    company: "Istanbul Cafe",
-    location: "Jersey City, NJ",
-    salary: "$15/saat + tips",
-    type: "Yarı Zamanlı",
-    experience: "Deneyimsiz",
-    description: "Hafta sonları çalışabilecek garson/garson arıyoruz. Türkçe tercih sebebi.",
-    requirements: ["Customer Service", "Weekend Availability"],
-    posted: "1 gün önce",
-    applicants: 15,
-    featured: false,
-    urgent: false,
-  },
-];
+function JobCard({ listing, formatSalary }: { listing: JobListing; formatSalary: (min: number | null, max: number | null, type: string | null) => string }) {
+  return (
+    <Card variant="elevated" className="hover:shadow-[var(--shadow-md)] transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex items-start gap-5">
+          <div className="h-14 w-14 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center flex-shrink-0">
+            <span className="text-2xl">{JOB_CATEGORY_ICONS[listing.category]}</span>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-[var(--color-ink)]">{listing.title}</h3>
+                {listing.company_name && (
+                  <p className="text-[var(--color-ink-secondary)]">{listing.company_name}</p>
+                )}
+              </div>
+              <Badge variant="primary" size="sm">{JOB_CATEGORY_LABELS[listing.category]}</Badge>
+            </div>
+
+            <p className="text-[var(--color-ink-secondary)] mt-3 line-clamp-2">
+              {listing.description}
+            </p>
+
+            <div className="flex flex-wrap gap-4 mt-4 text-sm text-[var(--color-ink-secondary)]">
+              <span className="flex items-center gap-1.5">
+                <MapPin size={15} />
+                {listing.city}, {US_STATES_MAP[listing.state] || listing.state}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <DollarSign size={15} />
+                {formatSalary(listing.salary_min, listing.salary_max, listing.salary_type)}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Clock size={15} />
+                {JOB_TYPE_LABELS[listing.job_type]}
+              </span>
+              {listing.is_remote && (
+                <Badge variant="info" size="sm">Uzaktan OK</Badge>
+              )}
+            </div>
+
+            {listing.skills && listing.skills.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {listing.skills.slice(0, 5).map((skill, idx) => (
+                  <Badge key={idx} variant="outline" size="sm">{skill}</Badge>
+                ))}
+                {listing.skills.length > 5 && (
+                  <Badge variant="outline" size="sm">+{listing.skills.length - 5}</Badge>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 mt-5 pt-4 border-t border-[var(--color-border-light)]">
+              {listing.contact_email && (
+                <a href={`mailto:${listing.contact_email}`}>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Mail size={15} />
+                    E-posta
+                  </Button>
+                </a>
+              )}
+              {listing.website_url && (
+                <a href={listing.website_url} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Globe size={15} />
+                    Web Sitesi
+                  </Button>
+                </a>
+              )}
+              <Button variant="primary" size="sm">
+                Başvur
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

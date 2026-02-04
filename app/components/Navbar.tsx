@@ -2,41 +2,31 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { supabase } from "@/lib/supabase/client";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { 
-  Bell, 
-  MessageCircle, 
-  Search, 
-  Menu, 
-  X, 
-  Home,
-  Users,
-  Calendar,
-  User,
-  Shield,
+import {
+  Bell,
+  MessageCircle,
+  Search,
+  Menu,
+  X,
+  ChevronDown,
   LogOut,
   Settings,
-  type LucideIcon,
+  User,
+  Shield,
 } from "lucide-react";
 import { Avatar } from "./ui/Avatar";
 import { Button } from "./ui/Button";
-import { Badge } from "./ui/Badge";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
-import { cx } from "@/lib/utils";
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-};
 
 const STATES = [
   "ALL",
-  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
-  "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
-  "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY",
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
 ];
 
 export default function Navbar() {
@@ -46,22 +36,22 @@ export default function Navbar() {
   const { t } = useLanguage();
   const { user, profile, isModerator, signOut } = useAuth();
 
-  const [notifOpen, setNotifOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  
-  const notifRef = useRef<HTMLDivElement | null>(null);
+
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const selectedState = sp.get("state") ?? "ALL";
 
-  const NAV_ITEMS: NavItem[] = useMemo(() => [
-    { href: "/", label: t("nav.home"), icon: Home },
-    { href: "/events", label: t("nav.events"), icon: Calendar },
-    { href: "/groups", label: t("nav.groups"), icon: Users },
-    { href: "/people", label: t("nav.people"), icon: User },
-  ], [t]);
+  const navItems = useMemo(() => [
+    { href: "/", label: "Anasayfa" },
+    { href: "/meetups", label: "Buluşmalar" },
+    { href: "/emlak", label: "Emlak İlanları" },
+    { href: "/is", label: "İş İlanları" },
+    { href: "/alisveris", label: "Alışveriş" },
+    { href: "/yasal-rehber", label: "Yasal Rehber" },
+  ], []);
 
   const setStateParam = useCallback((nextState: string) => {
     const qs = new URLSearchParams(sp.toString());
@@ -79,226 +69,224 @@ export default function Navbar() {
     }
   }, [profile, user, sp, setStateParam]);
 
+  // Close menus on outside click
   useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (notifRef.current && !notifRef.current.contains(t)) setNotifOpen(false);
-      if (profileMenuRef.current && !profileMenuRef.current.contains(t)) setProfileMenuOpen(false);
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (profileMenuRef.current && !profileMenuRef.current.contains(target)) {
+        setProfileMenuOpen(false);
+      }
     };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const stateOptions = useMemo(() => {
-    if (!user) return ["ALL"];
-    return STATES;
-  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
     router.push("/login");
   };
 
+  const stateOptions = user ? STATES : ["ALL"];
+
   return (
     <>
-      <header className="glass border-b border-neutral-200 dark:border-neutral-800 sticky top-0 z-50 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+      <header className="sticky top-0 z-50 bg-[var(--color-surface)] border-b border-[var(--color-border-light)]">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex items-center justify-between h-[72px]">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition-smooth">
-                <span className="text-white font-bold text-xl">A</span>
+            <Link href="/" className="flex items-center gap-3 group flex-shrink-0">
+              <div className="h-10 w-10 rounded-xl bg-[var(--color-primary)] flex items-center justify-center">
+                <span className="text-white font-semibold text-xl">a</span>
               </div>
-              <div className="hidden sm:block">
-                <h1 className="text-xl font-bold text-gradient">AmerikaLa</h1>
-                <p className="text-xs text-neutral-500">Connect • Discover • Grow</p>
-              </div>
+              <span className="hidden sm:block text-xl font-semibold tracking-tight text-[var(--color-ink)]">
+                amerikala
+              </span>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-1">
-              {NAV_ITEMS.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            <nav className="hidden xl:flex items-center gap-2">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={cx(
-                      "flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth text-sm font-medium",
-                      isActive 
-                        ? "bg-red-500 text-white shadow-md" 
-                        : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-neutral-50"
-                    )}
+                    className={`
+                      px-4 py-2.5 text-[15px] font-medium rounded-xl whitespace-nowrap
+                      transition-colors duration-150
+                      ${isActive
+                        ? "text-[var(--color-primary)] bg-[var(--color-primary-subtle)]"
+                        : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)]"
+                      }
+                    `}
                   >
-                    <Icon size={18} />
-                    <span>{item.label}</span>
+                    {item.label}
                   </Link>
                 );
               })}
 
-              {/* Admin Panel Link (only for moderators/admins) */}
               {isModerator && (
                 <Link
                   href="/admin"
-                  className={cx(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth text-sm font-medium",
-                    pathname === "/admin"
-                      ? "bg-red-500 text-white shadow-md" 
-                      : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-neutral-50"
-                  )}
+                  className={`
+                    px-4 py-2.5 text-[15px] font-medium rounded-xl whitespace-nowrap
+                    transition-colors duration-150
+                    ${pathname === "/admin"
+                      ? "text-[var(--color-primary)] bg-[var(--color-primary-subtle)]"
+                      : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)]"
+                    }
+                  `}
                 >
-                  <Shield size={18} />
-                  <span>Admin</span>
+                  Admin
                 </Link>
               )}
             </nav>
 
-            {/* Right Side Actions */}
-            <div className="flex items-center gap-2">
-              {/* Search */}
-              <Button
-                variant="ghost"
-                size="icon"
+            {/* Right Actions */}
+            <div className="flex items-center gap-1">
+              {/* Search Toggle */}
+              <button
                 onClick={() => setSearchOpen(!searchOpen)}
-                className="hidden md:flex"
+                className="hidden md:flex h-10 w-10 items-center justify-center rounded-xl text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+                aria-label="Ara"
               >
-                <Search size={20} />
-              </Button>
+                <Search className="h-5 w-5" />
+              </button>
 
               {/* Messages */}
-              <Link href="/messages">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cx(pathname.startsWith("/messages") && "bg-neutral-100 dark:bg-neutral-900")}
-                >
-                  <MessageCircle size={20} />
-                </Button>
+              <Link
+                href="/messages"
+                className={`hidden md:flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+                  pathname.startsWith("/messages")
+                    ? "bg-[var(--color-surface-sunken)] text-[var(--color-ink)]"
+                    : "text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-sunken)]"
+                }`}
+                aria-label="Mesajlar"
+              >
+                <MessageCircle className="h-5 w-5" />
               </Link>
 
               {/* Notifications */}
-              <div className="relative" ref={notifRef}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setNotifOpen(!notifOpen)}
-                  className={cx(notifOpen && "bg-neutral-100 dark:bg-neutral-900")}
-                >
-                  <Bell size={20} />
-                  <Badge 
-                    variant="error" 
-                    size="sm" 
-                    className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
-                  >
-                    3
-                  </Badge>
-                </Button>
+              <Link
+                href="/notifications"
+                className="hidden md:flex h-10 w-10 items-center justify-center rounded-xl text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-sunken)] transition-colors relative"
+                aria-label="Bildirimler"
+              >
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-[var(--color-primary)]" />
+              </Link>
 
-                {notifOpen && (
-                  <div className="absolute right-0 mt-2 w-96 glass rounded-2xl shadow-2xl p-4 animate-scale-in">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-bold text-lg">{t("nav.notifications")}</h3>
-                      <Button variant="ghost" size="sm" onClick={() => setNotifOpen(false)}>
-                        <X size={16} />
-                      </Button>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="p-3 rounded-lg bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-smooth cursor-pointer">
-                        <p className="text-sm font-medium">Yeni etkinlik daveti</p>
-                        <p className="text-xs text-neutral-500 mt-1">
-                          John seni &quot;NYC Turkish Meetup&quot; etkinliğine davet etti
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="h-6 w-px bg-neutral-200 dark:bg-neutral-800 mx-1 hidden lg:block" />
+              {/* Divider */}
+              <div className="hidden xl:block h-8 w-px bg-[var(--color-border-light)] mx-3" />
 
               {/* State Selector */}
-              <select
-                className="hidden lg:block px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm font-medium transition-smooth hover:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-                value={selectedState}
-                onChange={(e) => setStateParam(e.target.value)}
-              >
-                {stateOptions.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+              <div className="hidden xl:flex items-center">
+                <select
+                  className="
+                    h-10 px-4 pr-9
+                    text-[15px] font-medium
+                    bg-[var(--color-surface)]
+                    border border-[var(--color-border)]
+                    rounded-xl
+                    text-[var(--color-ink-secondary)]
+                    appearance-none
+                    cursor-pointer
+                    transition-colors duration-150
+                    hover:border-[var(--color-border-strong)]
+                    focus:outline-none focus:border-[var(--color-primary)]
+                  "
+                  value={selectedState}
+                  onChange={(e) => setStateParam(e.target.value)}
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B6B6B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 10px center',
+                  }}
+                >
+                  {stateOptions.map((s) => (
+                    <option key={s} value={s}>
+                      {s === "ALL" ? "Tüm Eyaletler" : s}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-              {/* Auth Buttons / Avatar */}
+              {/* Auth Section */}
               {!user ? (
-                <div className="hidden lg:flex items-center gap-2">
+                <div className="hidden xl:flex items-center gap-3 ml-3">
                   <Link href="/login">
-                    <Button variant="ghost" size="sm">{t("nav.login")}</Button>
+                    <Button variant="ghost" size="md" className="text-[15px] px-4">
+                      Giriş Yap
+                    </Button>
                   </Link>
                   <Link href="/register">
-                    <Button variant="primary" size="sm">{t("nav.signup")}</Button>
+                    <Button variant="primary" size="md" className="text-[15px] px-5">
+                      Kayıt Ol
+                    </Button>
                   </Link>
                 </div>
               ) : (
-                <div className="relative" ref={profileMenuRef}>
+                <div className="relative ml-2" ref={profileMenuRef}>
                   <button
                     onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                    className="focus:outline-none"
+                    className="flex items-center gap-2 p-1 rounded-lg hover:bg-[var(--color-surface-sunken)] transition-colors"
                   >
                     <Avatar
                       src={profile?.avatar_url || undefined}
                       fallback={profile?.username || "U"}
-                      size="md"
-                      status="online"
-                      className="cursor-pointer hover:scale-105 transition-smooth"
+                      size="sm"
                     />
+                    <ChevronDown className={`h-4 w-4 text-[var(--color-ink-tertiary)] hidden sm:block transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
 
-                  {/* Profile Dropdown Menu */}
+                  {/* Profile Dropdown */}
                   {profileMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 glass rounded-2xl shadow-2xl p-2 animate-scale-in">
-                      <div className="px-3 py-2 border-b border-neutral-200 dark:border-neutral-800 mb-2">
-                        <p className="font-medium truncate">{profile?.full_name || profile?.username || "Kullanıcı"}</p>
-                        <p className="text-sm text-neutral-500 truncate">@{profile?.username}</p>
+                    <div className="absolute right-0 mt-2 w-56 bg-[var(--color-surface)] border border-[var(--color-border-light)] rounded-xl shadow-[var(--shadow-lg)] py-2 animate-fade-in">
+                      <div className="px-4 py-3 border-b border-[var(--color-border-light)]">
+                        <p className="text-sm font-medium text-[var(--color-ink)] truncate">
+                          {profile?.full_name || profile?.username || "User"}
+                        </p>
+                        <p className="text-xs text-[var(--color-ink-tertiary)] truncate">
+                          @{profile?.username}
+                        </p>
                       </div>
 
-                      <Link
-                        href="/profile"
-                        onClick={() => setProfileMenuOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-smooth"
-                      >
-                        <User size={18} className="text-neutral-500" />
-                        <span>Profilim</span>
-                      </Link>
-
-                      <Link
-                        href="/ayarlar"
-                        onClick={() => setProfileMenuOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-smooth"
-                      >
-                        <Settings size={18} className="text-neutral-500" />
-                        <span>Ayarlar</span>
-                      </Link>
-
-                      {isModerator && (
+                      <div className="py-1">
                         <Link
-                          href="/admin"
+                          href="/profile"
                           onClick={() => setProfileMenuOpen(false)}
-                          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-smooth"
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-sunken)] transition-colors"
                         >
-                          <Shield size={18} className="text-red-500" />
-                          <span className="text-red-600 font-medium">Admin Panel</span>
+                          <User className="h-4 w-4" />
+                          Profilim
                         </Link>
-                      )}
+                        <Link
+                          href="/ayarlar"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+                        >
+                          <Settings className="h-4 w-4" />
+                          Ayarlar
+                        </Link>
+                        {isModerator && (
+                          <Link
+                            href="/admin"
+                            onClick={() => setProfileMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] transition-colors"
+                          >
+                            <Shield className="h-4 w-4" />
+                            Admin Panel
+                          </Link>
+                        )}
+                      </div>
 
-                      <div className="border-t border-neutral-200 dark:border-neutral-800 mt-2 pt-2">
+                      <div className="border-t border-[var(--color-border-light)] pt-1 mt-1">
                         <button
                           onClick={handleSignOut}
-                          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-smooth w-full text-left text-red-600"
+                          className="flex items-center gap-3 w-full px-4 py-2 text-sm text-[var(--color-error)] hover:bg-[var(--color-error-light)] transition-colors"
                         >
-                          <LogOut size={18} />
-                          <span>Çıkış Yap</span>
+                          <LogOut className="h-4 w-4" />
+                          Çıkış Yap
                         </button>
                       </div>
                     </div>
@@ -307,26 +295,34 @@ export default function Navbar() {
               )}
 
               {/* Mobile Menu Button */}
-              <Button
-                variant="ghost"
-                size="icon"
+              <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden"
+                className="xl:hidden h-10 w-10 flex items-center justify-center rounded-xl text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+                aria-label="Menü"
               >
-                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </Button>
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
             </div>
           </div>
 
-          {/* Search Bar (Expanded) */}
+          {/* Search Bar */}
           {searchOpen && (
-            <div className="pb-4 animate-slide-up">
+            <div className="pb-4 animate-slide-down">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={20} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--color-ink-tertiary)]" />
                 <input
                   type="text"
                   placeholder={t("common.search")}
-                  className="w-full h-12 pl-12 pr-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 focus:outline-none focus:ring-2 focus:ring-red-500 transition-smooth"
+                  className="
+                    w-full h-12 pl-12 pr-4
+                    bg-[var(--color-surface-sunken)]
+                    border border-[var(--color-border-light)]
+                    rounded-lg
+                    text-[var(--color-ink)]
+                    placeholder:text-[var(--color-ink-tertiary)]
+                    focus:outline-none focus:border-[var(--color-primary)]
+                    transition-colors
+                  "
                   autoFocus
                 />
               </div>
@@ -337,67 +333,65 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 top-16 z-40 glass backdrop-blur-xl animate-fade-in">
-          <div className="p-4 space-y-2">
-            {NAV_ITEMS.map((item) => {
-              const Icon = item.icon;
+        <div className="xl:hidden fixed inset-0 top-[72px] z-40 bg-[var(--color-surface)] animate-fade-in overflow-y-auto">
+          <div className="p-6 space-y-2">
+            {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={cx(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-smooth text-base font-medium",
-                    isActive 
-                      ? "bg-red-500 text-white shadow-lg" 
-                      : "text-neutral-900 dark:text-neutral-50 hover:bg-neutral-100 dark:hover:bg-neutral-900"
-                  )}
+                  className={`
+                    flex items-center px-5 py-4 rounded-xl text-[17px] font-medium
+                    transition-colors
+                    ${isActive
+                      ? "text-[var(--color-primary)] bg-[var(--color-primary-subtle)]"
+                      : "text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)]"
+                    }
+                  `}
                 >
-                  <Icon size={20} />
-                  <span>{item.label}</span>
+                  {item.label}
                 </Link>
               );
             })}
 
-            {/* Admin Panel Link (Mobile) */}
             {isModerator && (
               <Link
                 href="/admin"
                 onClick={() => setMobileMenuOpen(false)}
-                className={cx(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-smooth text-base font-medium",
-                  pathname === "/admin"
-                    ? "bg-red-500 text-white shadow-lg" 
-                    : "text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                )}
+                className="flex items-center gap-3 px-5 py-4 rounded-xl text-[17px] font-medium text-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] transition-colors"
               >
-                <Shield size={20} />
-                <span>Admin Panel</span>
+                <Shield className="h-5 w-5" />
+                Admin Panel
               </Link>
             )}
 
             {/* Mobile Auth */}
             {!user ? (
-              <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-2">
+              <div className="pt-6 mt-6 border-t border-[var(--color-border-light)] space-y-3">
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="outline" className="w-full">{t("nav.login")}</Button>
+                  <Button variant="outline" className="w-full h-12 text-[16px]">
+                    Giriş Yap
+                  </Button>
                 </Link>
                 <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="primary" className="w-full">{t("nav.signup")}</Button>
+                  <Button variant="primary" className="w-full h-12 text-[16px]">
+                    Kayıt Ol
+                  </Button>
                 </Link>
               </div>
             ) : (
-              <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800">
+              <div className="pt-6 mt-6 border-t border-[var(--color-border-light)]">
                 <button
                   onClick={() => {
                     handleSignOut();
                     setMobileMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 w-full text-left"
+                  className="flex items-center gap-3 w-full px-5 py-4 rounded-xl text-[17px] font-medium text-[var(--color-error)] hover:bg-[var(--color-error-light)] transition-colors"
                 >
-                  <LogOut size={20} />
-                  <span>Çıkış Yap</span>
+                  <LogOut className="h-5 w-5" />
+                  Çıkış Yap
                 </button>
               </div>
             )}

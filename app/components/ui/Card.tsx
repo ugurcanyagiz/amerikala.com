@@ -1,22 +1,52 @@
 import * as React from "react";
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "default" | "glass" | "elevated";
+  variant?: "default" | "elevated" | "interactive" | "glass";
+  padding?: "none" | "sm" | "md" | "lg";
   children: React.ReactNode;
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className = "", variant = "default", children, ...props }, ref) => {
-    const variants = {
-      default: "bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-sm",
-      glass: "glass shadow-lg",
-      elevated: "bg-white dark:bg-neutral-950 shadow-xl border-0",
+  ({ className = "", variant = "default", padding = "md", children, ...props }, ref) => {
+    const variants: Record<string, string> = {
+      default: `
+        bg-[var(--color-surface)]
+        border border-[var(--color-border-light)]
+        shadow-[var(--shadow-xs)]
+      `,
+      elevated: `
+        bg-[var(--color-surface)]
+        shadow-[var(--shadow-md)]
+        border-0
+      `,
+      interactive: `
+        bg-[var(--color-surface)]
+        border border-[var(--color-border-light)]
+        shadow-[var(--shadow-xs)]
+        hover:shadow-[var(--shadow-md)]
+        hover:border-[var(--color-border)]
+        transition-all duration-200 ease-out
+        cursor-pointer
+      `,
+      glass: `
+        bg-white/80 dark:bg-neutral-900/80
+        backdrop-blur-md
+        border border-[var(--color-border-light)]
+        shadow-[var(--shadow-sm)]
+      `,
+    };
+
+    const paddings: Record<string, string> = {
+      none: "",
+      sm: "p-4",
+      md: "p-6",
+      lg: "p-8",
     };
 
     return (
       <div
         ref={ref}
-        className={`rounded-xl p-6 transition-smooth ${variants[variant]} ${className}`}
+        className={`rounded-xl ${variants[variant]} ${paddings[padding]} ${className}`}
         {...props}
       >
         {children}
@@ -29,7 +59,11 @@ Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className = "", ...props }, ref) => (
-    <div ref={ref} className={`flex flex-col space-y-1.5 mb-4 ${className}`} {...props} />
+    <div
+      ref={ref}
+      className={`flex flex-col space-y-1.5 mb-6 ${className}`}
+      {...props}
+    />
   )
 );
 
@@ -37,7 +71,11 @@ CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className = "", ...props }, ref) => (
-    <h3 ref={ref} className={`text-2xl font-bold tracking-tight ${className}`} {...props} />
+    <h3
+      ref={ref}
+      className={`text-xl font-semibold tracking-tight text-[var(--color-ink)] ${className}`}
+      {...props}
+    />
   )
 );
 
@@ -45,7 +83,11 @@ CardTitle.displayName = "CardTitle";
 
 const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className = "", ...props }, ref) => (
-    <p ref={ref} className={`text-sm text-neutral-500 dark:text-neutral-400 ${className}`} {...props} />
+    <p
+      ref={ref}
+      className={`text-sm text-[var(--color-ink-secondary)] ${className}`}
+      {...props}
+    />
   )
 );
 
@@ -61,7 +103,11 @@ CardContent.displayName = "CardContent";
 
 const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className = "", ...props }, ref) => (
-    <div ref={ref} className={`flex items-center pt-4 mt-4 border-t border-neutral-200 dark:border-neutral-800 ${className}`} {...props} />
+    <div
+      ref={ref}
+      className={`flex items-center pt-6 mt-6 border-t border-[var(--color-border-light)] ${className}`}
+      {...props}
+    />
   )
 );
 
