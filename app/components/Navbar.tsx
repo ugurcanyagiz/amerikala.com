@@ -230,12 +230,12 @@ export default function Navbar() {
                 <div className="hidden xl:flex items-center gap-3 ml-3">
                   <Link href="/login">
                     <Button variant="ghost" size="md" className="text-[15px] px-4">
-                      Giriş Yap
+                      Login
                     </Button>
                   </Link>
                   <Link href="/register">
                     <Button variant="primary" size="md" className="text-[15px] px-5">
-                      Kayıt Ol
+                      Register
                     </Button>
                   </Link>
                 </div>
