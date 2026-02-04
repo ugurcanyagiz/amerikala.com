@@ -502,7 +502,7 @@ function CreateListingModal({
         contact_email: formData.contact_email || null,
         contact_phone: formData.contact_phone || null,
         is_negotiable: formData.is_negotiable,
-        status: "pending",
+        status: "approved",
         images: []
       });
 

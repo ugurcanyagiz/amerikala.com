@@ -317,7 +317,7 @@ export default function IlanVerPage() {
         contact_phone: formData.contact_phone || null,
         contact_email: formData.contact_email || null,
         user_id: user.id,
-        status: "pending",
+        status: "approved",
       };
 
       const { data, error } = await supabase
@@ -328,7 +328,8 @@ export default function IlanVerPage() {
 
       if (error) throw error;
 
-      router.push("/emlak/ilanlarim?success=true");
+      alert("İlanınız başarıyla oluşturuldu!");
+      router.push("/emlak");
     } catch (error) {
       console.error("Error creating listing:", error);
       alert("İlan oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.");

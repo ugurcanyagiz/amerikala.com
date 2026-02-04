@@ -166,7 +166,7 @@ export default function IsciAriyorumPage() {
         contact_phone: formData.contact_phone.trim() || null,
         website_url: formData.website_url.trim() || null,
         user_id: user.id,
-        status: "pending"
+        status: "approved"
       });
 
       if (error) throw error;

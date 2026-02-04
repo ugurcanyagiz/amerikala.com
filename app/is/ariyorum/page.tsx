@@ -151,7 +151,7 @@ export default function IsAriyorumPage() {
         contact_email: formData.contact_email.trim() || null,
         contact_phone: formData.contact_phone.trim() || null,
         user_id: user.id,
-        status: "pending"
+        status: "approved"
       });
 
       if (error) throw error;
