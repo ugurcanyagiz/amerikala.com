@@ -91,7 +91,7 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   { type: "link", href: "/alisveris", labelKey: "sidebar.marketplace", icon: ShoppingBag },
-  { type: "link", href: "/yasal-rehber", labelKey: "sidebar.legalGuide", icon: Scale },
+  // { type: "link", href: "/yasal-rehber", labelKey: "sidebar.legalGuide", icon: Scale }, // Geçici olarak gizlendi
   { type: "link", href: "/profile", labelKey: "sidebar.profile", icon: User },
   { type: "link", href: "/ayarlar", labelKey: "sidebar.settings", icon: Settings },
 ];

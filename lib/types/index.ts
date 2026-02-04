@@ -6,11 +6,19 @@ export interface Profile {
   id: string;
   username: string | null;
   full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  show_full_name: boolean;
   city: string | null;
   state: string | null;
   bio: string | null;
   avatar_url: string | null;
+  cover_image_url: string | null;
+  website: string | null;
   role?: UserRole;
+  is_verified: boolean;
+  follower_count: number;
+  following_count: number;
   created_at: string;
   updated_at: string;
 }

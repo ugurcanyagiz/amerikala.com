@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 import { Profile, UserRole, hasPermission, ROLE_PERMISSIONS } from "@/lib/types";
@@ -36,75 +36,191 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const mountedRef = useRef(true);
 
-  // Fetch profile - wrapped in useCallback
+  // Fetch profile - sadece mevcut alanları al, eksik olanlar için varsayılan değer kullan
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     try {
+      console.log("Fetching profile for:", userId);
+      
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, username, full_name, city, state, bio, avatar_url, role, created_at, updated_at, first_name, last_name, show_full_name, cover_image_url, website, is_verified, follower_count, following_count")
         .eq("id", userId)
         .single();
 
       if (error) {
-        console.error("Error fetching profile:", error);
+        console.error("Profile fetch error:", error.message);
+        
+        // Hata durumunda minimal profile döndür
+        return {
+          id: userId,
+          username: null,
+          full_name: null,
+          first_name: null,
+          last_name: null,
+          show_full_name: true,
+          city: null,
+          state: null,
+          bio: null,
+          avatar_url: null,
+          cover_image_url: null,
+          website: null,
+          role: 'user',
+          is_verified: false,
+          follower_count: 0,
+          following_count: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+      }
+
+      if (!data) {
+        console.log("No profile data found");
         return null;
       }
 
-      return data as Profile;
+      console.log("Profile data received:", data);
+
+      // Varsayılan değerlerle profile döndür
+      const profileWithDefaults: Profile = {
+        id: data.id,
+        username: data.username ?? null,
+        full_name: data.full_name ?? null,
+        first_name: data.first_name ?? null,
+        last_name: data.last_name ?? null,
+        show_full_name: data.show_full_name ?? true,
+        city: data.city ?? null,
+        state: data.state ?? null,
+        bio: data.bio ?? null,
+        avatar_url: data.avatar_url ?? null,
+        cover_image_url: data.cover_image_url ?? null,
+        website: data.website ?? null,
+        role: data.role ?? 'user',
+        is_verified: data.is_verified ?? false,
+        follower_count: data.follower_count ?? 0,
+        following_count: data.following_count ?? 0,
+        created_at: data.created_at ?? new Date().toISOString(),
+        updated_at: data.updated_at ?? new Date().toISOString(),
+      };
+
+      return profileWithDefaults;
     } catch (error) {
-      console.error("Error fetching profile:", error);
-      return null;
+      console.error("Error in fetchProfile:", error);
+      // Hata durumunda minimal profile döndür
+      return {
+        id: userId,
+        username: null,
+        full_name: null,
+        first_name: null,
+        last_name: null,
+        show_full_name: true,
+        city: null,
+        state: null,
+        bio: null,
+        avatar_url: null,
+        cover_image_url: null,
+        website: null,
+        role: 'user',
+        is_verified: false,
+        follower_count: 0,
+        following_count: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
     }
   }, []);
 
   // Refresh profile
   const refreshProfile = useCallback(async () => {
-    if (user) {
+    if (user && mountedRef.current) {
       const newProfile = await fetchProfile(user.id);
-      setProfile(newProfile);
+      if (mountedRef.current) {
+        setProfile(newProfile);
+      }
     }
   }, [user, fetchProfile]);
 
-  // Sign out
+  // Sign out - düzeltilmiş versiyon
   const signOut = useCallback(async () => {
+    console.log("SignOut called - starting...");
+    
     try {
-      await supabase.auth.signOut();
+      // Önce local state'i temizle
+      setUser(null);
+      setProfile(null);
+      setSession(null);
+      
+      // Supabase'den çıkış yap - scope: 'global' ile tüm sekmelerde çıkış
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      
+      if (error) {
+        console.error("Supabase signOut error:", error.message);
+      } else {
+        console.log("Supabase signOut successful");
+      }
+      
+      // LocalStorage'ı temizle (Supabase session)
+      if (typeof window !== 'undefined') {
+        // Supabase session key'lerini temizle
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+          if (key.startsWith('sb-') || key.includes('supabase')) {
+            localStorage.removeItem(key);
+          }
+        });
+        console.log("LocalStorage cleaned");
+      }
+      
     } catch (error) {
-      console.error("Sign out error:", error);
+      console.error("SignOut error:", error);
     }
-    setUser(null);
-    setProfile(null);
-    setSession(null);
+    
+    console.log("SignOut completed");
   }, []);
 
   // Initialize auth state
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
+    let isInitialized = false;
 
     const initAuth = async () => {
+      if (isInitialized) return;
+      isInitialized = true;
+      
       try {
+        console.log("Initializing auth...");
+        
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error("Session error:", error);
-          if (mounted) setLoading(false);
+          console.error("Session error:", error.message);
+          if (mountedRef.current) setLoading(false);
           return;
         }
 
-        if (mounted) {
+        console.log("Session found:", !!currentSession);
+
+        if (mountedRef.current) {
           setSession(currentSession);
           setUser(currentSession?.user ?? null);
         }
 
-        if (currentSession?.user && mounted) {
+        if (currentSession?.user && mountedRef.current) {
+          console.log("Fetching profile for user:", currentSession.user.id);
           const userProfile = await fetchProfile(currentSession.user.id);
-          if (mounted) setProfile(userProfile);
+          console.log("Profile fetched:", !!userProfile);
+          if (mountedRef.current) {
+            setProfile(userProfile);
+          }
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
       } finally {
-        if (mounted) setLoading(false);
+        if (mountedRef.current) {
+          console.log("Auth initialization complete, setting loading to false");
+          setLoading(false);
+        }
       }
     };
 
@@ -113,22 +229,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        if (!mounted) return;
+        console.log("Auth state changed:", event);
 
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
+        if (!mountedRef.current) return;
 
-        if (newSession?.user) {
-          const userProfile = await fetchProfile(newSession.user.id);
-          if (mounted) setProfile(userProfile);
-        } else {
+        if (event === 'SIGNED_OUT') {
+          console.log("User signed out - clearing state");
+          setSession(null);
+          setUser(null);
           setProfile(null);
+          setLoading(false);
+          return;
+        }
+
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          console.log("User signed in or token refreshed");
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+
+          if (newSession?.user) {
+            const userProfile = await fetchProfile(newSession.user.id);
+            if (mountedRef.current) {
+              setProfile(userProfile);
+              setLoading(false);
+            }
+          }
         }
       }
     );
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
       subscription.unsubscribe();
     };
   }, [fetchProfile]);
@@ -163,7 +294,7 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-// Hook for requiring auth - with safer implementation
+// Hook for requiring auth
 export function useRequireAuth(redirectTo: string = "/login") {
   const { user, loading } = useAuth();
   
@@ -176,7 +307,7 @@ export function useRequireAuth(redirectTo: string = "/login") {
   return { user, loading };
 }
 
-// Hook for requiring specific role - with safer implementation
+// Hook for requiring specific role
 export function useRequireRole(
   requiredRole: UserRole | UserRole[],
   redirectTo: string = "/"

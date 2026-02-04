@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/app
 import { Button } from "@/app/components/ui";
 import { Input } from "@/app/components/ui";
 import { Select } from "@/app/components/ui";
-import { Mail, Lock, User, MapPin, Eye, EyeOff, CheckCircle2, AlertCircle } from "lucide-react";
+import { Mail, Lock, User, MapPin, Eye, EyeOff, CheckCircle2, AlertCircle, UserCircle } from "lucide-react";
 
 const US_STATES = [
   { value: "AL", label: "Alabama (AL)" },
@@ -70,6 +70,8 @@ interface FormErrors {
   password?: string;
   confirmPassword?: string;
   username?: string;
+  firstName?: string;
+  lastName?: string;
   state?: string;
 }
 
@@ -81,6 +83,8 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [stateCode, setStateCode] = useState("");
   
   // UI state
@@ -136,6 +140,24 @@ export default function RegisterPage() {
       newErrors.email = "Geçerli bir email adresi girin";
     }
 
+    // First name validation
+    if (!firstName.trim()) {
+      newErrors.firstName = "İsim gerekli";
+    } else if (firstName.trim().length < 2) {
+      newErrors.firstName = "İsim en az 2 karakter olmalı";
+    } else if (firstName.trim().length > 30) {
+      newErrors.firstName = "İsim en fazla 30 karakter olabilir";
+    }
+
+    // Last name validation
+    if (!lastName.trim()) {
+      newErrors.lastName = "Soyisim gerekli";
+    } else if (lastName.trim().length < 2) {
+      newErrors.lastName = "Soyisim en az 2 karakter olmalı";
+    } else if (lastName.trim().length > 30) {
+      newErrors.lastName = "Soyisim en fazla 30 karakter olabilir";
+    }
+
     // Username validation
     if (!cleanUsername) {
       newErrors.username = "Kullanıcı adı gerekli";
@@ -182,6 +204,8 @@ export default function RegisterPage() {
     setStatusMessage("Hesap oluşturuluyor...");
 
     try {
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
+
       // 1. Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -190,6 +214,9 @@ export default function RegisterPage() {
           emailRedirectTo: `${window.location.origin}/login`,
           data: {
             username: cleanUsername,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            full_name: fullName,
             state: stateCode,
           },
         },
@@ -211,12 +238,16 @@ export default function RegisterPage() {
         return;
       }
 
-      // 2. Create profile with state
+      // 2. Create profile with first_name, last_name, full_name
       const { error: profileError } = await supabase.from("profiles").upsert(
         {
           id: authData.user.id,
           username: cleanUsername,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          full_name: fullName,
           state: stateCode,
+          show_full_name: true, // Varsayılan olarak isim gösterilsin
           created_at: new Date().toISOString(),
         },
         { onConflict: "id" }
@@ -270,6 +301,33 @@ export default function RegisterPage() {
             error={errors.email}
             disabled={status === "loading" || status === "success"}
           />
+
+          {/* First Name & Last Name - Side by Side */}
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="İsim"
+              type="text"
+              placeholder="Ahmet"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              icon={<UserCircle className="w-4 h-4" />}
+              error={errors.firstName}
+              disabled={status === "loading" || status === "success"}
+            />
+            <Input
+              label="Soyisim"
+              type="text"
+              placeholder="Yılmaz"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              error={errors.lastName}
+              disabled={status === "loading" || status === "success"}
+            />
+          </div>
+          <p className="text-xs text-neutral-500 -mt-3 flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" />
+            İsim ve soyisim kayıt sonrası değiştirilemez
+          </p>
 
           {/* Username */}
           <div>

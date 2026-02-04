@@ -82,8 +82,22 @@ export default function Navbar() {
   }, []);
 
   const handleSignOut = async () => {
-    await signOut();
-    router.push("/login");
+    // UI'ı hemen güncelle
+    setProfileMenuOpen(false);
+    setMobileMenuOpen(false);
+    
+    console.log("Navbar: Starting sign out...");
+    
+    try {
+      await signOut();
+      console.log("Navbar: Sign out completed");
+    } catch (error) {
+      console.error("Navbar: Sign out error:", error);
+    }
+    
+    // Her durumda login sayfasına yönlendir
+    console.log("Navbar: Redirecting to login...");
+    window.location.href = "/login";
   };
 
   const stateOptions = user ? STATES : ["ALL"];

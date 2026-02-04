@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { Profile } from "@/lib/types";
 import { Button } from "./ui/Button";
-import { Input } from "./ui/Input";
 import { Avatar } from "./ui/Avatar";
 import {
   X,
@@ -12,10 +11,14 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  User,
   MapPin,
   FileText,
-  Building
+  Building,
+  Globe,
+  Eye,
+  EyeOff,
+  Lock,
+  Info
 } from "lucide-react";
 
 interface ProfileEditModalProps {
@@ -82,13 +85,13 @@ const US_STATES = [
 export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: ProfileEditModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Form state
-  const [username, setUsername] = useState(profile.username || "");
-  const [fullName, setFullName] = useState(profile.full_name || "");
+  // Form state - İsim alanları kaldırıldı, sadece düzenlenebilir alanlar
   const [bio, setBio] = useState(profile.bio || "");
   const [city, setCity] = useState(profile.city || "");
   const [state, setState] = useState(profile.state || "");
+  const [website, setWebsite] = useState(profile.website || "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
+  const [showFullName, setShowFullName] = useState(profile.show_full_name ?? true);
   
   // UI state
   const [saving, setSaving] = useState(false);
@@ -98,12 +101,12 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
 
   // Reset form when profile changes
   useEffect(() => {
-    setUsername(profile.username || "");
-    setFullName(profile.full_name || "");
     setBio(profile.bio || "");
     setCity(profile.city || "");
     setState(profile.state || "");
+    setWebsite(profile.website || "");
     setAvatarUrl(profile.avatar_url || "");
+    setShowFullName(profile.show_full_name ?? true);
     setStatus(null);
     setErrors({});
   }, [profile, isOpen]);
@@ -159,26 +162,20 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!username.trim()) {
-      newErrors.username = "Kullanıcı adı gerekli";
-    } else if (username.length < 3) {
-      newErrors.username = "En az 3 karakter olmalı";
-    } else if (username.length > 20) {
-      newErrors.username = "En fazla 20 karakter olabilir";
-    } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-      newErrors.username = "Sadece harf, rakam ve alt çizgi kullanılabilir";
-    }
-
-    if (fullName && fullName.length > 50) {
-      newErrors.fullName = "En fazla 50 karakter olabilir";
-    }
-
     if (bio && bio.length > 500) {
       newErrors.bio = "En fazla 500 karakter olabilir";
     }
 
     if (city && city.length > 50) {
       newErrors.city = "En fazla 50 karakter olabilir";
+    }
+
+    if (website && website.length > 100) {
+      newErrors.website = "En fazla 100 karakter olabilir";
+    }
+
+    if (website && website.trim() && !website.match(/^https?:\/\/.+/)) {
+      newErrors.website = "Geçerli bir URL girin (https://...)";
     }
 
     setErrors(newErrors);
@@ -196,23 +193,17 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
       const { error } = await supabase
         .from("profiles")
         .update({
-          username: username.toLowerCase().trim(),
-          full_name: fullName.trim() || null,
           bio: bio.trim() || null,
           city: city.trim() || null,
           state: state || null,
+          website: website.trim() || null,
           avatar_url: avatarUrl || null,
+          show_full_name: showFullName,
           updated_at: new Date().toISOString(),
         })
         .eq("id", profile.id);
 
-      if (error) {
-        if (error.code === "23505") {
-          setErrors({ username: "Bu kullanıcı adı zaten alınmış" });
-          throw new Error("Kullanıcı adı zaten kullanılıyor");
-        }
-        throw error;
-      }
+      if (error) throw error;
 
       setStatus({ type: "success", message: "Profil güncellendi!" });
       
@@ -225,15 +216,16 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
       }, 1000);
     } catch (error: any) {
       console.error("Profile update error:", error);
-      if (!status) {
-        setStatus({ type: "error", message: error.message || "Profil güncellenemedi" });
-      }
+      setStatus({ type: "error", message: error.message || "Profil güncellenemedi" });
     } finally {
       setSaving(false);
     }
   };
 
   if (!isOpen) return null;
+
+  // Display name for avatar fallback
+  const displayName = profile.full_name || profile.username || "U";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -263,7 +255,7 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
             <div className="relative mb-3">
               <Avatar
                 src={avatarUrl || undefined}
-                fallback={fullName || username || "U"}
+                fallback={displayName}
                 size="xl"
                 className="h-24 w-24 text-2xl"
               />
@@ -291,59 +283,71 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
             </p>
           </div>
 
+          {/* Name Display (Read-only) */}
+          <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700">
+            <div className="flex items-center gap-2 mb-2">
+              <Lock size={16} className="text-neutral-400" />
+              <span className="text-sm font-medium text-neutral-500">İsim Bilgileri</span>
+            </div>
+            <p className="text-lg font-semibold text-neutral-700 dark:text-neutral-300">
+              {profile.full_name || "İsim belirtilmemiş"}
+            </p>
+            <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
+              <Info size={12} />
+              İsim ve soyisim kayıt sırasında belirlenir ve değiştirilemez
+            </p>
+          </div>
+
+          {/* Privacy Setting - Show/Hide Full Name */}
+          <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {showFullName ? (
+                  <Eye size={20} className="text-green-500" />
+                ) : (
+                  <EyeOff size={20} className="text-neutral-400" />
+                )}
+                <div>
+                  <p className="font-medium">İsim Görünürlüğü</p>
+                  <p className="text-sm text-neutral-500">
+                    {showFullName ? "Herkes tam isminizi görebilir" : "Sadece kullanıcı adınız görünür"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowFullName(!showFullName)}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  showFullName ? "bg-green-500" : "bg-neutral-300 dark:bg-neutral-600"
+                }`}
+              >
+                <span
+                  className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                    showFullName ? "translate-x-7" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
           {/* Form Fields */}
           <div className="space-y-4">
-            {/* Username */}
+            {/* Username (Read-only) */}
             <div>
-              <label className="block text-sm font-medium mb-1.5">
-                Kullanıcı Adı <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium mb-1.5 text-neutral-500">
+                Kullanıcı Adı
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">@</span>
                 <input
                   type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-                  placeholder="kullaniciadi"
-                  className={`w-full pl-8 pr-4 py-2.5 rounded-lg border ${
-                    errors.username 
-                      ? "border-red-500 focus:ring-red-500" 
-                      : "border-neutral-200 dark:border-neutral-700 focus:ring-red-500"
-                  } bg-neutral-50 dark:bg-neutral-800 focus:outline-none focus:ring-2 transition-colors`}
-                  maxLength={20}
+                  value={profile.username || ""}
+                  disabled
+                  className="w-full pl-8 pr-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed"
                 />
               </div>
-              {errors.username && (
-                <p className="text-red-500 text-sm mt-1">{errors.username}</p>
-              )}
               <p className="text-xs text-neutral-500 mt-1">
-                Sadece küçük harf, rakam ve alt çizgi
+                Kullanıcı adı değiştirilemez
               </p>
-            </div>
-
-            {/* Full Name */}
-            <div>
-              <label className="block text-sm font-medium mb-1.5">
-                Ad Soyad
-              </label>
-              <div className="relative">
-                <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Adınız Soyadınız"
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${
-                    errors.fullName 
-                      ? "border-red-500 focus:ring-red-500" 
-                      : "border-neutral-200 dark:border-neutral-700 focus:ring-red-500"
-                  } bg-neutral-50 dark:bg-neutral-800 focus:outline-none focus:ring-2 transition-colors`}
-                  maxLength={50}
-                />
-              </div>
-              {errors.fullName && (
-                <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
-              )}
             </div>
 
             {/* Bio */}
@@ -374,6 +378,31 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
                 )}
                 <span className="text-xs text-neutral-500">{bio.length}/500</span>
               </div>
+            </div>
+
+            {/* Website */}
+            <div>
+              <label className="block text-sm font-medium mb-1.5">
+                Web Sitesi
+              </label>
+              <div className="relative">
+                <Globe size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                <input
+                  type="url"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://website.com"
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${
+                    errors.website 
+                      ? "border-red-500 focus:ring-red-500" 
+                      : "border-neutral-200 dark:border-neutral-700 focus:ring-red-500"
+                  } bg-neutral-50 dark:bg-neutral-800 focus:outline-none focus:ring-2 transition-colors`}
+                  maxLength={100}
+                />
+              </div>
+              {errors.website && (
+                <p className="text-red-500 text-sm mt-1">{errors.website}</p>
+              )}
             </div>
 
             {/* City */}
