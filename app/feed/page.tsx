@@ -27,7 +27,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-interface PostWithAuthor extends Post {
+interface PostWithAuthor extends Omit<Post, 'likes' | 'profiles'> {
   profiles: Profile;
   likes: { user_id: string }[];
   comments: CommentWithAuthor[];
