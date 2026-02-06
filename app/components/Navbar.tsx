@@ -291,12 +291,12 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           </div>
 
           {/* User Info */}
-          {user && profile && (
+          {user && (
             <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
               <Link href="/profile" onClick={onClose} className="flex items-center gap-3">
                 <Avatar
-                  src={profile.avatar_url || undefined}
-                  fallback={profile.first_name || profile.username || "U"}
+                  src={profile?.avatar_url || undefined}
+                  fallback={displayName}
                   size="lg"
                 />
                 <div>
