@@ -212,7 +212,8 @@ function NavDropdown({
 
 // Mobile Bottom Navigation
 function MobileBottomNav() {
-  
+  const pathname = usePathname();
+
   const mobileItems = [
     { href: "/", icon: Home, label: "Ana" },
     { href: "/meetups", icon: Calendar, label: "Etkinlik" },
