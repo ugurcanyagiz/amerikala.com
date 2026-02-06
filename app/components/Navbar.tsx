@@ -251,9 +251,15 @@ function MobileBottomNav() {
 
 // Mobile Menu Sheet
 function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const pathname = usePathname();
   const { user, profile, signOut } = useAuth();
   const router = useRouter();
+  const displayName =
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
+    profile?.full_name ||
+    profile?.username ||
+    user?.email?.split("@")[0] ||
+    "Kullanıcı";
+  const displayHandle = profile?.username || user?.email?.split("@")[0] || "user";
 
   const handleSignOut = async () => {
     await signOut();
@@ -286,19 +292,17 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           </div>
 
           {/* User Info */}
-          {user && profile && (
+          {user && (
             <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
               <Link href="/profile" onClick={onClose} className="flex items-center gap-3">
                 <Avatar
                   src={profile.avatar_url || undefined}
-                  fallback={profile.first_name || profile.username || "U"}
+                  fallback={displayName}
                   size="lg"
                 />
                 <div>
-                  <div className="font-semibold">
-                    {profile.first_name} {profile.last_name}
-                  </div>
-                  <div className="text-sm text-neutral-500">@{profile.username}</div>
+                  <div className="font-semibold">{displayName}</div>
+                  <div className="text-sm text-neutral-500">@{displayHandle}</div>
                 </div>
               </Link>
             </div>
@@ -365,6 +369,12 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                     Ayarlar
                   </Button>
                 </Link>
+                <Link href="/profile" onClick={onClose}>
+                  <Button variant="ghost" className="w-full justify-start gap-2">
+                    <User size={18} />
+                    Profilim
+                  </Button>
+                </Link>
                 <Button 
                   variant="ghost" 
                   className="w-full justify-start gap-2 text-red-600"
@@ -393,13 +403,19 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
 // Main Navbar Component
 export default function Navbar() {
-  const pathname = usePathname();
   const router = useRouter();
   const { user, profile, signOut, loading } = useAuth();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const displayName =
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
+    profile?.full_name ||
+    profile?.username ||
+    user?.email?.split("@")[0] ||
+    "Kullanıcı";
+  const displayHandle = profile?.username || user?.email?.split("@")[0] || "user";
 
   // Close user menu on click outside
   useEffect(() => {
@@ -411,6 +427,7 @@ export default function Navbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
 
   const handleSignOut = async () => {
     setUserMenuOpen(false);
@@ -476,7 +493,7 @@ export default function Navbar() {
                     >
                       <Avatar
                         src={profile?.avatar_url || undefined}
-                        fallback={profile?.first_name || profile?.username || "U"}
+                        fallback={displayName}
                         size="sm"
                       />
                       <ChevronDown size={14} className={`transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
@@ -485,11 +502,9 @@ export default function Navbar() {
                     {userMenuOpen && (
                       <div className="absolute right-0 top-full mt-2 w-56 py-2 bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                         <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
-                          <div className="font-semibold truncate">
-                            {profile?.first_name} {profile?.last_name}
-                          </div>
+                          <div className="font-semibold truncate">{displayName}</div>
                           <div className="text-sm text-neutral-500 truncate">
-                            @{profile?.username || "user"}
+                            @{displayHandle}
                           </div>
                         </div>
                         <div className="py-1">
