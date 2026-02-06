@@ -36,10 +36,8 @@ type NavGroup = {
 
 type NavItem = NavLink | NavGroup;
 
-// Static labels (Turkish)
 const LABELS: Record<string, string> = {
   "sidebar.home": "Anasayfa",
-  "sidebar.feed": "Feed",
   "sidebar.meetups": "Buluşmalar",
   "sidebar.events": "Etkinlikler",
   "sidebar.groups": "Gruplar",
@@ -66,14 +64,13 @@ const LABELS: Record<string, string> = {
 
 const NAV_ITEMS: NavItem[] = [
   { type: "link", href: "/", labelKey: "sidebar.home", icon: Home },
-  { type: "link", href: "/feed", labelKey: "sidebar.feed", icon: Users },
   {
     type: "group",
     labelKey: "sidebar.meetups",
     icon: Calendar,
     children: [
       { href: "/meetups", labelKey: "sidebar.events" },
-      { href: "/groups", labelKey: "sidebar.groups" },
+      { href: "/groups", labelKey: "sidebar.groups", icon: Users },
       { href: "/meetups/my-events", labelKey: "sidebar.myEvents", icon: List },
       { href: "/meetups/create", labelKey: "sidebar.createEvent", icon: Plus },
     ],
@@ -120,7 +117,6 @@ export default function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  // Use static labels
   const t = (key: string) => LABELS[key] || key;
 
   const isActive = (href: string) =>
@@ -146,7 +142,6 @@ export default function Sidebar() {
         ${isExpanded ? "w-60" : "w-16"}
       `}
     >
-      {/* Toggle Button */}
       <div className="flex items-center justify-end p-2 border-b border-[var(--color-border-light)]">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -167,7 +162,6 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 scrollbar-hide">
         <ul className="space-y-1">
           {NAV_ITEMS.map((item) => {
@@ -204,7 +198,6 @@ export default function Sidebar() {
               );
             }
 
-            // Group
             const groupExpanded = openGroups[item.labelKey] ?? false;
             const hasActiveChild = item.children.some((c) => isActive(c.href));
 
@@ -238,7 +231,6 @@ export default function Sidebar() {
                   )}
                 </button>
 
-                {/* Submenu */}
                 {isExpanded && groupExpanded && (
                   <ul className="mt-1 ml-5 pl-3 border-l border-[var(--color-border-light)] space-y-1">
                     {item.children.map((child) => {

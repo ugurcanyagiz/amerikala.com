@@ -8,7 +8,6 @@ import { Avatar } from "./ui/Avatar";
 import { Button } from "./ui/Button";
 import {
   Home,
-  Rss,
   Calendar,
   Building2,
   Briefcase,
@@ -37,12 +36,6 @@ const NAV_ITEMS = [
     label: "Anasayfa",
     href: "/",
     icon: Home,
-  },
-  {
-    id: "feed",
-    label: "Feed",
-    href: "/feed",
-    icon: Rss,
   },
   {
     id: "meetups",
@@ -89,6 +82,18 @@ const NAV_ITEMS = [
     ],
   },
 ];
+
+
+function getDisplayName(profile: { first_name?: string | null; last_name?: string | null; username?: string | null } | null | undefined) {
+  const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim();
+  return fullName || profile?.username || "Kullanıcı";
+}
+
+function getUsernameLabel(profile: { username?: string | null } | null | undefined, fallbackEmail?: string | null) {
+  if (profile?.username) return `@${profile.username}`;
+  if (fallbackEmail) return fallbackEmail;
+  return "@user";
+}
 
 // Dropdown Component
 function NavDropdown({ 
@@ -208,10 +213,9 @@ function NavDropdown({
 // Mobile Bottom Navigation
 function MobileBottomNav() {
   const pathname = usePathname();
-  
+
   const mobileItems = [
     { href: "/", icon: Home, label: "Ana" },
-    { href: "/feed", icon: Rss, label: "Feed" },
     { href: "/meetups", icon: Calendar, label: "Etkinlik" },
     { href: "/emlak", icon: Building2, label: "Emlak" },
     { href: "/alisveris", icon: ShoppingBag, label: "Market" },
@@ -251,9 +255,10 @@ function MobileBottomNav() {
 
 // Mobile Menu Sheet
 function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const pathname = usePathname();
   const { user, profile, signOut } = useAuth();
   const router = useRouter();
+  const displayName = getDisplayName(profile);
+  const usernameLabel = getUsernameLabel(profile, user?.email);
 
   const handleSignOut = async () => {
     await signOut();
@@ -295,10 +300,8 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                   size="lg"
                 />
                 <div>
-                  <div className="font-semibold">
-                    {profile.first_name} {profile.last_name}
-                  </div>
-                  <div className="text-sm text-neutral-500">@{profile.username}</div>
+                  <div className="font-semibold">{displayName}</div>
+                  <div className="text-sm text-neutral-500">{usernameLabel}</div>
                 </div>
               </Link>
             </div>
@@ -393,9 +396,10 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
 // Main Navbar Component
 export default function Navbar() {
-  const pathname = usePathname();
   const router = useRouter();
   const { user, profile, signOut, loading } = useAuth();
+  const displayName = getDisplayName(profile);
+  const usernameLabel = getUsernameLabel(profile, user?.email);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -472,25 +476,25 @@ export default function Navbar() {
                   <div ref={userMenuRef} className="relative hidden md:block">
                     <button
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
-                      className="flex items-center gap-2 p-1.5 pr-3 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                      className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 rounded-full border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                     >
                       <Avatar
                         src={profile?.avatar_url || undefined}
                         fallback={profile?.first_name || profile?.username || "U"}
                         size="sm"
                       />
+                      <div className="hidden lg:block text-left max-w-[140px]">
+                        <div className="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{displayName}</div>
+                        <div className="text-xs text-neutral-500 truncate">{usernameLabel}</div>
+                      </div>
                       <ChevronDown size={14} className={`transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
                     </button>
 
                     {userMenuOpen && (
                       <div className="absolute right-0 top-full mt-2 w-56 py-2 bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                         <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
-                          <div className="font-semibold truncate">
-                            {profile?.first_name} {profile?.last_name}
-                          </div>
-                          <div className="text-sm text-neutral-500 truncate">
-                            @{profile?.username || "user"}
-                          </div>
+                          <div className="font-semibold truncate">{displayName}</div>
+                          <div className="text-sm text-neutral-500 truncate">{usernameLabel}</div>
                         </div>
                         <div className="py-1">
                           <Link
