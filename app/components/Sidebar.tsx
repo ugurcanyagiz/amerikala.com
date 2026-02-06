@@ -2,20 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Home,
   Calendar,
   Building2,
   Briefcase,
   ShoppingBag,
-  Newspaper,
-  Scale,
   User,
   Settings,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Users,
+  Plus,
+  List,
   type LucideIcon,
 } from "lucide-react";
 
@@ -30,7 +31,7 @@ type NavGroup = {
   type: "group";
   labelKey: string;
   icon: LucideIcon;
-  children: { href: string; labelKey: string }[];
+  children: { href: string; labelKey: string; icon?: LucideIcon }[];
 };
 
 type NavItem = NavLink | NavGroup;
@@ -38,27 +39,34 @@ type NavItem = NavLink | NavGroup;
 // Static labels (Turkish)
 const LABELS: Record<string, string> = {
   "sidebar.home": "Anasayfa",
+  "sidebar.feed": "Feed",
   "sidebar.meetups": "Buluşmalar",
   "sidebar.events": "Etkinlikler",
   "sidebar.groups": "Gruplar",
   "sidebar.myEvents": "Etkinliklerim",
   "sidebar.createEvent": "Etkinlik Oluştur",
-  "sidebar.realEstate": "Emlak İlanları",
+  "sidebar.realEstate": "Emlak",
   "sidebar.forRent": "Kiralık",
   "sidebar.forSale": "Satılık",
   "sidebar.roommate": "Ev Arkadaşı",
   "sidebar.postListing": "İlan Ver",
+  "sidebar.myListings": "İlanlarım",
   "sidebar.jobs": "İş İlanları",
-  "sidebar.lookingForJob": "İş Arıyorum",
-  "sidebar.hiring": "İşçi Arıyorum",
+  "sidebar.lookingForJob": "İş Arayanlar",
+  "sidebar.hiring": "İşçi Arayanlar",
+  "sidebar.postJob": "İlan Ver",
+  "sidebar.myJobListings": "İlanlarım",
   "sidebar.marketplace": "Alışveriş",
-  "sidebar.legalGuide": "Yasal Rehber",
+  "sidebar.allProducts": "Tüm İlanlar",
+  "sidebar.postProduct": "İlan Ver",
+  "sidebar.myProducts": "İlanlarım",
   "sidebar.profile": "Profilim",
   "sidebar.settings": "Ayarlar",
 };
 
 const NAV_ITEMS: NavItem[] = [
   { type: "link", href: "/", labelKey: "sidebar.home", icon: Home },
+  { type: "link", href: "/feed", labelKey: "sidebar.feed", icon: Users },
   {
     type: "group",
     labelKey: "sidebar.meetups",
@@ -66,8 +74,8 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { href: "/meetups", labelKey: "sidebar.events" },
       { href: "/groups", labelKey: "sidebar.groups" },
-      { href: "/meetups/my-events", labelKey: "sidebar.myEvents" },
-      { href: "/meetups/create", labelKey: "sidebar.createEvent" },
+      { href: "/meetups/my-events", labelKey: "sidebar.myEvents", icon: List },
+      { href: "/meetups/create", labelKey: "sidebar.createEvent", icon: Plus },
     ],
   },
   {
@@ -78,7 +86,8 @@ const NAV_ITEMS: NavItem[] = [
       { href: "/emlak/kiralik", labelKey: "sidebar.forRent" },
       { href: "/emlak/satilik", labelKey: "sidebar.forSale" },
       { href: "/emlak/ev-arkadasi", labelKey: "sidebar.roommate" },
-      { href: "/emlak/ilan-ver", labelKey: "sidebar.postListing" },
+      { href: "/emlak/ilan-ver", labelKey: "sidebar.postListing", icon: Plus },
+      { href: "/emlak/ilanlarim", labelKey: "sidebar.myListings", icon: List },
     ],
   },
   {
@@ -88,10 +97,20 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { href: "/is/ariyorum", labelKey: "sidebar.lookingForJob" },
       { href: "/is/isci-ariyorum", labelKey: "sidebar.hiring" },
+      { href: "/is/ilan-ver", labelKey: "sidebar.postJob", icon: Plus },
+      { href: "/is/ilanlarim", labelKey: "sidebar.myJobListings", icon: List },
     ],
   },
-  { type: "link", href: "/alisveris", labelKey: "sidebar.marketplace", icon: ShoppingBag },
-  // { type: "link", href: "/yasal-rehber", labelKey: "sidebar.legalGuide", icon: Scale }, // Geçici olarak gizlendi
+  {
+    type: "group",
+    labelKey: "sidebar.marketplace",
+    icon: ShoppingBag,
+    children: [
+      { href: "/alisveris", labelKey: "sidebar.allProducts" },
+      { href: "/alisveris/ilan-ver", labelKey: "sidebar.postProduct", icon: Plus },
+      { href: "/alisveris/ilanlarim", labelKey: "sidebar.myProducts", icon: List },
+    ],
+  },
   { type: "link", href: "/profile", labelKey: "sidebar.profile", icon: User },
   { type: "link", href: "/ayarlar", labelKey: "sidebar.settings", icon: Settings },
 ];
@@ -225,13 +244,14 @@ export default function Sidebar() {
                     {item.children.map((child) => {
                       const active = isActive(child.href);
                       const childLabel = t(child.labelKey);
+                      const ChildIcon = child.icon;
 
                       return (
                         <li key={child.href}>
                           <Link
                             href={child.href}
                             className={`
-                              block px-3 py-2 rounded-lg text-sm
+                              flex items-center gap-2 px-3 py-2 rounded-lg text-sm
                               transition-colors duration-150
                               ${active
                                 ? "text-[var(--color-primary)] bg-[var(--color-primary-subtle)]"
@@ -239,7 +259,8 @@ export default function Sidebar() {
                               }
                             `}
                           >
-                            {childLabel}
+                            {ChildIcon && <ChildIcon className="h-4 w-4" />}
+                            <span>{childLabel}</span>
                           </Link>
                         </li>
                       );
