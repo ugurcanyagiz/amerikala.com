@@ -8,7 +8,6 @@ import { Avatar } from "./ui/Avatar";
 import { Button } from "./ui/Button";
 import {
   Home,
-  Rss,
   Calendar,
   Building2,
   Briefcase,
@@ -37,12 +36,6 @@ const NAV_ITEMS = [
     label: "Anasayfa",
     href: "/",
     icon: Home,
-  },
-  {
-    id: "feed",
-    label: "Feed",
-    href: "/feed",
-    icon: Rss,
   },
   {
     id: "meetups",
@@ -211,7 +204,6 @@ function MobileBottomNav() {
   
   const mobileItems = [
     { href: "/", icon: Home, label: "Ana" },
-    { href: "/feed", icon: Rss, label: "Feed" },
     { href: "/meetups", icon: Calendar, label: "Etkinlik" },
     { href: "/emlak", icon: Building2, label: "Emlak" },
     { href: "/alisveris", icon: ShoppingBag, label: "Market" },
