@@ -24,6 +24,7 @@ import {
   Plus,
   List,
   Users,
+  Shield,
   MapPin,
   Clock,
   Package,
@@ -255,7 +256,7 @@ function MobileBottomNav() {
 
 // Mobile Menu Sheet
 function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isAdmin } = useAuth();
   const router = useRouter();
   const displayName = getDisplayName(profile);
   const usernameLabel = getUsernameLabel(profile, user?.email);
@@ -358,6 +359,19 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             })}
           </div>
 
+          {isAdmin && (
+            <div className="border-t border-neutral-200 dark:border-neutral-800 py-2">
+              <Link
+                href="/admin"
+                onClick={onClose}
+                className="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                <Shield size={20} />
+                <span className="font-medium">Admin Paneli</span>
+              </Link>
+            </div>
+          )}
+
           {/* Footer Actions */}
           <div className="p-4 border-t border-neutral-200 dark:border-neutral-800">
             {user ? (
@@ -397,7 +411,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 // Main Navbar Component
 export default function Navbar() {
   const router = useRouter();
-  const { user, profile, signOut, loading } = useAuth();
+  const { user, profile, signOut, loading, isAdmin } = useAuth();
   const displayName = getDisplayName(profile);
   const usernameLabel = getUsernameLabel(profile, user?.email);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -513,6 +527,16 @@ export default function Navbar() {
                             <Settings size={18} />
                             Ayarlar
                           </Link>
+                          {isAdmin && (
+                            <Link
+                              href="/admin"
+                              onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            >
+                              <Shield size={18} />
+                              Admin Paneli
+                            </Link>
+                          )}
                         </div>
                         <div className="pt-1 border-t border-neutral-100 dark:border-neutral-800">
                           <button
