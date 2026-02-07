@@ -31,83 +31,21 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const mountedRef = useRef(true);
+const fetchProfileFromDB = async (userId: string): Promise<Profile | null> => {
+  try {
+    console.log("Fetching profile for:", userId);
 
-  // Fetch profile - sadece mevcut alanları al, eksik olanlar için varsayılan değer kullan
-  const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
-    try {
-      console.log("Fetching profile for:", userId);
-      
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, username, full_name, city, state, bio, avatar_url, role, created_at, updated_at, first_name, last_name, show_full_name, cover_image_url, website, is_verified, follower_count, following_count")
-        .eq("id", userId)
-        .single();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select(
+        "id, username, full_name, city, state, bio, avatar_url, role, created_at, updated_at, first_name, last_name, show_full_name, cover_image_url, website, is_verified, follower_count, following_count"
+      )
+      .eq("id", userId)
+      .single();
 
-      if (error) {
-        console.error("Profile fetch error:", error.message);
-        
-        // Hata durumunda minimal profile döndür
-        return {
-          id: userId,
-          username: null,
-          full_name: null,
-          first_name: null,
-          last_name: null,
-          show_full_name: true,
-          city: null,
-          state: null,
-          bio: null,
-          avatar_url: null,
-          cover_image_url: null,
-          website: null,
-          role: 'user',
-          is_verified: false,
-          follower_count: 0,
-          following_count: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-      }
+    if (error) {
+      console.error("Profile fetch error:", error.message);
 
-      if (!data) {
-        console.log("No profile data found");
-        return null;
-      }
-
-      console.log("Profile data received:", data);
-
-      // Varsayılan değerlerle profile döndür
-      const profileWithDefaults: Profile = {
-        id: data.id,
-        username: data.username ?? null,
-        full_name: data.full_name ?? null,
-        first_name: data.first_name ?? null,
-        last_name: data.last_name ?? null,
-        show_full_name: data.show_full_name ?? true,
-        city: data.city ?? null,
-        state: data.state ?? null,
-        bio: data.bio ?? null,
-        avatar_url: data.avatar_url ?? null,
-        cover_image_url: data.cover_image_url ?? null,
-        website: data.website ?? null,
-        role: data.role ?? 'user',
-        is_verified: data.is_verified ?? false,
-        follower_count: data.follower_count ?? 0,
-        following_count: data.following_count ?? 0,
-        created_at: data.created_at ?? new Date().toISOString(),
-        updated_at: data.updated_at ?? new Date().toISOString(),
-      };
-
-      return profileWithDefaults;
-    } catch (error) {
-      console.error("Error in fetchProfile:", error);
-      // Hata durumunda minimal profile döndür
       return {
         id: userId,
         username: null,
@@ -121,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         avatar_url: null,
         cover_image_url: null,
         website: null,
-        role: 'user',
+        role: "user",
         is_verified: false,
         follower_count: 0,
         following_count: 0,
@@ -129,17 +67,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updated_at: new Date().toISOString(),
       };
     }
-  }, []);
+
+    if (!data) {
+      console.log("No profile data found");
+      return null;
+    }
+
+    console.log("Profile data received:", data);
+
+    return {
+      id: data.id,
+      username: data.username ?? null,
+      full_name: data.full_name ?? null,
+      first_name: data.first_name ?? null,
+      last_name: data.last_name ?? null,
+      show_full_name: data.show_full_name ?? true,
+      city: data.city ?? null,
+      state: data.state ?? null,
+      bio: data.bio ?? null,
+      avatar_url: data.avatar_url ?? null,
+      cover_image_url: data.cover_image_url ?? null,
+      website: data.website ?? null,
+      role: data.role ?? "user",
+      is_verified: data.is_verified ?? false,
+      follower_count: data.follower_count ?? 0,
+      following_count: data.following_count ?? 0,
+      created_at: data.created_at ?? new Date().toISOString(),
+      updated_at: data.updated_at ?? new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error("Error in fetchProfile:", error);
+    return {
+      id: userId,
+      username: null,
+      full_name: null,
+      first_name: null,
+      last_name: null,
+      show_full_name: true,
+      city: null,
+      state: null,
+      bio: null,
+      avatar_url: null,
+      cover_image_url: null,
+      website: null,
+      role: "user",
+      is_verified: false,
+      follower_count: 0,
+      following_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+  }
+};
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const effectIdRef = useRef(0);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Refresh profile
   const refreshProfile = useCallback(async () => {
-    if (user && mountedRef.current) {
-      const newProfile = await fetchProfile(user.id);
-      if (mountedRef.current) {
-        setProfile(newProfile);
-      }
-    }
-  }, [user, fetchProfile]);
+    if (!user) return;
+    const newProfile = await fetchProfileFromDB(user.id);
+    setProfile(newProfile);
+  }, [user]);
 
   // Sign out - düzeltilmiş versiyon
   const signOut = useCallback(async () => {
@@ -181,88 +175,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth state
   useEffect(() => {
-    mountedRef.current = true;
-    let isInitialized = false;
+    const effectId = ++effectIdRef.current;
+    setLoading(true);
 
-    const initAuth = async () => {
-      if (isInitialized) return;
-      isInitialized = true;
-      
-      try {
-        console.log("Initializing auth...");
-        
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Session error:", error.message);
-          if (mountedRef.current) setLoading(false);
-          return;
-        }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
 
-        console.log("Session found:", !!currentSession);
-
-        if (mountedRef.current) {
-          setSession(currentSession);
-          setUser(currentSession?.user ?? null);
-        }
-
-        if (currentSession?.user && mountedRef.current) {
-          console.log("Fetching profile for user:", currentSession.user.id);
-          const userProfile = await fetchProfile(currentSession.user.id);
-          console.log("Profile fetched:", !!userProfile);
-          if (mountedRef.current) {
-            setProfile(userProfile);
-          }
-        }
-      } catch (error) {
-        console.error("Error initializing auth:", error);
-      } finally {
-        if (mountedRef.current) {
-          console.log("Auth initialization complete, setting loading to false");
-          setLoading(false);
-        }
+    timeoutRef.current = setTimeout(() => {
+      if (effectIdRef.current === effectId) {
+        console.warn("Auth init timeout - forcing loading false");
+        setLoading(false);
       }
+    }, 4000);
+
+    const applySession = async (newSession: Session | null) => {
+      if (effectIdRef.current !== effectId) return;
+
+      if (!newSession?.user) {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      setSession(newSession);
+      setUser(newSession.user);
+      const userProfile = await fetchProfileFromDB(newSession.user.id);
+      if (effectIdRef.current !== effectId) return;
+      setProfile(userProfile);
+      setLoading(false);
     };
 
-    initAuth();
-
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
+        if (effectIdRef.current !== effectId) return;
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+
         console.log("Auth state changed:", event);
 
-        if (!mountedRef.current) return;
-
-        if (event === 'SIGNED_OUT') {
-          console.log("User signed out - clearing state");
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-          setLoading(false);
+        if (event === "SIGNED_OUT") {
+          await applySession(null);
           return;
         }
 
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          console.log("User signed in or token refreshed");
-          setSession(newSession);
-          setUser(newSession?.user ?? null);
-
-          if (newSession?.user) {
-            const userProfile = await fetchProfile(newSession.user.id);
-            if (mountedRef.current) {
-              setProfile(userProfile);
-              setLoading(false);
-            }
-          }
+        if (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+          await applySession(newSession);
         }
       }
     );
 
     return () => {
-      mountedRef.current = false;
+      effectIdRef.current += 1;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, []);
 
   // Computed values - with safe defaults
   const role: UserRole = profile?.role || "user";
