@@ -38,20 +38,85 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
 
-  // Fetch profile - sadece mevcut alanları al, eksik olanlar için varsayılan değer kullan
-  const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
-    try {
-      console.log("Fetching profile for:", userId);
-      
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, username, full_name, city, state, bio, avatar_url, role, created_at, updated_at, first_name, last_name, show_full_name, cover_image_url, website, is_verified, follower_count, following_count")
-        .eq("id", userId)
-        .single();
+  const normalizeRole = (value: unknown): UserRole | undefined => {
+    if (value === "user" || value === "moderator" || value === "admin") {
+      return value;
+    }
+    return undefined;
+  };
 
-      if (error) {
-        console.error("Profile fetch error:", error.message);
-        
+  // Fetch profile - sadece mevcut alanları al, eksik olanlar için varsayılan değer kullan
+  const fetchProfile = useCallback(
+    async (userId: string, fallbackRole?: UserRole): Promise<Profile | null> => {
+      try {
+        console.log("Fetching profile for:", userId);
+
+        const { data, error } = await supabase
+          .from("profiles")
+          .select(
+            "id, username, full_name, city, state, bio, avatar_url, role, created_at, updated_at, first_name, last_name, show_full_name, cover_image_url, website, is_verified, follower_count, following_count"
+          )
+          .eq("id", userId)
+          .single();
+
+        if (error) {
+          console.error("Profile fetch error:", error.message);
+
+          // Hata durumunda minimal profile döndür
+          return {
+            id: userId,
+            username: null,
+            full_name: null,
+            first_name: null,
+            last_name: null,
+            show_full_name: true,
+            city: null,
+            state: null,
+            bio: null,
+            avatar_url: null,
+            cover_image_url: null,
+            website: null,
+            role: fallbackRole ?? "user",
+            is_verified: false,
+            follower_count: 0,
+            following_count: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+        }
+
+        if (!data) {
+          console.log("No profile data found");
+          return null;
+        }
+
+        console.log("Profile data received:", data);
+
+        // Varsayılan değerlerle profile döndür
+        const profileWithDefaults: Profile = {
+          id: data.id,
+          username: data.username ?? null,
+          full_name: data.full_name ?? null,
+          first_name: data.first_name ?? null,
+          last_name: data.last_name ?? null,
+          show_full_name: data.show_full_name ?? true,
+          city: data.city ?? null,
+          state: data.state ?? null,
+          bio: data.bio ?? null,
+          avatar_url: data.avatar_url ?? null,
+          cover_image_url: data.cover_image_url ?? null,
+          website: data.website ?? null,
+          role: normalizeRole(data.role) ?? fallbackRole ?? "user",
+          is_verified: data.is_verified ?? false,
+          follower_count: data.follower_count ?? 0,
+          following_count: data.following_count ?? 0,
+          created_at: data.created_at ?? new Date().toISOString(),
+          updated_at: data.updated_at ?? new Date().toISOString(),
+        };
+
+        return profileWithDefaults;
+      } catch (error) {
+        console.error("Error in fetchProfile:", error);
         // Hata durumunda minimal profile döndür
         return {
           id: userId,
@@ -66,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           avatar_url: null,
           cover_image_url: null,
           website: null,
-          role: 'user',
+          role: fallbackRole ?? "user",
           is_verified: false,
           follower_count: 0,
           following_count: 0,
@@ -74,67 +139,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           updated_at: new Date().toISOString(),
         };
       }
-
-      if (!data) {
-        console.log("No profile data found");
-        return null;
-      }
-
-      console.log("Profile data received:", data);
-
-      // Varsayılan değerlerle profile döndür
-      const profileWithDefaults: Profile = {
-        id: data.id,
-        username: data.username ?? null,
-        full_name: data.full_name ?? null,
-        first_name: data.first_name ?? null,
-        last_name: data.last_name ?? null,
-        show_full_name: data.show_full_name ?? true,
-        city: data.city ?? null,
-        state: data.state ?? null,
-        bio: data.bio ?? null,
-        avatar_url: data.avatar_url ?? null,
-        cover_image_url: data.cover_image_url ?? null,
-        website: data.website ?? null,
-        role: data.role ?? 'user',
-        is_verified: data.is_verified ?? false,
-        follower_count: data.follower_count ?? 0,
-        following_count: data.following_count ?? 0,
-        created_at: data.created_at ?? new Date().toISOString(),
-        updated_at: data.updated_at ?? new Date().toISOString(),
-      };
-
-      return profileWithDefaults;
-    } catch (error) {
-      console.error("Error in fetchProfile:", error);
-      // Hata durumunda minimal profile döndür
-      return {
-        id: userId,
-        username: null,
-        full_name: null,
-        first_name: null,
-        last_name: null,
-        show_full_name: true,
-        city: null,
-        state: null,
-        bio: null,
-        avatar_url: null,
-        cover_image_url: null,
-        website: null,
-        role: 'user',
-        is_verified: false,
-        follower_count: 0,
-        following_count: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-    }
-  }, []);
+    },
+    []
+  );
 
   // Refresh profile
   const refreshProfile = useCallback(async () => {
     if (user && mountedRef.current) {
-      const newProfile = await fetchProfile(user.id);
+      const newProfile = await fetchProfile(
+        user.id,
+        normalizeRole(user.app_metadata?.role) ?? normalizeRole(user.user_metadata?.role)
+      );
       if (mountedRef.current) {
         setProfile(newProfile);
       }
@@ -208,7 +223,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (currentSession?.user && mountedRef.current) {
           console.log("Fetching profile for user:", currentSession.user.id);
-          const userProfile = await fetchProfile(currentSession.user.id);
+          const userProfile = await fetchProfile(
+            currentSession.user.id,
+            normalizeRole(currentSession.user.app_metadata?.role) ??
+              normalizeRole(currentSession.user.user_metadata?.role)
+          );
           console.log("Profile fetched:", !!userProfile);
           if (mountedRef.current) {
             setProfile(userProfile);
@@ -248,7 +267,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(newSession?.user ?? null);
 
           if (newSession?.user) {
-            const userProfile = await fetchProfile(newSession.user.id);
+            const userProfile = await fetchProfile(
+              newSession.user.id,
+              normalizeRole(newSession.user.app_metadata?.role) ??
+                normalizeRole(newSession.user.user_metadata?.role)
+            );
             if (mountedRef.current) {
               setProfile(userProfile);
               setLoading(false);
