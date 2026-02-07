@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useNotifications } from "../contexts/NotificationContext";
 import { Avatar } from "./ui/Avatar";
 import { Button } from "./ui/Button";
 import {
@@ -398,6 +399,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 export default function Navbar() {
   const router = useRouter();
   const { user, profile, signOut, loading } = useAuth();
+  const { unreadCount } = useNotifications();
   const displayName = getDisplayName(profile);
   const usernameLabel = getUsernameLabel(profile, user?.email);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -462,10 +464,18 @@ export default function Navbar() {
               ) : user ? (
                 <>
                   {/* Notifications */}
-                  <button className="hidden sm:flex p-2.5 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800 transition-colors relative">
+                  <Link
+                    href="/notifications"
+                    className="hidden sm:flex p-2.5 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800 transition-colors relative"
+                    aria-label="Bildirimler"
+                  >
                     <Bell size={20} />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-                  </button>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                  </Link>
 
                   {/* Messages */}
                   <button className="hidden sm:flex p-2.5 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800 transition-colors">

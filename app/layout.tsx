@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import FloatingLanguageSwitcher from "./components/FloatingLanguageSwitcher";
+import { NotificationProvider } from "./contexts/NotificationContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -77,147 +78,149 @@ export default function RootLayout({
         className={`${inter.variable} ${jakarta.variable} font-sans min-h-screen antialiased`}
       >
         <AuthProvider>
-          <LanguageProvider>
-            {/* Floating Language Switcher */}
-            <FloatingLanguageSwitcher />
+          <NotificationProvider>
+            <LanguageProvider>
+              {/* Floating Language Switcher */}
+              <FloatingLanguageSwitcher />
 
-            {/* Main Layout */}
-            <div className="relative min-h-screen flex flex-col bg-[var(--color-surface)]">
-              <Suspense fallback={<NavbarFallback />}>
-                <Navbar />
-              </Suspense>
+              {/* Main Layout */}
+              <div className="relative min-h-screen flex flex-col bg-[var(--color-surface)]">
+                <Suspense fallback={<NavbarFallback />}>
+                  <Navbar />
+                </Suspense>
 
-              <main className="flex-1">{children}</main>
+                <main className="flex-1">{children}</main>
 
-              {/* Footer */}
-              <footer className="border-t border-[var(--color-border-light)] bg-[var(--color-surface)] mt-auto">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                    {/* Brand */}
-                    <div className="col-span-2 md:col-span-1">
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="h-8 w-8 rounded-lg bg-[var(--color-primary)] flex items-center justify-center">
-                          <span className="text-white font-semibold">a</span>
+                {/* Footer */}
+                <footer className="border-t border-[var(--color-border-light)] bg-[var(--color-surface)] mt-auto">
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                      {/* Brand */}
+                      <div className="col-span-2 md:col-span-1">
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="h-8 w-8 rounded-lg bg-[var(--color-primary)] flex items-center justify-center">
+                            <span className="text-white font-semibold">a</span>
+                          </div>
+                          <span className="text-lg font-semibold tracking-tight text-[var(--color-ink)]">
+                            amerikala
+                          </span>
                         </div>
-                        <span className="text-lg font-semibold tracking-tight text-[var(--color-ink)]">
-                          amerikala
-                        </span>
+                        <p className="text-sm text-[var(--color-ink-secondary)] leading-relaxed">
+                          Amerika&apos;daki Türk topluluğu için sosyal platform.
+                        </p>
                       </div>
-                      <p className="text-sm text-[var(--color-ink-secondary)] leading-relaxed">
-                        Amerika&apos;daki Türk topluluğu için sosyal platform.
+
+                      {/* Explore */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-[var(--color-ink)] mb-4">
+                          Keşfet
+                        </h4>
+                        <ul className="space-y-3">
+                          <li>
+                            <a
+                              href="/events"
+                              className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                            >
+                              Etkinlikler
+                            </a>
+                          </li>
+                          <li>
+                            <a
+                              href="/groups"
+                              className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                            >
+                              Gruplar
+                            </a>
+                          </li>
+                          <li>
+                            <a
+                              href="/people"
+                              className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                            >
+                              İnsanlar
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* Listings */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-[var(--color-ink)] mb-4">
+                          İlanlar
+                        </h4>
+                        <ul className="space-y-3">
+                          <li>
+                            <a
+                              href="/emlak"
+                              className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                            >
+                              Emlak
+                            </a>
+                          </li>
+                          <li>
+                            <a
+                              href="/is"
+                              className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                            >
+                              İş İlanları
+                            </a>
+                          </li>
+                          <li>
+                            <a
+                              href="/alisveris"
+                              className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                            >
+                              Alışveriş
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* About */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-[var(--color-ink)] mb-4">
+                          Hakkımızda
+                        </h4>
+                        <ul className="space-y-3">
+                          <li>
+                            <a
+                              href="/yasal-rehber"
+                              className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                            >
+                              Yasal Rehber
+                            </a>
+                          </li>
+                          <li>
+                            <a
+                              href="#"
+                              className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                            >
+                              Gizlilik
+                            </a>
+                          </li>
+                          <li>
+                            <a
+                              href="#"
+                              className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                            >
+                              İletişim
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    {/* Copyright */}
+                    <div className="mt-12 pt-8 border-t border-[var(--color-border-light)]">
+                      <p className="text-sm text-[var(--color-ink-tertiary)] text-center">
+                        &copy; 2025 amerikala. Tüm hakları saklıdır.
                       </p>
                     </div>
-
-                    {/* Explore */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-[var(--color-ink)] mb-4">
-                        Keşfet
-                      </h4>
-                      <ul className="space-y-3">
-                        <li>
-                          <a
-                            href="/events"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            Etkinlikler
-                          </a>
-                        </li>
-                        <li>
-                          <a
-                            href="/groups"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            Gruplar
-                          </a>
-                        </li>
-                        <li>
-                          <a
-                            href="/people"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            İnsanlar
-                          </a>
-                        </li>
-                      </ul>
-                    </div>
-
-                    {/* Listings */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-[var(--color-ink)] mb-4">
-                        İlanlar
-                      </h4>
-                      <ul className="space-y-3">
-                        <li>
-                          <a
-                            href="/emlak"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            Emlak
-                          </a>
-                        </li>
-                        <li>
-                          <a
-                            href="/is"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            İş İlanları
-                          </a>
-                        </li>
-                        <li>
-                          <a
-                            href="/alisveris"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            Alışveriş
-                          </a>
-                        </li>
-                      </ul>
-                    </div>
-
-                    {/* About */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-[var(--color-ink)] mb-4">
-                        Hakkımızda
-                      </h4>
-                      <ul className="space-y-3">
-                        <li>
-                          <a
-                            href="/yasal-rehber"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            Yasal Rehber
-                          </a>
-                        </li>
-                        <li>
-                          <a
-                            href="#"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            Gizlilik
-                          </a>
-                        </li>
-                        <li>
-                          <a
-                            href="#"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            İletişim
-                          </a>
-                        </li>
-                      </ul>
-                    </div>
                   </div>
-
-                  {/* Copyright */}
-                  <div className="mt-12 pt-8 border-t border-[var(--color-border-light)]">
-                    <p className="text-sm text-[var(--color-ink-tertiary)] text-center">
-                      &copy; 2025 amerikala. Tüm hakları saklıdır.
-                    </p>
-                  </div>
-                </div>
-              </footer>
-            </div>
-          </LanguageProvider>
+                </footer>
+              </div>
+            </LanguageProvider>
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>

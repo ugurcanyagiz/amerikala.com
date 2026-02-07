@@ -1,32 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { 
+import {
   Bell,
-  Heart,
-  MessageCircle,
-  Users,
   Calendar,
-  UserPlus,
-  Star,
   Check,
   CheckCheck,
-  Trash2,
+  Heart,
+  MessageCircle,
   Settings,
-  Filter
+  Star,
+  Trash2,
+  UserPlus,
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
 import { Avatar } from "../components/ui/Avatar";
 import { Badge } from "../components/ui/Badge";
+import { Notification, NotificationCategory, useNotifications } from "../contexts/NotificationContext";
 
-type NotificationType = "all" | "likes" | "comments" | "follows" | "events" | "messages";
+type NotificationType = "all" | NotificationCategory;
 
 export default function NotificationsPage() {
   const [selectedType, setSelectedType] = useState<NotificationType>("all");
-  const [notifications, setNotifications] = useState(NOTIFICATIONS);
+  const {
+    notifications,
+    unreadCount,
+    getUnreadCount,
+    markAllAsRead,
+    markAsRead,
+    removeNotification,
+    clearNotifications,
+  } = useNotifications();
 
   const types = [
     { value: "all", label: "Tümü", icon: Bell },
@@ -35,27 +42,18 @@ export default function NotificationsPage() {
     { value: "follows", label: "Takipler", icon: UserPlus },
     { value: "events", label: "Etkinlikler", icon: Calendar },
     { value: "messages", label: "Mesajlar", icon: MessageCircle },
+    { value: "system", label: "Sistem", icon: Star },
   ];
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, isRead: true })));
-  };
+  const filteredNotifications = useMemo(
+    () =>
+      selectedType === "all"
+        ? notifications
+        : notifications.filter((notification) => notification.category === selectedType),
+    [notifications, selectedType],
+  );
 
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, isRead: true } : n
-    ));
-  };
-
-  const deleteNotification = (id: number) => {
-    setNotifications(notifications.filter(n => n.id !== id));
-  };
-
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-
-  const filteredNotifications = selectedType === "all" 
-    ? notifications 
-    : notifications.filter(n => n.type === selectedType);
+  const hasNotifications = notifications.length > 0;
 
   return (
     <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
@@ -79,9 +77,25 @@ export default function NotificationsPage() {
             </div>
 
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={markAllAsRead} className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={markAllAsRead}
+                className="gap-2"
+                disabled={!hasNotifications || unreadCount === 0}
+              >
                 <CheckCheck size={16} />
                 Tümünü Okundu İşaretle
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearNotifications}
+                className="gap-2"
+                disabled={!hasNotifications}
+              >
+                <Trash2 size={16} />
+                Temizle
               </Button>
               <Link href="/ayarlar">
                 <Button variant="ghost" size="icon">
@@ -95,10 +109,8 @@ export default function NotificationsPage() {
           <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
             {types.map((type) => {
               const Icon = type.icon;
-              const count = type.value === "all" 
-                ? notifications.filter(n => !n.isRead).length
-                : notifications.filter(n => n.type === type.value && !n.isRead).length;
-              
+              const count = type.value === "all" ? unreadCount : getUnreadCount(type.value);
+
               return (
                 <button
                   key={type.value}
@@ -112,11 +124,13 @@ export default function NotificationsPage() {
                   <Icon size={16} />
                   {type.label}
                   {count > 0 && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                      selectedType === type.value
-                        ? "bg-white/20"
-                        : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-                    }`}>
+                    <span
+                      className={`text-xs px-1.5 py-0.5 rounded-full ${
+                        selectedType === type.value
+                          ? "bg-white/20"
+                          : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                      }`}
+                    >
                       {count}
                     </span>
                   )}
@@ -139,11 +153,11 @@ export default function NotificationsPage() {
               </Card>
             ) : (
               filteredNotifications.map((notification) => (
-                <NotificationItem 
-                  key={notification.id} 
+                <NotificationItem
+                  key={notification.id}
                   notification={notification}
                   onRead={() => markAsRead(notification.id)}
-                  onDelete={() => deleteNotification(notification.id)}
+                  onDelete={() => removeNotification(notification.id)}
                 />
               ))
             )}
@@ -154,45 +168,62 @@ export default function NotificationsPage() {
   );
 }
 
-function NotificationItem({ 
-  notification, 
-  onRead, 
-  onDelete 
-}: { 
-  notification: typeof NOTIFICATIONS[0];
+function NotificationItem({
+  notification,
+  onRead,
+  onDelete,
+}: {
+  notification: Notification;
   onRead: () => void;
   onDelete: () => void;
 }) {
   const getIcon = () => {
-    switch (notification.type) {
-      case "likes": return <Heart className="h-5 w-5 text-red-500" />;
-      case "comments": return <MessageCircle className="h-5 w-5 text-blue-500" />;
-      case "follows": return <UserPlus className="h-5 w-5 text-green-500" />;
-      case "events": return <Calendar className="h-5 w-5 text-purple-500" />;
-      case "messages": return <MessageCircle className="h-5 w-5 text-indigo-500" />;
-      default: return <Bell className="h-5 w-5 text-neutral-500" />;
+    switch (notification.category) {
+      case "likes":
+        return <Heart className="h-5 w-5 text-red-500" />;
+      case "comments":
+        return <MessageCircle className="h-5 w-5 text-blue-500" />;
+      case "follows":
+        return <UserPlus className="h-5 w-5 text-green-500" />;
+      case "events":
+        return <Calendar className="h-5 w-5 text-purple-500" />;
+      case "messages":
+        return <MessageCircle className="h-5 w-5 text-indigo-500" />;
+      case "system":
+        return <Star className="h-5 w-5 text-yellow-500" />;
+      default:
+        return <Bell className="h-5 w-5 text-neutral-500" />;
     }
   };
 
+  const timeLabel = formatRelativeTime(notification.createdAt);
+
   return (
-    <Card className={`glass transition-smooth ${
-      !notification.isRead 
-        ? "border-l-4 border-l-red-500 bg-red-50/50 dark:bg-red-950/10" 
-        : ""
-    }`}>
+    <Card
+      className={`glass transition-smooth ${
+        !notification.isRead
+          ? "border-l-4 border-l-red-500 bg-red-50/50 dark:bg-red-950/10"
+          : ""
+      }`}
+    >
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           <div className="relative">
-            <Avatar src={notification.user.avatar} fallback={notification.user.name} size="md" />
+            <Avatar src={notification.actor?.avatar} fallback={notification.actor?.name || "S"} size="md" />
             <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-white dark:bg-neutral-900 flex items-center justify-center shadow-sm">
               {getIcon()}
             </div>
           </div>
 
           <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+              {notification.title}
+            </p>
             <p className="text-sm">
-              <span className="font-semibold">{notification.user.name}</span>
-              {" "}
+              {notification.actor?.name && (
+                <span className="font-semibold">{notification.actor?.name}</span>
+              )}
+              {notification.actor?.name && " "}
               <span className="text-neutral-600 dark:text-neutral-400">{notification.message}</span>
             </p>
             {notification.content && (
@@ -200,7 +231,7 @@ function NotificationItem({
                 &quot;{notification.content}&quot;
               </p>
             )}
-            <p className="text-xs text-neutral-400 mt-2">{notification.time}</p>
+            <p className="text-xs text-neutral-400 mt-2">{timeLabel}</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -215,11 +246,11 @@ function NotificationItem({
           </div>
         </div>
 
-        {notification.actionUrl && (
+        {notification.action && (
           <div className="mt-3 ml-14">
-            <Link href={notification.actionUrl}>
+            <Link href={notification.action.href}>
               <Button variant="outline" size="sm">
-                {notification.actionLabel || "Görüntüle"}
+                {notification.action.label || "Görüntüle"}
               </Button>
             </Link>
           </div>
@@ -229,78 +260,34 @@ function NotificationItem({
   );
 }
 
-const NOTIFICATIONS = [
-  {
-    id: 1,
-    type: "likes" as const,
-    user: { name: "Zeynep Kaya", avatar: "/avatars/zeynep.jpg" },
-    message: "gönderinizi beğendi",
-    content: "NYC'deki etkinlik harikaydı!",
-    time: "2 dakika önce",
-    isRead: false,
-    actionUrl: "/meetups",
-    actionLabel: "Gönderiyi Gör",
-  },
-  {
-    id: 2,
-    type: "follows" as const,
-    user: { name: "Ahmet Yılmaz", avatar: "/avatars/ahmet.jpg" },
-    message: "sizi takip etmeye başladı",
-    time: "15 dakika önce",
-    isRead: false,
-    actionUrl: "/profile/ahmet",
-    actionLabel: "Profili Gör",
-  },
-  {
-    id: 3,
-    type: "comments" as const,
-    user: { name: "Elif Demir", avatar: "/avatars/elif.jpg" },
-    message: "gönderinize yorum yaptı",
-    content: "Ben de gelmek istiyorum!",
-    time: "1 saat önce",
-    isRead: false,
-    actionUrl: "/meetups",
-    actionLabel: "Yorumu Gör",
-  },
-  {
-    id: 4,
-    type: "events" as const,
-    user: { name: "NYC Meetup Group", avatar: "/groups/nyc.jpg" },
-    message: "yeni bir etkinlik oluşturdu",
-    content: "Turkish Coffee & Networking",
-    time: "3 saat önce",
-    isRead: true,
-    actionUrl: "/events/1",
-    actionLabel: "Etkinliği Gör",
-  },
-  {
-    id: 5,
-    type: "messages" as const,
-    user: { name: "Mehmet Şahin", avatar: "/avatars/mehmet.jpg" },
-    message: "size bir mesaj gönderdi",
-    content: "Merhaba, tanışabilir miyiz?",
-    time: "5 saat önce",
-    isRead: true,
-    actionUrl: "/messages",
-    actionLabel: "Mesajı Oku",
-  },
-  {
-    id: 6,
-    type: "likes" as const,
-    user: { name: "Can Özdemir", avatar: "/avatars/can.jpg" },
-    message: "fotoğrafınızı beğendi",
-    time: "1 gün önce",
-    isRead: true,
-  },
-  {
-    id: 7,
-    type: "events" as const,
-    user: { name: "LA Turkish Community", avatar: "/groups/la.jpg" },
-    message: "etkinliğiniz yarın başlıyor",
-    content: "Weekend Hiking & Brunch",
-    time: "1 gün önce",
-    isRead: true,
-    actionUrl: "/events/3",
-    actionLabel: "Detayları Gör",
-  },
-];
+function formatRelativeTime(isoDate: string) {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) {
+    return "Az önce";
+  }
+
+  const seconds = Math.round((date.getTime() - Date.now()) / 1000);
+  const absSeconds = Math.abs(seconds);
+  const rtf = new Intl.RelativeTimeFormat("tr", { numeric: "auto" });
+
+  if (absSeconds < 60) {
+    return rtf.format(seconds, "second");
+  }
+  const minutes = Math.round(seconds / 60);
+  if (Math.abs(minutes) < 60) {
+    return rtf.format(minutes, "minute");
+  }
+  const hours = Math.round(minutes / 60);
+  if (Math.abs(hours) < 24) {
+    return rtf.format(hours, "hour");
+  }
+  const days = Math.round(hours / 24);
+  if (Math.abs(days) < 7) {
+    return rtf.format(days, "day");
+  }
+  return date.toLocaleDateString("tr-TR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
