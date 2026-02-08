@@ -14,7 +14,7 @@ import {
   MapPin,
   FileText,
   Building,
-  Globe,
+  Briefcase,
   Eye,
   EyeOff,
   Lock,
@@ -86,10 +86,11 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state - İsim alanları kaldırıldı, sadece düzenlenebilir alanlar
+  const [username, setUsername] = useState(profile.username || "");
   const [bio, setBio] = useState(profile.bio || "");
   const [city, setCity] = useState(profile.city || "");
   const [state, setState] = useState(profile.state || "");
-  const [website, setWebsite] = useState(profile.website || "");
+  const [profession, setProfession] = useState(profile.profession || "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
   const [showFullName, setShowFullName] = useState(profile.show_full_name ?? true);
   
@@ -101,10 +102,11 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
 
   // Reset form when profile changes
   useEffect(() => {
+    setUsername(profile.username || "");
     setBio(profile.bio || "");
     setCity(profile.city || "");
     setState(profile.state || "");
-    setWebsite(profile.website || "");
+    setProfession(profile.profession || "");
     setAvatarUrl(profile.avatar_url || "");
     setShowFullName(profile.show_full_name ?? true);
     setStatus(null);
@@ -139,7 +141,7 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file, { upsert: true, cacheControl: "3600", contentType: file.type });
 
       if (uploadError) throw uploadError;
 
@@ -155,6 +157,9 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
       setStatus({ type: "error", message: "Fotoğraf yüklenemedi: " + error.message });
     } finally {
       setUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -162,20 +167,27 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (bio && bio.length > 500) {
-      newErrors.bio = "En fazla 500 karakter olabilir";
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
+      newErrors.username = "Kullanıcı adı zorunludur";
+    } else if (trimmedUsername.length < 3) {
+      newErrors.username = "En az 3 karakter olmalı";
+    } else if (trimmedUsername.length > 30) {
+      newErrors.username = "En fazla 30 karakter olabilir";
+    } else if (!/^[a-zA-Z0-9._-]+$/.test(trimmedUsername)) {
+      newErrors.username = "Sadece harf, rakam, nokta, tire ve alt çizgi kullanın";
+    }
+
+    if (bio && bio.length > 160) {
+      newErrors.bio = "En fazla 160 karakter olabilir";
     }
 
     if (city && city.length > 50) {
       newErrors.city = "En fazla 50 karakter olabilir";
     }
 
-    if (website && website.length > 100) {
-      newErrors.website = "En fazla 100 karakter olabilir";
-    }
-
-    if (website && website.trim() && !website.match(/^https?:\/\/.+/)) {
-      newErrors.website = "Geçerli bir URL girin (https://...)";
+    if (profession && profession.length > 60) {
+      newErrors.profession = "En fazla 60 karakter olabilir";
     }
 
     setErrors(newErrors);
@@ -190,13 +202,15 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
     setStatus(null);
 
     try {
+      const trimmedUsername = username.trim();
       const { error } = await supabase
         .from("profiles")
         .update({
+          username: trimmedUsername,
           bio: bio.trim() || null,
           city: city.trim() || null,
           state: state || null,
-          website: website.trim() || null,
+          profession: profession.trim() || null,
           avatar_url: avatarUrl || null,
           show_full_name: showFullName,
           updated_at: new Date().toISOString(),
@@ -226,6 +240,7 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
 
   // Display name for avatar fallback
   const displayName = profile.full_name || profile.username || "U";
+  const avatarPreview = avatarUrl || "/logo.png";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -254,7 +269,7 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
           <div className="flex flex-col items-center">
             <div className="relative mb-3">
               <Avatar
-                src={avatarUrl || undefined}
+                src={avatarPreview}
                 fallback={displayName}
                 size="xl"
                 className="h-24 w-24 text-2xl"
@@ -331,7 +346,7 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
 
           {/* Form Fields */}
           <div className="space-y-4">
-            {/* Username (Read-only) */}
+            {/* Username */}
             <div>
               <label className="block text-sm font-medium mb-1.5 text-neutral-500">
                 Kullanıcı Adı
@@ -340,14 +355,21 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">@</span>
                 <input
                   type="text"
-                  value={profile.username || ""}
-                  disabled
-                  className="w-full pl-8 pr-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className={`w-full pl-8 pr-4 py-2.5 rounded-lg border ${
+                    errors.username
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-neutral-200 dark:border-neutral-700 focus:ring-red-500"
+                  } bg-neutral-50 dark:bg-neutral-800 focus:outline-none focus:ring-2 transition-colors`}
+                  maxLength={30}
                 />
               </div>
-              <p className="text-xs text-neutral-500 mt-1">
-                Kullanıcı adı değiştirilemez
-              </p>
+              {errors.username ? (
+                <p className="text-xs text-red-500 mt-1">{errors.username}</p>
+              ) : (
+                <p className="text-xs text-neutral-500 mt-1">Kullanıcı adınız profilinizde görünür.</p>
+              )}
             </div>
 
             {/* Bio */}
@@ -367,7 +389,7 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
                       ? "border-red-500 focus:ring-red-500" 
                       : "border-neutral-200 dark:border-neutral-700 focus:ring-red-500"
                   } bg-neutral-50 dark:bg-neutral-800 focus:outline-none focus:ring-2 transition-colors resize-none`}
-                  maxLength={500}
+                  maxLength={160}
                 />
               </div>
               <div className="flex justify-between mt-1">
@@ -376,32 +398,32 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
                 ) : (
                   <span />
                 )}
-                <span className="text-xs text-neutral-500">{bio.length}/500</span>
+                <span className="text-xs text-neutral-500">{bio.length}/160</span>
               </div>
             </div>
 
-            {/* Website */}
+            {/* Profession */}
             <div>
               <label className="block text-sm font-medium mb-1.5">
-                Web Sitesi
+                Meslek
               </label>
               <div className="relative">
-                <Globe size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                <Briefcase size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
                 <input
-                  type="url"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                  placeholder="https://website.com"
+                  type="text"
+                  value={profession}
+                  onChange={(e) => setProfession(e.target.value)}
+                  placeholder="örn: Ürün Tasarımcısı"
                   className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${
-                    errors.website 
+                    errors.profession
                       ? "border-red-500 focus:ring-red-500" 
                       : "border-neutral-200 dark:border-neutral-700 focus:ring-red-500"
                   } bg-neutral-50 dark:bg-neutral-800 focus:outline-none focus:ring-2 transition-colors`}
-                  maxLength={100}
+                  maxLength={60}
                 />
               </div>
-              {errors.website && (
-                <p className="text-red-500 text-sm mt-1">{errors.website}</p>
+              {errors.profession && (
+                <p className="text-red-500 text-sm mt-1">{errors.profession}</p>
               )}
             </div>
 
