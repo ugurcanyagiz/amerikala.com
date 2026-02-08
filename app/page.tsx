@@ -35,7 +35,7 @@ export default function Home() {
                 loop
                 playsInline
               >
-                <source src="/back.mp4" type="video/mp4" />
+                <source src="/back2.mp4" type="video/mp4" />
               </video>
               <div className="absolute inset-0 bg-[rgba(255,255,255,0.82)] backdrop-blur-[2px]" />
             </div>
