@@ -43,8 +43,8 @@ export default function Home() {
         <Sidebar />
 
         <main className="flex-1">
-          {/* Hero Section - Clean & Minimal */}
-          <section className="relative py-20 lg:py-32 overflow-hidden">
+          {/* Hero Section - Video Only */}
+          <section className="relative h-[60vh] lg:h-[70vh] overflow-hidden">
             <div className="absolute inset-0">
               <video
                 className="h-full w-full object-cover"
@@ -55,47 +55,6 @@ export default function Home() {
               >
                 <source src="/back3.mp4" type="video/mp4" />
               </video>
-            </div>
-            <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center max-w-3xl mx-auto">
-                {/* Tagline */}
-                <p className="text-sm font-medium text-[var(--color-primary)] tracking-wide uppercase mb-4">
-                  {t("home.hero.badge")}
-                </p>
-
-                {/* Main Headline */}
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-[var(--color-ink)] leading-[1.1] mb-6">
-                  {t("home.hero.title")}
-                </h1>
-
-                {/* Subtitle */}
-                <p className="text-lg sm:text-xl text-[var(--color-ink-secondary)] leading-relaxed mb-10 max-w-2xl mx-auto">
-                  {t("home.hero.subtitle")}
-                </p>
-
-                {/* CTAs */}
-                <div className="flex flex-wrap items-center justify-center gap-4">
-                  <Link href="/meetups">
-                    <Button variant="primary" size="lg" className="gap-2">
-                      {t("home.hero.cta1")}
-                      <ArrowRight className="h-5 w-5" />
-                    </Button>
-                  </Link>
-                  <Link href="/groups">
-                    <Button variant="outline" size="lg" className="gap-2">
-                      {t("home.hero.cta2")}
-                    </Button>
-                  </Link>
-                </div>
-
-                {/* Stats - Inline, Minimal */}
-                <div className="flex items-center justify-center gap-8 sm:gap-12 mt-16 pt-16 border-t border-[var(--color-border-light)]">
-                  <Stat number="2,500+" label={t("home.stats.members")} />
-                  <Stat number="150+" label={t("home.stats.events")} />
-                  <Stat number="45" label={t("home.stats.cities")} />
-                  <Stat number="80+" label={t("home.stats.groups")} />
-                </div>
-              </div>
             </div>
           </section>
 
@@ -140,32 +99,6 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Testimonials - Single Quote */}
-          <section className="py-20 bg-[var(--color-surface-sunken)]">
-            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--color-ink)] mb-12">
-                {t("home.testimonials.title")}
-              </h2>
-
-              <blockquote className="relative">
-                <p className="text-xl sm:text-2xl text-[var(--color-ink)] leading-relaxed mb-8">
-                  &ldquo;{TESTIMONIALS[0].text}&rdquo;
-                </p>
-                <footer className="flex items-center justify-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-[var(--color-primary-light)] flex items-center justify-center">
-                    <span className="text-[var(--color-primary)] font-medium">
-                      {TESTIMONIALS[0].name.charAt(0)}
-                    </span>
-                  </div>
-                  <div className="text-left">
-                    <p className="font-medium text-[var(--color-ink)]">{TESTIMONIALS[0].name}</p>
-                    <p className="text-sm text-[var(--color-ink-secondary)]">{TESTIMONIALS[0].location}</p>
-                  </div>
-                </footer>
-              </blockquote>
-            </div>
-          </section>
-
           {/* CTA Section - Simple */}
           <section className="py-24">
             <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -190,15 +123,6 @@ export default function Home() {
 }
 
 // Sub-components
-
-function Stat({ number, label }: { number: string; label: string }) {
-  return (
-    <div className="text-center">
-      <div className="text-2xl sm:text-3xl font-semibold text-[var(--color-ink)]">{number}</div>
-      <div className="text-sm text-[var(--color-ink-secondary)] mt-1">{label}</div>
-    </div>
-  );
-}
 
 function EventRow({ event }: { event: Event }) {
   const date = new Date(event.event_date);
@@ -244,7 +168,6 @@ function EventRow({ event }: { event: Event }) {
 
 function ActivityStream() {
   const { t } = useLanguage();
-  const [view, setView] = useState<ActivityView>("grid");
   const [category, setCategory] = useState<ActivityCategory>("all");
   const [subcategory, setSubcategory] = useState<ActivitySubcategory>("all");
   const [activityPosts, setActivityPosts] = useState<ActivityPost[]>([]);
@@ -379,32 +302,6 @@ function ActivityStream() {
               {t("home.activityStream.subtitle")}
             </p>
           </div>
-          <div className="flex items-center gap-2 self-start lg:self-auto">
-            <button
-              type="button"
-              onClick={() => setView("list")}
-              aria-pressed={view === "list"}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
-                view === "list"
-                  ? "bg-[var(--color-ink)] text-white border-transparent shadow-sm"
-                  : "bg-transparent text-[var(--color-ink-secondary)] border-[var(--color-border-light)] hover:border-[var(--color-border)]"
-              }`}
-            >
-              {t("home.activityStream.listView")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setView("grid")}
-              aria-pressed={view === "grid"}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
-                view === "grid"
-                  ? "bg-[var(--color-ink)] text-white border-transparent shadow-sm"
-                  : "bg-transparent text-[var(--color-ink-secondary)] border-[var(--color-border-light)] hover:border-[var(--color-border)]"
-              }`}
-            >
-              {t("home.activityStream.gridView")}
-            </button>
-          </div>
         </div>
 
         <div className="flex flex-wrap gap-3 mb-4">
@@ -470,13 +367,7 @@ function ActivityStream() {
             </p>
           </div>
         ) : (
-          <div
-            className={
-              view === "grid"
-                ? "grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-                : "space-y-4"
-            }
-          >
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredPosts.map((post) => (
               <article
                 key={post.id}
@@ -538,12 +429,6 @@ function ActivityStream() {
 
 // Types & Data
 
-interface Testimonial {
-  name: string;
-  location: string;
-  text: string;
-}
-
 type ActivityCategory = "all" | "realEstate" | "jobs" | "marketplace";
 type ActivitySubcategory =
   | "all"
@@ -552,8 +437,6 @@ type ActivitySubcategory =
   | "roommate"
   | "seeking_job"
   | "hiring";
-type ActivityView = "list" | "grid";
-
 interface ActivityPost {
   id: string;
   category: Exclude<ActivityCategory, "all">;
@@ -567,14 +450,6 @@ interface ActivityPost {
   href: string;
   createdAt: string;
 }
-
-const TESTIMONIALS: Testimonial[] = [
-  {
-    name: "Mehmet Şahin",
-    location: "Boston, MA",
-    text: "amerikala sayesinde Boston'daki Türk topluluğunu buldum. Artık hafta sonları yalnız geçmiyor!",
-  },
-];
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
