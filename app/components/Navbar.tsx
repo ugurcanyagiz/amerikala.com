@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
@@ -442,13 +443,15 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">A</span>
-              </div>
-              <span className="font-bold text-xl hidden sm:block">
-                amerika<span className="text-red-500">la</span>
-              </span>
+            <Link href="/" className="flex items-center flex-shrink-0">
+              <Image
+                src="/logo.png"
+                alt="Amerikala"
+                width={140}
+                height={36}
+                priority
+                className="h-9 w-auto"
+              />
             </Link>
 
             {/* Desktop Navigation */}
