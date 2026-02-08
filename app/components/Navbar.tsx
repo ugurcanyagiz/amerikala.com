@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
@@ -85,6 +84,7 @@ const NAV_ITEMS = [
   },
 ];
 
+
 function getDisplayName(profile: { first_name?: string | null; last_name?: string | null; username?: string | null } | null | undefined) {
   const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim();
   return fullName || profile?.username || "Kullanıcı";
@@ -97,13 +97,13 @@ function getUsernameLabel(profile: { username?: string | null } | null | undefin
 }
 
 // Dropdown Component
-function NavDropdown({
-  item,
-  isOpen,
-  onToggle,
-  onClose
-}: {
-  item: typeof NAV_ITEMS[number];
+function NavDropdown({ 
+  item, 
+  isOpen, 
+  onToggle, 
+  onClose 
+}: { 
+  item: typeof NAV_ITEMS[number]; 
   isOpen: boolean;
   onToggle: () => void;
   onClose: () => void;
@@ -111,9 +111,9 @@ function NavDropdown({
   const pathname = usePathname();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const Icon = item.icon;
-
-  const hasChildren = "children" in item && item.children;
-  const isActive = hasChildren
+  
+  const hasChildren = 'children' in item && item.children;
+  const isActive = hasChildren 
     ? item.children?.some(child => pathname.startsWith(child.href))
     : pathname === item.href;
 
@@ -137,8 +137,8 @@ function NavDropdown({
         className={`
           flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium
           transition-all duration-200
-          ${isActive
-            ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
+          ${isActive 
+            ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900" 
             : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800"
           }
         `}
@@ -157,16 +157,16 @@ function NavDropdown({
           flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium
           transition-all duration-200
           ${isActive || isOpen
-            ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
+            ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900" 
             : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800"
           }
         `}
       >
         <Icon size={18} />
         <span className="hidden lg:inline">{item.label}</span>
-        <ChevronDown
-          size={14}
-          className={`hidden lg:block transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+        <ChevronDown 
+          size={14} 
+          className={`hidden lg:block transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} 
         />
       </button>
 
@@ -176,7 +176,7 @@ function NavDropdown({
           {item.children?.map((child) => {
             const ChildIcon = child.icon;
             const isChildActive = pathname === child.href || pathname.startsWith(child.href + "/");
-
+            
             return (
               <Link
                 key={child.href}
@@ -185,8 +185,8 @@ function NavDropdown({
                 className={`
                   flex items-center gap-3 mx-2 px-3 py-2.5 rounded-xl
                   transition-all duration-150
-                  ${child.accent
-                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 my-2"
+                  ${child.accent 
+                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 my-2" 
                     : isChildActive
                       ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white"
                       : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
@@ -227,10 +227,10 @@ function MobileBottomNav() {
       <div className="flex items-center justify-around h-16">
         {mobileItems.map((item) => {
           const Icon = item.icon;
-          const isActive = item.href === "/"
-            ? pathname === "/"
+          const isActive = item.href === "/" 
+            ? pathname === "/" 
             : pathname.startsWith(item.href);
-
+          
           return (
             <Link
               key={item.href}
@@ -238,8 +238,8 @@ function MobileBottomNav() {
               className={`
                 flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl
                 transition-all duration-200
-                ${isActive
-                  ? "text-blue-600 dark:text-blue-400"
+                ${isActive 
+                  ? "text-blue-600 dark:text-blue-400" 
                   : "text-neutral-500 dark:text-neutral-500"
                 }
               `}
@@ -272,11 +272,11 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   return (
     <div className="fixed inset-0 z-50 md:hidden">
       {/* Backdrop */}
-      <div
+      <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-
+      
       {/* Sheet */}
       <div className="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white dark:bg-neutral-900 shadow-2xl animate-in slide-in-from-right duration-300">
         <div className="flex flex-col h-full">
@@ -312,7 +312,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           <div className="flex-1 overflow-y-auto py-4">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
-              const hasChildren = "children" in item && item.children;
+              const hasChildren = 'children' in item && item.children;
 
               if (!hasChildren) {
                 return (
@@ -342,8 +342,8 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                         onClick={onClose}
                         className={`
                           flex items-center gap-3 px-6 py-2.5
-                          ${child.accent
-                            ? "text-blue-600 dark:text-blue-400"
+                          ${child.accent 
+                            ? "text-blue-600 dark:text-blue-400" 
                             : "text-neutral-600 dark:text-neutral-400"
                           }
                           hover:bg-neutral-100 dark:hover:bg-neutral-800
@@ -382,8 +382,8 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                     Ayarlar
                   </Button>
                 </Link>
-                <Button
-                  variant="ghost"
+                <Button 
+                  variant="ghost" 
                   className="w-full justify-start gap-2 text-red-600"
                   onClick={handleSignOut}
                 >
@@ -443,15 +443,12 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-              <Image
-                src="/logo.png"
-                alt="amerikala logo"
-                width={36}
-                height={36}
-                className="h-9 w-9"
-                priority
-              />
-              <span className="sr-only">amerikala</span>
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+                <span className="text-white font-bold text-lg">A</span>
+              </div>
+              <span className="font-bold text-xl hidden sm:block">
+                amerika<span className="text-red-500">la</span>
+              </span>
             </Link>
 
             {/* Desktop Navigation */}
