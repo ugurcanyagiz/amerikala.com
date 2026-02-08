@@ -1,14 +1,41 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { Users, MapPin, ArrowRight, Clock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Users, MapPin, ArrowRight, Clock, Loader2 } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import { Button } from "./components/ui/Button";
 import { useLanguage } from "./contexts/LanguageContext";
+import { supabase } from "@/lib/supabase/client";
+import type { Event, JobListing, Listing, MarketplaceListing } from "@/lib/types";
 
 export default function Home() {
   const { t } = useLanguage();
+  const [trendingEvents, setTrendingEvents] = useState<Event[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrendingEvents = async () => {
+      setEventsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("events")
+          .select("*")
+          .eq("status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(3);
+
+        if (error) throw error;
+        setTrendingEvents(data || []);
+      } catch (error) {
+        console.error("Error fetching trending events:", error);
+      } finally {
+        setEventsLoading(false);
+      }
+    };
+
+    fetchTrendingEvents();
+  }, []);
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[var(--color-surface)]">
@@ -91,11 +118,26 @@ export default function Home() {
                 </Link>
               </div>
 
-              <div className="space-y-4">
-                {TRENDING_EVENTS.map((event) => (
-                  <EventRow key={event.id} event={event} />
-                ))}
-              </div>
+              {eventsLoading ? (
+                <div className="flex items-center justify-center py-10 text-[var(--color-ink-tertiary)]">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                </div>
+              ) : trendingEvents.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[var(--color-border-light)] bg-[var(--color-surface)] p-10 text-center">
+                  <h3 className="text-lg font-semibold text-[var(--color-ink)] mb-2">
+                    {t("home.activityStream.emptyTitle")}
+                  </h3>
+                  <p className="text-sm text-[var(--color-ink-secondary)]">
+                    {t("home.activityStream.emptyDescription")}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {trendingEvents.map((event) => (
+                    <EventRow key={event.id} event={event} />
+                  ))}
+                </div>
+              )}
             </div>
           </section>
 
@@ -159,7 +201,11 @@ function Stat({ number, label }: { number: string; label: string }) {
   );
 }
 
-function EventRow({ event }: { event: TrendingEvent }) {
+function EventRow({ event }: { event: Event }) {
+  const date = new Date(event.event_date);
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = date.toLocaleDateString("tr-TR", { month: "short" }).toUpperCase();
+
   return (
     <Link
       href={`/events/${event.id}`}
@@ -167,8 +213,8 @@ function EventRow({ event }: { event: TrendingEvent }) {
     >
       {/* Date */}
       <div className="flex-shrink-0 w-14 text-center">
-        <div className="text-xs font-medium text-[var(--color-primary)]">{event.month}</div>
-        <div className="text-2xl font-semibold text-[var(--color-ink)]">{event.day}</div>
+        <div className="text-xs font-medium text-[var(--color-primary)]">{month}</div>
+        <div className="text-2xl font-semibold text-[var(--color-ink)]">{day}</div>
       </div>
 
       {/* Divider */}
@@ -182,11 +228,11 @@ function EventRow({ event }: { event: TrendingEvent }) {
         <div className="flex items-center gap-4 mt-1 text-sm text-[var(--color-ink-secondary)]">
           <span className="flex items-center gap-1">
             <MapPin className="h-4 w-4" />
-            {event.location}
+            {event.city}, {event.state}
           </span>
           <span className="flex items-center gap-1">
             <Users className="h-4 w-4" />
-            {event.attendees} katılımcı
+            {event.current_attendees} katılımcı
           </span>
         </div>
       </div>
@@ -199,9 +245,11 @@ function EventRow({ event }: { event: TrendingEvent }) {
 
 function ActivityStream() {
   const { t } = useLanguage();
-  const [view, setView] = useState<ActivityView>("list");
+  const [view, setView] = useState<ActivityView>("grid");
   const [category, setCategory] = useState<ActivityCategory>("all");
   const [subcategory, setSubcategory] = useState<ActivitySubcategory>("all");
+  const [activityPosts, setActivityPosts] = useState<ActivityPost[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const showSubfilters = category === "realEstate" || category === "jobs";
   const subfilterOptions = useMemo(() => {
@@ -223,13 +271,102 @@ function ActivityStream() {
     return [];
   }, [category, t]);
 
+  useEffect(() => {
+    const fetchActivityPosts = async () => {
+      setLoading(true);
+      try {
+        const [listingsResponse, jobsResponse, marketplaceResponse] = await Promise.all([
+          supabase
+            .from("listings")
+            .select("id, title, description, city, state, price, listing_type, created_at")
+            .eq("status", "approved")
+            .order("created_at", { ascending: false })
+            .limit(15),
+          supabase
+            .from("job_listings")
+            .select(
+              "id, title, description, city, state, salary_min, salary_max, salary_type, listing_type, is_remote, created_at, job_type"
+            )
+            .eq("status", "approved")
+            .order("created_at", { ascending: false })
+            .limit(15),
+          supabase
+            .from("marketplace_listings")
+            .select("id, title, description, city, state, price, category, created_at")
+            .eq("status", "approved")
+            .order("created_at", { ascending: false })
+            .limit(15),
+        ]);
+
+        if (listingsResponse.error) throw listingsResponse.error;
+        if (jobsResponse.error) throw jobsResponse.error;
+        if (marketplaceResponse.error) throw marketplaceResponse.error;
+
+        const listings = (listingsResponse.data || []) as Listing[];
+        const jobs = (jobsResponse.data || []) as JobListing[];
+        const marketplace = (marketplaceResponse.data || []) as MarketplaceListing[];
+
+        const mappedListings: ActivityPost[] = listings.map((listing) => ({
+          id: `listing-${listing.id}`,
+          category: "realEstate",
+          subcategory: listing.listing_type,
+          title: listing.title,
+          summary: truncateText(listing.description, 140),
+          location: `${listing.city}, ${listing.state}`,
+          time: formatRelativeTime(listing.created_at),
+          price: formatCurrency(listing.price),
+          href: `/emlak/ilan/${listing.id}`,
+          createdAt: listing.created_at,
+        }));
+
+        const mappedJobs: ActivityPost[] = jobs.map((job) => ({
+          id: `job-${job.id}`,
+          category: "jobs",
+          subcategory: job.listing_type,
+          title: job.title,
+          summary: truncateText(job.description, 140),
+          location: `${job.city}, ${job.state}`,
+          time: formatRelativeTime(job.created_at),
+          price: formatSalary(job.salary_min, job.salary_max, job.salary_type),
+          tagLabel: job.is_remote ? t("home.activityStream.remote") : undefined,
+          href: `/is/ilan/${job.id}`,
+          createdAt: job.created_at,
+        }));
+
+        const mappedMarketplace: ActivityPost[] = marketplace.map((item) => ({
+          id: `marketplace-${item.id}`,
+          category: "marketplace",
+          title: item.title,
+          summary: truncateText(item.description, 140),
+          location: `${item.city}, ${item.state}`,
+          time: formatRelativeTime(item.created_at),
+          price: formatCurrency(item.price),
+          href: `/alisveris/ilan/${item.id}`,
+          createdAt: item.created_at,
+        }));
+
+        const combined = [...mappedListings, ...mappedJobs, ...mappedMarketplace]
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 15);
+
+        setActivityPosts(combined);
+      } catch (error) {
+        console.error("Error fetching activity posts:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivityPosts();
+  }, [t]);
+
   const filteredPosts = useMemo(() => {
-    return ACTIVITY_POSTS.filter((post) => {
+    return activityPosts.filter((post) => {
       if (category !== "all" && post.category !== category) return false;
       if (showSubfilters && subcategory !== "all" && post.subcategory !== subcategory) return false;
       return true;
     });
-  }, [category, showSubfilters, subcategory]);
+  }, [activityPosts, category, showSubfilters, subcategory]);
 
   return (
     <section className="py-20 bg-[var(--color-surface-sunken)]">
@@ -320,7 +457,11 @@ function ActivityStream() {
           ))}
         </div>
 
-        {filteredPosts.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-16 text-[var(--color-ink-tertiary)]">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
+        ) : filteredPosts.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[var(--color-border-light)] bg-[var(--color-surface)] p-10 text-center">
             <h3 className="text-lg font-semibold text-[var(--color-ink)] mb-2">
               {t("home.activityStream.emptyTitle")}
@@ -333,7 +474,7 @@ function ActivityStream() {
           <div
             className={
               view === "grid"
-                ? "grid gap-6 sm:grid-cols-2 xl:grid-cols-3"
+                ? "grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
                 : "space-y-4"
             }
           >
@@ -374,9 +515,9 @@ function ActivityStream() {
                       {post.price}
                     </span>
                   )}
-                  {post.tag && (
+                  {post.tagLabel && (
                     <span className="px-2 py-1 rounded-full bg-[var(--color-surface-sunken)]">
-                      {t(`home.activityStream.${post.tag}`)}
+                      {post.tagLabel}
                     </span>
                   )}
                 </div>
@@ -397,16 +538,6 @@ function ActivityStream() {
 }
 
 // Types & Data
-
-interface TrendingEvent {
-  id: number;
-  title: string;
-  day: string;
-  month: string;
-  location: string;
-  category: string;
-  attendees: number;
-}
 
 interface Testimonial {
   name: string;
@@ -433,39 +564,10 @@ interface ActivityPost {
   location: string;
   time: string;
   price?: string;
-  tag?: "remote" | "independent";
+  tagLabel?: string;
   href: string;
+  createdAt: string;
 }
-
-const TRENDING_EVENTS: TrendingEvent[] = [
-  {
-    id: 1,
-    title: "NYC Turkish Coffee & Networking",
-    day: "28",
-    month: "OCA",
-    location: "Manhattan, NY",
-    category: "Sosyal",
-    attendees: 24,
-  },
-  {
-    id: 2,
-    title: "Bay Area Tech Meetup",
-    day: "02",
-    month: "ŞUB",
-    location: "San Francisco, CA",
-    category: "Kariyer",
-    attendees: 45,
-  },
-  {
-    id: 3,
-    title: "LA Hiking & Brunch",
-    day: "05",
-    month: "ŞUB",
-    location: "Griffith Park, LA",
-    category: "Spor",
-    attendees: 18,
-  },
-];
 
 const TESTIMONIALS: Testimonial[] = [
   {
@@ -475,76 +577,44 @@ const TESTIMONIALS: Testimonial[] = [
   },
 ];
 
-const ACTIVITY_POSTS: ActivityPost[] = [
-  {
-    id: "real-estate-chi-001",
-    category: "realEstate",
-    subcategory: "rent",
-    title: "Chicago South Loop'ta 2+1 modern kiralık daire",
-    summary:
-      "Göl manzaralı, yeni tadilatlı, bina spor salonu ve concierge hizmetli. Toplu taşımaya 4 dakika.",
-    location: "Chicago, IL",
-    time: "2 saat önce",
-    price: "$2,250 / ay",
-    href: "/emlak",
-  },
-  {
-    id: "jobs-nyc-004",
-    category: "jobs",
-    subcategory: "hiring",
-    title: "Queens'te tam zamanlı barista aranıyor",
-    summary:
-      "Deneyim tercih sebebi. Esnek vardiya, bahşiş + prim. Türkçe bilen ekip arkadaşı arıyoruz.",
-    location: "New York, NY",
-    time: "3 saat önce",
-    tag: "independent",
-    href: "/is",
-  },
-  {
-    id: "marketplace-sf-011",
-    category: "marketplace",
-    title: "Apple Studio Display 5K, kutulu ve garantili",
-    summary:
-      "Ofis değişikliği sebebiyle satılık. Orijinal kutu ve kablolar dahil. Çiziksiz, temiz kullanım.",
-    location: "San Francisco, CA",
-    time: "5 saat önce",
-    price: "$1,150",
-    href: "/alisveris",
-  },
-  {
-    id: "real-estate-la-007",
-    category: "realEstate",
-    subcategory: "sale",
-    title: "Glendale'da 3+1 aile evi satışta",
-    summary:
-      "Geniş bahçeli, kapalı garajlı, okullara yakın. Renovasyon yeni tamamlandı.",
-    location: "Los Angeles, CA",
-    time: "6 saat önce",
-    price: "$690,000",
-    href: "/emlak",
-  },
-  {
-    id: "jobs-aus-009",
-    category: "jobs",
-    subcategory: "seeking_job",
-    title: "Austin'de UI/UX tasarımcısı iş arıyor",
-    summary:
-      "5+ yıl ürün tasarımı deneyimi, SaaS ve mobil uygulama portföyü mevcut. Tam zamanlı ya da freelance.",
-    location: "Austin, TX",
-    time: "7 saat önce",
-    tag: "remote",
-    href: "/is",
-  },
-  {
-    id: "real-estate-sea-003",
-    category: "realEstate",
-    subcategory: "roommate",
-    title: "Seattle'da 2+1 ev için ev arkadaşı aranıyor",
-    summary:
-      "Capitol Hill bölgesinde, özel banyo ve balkonu olan oda. Faturalar dahil.",
-    location: "Seattle, WA",
-    time: "9 saat önce",
-    price: "$1,050 / ay",
-    href: "/emlak",
-  },
-];
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatSalary(
+  min: number | null,
+  max: number | null,
+  type: "hourly" | "yearly" | null
+) {
+  if (!min && !max) return "Belirtilmemiş";
+  const suffix = type === "hourly" ? "/saat" : "/yıl";
+  if (min && max) return `$${min.toLocaleString()} - $${max.toLocaleString()}${suffix}`;
+  if (min) return `$${min.toLocaleString()}+${suffix}`;
+  if (max) return `$${max.toLocaleString()}'a kadar${suffix}`;
+  return "Belirtilmemiş";
+}
+
+function formatRelativeTime(dateString: string) {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now.getTime() - date.getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  const hours = Math.floor(diffMs / 3600000);
+  const days = Math.floor(diffMs / 86400000);
+  const rtf = new Intl.RelativeTimeFormat("tr-TR", { numeric: "auto" });
+
+  if (minutes < 60) return rtf.format(-minutes, "minute");
+  if (hours < 24) return rtf.format(-hours, "hour");
+  return rtf.format(-days, "day");
+}
+
+function truncateText(text: string | null | undefined, maxLength: number) {
+  if (!text) return "";
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength).trim()}…`;
+}
