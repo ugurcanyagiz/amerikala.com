@@ -320,14 +320,14 @@ export default function ProfilePage() {
                   <CardContent className="p-6 pt-0 space-y-6">
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-4 bg-white/60 dark:bg-neutral-900/40">
-                        <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Gruplar</p>
-                        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{stats.groups}</p>
-                        <p className="text-sm text-neutral-500">Onaylı üyelikler</p>
+                        <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Beğeniler</p>
+                        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">—</p>
+                        <p className="text-sm text-neutral-500">Gönderi ve etkinlik etkileşimleri</p>
                       </div>
                       <div className="rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-4 bg-white/60 dark:bg-neutral-900/40">
-                        <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Etkinlikler</p>
-                        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{stats.events}</p>
-                        <p className="text-sm text-neutral-500">Katılım geçmişi</p>
+                        <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Bağlantılar</p>
+                        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">—</p>
+                        <p className="text-sm text-neutral-500">Yeni arkadaşlıklar ve takipler</p>
                       </div>
                     </div>
 
@@ -335,7 +335,7 @@ export default function ProfilePage() {
                       <Activity className="w-12 h-12 text-neutral-300 dark:text-neutral-700 mx-auto mb-3" />
                       <h3 className="font-semibold text-lg mb-1">Aktivite geçmişi</h3>
                       <p className="text-neutral-500 text-sm">
-                        Katıldığınız etkinlikler ve gruplar burada listelenecek.
+                        Beğeniler, yorumlar, takipler ve etkileşimler burada listelenecek.
                       </p>
                     </div>
                   </CardContent>
