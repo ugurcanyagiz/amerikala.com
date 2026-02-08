@@ -26,8 +26,6 @@ import {
     List,
     Users,
     Shield,
-    MapPin,
-    Clock,
     Package,
 } from "lucide-react";
 
