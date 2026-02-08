@@ -222,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mountedRef.current) {
           setSession(currentSession);
           setUser(currentSession?.user ?? null);
+          setLoading(false);
         }
 
         if (currentSession?.user && mountedRef.current) {
@@ -268,6 +269,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log("User signed in or token refreshed");
           setSession(newSession);
           setUser(newSession?.user ?? null);
+          setLoading(false);
 
           if (newSession?.user) {
             const userProfile = await fetchProfile(
@@ -277,11 +279,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             );
             if (mountedRef.current) {
               setProfile(userProfile);
-              setLoading(false);
             }
           } else if (mountedRef.current) {
             setProfile(null);
-            setLoading(false);
           }
         }
       }
