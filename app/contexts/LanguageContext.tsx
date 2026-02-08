@@ -138,32 +138,17 @@ const translations: Record<Language, Record<string, unknown>> = {
         cities: "Şehir",
         groups: "Grup",
       },
-      features: {
-        title: "Neler Yapabilirsin?",
-        subtitle: "AmerikaLa ile Amerika'daki Türk topluluğuna katıl ve yeni fırsatlar keşfet",
-        events: {
-          title: "Etkinliklere Katıl",
-          description: "Çevrende düzenlenen etkinlikleri keşfet, yeni insanlarla tanış ve unutulmaz anlar yaşa",
-        },
-        groups: {
-          title: "Grup Oluştur",
-          description: "İlgi alanlarına göre gruplar kur, topluluk oluştur ve yönet",
-        },
-        chat: {
-          title: "Sohbet Et",
-          description: "Özel mesajlar, grup sohbetleri ile bağlantıda kal",
-        },
-        realestate: {
-          title: "Emlak İlanları",
-          description: "Kiralık veya satılık ev ara, ilanını paylaş",
-        },
-        jobs: {
-          title: "İş Fırsatları",
-          description: "İş ara, ilan ver, kariyer fırsatlarını keşfet",
-        },
-        marketplace: {
-          title: "Alışveriş",
-          description: "İkinci el eşya al-sat, topluluğa özel fırsatlar",
+      activityStream: {
+        title: "Topluluk Akışı",
+        subtitle:
+          "Buluşmalar, Emlak, İş ve Alışveriş menülerindeki en yeni mesajlar tek bir akışta buluşuyor.",
+        listView: "Liste",
+        gridView: "Grid",
+        categories: {
+          meetups: "Buluşmalar",
+          realEstate: "Emlak",
+          jobs: "İş",
+          marketplace: "Alışveriş",
         },
       },
       trending: {
@@ -303,32 +288,17 @@ const translations: Record<Language, Record<string, unknown>> = {
         cities: "Cities",
         groups: "Groups",
       },
-      features: {
-        title: "What Can You Do?",
-        subtitle: "Join the Turkish community in America with AmerikaLa and discover new opportunities",
-        events: {
-          title: "Join Events",
-          description: "Discover events around you, meet new people and create unforgettable moments",
-        },
-        groups: {
-          title: "Create Groups",
-          description: "Build groups based on interests, create and manage communities",
-        },
-        chat: {
-          title: "Chat",
-          description: "Stay connected with private messages and group chats",
-        },
-        realestate: {
-          title: "Real Estate",
-          description: "Find rentals or properties for sale, share your listings",
-        },
-        jobs: {
-          title: "Job Opportunities",
-          description: "Search jobs, post listings, explore career opportunities",
-        },
-        marketplace: {
-          title: "Marketplace",
-          description: "Buy and sell second-hand items, community-exclusive deals",
+      activityStream: {
+        title: "Community Stream",
+        subtitle:
+          "The newest messages from Meetups, Real Estate, Jobs, and Marketplace in one elegant feed.",
+        listView: "List",
+        gridView: "Grid",
+        categories: {
+          meetups: "Meetups",
+          realEstate: "Real Estate",
+          jobs: "Jobs",
+          marketplace: "Marketplace",
         },
       },
       trending: {
