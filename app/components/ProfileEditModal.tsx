@@ -150,7 +150,12 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
         .from("avatars")
         .getPublicUrl(filePath);
 
-      setAvatarUrl(publicUrl);
+      if (!publicUrl) {
+        throw new Error("Fotoğraf URL'i alınamadı.");
+      }
+
+      const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
+      setAvatarUrl(cacheBustedUrl);
       setStatus({ type: "success", message: "Fotoğraf yüklendi!" });
     } catch (error: any) {
       console.error("Avatar upload error:", error);
