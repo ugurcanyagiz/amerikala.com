@@ -138,33 +138,53 @@ const translations: Record<Language, Record<string, unknown>> = {
         cities: "Şehir",
         groups: "Grup",
       },
-      features: {
-        title: "Neler Yapabilirsin?",
-        subtitle: "AmerikaLa ile Amerika'daki Türk topluluğuna katıl ve yeni fırsatlar keşfet",
-        events: {
-          title: "Etkinliklere Katıl",
-          description: "Çevrende düzenlenen etkinlikleri keşfet, yeni insanlarla tanış ve unutulmaz anlar yaşa",
+      activityStream: {
+        title: "Topluluk Akışı",
+        subtitle:
+          "Emlak, İş ve Alışveriş menülerindeki en yeni yayınlar tek bir akışta buluşuyor.",
+        listView: "Liste",
+        gridView: "Grid",
+        filters: {
+          all: "Tümü",
+          realEstate: "Emlak",
+          jobs: "İş",
+          marketplace: "Alışveriş",
         },
-        groups: {
-          title: "Grup Oluştur",
-          description: "İlgi alanlarına göre gruplar kur, topluluk oluştur ve yönet",
+        subfilters: {
+          realEstate: {
+            all: "Tümü",
+            rent: "Kiralık",
+            sale: "Satılık",
+            roommate: "Ev Arkadaşı",
+          },
+          jobs: {
+            all: "Tümü",
+            seeking_job: "İş Arayanlar",
+            hiring: "İşçi Arayanlar",
+          },
         },
-        chat: {
-          title: "Sohbet Et",
-          description: "Özel mesajlar, grup sohbetleri ile bağlantıda kal",
+        categories: {
+          realEstate: "Emlak",
+          jobs: "İş",
+          marketplace: "Alışveriş",
         },
-        realestate: {
-          title: "Emlak İlanları",
-          description: "Kiralık veya satılık ev ara, ilanını paylaş",
+        subcategoryLabels: {
+          rent: "Kiralık",
+          sale: "Satılık",
+          roommate: "Ev Arkadaşı",
+          seeking_job: "İş Arayanlar",
+          hiring: "İşçi Arayanlar",
         },
-        jobs: {
-          title: "İş Fırsatları",
-          description: "İş ara, ilan ver, kariyer fırsatlarını keşfet",
+        cta: {
+          realEstate: "İlana Git",
+          jobs: "Detaylar",
+          marketplace: "İlanı Gör",
         },
-        marketplace: {
-          title: "Alışveriş",
-          description: "İkinci el eşya al-sat, topluluğa özel fırsatlar",
-        },
+        remote: "Uzaktan",
+        independent: "Bağımsız",
+        emptyTitle: "Henüz yayın yok",
+        emptyDescription:
+          "Yeni ilanlar geldiğinde burada görüntülenecek. Filtreleri değiştirerek farklı kategorileri keşfedebilirsin.",
       },
       trending: {
         title: "Popüler Etkinlikler",
@@ -303,33 +323,53 @@ const translations: Record<Language, Record<string, unknown>> = {
         cities: "Cities",
         groups: "Groups",
       },
-      features: {
-        title: "What Can You Do?",
-        subtitle: "Join the Turkish community in America with AmerikaLa and discover new opportunities",
-        events: {
-          title: "Join Events",
-          description: "Discover events around you, meet new people and create unforgettable moments",
+      activityStream: {
+        title: "Community Stream",
+        subtitle:
+          "The newest posts from Real Estate, Jobs, and Marketplace in one elegant feed.",
+        listView: "List",
+        gridView: "Grid",
+        filters: {
+          all: "All",
+          realEstate: "Real Estate",
+          jobs: "Jobs",
+          marketplace: "Marketplace",
         },
-        groups: {
-          title: "Create Groups",
-          description: "Build groups based on interests, create and manage communities",
+        subfilters: {
+          realEstate: {
+            all: "All",
+            rent: "For Rent",
+            sale: "For Sale",
+            roommate: "Roommate",
+          },
+          jobs: {
+            all: "All",
+            seeking_job: "Job Seekers",
+            hiring: "Hiring",
+          },
         },
-        chat: {
-          title: "Chat",
-          description: "Stay connected with private messages and group chats",
+        categories: {
+          realEstate: "Real Estate",
+          jobs: "Jobs",
+          marketplace: "Marketplace",
         },
-        realestate: {
-          title: "Real Estate",
-          description: "Find rentals or properties for sale, share your listings",
+        subcategoryLabels: {
+          rent: "For Rent",
+          sale: "For Sale",
+          roommate: "Roommate",
+          seeking_job: "Job Seekers",
+          hiring: "Hiring",
         },
-        jobs: {
-          title: "Job Opportunities",
-          description: "Search jobs, post listings, explore career opportunities",
+        cta: {
+          realEstate: "View listing",
+          jobs: "View details",
+          marketplace: "View listing",
         },
-        marketplace: {
-          title: "Marketplace",
-          description: "Buy and sell second-hand items, community-exclusive deals",
-        },
+        remote: "Remote",
+        independent: "Independent",
+        emptyTitle: "No posts yet",
+        emptyDescription:
+          "New listings will appear here as soon as they are published. Try changing filters to explore other categories.",
       },
       trending: {
         title: "Trending Events",
