@@ -6,7 +6,7 @@ import { Users, MapPin, ArrowRight, Clock, Loader2 } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import { Button } from "./components/ui/Button";
 import { useLanguage } from "./contexts/LanguageContext";
-import { supabase } from "@/lib/supabase/client";
+import { publicSupabase } from "@/lib/supabase/publicClient";
 import type { Event, JobListing, Listing, MarketplaceListing } from "@/lib/types";
 
 export default function Home() {
@@ -18,7 +18,7 @@ export default function Home() {
     const fetchTrendingEvents = async () => {
       setEventsLoading(true);
       try {
-        const { data, error } = await supabase
+        const { data, error } = await publicSupabase
           .from("events")
           .select("*")
           .eq("status", "approved")
@@ -276,13 +276,13 @@ function ActivityStream() {
       setLoading(true);
       try {
         const [listingsResponse, jobsResponse, marketplaceResponse] = await Promise.all([
-          supabase
+          publicSupabase
             .from("listings")
             .select("id, title, description, city, state, price, listing_type, created_at")
             .eq("status", "approved")
             .order("created_at", { ascending: false })
             .limit(15),
-          supabase
+          publicSupabase
             .from("job_listings")
             .select(
               "id, title, description, city, state, salary_min, salary_max, salary_type, listing_type, is_remote, created_at, job_type"
@@ -290,7 +290,7 @@ function ActivityStream() {
             .eq("status", "approved")
             .order("created_at", { ascending: false })
             .limit(15),
-          supabase
+          publicSupabase
             .from("marketplace_listings")
             .select("id, title, description, city, state, price, category, created_at")
             .eq("status", "approved")
