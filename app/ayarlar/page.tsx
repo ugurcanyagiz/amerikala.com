@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { useAuth } from "@/app/contexts/AuthContext";
 import { 
   Settings, User, Bell, Lock, Globe, Palette, LogOut, Camera, 
   Mail, Phone, MapPin, Save, Eye, EyeOff, CheckCircle2, AlertCircle, Shield
@@ -19,6 +20,7 @@ type Tab = "profile" | "account" | "notifications" | "privacy";
 
 export default function AyarlarPage() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -80,7 +82,10 @@ export default function AyarlarPage() {
     if (!error) setPasswords({ current: "", new: "", confirm: "" });
   };
 
-  const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login"); };
+  const handleLogout = async () => {
+    await signOut();
+    router.push("/login");
+  };
 
   const tabs = [
     { id: "profile" as Tab, label: "Profil", icon: User },
