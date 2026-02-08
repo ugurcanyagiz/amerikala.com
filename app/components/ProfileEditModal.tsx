@@ -84,6 +84,8 @@ const US_STATES = [
 
 export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: ProfileEditModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const AVATAR_SIZE = 1080;
+  const MIN_AVATAR_SIDE = 200;
   
   // Form state - İsim alanları kaldırıldı, sadece düzenlenebilir alanlar
   const [username, setUsername] = useState(profile.username || "");
@@ -113,6 +115,55 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
     setErrors({});
   }, [profile, isOpen]);
 
+  const loadImage = (file: File): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const image = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      image.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(image);
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("Fotoğraf okunamadı."));
+      };
+      image.src = objectUrl;
+    });
+
+  const processAvatarImage = async (file: File) => {
+    const image = await loadImage(file);
+    const minSide = Math.min(image.width, image.height);
+
+    if (minSide < MIN_AVATAR_SIDE) {
+      throw new Error("Fotoğraf en az 200x200 px olmalı.");
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = AVATAR_SIZE;
+    canvas.height = AVATAR_SIZE;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("Görsel işleme başlatılamadı.");
+    }
+
+    const cropX = (image.width - minSide) / 2;
+    const cropY = (image.height - minSide) / 2;
+    ctx.drawImage(image, cropX, cropY, minSide, minSide, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (result) => {
+          if (result) resolve(result);
+          else reject(new Error("Fotoğraf dönüştürülemedi."));
+        },
+        "image/jpeg",
+        0.9
+      );
+    });
+
+    return blob;
+  };
+
   // Handle avatar upload
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -133,15 +184,16 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
     setStatus(null);
 
     try {
+      const processedBlob = await processAvatarImage(file);
+
       // Create unique filename
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${profile.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${profile.id}-${Date.now()}.jpg`;
       const filePath = `avatars/${fileName}`;
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(filePath, file, { upsert: true, cacheControl: "3600", contentType: file.type });
+        .upload(filePath, processedBlob, { upsert: true, cacheControl: "3600", contentType: "image/jpeg" });
 
       if (uploadError) throw uploadError;
 
@@ -293,13 +345,13 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={handleAvatarChange}
                 className="hidden"
               />
             </div>
             <p className="text-sm text-neutral-500">
-              Fotoğraf yüklemek için tıklayın
+              1:1 oranında kırpılır, 1080×1080 px olarak yüklenir (JPG)
             </p>
           </div>
 
