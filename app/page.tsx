@@ -1,17 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Calendar,
-  Users,
-  MapPin,
-  ArrowRight,
-  Building2,
-  Briefcase,
-  ShoppingBag,
-  MessageCircle,
-  type LucideIcon,
-} from "lucide-react";
+import { useMemo, useState } from "react";
+import { Users, MapPin, ArrowRight, Clock } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import { Button } from "./components/ui/Button";
 import { useLanguage } from "./contexts/LanguageContext";
@@ -82,58 +73,8 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Features Section - Clean Grid */}
-          <section className="py-20 bg-[var(--color-surface-sunken)]">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-16">
-                <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--color-ink)] mb-4">
-                  {t("home.features.title")}
-                </h2>
-                <p className="text-lg text-[var(--color-ink-secondary)] max-w-2xl mx-auto">
-                  {t("home.features.subtitle")}
-                </p>
-              </div>
-
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                <FeatureItem
-                  icon={Calendar}
-                  title={t("home.features.events.title")}
-                  description={t("home.features.events.description")}
-                  href="/meetups"
-                />
-                <FeatureItem
-                  icon={Users}
-                  title={t("home.features.groups.title")}
-                  description={t("home.features.groups.description")}
-                  href="/groups"
-                />
-                <FeatureItem
-                  icon={MessageCircle}
-                  title={t("home.features.chat.title")}
-                  description={t("home.features.chat.description")}
-                  href="/messages"
-                />
-                <FeatureItem
-                  icon={Building2}
-                  title={t("home.features.realestate.title")}
-                  description={t("home.features.realestate.description")}
-                  href="/emlak"
-                />
-                <FeatureItem
-                  icon={Briefcase}
-                  title={t("home.features.jobs.title")}
-                  description={t("home.features.jobs.description")}
-                  href="/is"
-                />
-                <FeatureItem
-                  icon={ShoppingBag}
-                  title={t("home.features.marketplace.title")}
-                  description={t("home.features.marketplace.description")}
-                  href="/alisveris"
-                />
-              </div>
-            </div>
-          </section>
+          {/* Activity Stream Section - Jony Ive Inspired */}
+          <ActivityStream />
 
           {/* Trending Events - Clean List */}
           <section className="py-20">
@@ -218,30 +159,6 @@ function Stat({ number, label }: { number: string; label: string }) {
   );
 }
 
-function FeatureItem({
-  icon: Icon,
-  title,
-  description,
-  href,
-}: {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  href: string;
-}) {
-  return (
-    <Link href={href} className="group block">
-      <div className="p-6 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border-light)] hover:border-[var(--color-border)] hover:shadow-[var(--shadow-sm)] transition-all duration-200">
-        <div className="h-12 w-12 rounded-xl bg-[var(--color-primary-subtle)] flex items-center justify-center mb-5 group-hover:bg-[var(--color-primary-light)] transition-colors">
-          <Icon className="h-6 w-6 text-[var(--color-primary)]" />
-        </div>
-        <h3 className="text-lg font-semibold text-[var(--color-ink)] mb-2">{title}</h3>
-        <p className="text-sm text-[var(--color-ink-secondary)] leading-relaxed">{description}</p>
-      </div>
-    </Link>
-  );
-}
-
 function EventRow({ event }: { event: TrendingEvent }) {
   return (
     <Link
@@ -280,6 +197,205 @@ function EventRow({ event }: { event: TrendingEvent }) {
   );
 }
 
+function ActivityStream() {
+  const { t } = useLanguage();
+  const [view, setView] = useState<ActivityView>("list");
+  const [category, setCategory] = useState<ActivityCategory>("all");
+  const [subcategory, setSubcategory] = useState<ActivitySubcategory>("all");
+
+  const showSubfilters = category === "realEstate" || category === "jobs";
+  const subfilterOptions = useMemo(() => {
+    if (category === "realEstate") {
+      return [
+        { key: "all" as const, label: t("home.activityStream.subfilters.realEstate.all") },
+        { key: "rent" as const, label: t("home.activityStream.subfilters.realEstate.rent") },
+        { key: "sale" as const, label: t("home.activityStream.subfilters.realEstate.sale") },
+        { key: "roommate" as const, label: t("home.activityStream.subfilters.realEstate.roommate") },
+      ];
+    }
+    if (category === "jobs") {
+      return [
+        { key: "all" as const, label: t("home.activityStream.subfilters.jobs.all") },
+        { key: "seeking_job" as const, label: t("home.activityStream.subfilters.jobs.seeking_job") },
+        { key: "hiring" as const, label: t("home.activityStream.subfilters.jobs.hiring") },
+      ];
+    }
+    return [];
+  }, [category, t]);
+
+  const filteredPosts = useMemo(() => {
+    return ACTIVITY_POSTS.filter((post) => {
+      if (category !== "all" && post.category !== category) return false;
+      if (showSubfilters && subcategory !== "all" && post.subcategory !== subcategory) return false;
+      return true;
+    });
+  }, [category, showSubfilters, subcategory]);
+
+  return (
+    <section className="py-20 bg-[var(--color-surface-sunken)]">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
+          <div>
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--color-ink)] mb-4">
+              {t("home.activityStream.title")}
+            </h2>
+            <p className="text-lg text-[var(--color-ink-secondary)] max-w-2xl">
+              {t("home.activityStream.subtitle")}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 self-start lg:self-auto">
+            <button
+              type="button"
+              onClick={() => setView("list")}
+              aria-pressed={view === "list"}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+                view === "list"
+                  ? "bg-[var(--color-ink)] text-white border-transparent shadow-sm"
+                  : "bg-transparent text-[var(--color-ink-secondary)] border-[var(--color-border-light)] hover:border-[var(--color-border)]"
+              }`}
+            >
+              {t("home.activityStream.listView")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("grid")}
+              aria-pressed={view === "grid"}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+                view === "grid"
+                  ? "bg-[var(--color-ink)] text-white border-transparent shadow-sm"
+                  : "bg-transparent text-[var(--color-ink-secondary)] border-[var(--color-border-light)] hover:border-[var(--color-border)]"
+              }`}
+            >
+              {t("home.activityStream.gridView")}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-3 mb-4">
+          {[
+            { key: "all" as const, label: t("home.activityStream.filters.all") },
+            { key: "realEstate" as const, label: t("home.activityStream.filters.realEstate") },
+            { key: "jobs" as const, label: t("home.activityStream.filters.jobs") },
+            { key: "marketplace" as const, label: t("home.activityStream.filters.marketplace") },
+          ].map((filter) => (
+            <button
+              key={filter.key}
+              type="button"
+              onClick={() => {
+                setCategory(filter.key);
+                setSubcategory("all");
+              }}
+              aria-pressed={category === filter.key}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+                category === filter.key
+                  ? "bg-[var(--color-primary)] text-white border-transparent shadow-sm"
+                  : "bg-[var(--color-surface)] text-[var(--color-ink-secondary)] border-[var(--color-border-light)] hover:border-[var(--color-border)]"
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+
+        <div
+          className={`flex flex-wrap gap-2 mb-10 transition-all duration-300 ${
+            showSubfilters ? "opacity-100 max-h-20" : "opacity-0 max-h-0 overflow-hidden"
+          }`}
+          aria-hidden={!showSubfilters}
+        >
+          {subfilterOptions.map((filter) => (
+            <button
+              key={filter.key}
+              type="button"
+              onClick={() => setSubcategory(filter.key)}
+              aria-pressed={subcategory === filter.key}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                subcategory === filter.key
+                  ? "bg-[var(--color-ink)] text-white border-transparent shadow-sm"
+                  : "bg-transparent text-[var(--color-ink-secondary)] border-[var(--color-border-light)] hover:border-[var(--color-border)]"
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+
+        {filteredPosts.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-[var(--color-border-light)] bg-[var(--color-surface)] p-10 text-center">
+            <h3 className="text-lg font-semibold text-[var(--color-ink)] mb-2">
+              {t("home.activityStream.emptyTitle")}
+            </h3>
+            <p className="text-sm text-[var(--color-ink-secondary)]">
+              {t("home.activityStream.emptyDescription")}
+            </p>
+          </div>
+        ) : (
+          <div
+            className={
+              view === "grid"
+                ? "grid gap-6 sm:grid-cols-2 xl:grid-cols-3"
+                : "space-y-4"
+            }
+          >
+            {filteredPosts.map((post) => (
+              <article
+                key={post.id}
+                className="group rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-5 transition-all duration-200 hover:border-[var(--color-border)] hover:shadow-[var(--shadow-sm)]"
+              >
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold tracking-wide bg-[var(--color-surface-sunken)] text-[var(--color-ink)]">
+                      {t(`home.activityStream.categories.${post.category}`)}
+                    </span>
+                    {post.subcategory && (
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-[var(--color-primary-subtle)] text-[var(--color-primary)]">
+                        {t(`home.activityStream.subcategoryLabels.${post.subcategory}`)}
+                      </span>
+                    )}
+                  </div>
+                  <span className="flex items-center gap-1 text-xs text-[var(--color-ink-tertiary)]">
+                    <Clock className="h-3 w-3" />
+                    {post.time}
+                  </span>
+                </div>
+                <h3 className="text-lg font-semibold text-[var(--color-ink)] mb-2 leading-snug">
+                  {post.title}
+                </h3>
+                <p className="text-sm text-[var(--color-ink-secondary)] leading-relaxed mb-4">
+                  {post.summary}
+                </p>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-ink-secondary)] mb-5">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {post.location}
+                  </span>
+                  {post.price && (
+                    <span className="px-2 py-1 rounded-full bg-[var(--color-surface-sunken)]">
+                      {post.price}
+                    </span>
+                  )}
+                  {post.tag && (
+                    <span className="px-2 py-1 rounded-full bg-[var(--color-surface-sunken)]">
+                      {t(`home.activityStream.${post.tag}`)}
+                    </span>
+                  )}
+                </div>
+                <Link
+                  href={post.href}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-primary)] group-hover:gap-3 transition-all"
+                >
+                  {t(`home.activityStream.cta.${post.category}`)}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // Types & Data
 
 interface TrendingEvent {
@@ -296,6 +412,29 @@ interface Testimonial {
   name: string;
   location: string;
   text: string;
+}
+
+type ActivityCategory = "all" | "realEstate" | "jobs" | "marketplace";
+type ActivitySubcategory =
+  | "all"
+  | "rent"
+  | "sale"
+  | "roommate"
+  | "seeking_job"
+  | "hiring";
+type ActivityView = "list" | "grid";
+
+interface ActivityPost {
+  id: string;
+  category: Exclude<ActivityCategory, "all">;
+  subcategory?: Exclude<ActivitySubcategory, "all">;
+  title: string;
+  summary: string;
+  location: string;
+  time: string;
+  price?: string;
+  tag?: "remote" | "independent";
+  href: string;
 }
 
 const TRENDING_EVENTS: TrendingEvent[] = [
@@ -333,5 +472,79 @@ const TESTIMONIALS: Testimonial[] = [
     name: "Mehmet Şahin",
     location: "Boston, MA",
     text: "amerikala sayesinde Boston'daki Türk topluluğunu buldum. Artık hafta sonları yalnız geçmiyor!",
+  },
+];
+
+const ACTIVITY_POSTS: ActivityPost[] = [
+  {
+    id: "real-estate-chi-001",
+    category: "realEstate",
+    subcategory: "rent",
+    title: "Chicago South Loop'ta 2+1 modern kiralık daire",
+    summary:
+      "Göl manzaralı, yeni tadilatlı, bina spor salonu ve concierge hizmetli. Toplu taşımaya 4 dakika.",
+    location: "Chicago, IL",
+    time: "2 saat önce",
+    price: "$2,250 / ay",
+    href: "/emlak",
+  },
+  {
+    id: "jobs-nyc-004",
+    category: "jobs",
+    subcategory: "hiring",
+    title: "Queens'te tam zamanlı barista aranıyor",
+    summary:
+      "Deneyim tercih sebebi. Esnek vardiya, bahşiş + prim. Türkçe bilen ekip arkadaşı arıyoruz.",
+    location: "New York, NY",
+    time: "3 saat önce",
+    tag: "independent",
+    href: "/is",
+  },
+  {
+    id: "marketplace-sf-011",
+    category: "marketplace",
+    title: "Apple Studio Display 5K, kutulu ve garantili",
+    summary:
+      "Ofis değişikliği sebebiyle satılık. Orijinal kutu ve kablolar dahil. Çiziksiz, temiz kullanım.",
+    location: "San Francisco, CA",
+    time: "5 saat önce",
+    price: "$1,150",
+    href: "/alisveris",
+  },
+  {
+    id: "real-estate-la-007",
+    category: "realEstate",
+    subcategory: "sale",
+    title: "Glendale'da 3+1 aile evi satışta",
+    summary:
+      "Geniş bahçeli, kapalı garajlı, okullara yakın. Renovasyon yeni tamamlandı.",
+    location: "Los Angeles, CA",
+    time: "6 saat önce",
+    price: "$690,000",
+    href: "/emlak",
+  },
+  {
+    id: "jobs-aus-009",
+    category: "jobs",
+    subcategory: "seeking_job",
+    title: "Austin'de UI/UX tasarımcısı iş arıyor",
+    summary:
+      "5+ yıl ürün tasarımı deneyimi, SaaS ve mobil uygulama portföyü mevcut. Tam zamanlı ya da freelance.",
+    location: "Austin, TX",
+    time: "7 saat önce",
+    tag: "remote",
+    href: "/is",
+  },
+  {
+    id: "real-estate-sea-003",
+    category: "realEstate",
+    subcategory: "roommate",
+    title: "Seattle'da 2+1 ev için ev arkadaşı aranıyor",
+    summary:
+      "Capitol Hill bölgesinde, özel banyo ve balkonu olan oda. Faturalar dahil.",
+    location: "Seattle, WA",
+    time: "9 saat önce",
+    price: "$1,050 / ay",
+    href: "/emlak",
   },
 ];
