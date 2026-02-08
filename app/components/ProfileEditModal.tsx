@@ -92,6 +92,7 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
   const [state, setState] = useState(profile.state || "");
   const [profession, setProfession] = useState(profile.profession || "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
+  const [avatarRefreshKey, setAvatarRefreshKey] = useState(0);
   const [showFullName, setShowFullName] = useState(profile.show_full_name ?? true);
   
   // UI state
@@ -108,6 +109,7 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
     setState(profile.state || "");
     setProfession(profile.profession || "");
     setAvatarUrl(profile.avatar_url || "");
+    setAvatarRefreshKey(0);
     setShowFullName(profile.show_full_name ?? true);
     setStatus(null);
     setErrors({});
@@ -134,7 +136,7 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
 
     try {
       // Create unique filename
-      const fileExt = file.name.split(".").pop();
+      const fileExt = file.name.split(".").pop() || "jpg";
       const fileName = `${profile.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
@@ -150,7 +152,12 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
         .from("avatars")
         .getPublicUrl(filePath);
 
+      if (!publicUrl) {
+        throw new Error("Fotoğraf URL'i alınamadı.");
+      }
+
       setAvatarUrl(publicUrl);
+      setAvatarRefreshKey(Date.now());
       setStatus({ type: "success", message: "Fotoğraf yüklendi!" });
     } catch (error: any) {
       console.error("Avatar upload error:", error);
@@ -240,7 +247,9 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
 
   // Display name for avatar fallback
   const displayName = profile.full_name || profile.username || "U";
-  const avatarPreview = avatarUrl || "/logo.png";
+  const avatarPreview = avatarUrl
+    ? `${avatarUrl}${avatarRefreshKey ? `?v=${avatarRefreshKey}` : ""}`
+    : "/logo.png";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

@@ -38,12 +38,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
 
+  const clearSupabaseStorage = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const keys = Object.keys(localStorage);
+    keys.forEach((key) => {
+      if (key.startsWith("sb-") || key.includes("supabase")) {
+        localStorage.removeItem(key);
+      }
+    });
+  }, []);
+
+  const clearClientSession = useCallback(async (signOut: boolean) => {
+    setUser(null);
+    setProfile(null);
+    setSession(null);
+    if (signOut) {
+      await supabase.auth.signOut({ scope: "global" });
+    }
+    clearSupabaseStorage();
+  }, [clearSupabaseStorage]);
+
   const normalizeRole = (value: unknown): UserRole | undefined => {
     if (value === "user" || value === "moderator" || value === "admin") {
       return value;
     }
     return undefined;
   };
+
+  const isAuthError = useCallback((message?: string | null) => {
+    if (!message) return false;
+    const normalized = message.toLowerCase();
+    return (
+      normalized.includes("jwt") ||
+      normalized.includes("not authenticated") ||
+      normalized.includes("invalid token") ||
+      normalized.includes("session") ||
+      normalized.includes("refresh")
+    );
+  }, []);
 
   // Fetch profile - sadece mevcut alanları al, eksik olanlar için varsayılan değer kullan
   const fetchProfile = useCallback(
@@ -61,6 +93,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (error) {
           console.error("Profile fetch error:", error.message);
+          if (isAuthError(error.message)) {
+            await clearClientSession(true);
+            return null;
+          }
 
           // Hata durumunda minimal profile döndür
           return {
@@ -143,7 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
     },
-    []
+    [clearClientSession, isAuthError]
   );
 
   // Refresh profile
@@ -164,38 +200,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log("SignOut called - starting...");
     
     try {
-      // Önce local state'i temizle
-      setUser(null);
-      setProfile(null);
-      setSession(null);
-      
-      // Supabase'den çıkış yap - scope: 'global' ile tüm sekmelerde çıkış
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
-      
-      if (error) {
-        console.error("Supabase signOut error:", error.message);
-      } else {
-        console.log("Supabase signOut successful");
-      }
-      
-      // LocalStorage'ı temizle (Supabase session)
-      if (typeof window !== 'undefined') {
-        // Supabase session key'lerini temizle
-        const keys = Object.keys(localStorage);
-        keys.forEach(key => {
-          if (key.startsWith('sb-') || key.includes('supabase')) {
-            localStorage.removeItem(key);
-          }
-        });
-        console.log("LocalStorage cleaned");
-      }
+      // Önce local state'i temizle ve Supabase'den çıkış yap
+      await clearClientSession(true);
+      console.log("Supabase signOut successful");
       
     } catch (error) {
       console.error("SignOut error:", error);
     }
     
     console.log("SignOut completed");
-  }, []);
+  }, [clearClientSession]);
 
   // Initialize auth state
   useEffect(() => {
@@ -213,6 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (error) {
           console.error("Session error:", error.message);
+          await clearClientSession(true);
           if (mountedRef.current) setLoading(false);
           return;
         }
@@ -256,6 +271,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (!mountedRef.current) return;
 
+        if (event === "TOKEN_REFRESH_FAILED") {
+          console.log("Token refresh failed - clearing state");
+          await clearClientSession(true);
+          setLoading(false);
+          return;
+        }
+
         if (event === "SIGNED_OUT") {
           console.log("User signed out - clearing state");
           setSession(null);
@@ -291,7 +313,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, clearClientSession]);
 
   // Computed values - with safe defaults
   const role: UserRole = profile?.role || "user";
