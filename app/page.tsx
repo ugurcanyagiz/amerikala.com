@@ -55,7 +55,6 @@ export default function Home() {
               >
                 <source src="/back3.mp4" type="video/mp4" />
               </video>
-              <div className="absolute inset-0 bg-[rgba(255,255,255,0.82)] backdrop-blur-[2px]" />
             </div>
             <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center max-w-3xl mx-auto">
