@@ -98,13 +98,25 @@ function getUsernameLabel(profile: { username?: string | null } | null | undefin
 }
 
 // Dropdown Component
-function NavDropdown({ 
+function NavDropdown({
   item, 
   isOpen, 
   onToggle, 
   onClose 
 }: { 
-  item: typeof NAV_ITEMS[number]; 
+  item: {
+    id: string;
+    label: string;
+    href?: string;
+    icon: typeof Home;
+    children?: {
+      href: string;
+      label: string;
+      icon: typeof Home;
+      description?: string;
+      accent?: boolean;
+    }[];
+  };
   isOpen: boolean;
   onToggle: () => void;
   onClose: () => void;
@@ -419,6 +431,17 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const desktopNavItems = isAdmin
+    ? [
+        ...NAV_ITEMS,
+        {
+          id: "admin",
+          label: "Admin Paneli",
+          href: "/admin",
+          icon: Shield,
+        },
+      ]
+    : NAV_ITEMS;
 
   // Close user menu on click outside
   useEffect(() => {
@@ -456,7 +479,7 @@ export default function Navbar() {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-1">
-              {NAV_ITEMS.map((item) => (
+              {desktopNavItems.map((item) => (
                 <NavDropdown
                   key={item.id}
                   item={item}

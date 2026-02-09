@@ -46,6 +46,7 @@ import {
 import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/Card";
 import { Badge } from "@/app/components/ui/Badge";
+import { Avatar } from "@/app/components/ui/Avatar";
 
 type Tab = "events" | "groups" | "users";
 
@@ -327,6 +328,11 @@ export default function AdminPage() {
     }
   };
 
+  const displayName = profile?.full_name || profile?.username || user?.email?.split("@")[0] || "Admin";
+  const usernameLabel = profile?.username ? `@${profile.username}` : (user?.email ?? "—");
+  const roleLabel = ROLE_LABELS[profile?.role || "user"];
+  const roleColor = ROLE_COLORS[profile?.role || "user"];
+
   // Loading state
   if (authLoading) {
     return (
@@ -360,6 +366,102 @@ export default function AdminPage() {
           <div>
             <h1 className="text-2xl font-bold">Admin Paneli</h1>
             <p className="text-neutral-500">İçerik ve kullanıcı yönetimi</p>
+          </div>
+        </div>
+
+        {/* Admin Profile + Quick Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6 mb-8">
+          <Card className="glass">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-red-500" />
+                Admin Profili
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 pt-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+                <Avatar
+                  src={profile?.avatar_url || undefined}
+                  fallback={displayName}
+                  size="xl"
+                  className="ring-4 ring-white dark:ring-neutral-900 shadow-lg"
+                />
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h2 className="text-xl font-bold">{displayName}</h2>
+                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${roleColor}`}>
+                      {getRoleIcon(profile?.role)}
+                      {roleLabel}
+                    </span>
+                  </div>
+                  <p className="text-neutral-500">{usernameLabel}</p>
+                  <div className="flex flex-wrap gap-2 text-sm text-neutral-500">
+                    {profile?.city && profile?.state && (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin size={14} />
+                        {profile.city}, {US_STATES_MAP[profile.state] || profile.state}
+                      </span>
+                    )}
+                    {profile?.created_at && (
+                      <span className="inline-flex items-center gap-1">
+                        <Clock size={14} />
+                        Üyelik: {formatDate(profile.created_at)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <Button size="sm" variant="primary" onClick={() => setActiveTab("events")} className="gap-2">
+                      <Calendar size={14} />
+                      Etkinlik Onayları
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setActiveTab("groups")} className="gap-2">
+                      <UsersRound size={14} />
+                      Grup Onayları
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setActiveTab("users")} className="gap-2">
+                      <Users size={14} />
+                      Kullanıcılar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card className="glass">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-neutral-500">Bekleyen Etkinlik</p>
+                  <p className="text-2xl font-bold">{pendingEvents.length}</p>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="glass">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-neutral-500">Bekleyen Grup</p>
+                  <p className="text-2xl font-bold">{pendingGroups.length}</p>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <UsersRound className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="glass sm:col-span-2">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-neutral-500">Toplam Kullanıcı</p>
+                  <p className="text-2xl font-bold">{users.length}</p>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
