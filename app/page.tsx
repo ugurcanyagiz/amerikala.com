@@ -371,49 +371,49 @@ function ActivityStream() {
             {filteredPosts.map((post) => (
               <article
                 key={post.id}
-                className="group rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-5 transition-all duration-200 hover:border-[var(--color-border)] hover:shadow-[var(--shadow-sm)]"
+                className="group flex h-full flex-col rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-5 transition-all duration-200 hover:border-[var(--color-border)] hover:shadow-[var(--shadow-sm)]"
               >
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold tracking-wide bg-[var(--color-surface-sunken)] text-[var(--color-ink)]">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <span className="max-w-full break-words px-3 py-1 text-xs font-semibold tracking-wide rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink)] [overflow-wrap:anywhere]">
                       {t(`home.activityStream.categories.${post.category}`)}
                     </span>
                     {post.subcategory && (
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-[var(--color-primary-subtle)] text-[var(--color-primary)]">
+                      <span className="max-w-full break-words px-3 py-1 text-xs font-medium rounded-full bg-[var(--color-primary-subtle)] text-[var(--color-primary)] [overflow-wrap:anywhere]">
                         {t(`home.activityStream.subcategoryLabels.${post.subcategory}`)}
                       </span>
                     )}
                   </div>
-                  <span className="flex items-center gap-1 text-xs text-[var(--color-ink-tertiary)]">
+                  <span className="shrink-0 flex items-center gap-1 text-xs text-[var(--color-ink-tertiary)]">
                     <Clock className="h-3 w-3" />
                     {post.time}
                   </span>
                 </div>
-                <h3 className="text-lg font-semibold text-[var(--color-ink)] mb-2 leading-snug">
+                <h3 className="mb-2 break-words text-lg font-semibold leading-snug text-[var(--color-ink)] [overflow-wrap:anywhere]">
                   {post.title}
                 </h3>
-                <p className="text-sm text-[var(--color-ink-secondary)] leading-relaxed mb-4">
+                <p className="mb-4 break-words text-sm leading-relaxed text-[var(--color-ink-secondary)] [overflow-wrap:anywhere]">
                   {post.summary}
                 </p>
-                <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-ink-secondary)] mb-5">
-                  <span className="flex items-center gap-1">
+                <div className="mb-5 flex flex-wrap items-center gap-3 text-xs text-[var(--color-ink-secondary)]">
+                  <span className="flex min-w-0 items-center gap-1 break-words [overflow-wrap:anywhere]">
                     <MapPin className="h-3.5 w-3.5" />
                     {post.location}
                   </span>
                   {post.price && (
-                    <span className="px-2 py-1 rounded-full bg-[var(--color-surface-sunken)]">
+                    <span className="max-w-full break-words px-2 py-1 rounded-full bg-[var(--color-surface-sunken)] [overflow-wrap:anywhere]">
                       {post.price}
                     </span>
                   )}
                   {post.tagLabel && (
-                    <span className="px-2 py-1 rounded-full bg-[var(--color-surface-sunken)]">
+                    <span className="max-w-full break-words px-2 py-1 rounded-full bg-[var(--color-surface-sunken)] [overflow-wrap:anywhere]">
                       {post.tagLabel}
                     </span>
                   )}
                 </div>
                 <Link
                   href={post.href}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-primary)] group-hover:gap-3 transition-all"
+                  className="mt-auto inline-flex items-center gap-2 text-sm font-medium text-[var(--color-primary)] transition-all group-hover:gap-3"
                 >
                   {t(`home.activityStream.cta.${post.category}`)}
                   <ArrowRight className="h-4 w-4" />
