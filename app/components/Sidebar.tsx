@@ -139,9 +139,12 @@ export default function Sidebar() {
         sticky top-16 h-[calc(100vh-64px)]
         hidden md:flex flex-col
         border-r border-[var(--color-border-light)]
-        bg-[var(--color-surface)]
+        z-30
         transition-all duration-200 ease-out
-        ${isExpanded ? "w-60" : "w-16"}
+        ${isExpanded
+          ? "w-60 bg-[color:var(--color-surface)]/85 backdrop-blur-md shadow-2xl"
+          : "w-16 bg-[var(--color-surface)]"
+        }
       `}
     >
       {/* Toggle Button */}

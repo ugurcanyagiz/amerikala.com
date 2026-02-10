@@ -45,15 +45,15 @@ export default function Home() {
 
         <main className="flex-1">
           {/* Hero Section - Full-bleed visual + single CTA */}
-          <section className="relative overflow-hidden border-b border-[var(--color-border-light)]">
-            <div className="relative mx-auto min-h-[420px] max-w-7xl sm:min-h-[500px] lg:min-h-[620px]">
+          <section className="relative overflow-hidden border-b border-[var(--color-border-light)] md:left-1/2 md:right-1/2 md:ml-[-50vw] md:mr-[-50vw] md:w-screen">
+            <div className="relative min-h-[420px] sm:min-h-[500px] lg:min-h-[620px]">
               <Image
                 src="/amerikala.png"
                 alt="Amerikala ana görseli"
                 fill
                 priority
                 className="object-cover object-center"
-                sizes="(max-width: 1280px) 100vw, 1280px"
+                sizes="100vw"
               />
 
               <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/35 to-black/55" />
