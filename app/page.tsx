@@ -61,11 +61,11 @@ export default function Home() {
               <div className="relative z-10 flex min-h-[420px] flex-col justify-center px-4 py-14 sm:min-h-[500px] sm:px-10 sm:py-16 lg:min-h-[620px] lg:px-16">
                 <div className="max-w-2xl">
                   <p className="mb-4 inline-flex max-w-full items-center rounded-full border border-white/35 bg-black/20 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-white/90 sm:px-4 sm:text-sm sm:tracking-[0.18em]">
-                    Amerika&apos;daki Türk Topluluğu
+                    AmerIka&apos;daki Türk Toplulugu
                   </p>
 
                   <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
-                    Emlak, İş, Alışveriş ve MeetUp fırsatları tek yerde.
+                    Amerika 'nin Turkce ucretsiz tek ilan sitesi.
                   </h1>
 
                   <p className="mt-5 max-w-xl text-base text-white/90 sm:text-lg">
