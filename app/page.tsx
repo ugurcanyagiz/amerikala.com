@@ -259,10 +259,10 @@ function FeatureBoard() {
       setCatalogLoading(true);
       try {
         const [eventsRes, listingsRes, jobsRes, marketRes] = await Promise.all([
-          publicSupabase.from("events").select("id, title, city, state, created_at").eq("status", "approved").order("created_at", { ascending: false }).limit(4),
-          publicSupabase.from("listings").select("id, title, description, city, state, created_at").eq("status", "approved").order("created_at", { ascending: false }).limit(4),
-          publicSupabase.from("job_listings").select("id, title, description, city, state, created_at, is_remote").eq("status", "approved").order("created_at", { ascending: false }).limit(4),
-          publicSupabase.from("marketplace_listings").select("id, title, description, city, state, created_at").eq("status", "approved").order("created_at", { ascending: false }).limit(4),
+          publicSupabase.from("events").select("id, title, city, state, created_at").eq("status", "approved").order("created_at", { ascending: false }).limit(6),
+          publicSupabase.from("listings").select("id, title, description, city, state, created_at").eq("status", "approved").order("created_at", { ascending: false }).limit(6),
+          publicSupabase.from("job_listings").select("id, title, description, city, state, created_at, is_remote").eq("status", "approved").order("created_at", { ascending: false }).limit(6),
+          publicSupabase.from("marketplace_listings").select("id, title, description, city, state, created_at").eq("status", "approved").order("created_at", { ascending: false }).limit(6),
         ]);
 
         setCatalogPosts({
@@ -343,8 +343,7 @@ function FeatureBoard() {
     <section className="border-b border-[var(--color-border-light)] bg-[var(--color-surface)] py-12 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
         <div className="mb-6 sm:mb-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-secondary)]">Öne Çıkan Panolar</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">Tanıtım ve güncel katalog akışları</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">Son eklenen ilanlar</h2>
         </div>
 
         <div className="relative" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
@@ -368,11 +367,11 @@ function FeatureBoard() {
 
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="overflow-hidden rounded-3xl">
-              <div className="flex transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
+              <div className="flex w-full transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
                 {cards.map((card) => {
                   const Icon = card.icon;
                   return (
-                    <div key={card.title} className="w-full flex-shrink-0">
+                    <div key={card.title} className="min-w-full flex-shrink-0 basis-full">
                       <Link
                         href={card.href}
                         className="group relative block overflow-hidden rounded-3xl border border-white/20 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.9)]"
@@ -386,8 +385,8 @@ function FeatureBoard() {
                           </span>
 
                           <div className="mt-5 max-w-xl">
-                            <h3 className="text-3xl font-semibold tracking-tight sm:text-5xl">{card.title}</h3>
-                            <p className="mt-4 text-base font-medium text-white/90 sm:text-lg">{card.description}</p>
+                            <h3 className="text-3xl font-medium tracking-[-0.02em] text-white sm:text-5xl">{card.title}</h3>
+                            <p className="mt-4 text-base font-normal leading-relaxed text-white/85 sm:text-lg">{card.description}</p>
                           </div>
 
                           <div className="mt-auto flex items-center justify-between gap-4">
@@ -408,16 +407,17 @@ function FeatureBoard() {
             </div>
 
             <div className="overflow-hidden rounded-3xl border border-[var(--color-border-light)] bg-[var(--color-surface-sunken)] p-5 sm:p-7">
-              <div className="flex transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
+              <div className="flex w-full transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
                 {cards.map((card) => {
                   const posts = catalogPosts[card.key];
                   return (
-                    <div key={`catalog-${card.key}`} className="w-full flex-shrink-0">
-                      <h3 className="mb-5 text-3xl font-semibold tracking-tight text-[var(--color-ink)]">En son ilanlar</h3>
+                    <div key={`catalog-${card.key}`} className="flex min-h-[360px] min-w-full flex-shrink-0 basis-full flex-col sm:min-h-[500px]">
+                      <h3 className="mb-5 text-3xl font-semibold tracking-tight text-[var(--color-ink)]">Son eklenen ilanlar</h3>
 
+                      <div className="flex-1">
                       {catalogLoading ? (
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          {Array.from({ length: 4 }).map((_, index) => (
+                        <div className="grid grid-cols-2 gap-3">
+                          {Array.from({ length: 6 }).map((_, index) => (
                             <div key={index} className="h-36 animate-pulse rounded-2xl border border-[var(--color-border-light)] bg-white/75" />
                           ))}
                         </div>
@@ -426,21 +426,21 @@ function FeatureBoard() {
                           Bu kategori için henüz ilan bulunmuyor.
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="grid grid-cols-2 gap-3">
                           {posts.map((post) => (
                             <Link
                               key={post.id}
                               href={post.href}
-                              className="group rounded-2xl border border-[var(--color-border-light)] bg-white/85 p-4 transition-all hover:-translate-y-0.5 hover:border-[var(--color-border)]"
+                              className="group flex h-full min-h-40 flex-col overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white/85 p-4 transition-all hover:-translate-y-0.5 hover:border-[var(--color-border)]"
                             >
-                              <div className="flex items-center justify-between text-[11px] font-medium text-[var(--color-ink-tertiary)]">
+                              <div className="flex items-center justify-between gap-2 text-[11px] font-medium text-[var(--color-ink-tertiary)]">
                                 <span>{card.accent}</span>
                                 <span>{post.meta}</span>
                               </div>
-                              <h4 className="mt-2 line-clamp-2 text-sm font-semibold text-[var(--color-ink)]">{post.title}</h4>
-                              <p className="mt-1 line-clamp-2 text-xs text-[var(--color-ink-secondary)]">{post.description}</p>
-                              <p className="mt-2 text-xs text-[var(--color-ink-tertiary)]">{post.location}</p>
-                              <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)]">
+                              <h4 className="mt-2 line-clamp-2 break-words text-sm font-semibold text-[var(--color-ink)]">{post.title}</h4>
+                              <p className="mt-1 line-clamp-2 break-words text-xs text-[var(--color-ink-secondary)]">{post.description}</p>
+                              <p className="mt-2 line-clamp-1 break-words text-xs text-[var(--color-ink-tertiary)]">{post.location}</p>
+                              <span className="mt-auto inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)]">
                                 İlana Git
                                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                               </span>
@@ -448,8 +448,9 @@ function FeatureBoard() {
                           ))}
                         </div>
                       )}
+                      </div>
 
-                      <div className="mt-5 flex justify-end">
+                      <div className="mt-auto flex justify-end pt-5">
                         <Link href={card.href} className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-ink)] transition hover:bg-white">
                           Tüm ilanları gör
                           <ArrowRight className="h-4 w-4" />
