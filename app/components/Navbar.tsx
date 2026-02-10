@@ -120,6 +120,12 @@ function getUsernameLabel(profile: { username?: string | null } | null | undefin
   return "@user";
 }
 
+function getPreferredUsername(profile: { username?: string | null } | null | undefined, fallbackEmail?: string | null) {
+  if (profile?.username) return profile.username;
+  if (fallbackEmail) return fallbackEmail;
+  return "user";
+}
+
 // Dropdown Component
 function NavDropdown({
   item, 
