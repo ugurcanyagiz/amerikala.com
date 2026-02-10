@@ -39,7 +39,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[var(--color-surface)]">
+    <div className="min-h-[calc(100vh-64px)] overflow-x-hidden bg-[var(--color-surface)]">
       <div className="flex">
         <Sidebar />
 
@@ -58,9 +58,9 @@ export default function Home() {
 
               <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/35 to-black/55" />
 
-              <div className="relative z-10 flex min-h-[420px] flex-col justify-center px-6 py-16 sm:min-h-[500px] sm:px-10 lg:min-h-[620px] lg:px-16">
+              <div className="relative z-10 flex min-h-[420px] flex-col justify-center px-4 py-14 sm:min-h-[500px] sm:px-10 sm:py-16 lg:min-h-[620px] lg:px-16">
                 <div className="max-w-2xl">
-                  <p className="mb-4 inline-flex items-center rounded-full border border-white/35 bg-black/20 px-4 py-1 text-xs font-medium uppercase tracking-[0.18em] text-white/90 sm:text-sm">
+                  <p className="mb-4 inline-flex max-w-full items-center rounded-full border border-white/35 bg-black/20 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-white/90 sm:px-4 sm:text-sm sm:tracking-[0.18em]">
                     Amerika&apos;daki Türk Topluluğu
                   </p>
 
@@ -72,14 +72,14 @@ export default function Home() {
                     Yeni şehirde hayatını hızlandır: güvenilir ilanları keşfet, sosyal çevreni büyüt, fırsatları kaçırma.
                   </p>
 
-                  <div className="mt-8 flex flex-wrap gap-3 text-sm font-medium text-white/95">
+                  <div className="mt-8 flex flex-wrap gap-2 text-xs font-medium text-white/95 sm:gap-3 sm:text-sm">
                     {[
                       "🏠 Yeni Evini Bul",
                       "💼 Kariyer Fırsatları",
                       "🛍️ Topluluktan Al-Sat",
                       "🤝 MeetUp ile Bağlantı Kur",
                     ].map((tagline) => (
-                      <span key={tagline} className="rounded-full border border-white/30 bg-black/25 px-4 py-2 backdrop-blur-[2px]">
+                      <span key={tagline} className="max-w-full rounded-full border border-white/30 bg-black/25 px-3 py-1.5 backdrop-blur-[2px] [overflow-wrap:anywhere] sm:px-4 sm:py-2">
                         {tagline}
                       </span>
                     ))}
@@ -171,7 +171,7 @@ function EventRow({ event }: { event: Event }) {
   return (
     <Link
       href={`/events/${event.id}`}
-      className="flex items-center gap-6 p-4 rounded-xl border border-[var(--color-border-light)] hover:border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] transition-all duration-200 group"
+      className="group flex flex-col items-start gap-3 rounded-xl border border-[var(--color-border-light)] p-4 transition-all duration-200 hover:border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] sm:flex-row sm:items-center sm:gap-6"
     >
       {/* Date */}
       <div className="flex-shrink-0 w-14 text-center">
@@ -180,15 +180,15 @@ function EventRow({ event }: { event: Event }) {
       </div>
 
       {/* Divider */}
-      <div className="h-10 w-px bg-[var(--color-border-light)]" />
+      <div className="hidden h-10 w-px bg-[var(--color-border-light)] sm:block" />
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         <h3 className="font-medium text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors truncate">
           {event.title}
         </h3>
-        <div className="flex items-center gap-4 mt-1 text-sm text-[var(--color-ink-secondary)]">
-          <span className="flex items-center gap-1">
+        <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-[var(--color-ink-secondary)]">
+          <span className="flex min-w-0 items-center gap-1 [overflow-wrap:anywhere]">
             <MapPin className="h-4 w-4" />
             {event.city}, {event.state}
           </span>
@@ -200,7 +200,7 @@ function EventRow({ event }: { event: Event }) {
       </div>
 
       {/* Arrow */}
-      <ArrowRight className="h-5 w-5 text-[var(--color-ink-tertiary)] group-hover:text-[var(--color-primary)] group-hover:translate-x-1 transition-all" />
+      <ArrowRight className="h-5 w-5 self-end text-[var(--color-ink-tertiary)] transition-all group-hover:translate-x-1 group-hover:text-[var(--color-primary)] sm:self-auto" />
     </Link>
   );
 }
@@ -272,7 +272,7 @@ function ActivityStream() {
           category: "realEstate",
           subcategory: listing.listing_type,
           title: listing.title,
-          summary: truncateText(listing.description, 140),
+          summary: truncateText(listing.description, 90),
           location: `${listing.city}, ${listing.state}`,
           time: formatRelativeTime(listing.created_at),
           price: formatCurrency(listing.price),
@@ -285,7 +285,7 @@ function ActivityStream() {
           category: "jobs",
           subcategory: job.listing_type,
           title: job.title,
-          summary: truncateText(job.description, 140),
+          summary: truncateText(job.description, 90),
           location: `${job.city}, ${job.state}`,
           time: formatRelativeTime(job.created_at),
           price: formatSalary(job.salary_min, job.salary_max, job.salary_type),
@@ -298,7 +298,7 @@ function ActivityStream() {
           id: `marketplace-${item.id}`,
           category: "marketplace",
           title: item.title,
-          summary: truncateText(item.description, 140),
+          summary: truncateText(item.description, 90),
           location: `${item.city}, ${item.state}`,
           time: formatRelativeTime(item.created_at),
           price: formatCurrency(item.price),
@@ -308,7 +308,7 @@ function ActivityStream() {
 
         const combined = [...mappedListings, ...mappedJobs, ...mappedMarketplace]
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-          .slice(0, 15);
+          .slice(0, 16);
 
         setActivityPosts(combined);
       } catch (error) {
@@ -343,7 +343,7 @@ function ActivityStream() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 mb-4">
+        <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
           {[
             { key: "all" as const, label: t("home.activityStream.filters.all") },
             { key: "realEstate" as const, label: t("home.activityStream.filters.realEstate") },
@@ -358,7 +358,7 @@ function ActivityStream() {
                 setSubcategory("all");
               }}
               aria-pressed={category === filter.key}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+              className={`w-full rounded-full border px-3 py-2 text-center text-sm font-medium transition-all sm:w-auto sm:px-4 ${
                 category === filter.key
                   ? "bg-[var(--color-primary)] text-white border-transparent shadow-sm"
                   : "bg-[var(--color-surface)] text-[var(--color-ink-secondary)] border-[var(--color-border-light)] hover:border-[var(--color-border)]"
@@ -370,8 +370,8 @@ function ActivityStream() {
         </div>
 
         <div
-          className={`flex flex-wrap gap-2 mb-10 transition-all duration-300 ${
-            showSubfilters ? "opacity-100 max-h-20" : "opacity-0 max-h-0 overflow-hidden"
+          className={`mb-10 flex flex-wrap gap-2 transition-all duration-300 ${
+            showSubfilters ? "max-h-40 opacity-100 sm:max-h-20" : "max-h-0 overflow-hidden opacity-0"
           }`}
           aria-hidden={!showSubfilters}
         >
@@ -406,58 +406,55 @@ function ActivityStream() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
             {filteredPosts.map((post) => (
-              <article
+              <Link
                 key={post.id}
-                className="group flex h-full flex-col rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-5 transition-all duration-200 hover:border-[var(--color-border)] hover:shadow-[var(--shadow-sm)]"
+                href={post.href}
+                className="group flex h-full min-w-0 flex-col rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3 transition-all duration-200 hover:border-[var(--color-border)] hover:shadow-[var(--shadow-sm)] sm:rounded-2xl sm:p-4"
               >
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <span className="max-w-full break-words px-3 py-1 text-xs font-semibold tracking-wide rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink)] [overflow-wrap:anywhere]">
-                      {t(`home.activityStream.categories.${post.category}`)}
-                    </span>
-                    {post.subcategory && (
-                      <span className="max-w-full break-words px-3 py-1 text-xs font-medium rounded-full bg-[var(--color-primary-subtle)] text-[var(--color-primary)] [overflow-wrap:anywhere]">
-                        {t(`home.activityStream.subcategoryLabels.${post.subcategory}`)}
-                      </span>
-                    )}
-                  </div>
-                  <span className="shrink-0 flex items-center gap-1 text-xs text-[var(--color-ink-tertiary)]">
+                <div className="mb-2 flex min-w-0 items-start justify-between gap-2">
+                  <span className="truncate rounded-full bg-[var(--color-surface-sunken)] px-2 py-1 text-[10px] font-semibold tracking-wide text-[var(--color-ink)] sm:text-xs">
+                    {t(`home.activityStream.categories.${post.category}`)}
+                  </span>
+                  <span className="shrink-0 flex items-center gap-1 text-[10px] text-[var(--color-ink-tertiary)] sm:text-xs">
                     <Clock className="h-3 w-3" />
                     {post.time}
                   </span>
                 </div>
-                <h3 className="mb-2 break-words text-lg font-semibold leading-snug text-[var(--color-ink)] [overflow-wrap:anywhere]">
-                  {post.title}
+
+                <h3 className="mb-1 truncate text-sm font-semibold leading-snug text-[var(--color-ink)] sm:text-base">
+                  {truncateText(post.title, 42)}
                 </h3>
-                <p className="mb-4 break-words text-sm leading-relaxed text-[var(--color-ink-secondary)] [overflow-wrap:anywhere]">
-                  {post.summary}
+                <p className="mb-2 text-xs leading-relaxed text-[var(--color-ink-secondary)] sm:text-sm">
+                  {truncateText(post.summary, 72)}
                 </p>
-                <div className="mb-5 flex flex-wrap items-center gap-3 text-xs text-[var(--color-ink-secondary)]">
-                  <span className="flex min-w-0 items-center gap-1 break-words [overflow-wrap:anywhere]">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {post.location}
+
+                <div className="mt-auto space-y-1 text-[10px] text-[var(--color-ink-secondary)] sm:text-xs">
+                  <span className="flex items-center gap-1 truncate">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                    {truncateText(post.location, 28)}
                   </span>
-                  {post.price && (
-                    <span className="max-w-full break-words px-2 py-1 rounded-full bg-[var(--color-surface-sunken)] [overflow-wrap:anywhere]">
-                      {post.price}
-                    </span>
-                  )}
-                  {post.tagLabel && (
-                    <span className="max-w-full break-words px-2 py-1 rounded-full bg-[var(--color-surface-sunken)] [overflow-wrap:anywhere]">
-                      {post.tagLabel}
-                    </span>
-                  )}
+
+                  <div className="flex min-w-0 flex-wrap items-center gap-1">
+                    {post.price && (
+                      <span className="max-w-full truncate rounded-full bg-[var(--color-surface-sunken)] px-2 py-1">
+                        {truncateText(post.price, 18)}
+                      </span>
+                    )}
+                    {post.tagLabel && (
+                      <span className="max-w-full truncate rounded-full bg-[var(--color-surface-sunken)] px-2 py-1">
+                        {truncateText(post.tagLabel, 16)}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <Link
-                  href={post.href}
-                  className="mt-auto inline-flex items-center gap-2 text-sm font-medium text-[var(--color-primary)] transition-all group-hover:gap-3"
-                >
+
+                <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[var(--color-primary)] transition-all group-hover:gap-2">
                   {t(`home.activityStream.cta.${post.category}`)}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </article>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </span>
+              </Link>
             ))}
           </div>
         )}
