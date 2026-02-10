@@ -44,29 +44,55 @@ export default function Home() {
         <Sidebar />
 
         <main className="flex-1">
-          {/* Hero Section - Static Visual + Auth Actions */}
-          <section className="relative overflow-hidden border-b border-[var(--color-border-light)] bg-gradient-to-b from-[var(--color-surface-raised)] to-[var(--color-surface)] py-10 sm:py-12 lg:py-16">
-            <div className="mx-auto flex max-w-6xl flex-col items-center px-4 sm:px-6 lg:px-8">
+          {/* Hero Section - Full-bleed visual + single CTA */}
+          <section className="relative overflow-hidden border-b border-[var(--color-border-light)]">
+            <div className="relative mx-auto min-h-[420px] max-w-7xl sm:min-h-[500px] lg:min-h-[620px]">
               <Image
                 src="/amerikala.png"
                 alt="Amerikala ana görseli"
-                width={1536}
-                height={2048}
+                fill
                 priority
-                className="h-auto w-full max-w-5xl object-contain"
+                className="object-cover object-center"
+                sizes="(max-width: 1280px) 100vw, 1280px"
               />
 
-              <div className="mt-8 flex w-full max-w-xl flex-col gap-3 sm:mt-10 sm:flex-row sm:justify-center sm:gap-4">
-                <Link href="/register" className="w-full sm:w-auto">
-                  <Button variant="primary" size="lg" className="h-12 w-full min-w-[170px] rounded-xl px-8">
-                    Register
-                  </Button>
-                </Link>
-                <Link href="/login" className="w-full sm:w-auto">
-                  <Button variant="outline" size="lg" className="h-12 w-full min-w-[170px] rounded-xl bg-white/90 px-8">
-                    Login
-                  </Button>
-                </Link>
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/35 to-black/55" />
+
+              <div className="relative z-10 flex min-h-[420px] flex-col justify-center px-6 py-16 sm:min-h-[500px] sm:px-10 lg:min-h-[620px] lg:px-16">
+                <div className="max-w-2xl">
+                  <p className="mb-4 inline-flex items-center rounded-full border border-white/35 bg-black/20 px-4 py-1 text-xs font-medium uppercase tracking-[0.18em] text-white/90 sm:text-sm">
+                    Amerika&apos;daki Türk Topluluğu
+                  </p>
+
+                  <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
+                    Emlak, İş, Alışveriş ve MeetUp fırsatları tek yerde.
+                  </h1>
+
+                  <p className="mt-5 max-w-xl text-base text-white/90 sm:text-lg">
+                    Yeni şehirde hayatını hızlandır: güvenilir ilanları keşfet, sosyal çevreni büyüt, fırsatları kaçırma.
+                  </p>
+
+                  <div className="mt-8 flex flex-wrap gap-3 text-sm font-medium text-white/95">
+                    {[
+                      "🏠 Yeni Evini Bul",
+                      "💼 Kariyer Fırsatları",
+                      "🛍️ Topluluktan Al-Sat",
+                      "🤝 MeetUp ile Bağlantı Kur",
+                    ].map((tagline) => (
+                      <span key={tagline} className="rounded-full border border-white/30 bg-black/25 px-4 py-2 backdrop-blur-[2px]">
+                        {tagline}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="mt-8">
+                    <Link href="/register">
+                      <Button variant="primary" size="lg" className="h-12 rounded-xl px-8 text-base font-semibold">
+                        Hemen Katıl!
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
