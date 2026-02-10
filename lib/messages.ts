@@ -20,22 +20,30 @@ type RawMessageRow = {
   read_at: string | null;
 };
 
+type RawProfile = {
+  id: string;
+  username: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+};
+
 type RawConversationParticipant = {
   conversation_id: string;
   user_id: string;
-  profiles: {
-    id: string;
-    username: string | null;
-    first_name: string | null;
-    last_name: string | null;
-    avatar_url: string | null;
-  } | null;
+  profiles: RawProfile[] | RawProfile | null;
 };
 
+function getParticipantProfile(profile: RawConversationParticipant["profiles"]): RawProfile | null {
+  if (!profile) return null;
+  return Array.isArray(profile) ? profile[0] || null : profile;
+}
+
 function buildDisplayName(profile: RawConversationParticipant["profiles"]) {
-  if (!profile) return "Kullanıcı";
-  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
-  return fullName || profile.username || "Kullanıcı";
+  const resolvedProfile = getParticipantProfile(profile);
+  if (!resolvedProfile) return "Kullanıcı";
+  const fullName = [resolvedProfile.first_name, resolvedProfile.last_name].filter(Boolean).join(" ").trim();
+  return fullName || resolvedProfile.username || "Kullanıcı";
 }
 
 export async function getMessagePreviews(userId: string): Promise<MessagePreview[]> {
@@ -106,11 +114,13 @@ export async function getMessagePreviews(userId: string): Promise<MessagePreview
         return null;
       }
 
+      const profile = getParticipantProfile(participant.profiles);
+
       return {
         conversationId,
         otherUserId: participant.user_id,
         otherUserName: buildDisplayName(participant.profiles),
-        otherUserAvatar: participant.profiles?.avatar_url || null,
+        otherUserAvatar: profile?.avatar_url || null,
         lastMessageId: lastMessage.id,
         lastMessageText: lastMessage.content,
         lastMessageCreatedAt: lastMessage.created_at,

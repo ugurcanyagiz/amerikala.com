@@ -86,47 +86,11 @@ const NAV_ITEMS = [
   },
 ];
 
-type MessagePreview = {
-  id: number;
-  name: string;
-  avatar: string;
-  isOnline: boolean;
-  lastMessage: string;
-  timestamp: string;
-  unread: number;
-};
-
-const MESSAGE_PREVIEWS: MessagePreview[] = [
-  {
-    id: 1,
-    name: "Ayşe Karaca",
-    avatar: "/avatars/ayse.jpg",
-    isOnline: true,
-    lastMessage: "Bu akşam meetup'a geliyor musun?",
-    timestamp: "2 dk",
-    unread: 2,
-  },
-  {
-    id: 2,
-    name: "Mehmet Şahin",
-    avatar: "/avatars/mehmet.jpg",
-    isOnline: false,
-    lastMessage: "İlan detaylarını gönderdim, bakabilir misin?",
-    timestamp: "18 dk",
-    unread: 1,
-  },
-  {
-    id: 3,
-    name: "Elif Demir",
-    avatar: "/avatars/elif.jpg",
-    isOnline: true,
-    lastMessage: "Yarın kahve için uygunsan haber ver 😊",
-    timestamp: "1 sa",
-    unread: 0,
-  },
-];
-
-
+function getNotificationTypeClasses(type: "likes" | "comments" | "events") {
+  if (type === "likes") return "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-200";
+  if (type === "comments") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200";
+  return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200";
+}
 
 function getDisplayName(profile: { first_name?: string | null; last_name?: string | null; username?: string | null } | null | undefined) {
   const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim();
@@ -488,11 +452,13 @@ export default function Navbar() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [messagePreviews, setMessagePreviews] = useState<MessagePreview[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesError, setMessagesError] = useState<string | null>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const notificationPanelRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const desktopNavItems = isAdmin
     ? [
@@ -517,29 +483,14 @@ export default function Navbar() {
         setNotificationPanelOpen(false);
       }
 
-      if (messagePanelRef.current && !messagePanelRef.current.contains(e.target as Node)) {
-        setMessagePanelOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
       if (messagesRef.current && !messagesRef.current.contains(e.target as Node)) {
         setMessagesOpen(false);
       }
     };
 
-    if (messagesOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [messagesOpen]);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const loadMessagePreviews = async () => {
@@ -600,6 +551,7 @@ export default function Navbar() {
   };
 
   const totalUnreadMessages = messagePreviews.reduce((sum, item) => sum + item.unreadCount, 0);
+  const latestNotifications = notifications.slice(0, 12);
 
   return (
     <>
@@ -646,7 +598,7 @@ export default function Navbar() {
                   <div ref={notificationPanelRef} className="relative hidden sm:block">
                     <button
                       onClick={() => {
-                        setNotificationPanelOpen((prev) => !prev);
+                        setNotificationPanelOpen(!notificationPanelOpen);
                         setUserMenuOpen(false);
                       }}
                       className="flex p-2.5 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800 transition-colors relative"
@@ -720,7 +672,7 @@ export default function Navbar() {
                                   )}
                                   <p className="text-xs text-neutral-400 mt-1">{getTimeAgo(notification.createdAt)}</p>
                                 </div>
-                                <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${getNotificationIconColor(notification.type)}`}>
+                                <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${getNotificationTypeClasses(notification.type)}`}>
                                   {notification.type === "likes" ? "Beğeni" : notification.type === "comments" ? "Yorum" : "Etkinlik"}
                                 </span>
                               </Link>
