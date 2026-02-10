@@ -5,8 +5,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { getTimeAgo, useNotifications } from "../contexts/NotificationContext";
 import { Avatar } from "./ui/Avatar";
 import { Button } from "./ui/Button";
+import { getMessagePreviews } from "@/lib/messages";
 import {
   Home,
   Calendar,
@@ -427,10 +429,15 @@ export default function Navbar() {
   const { user, profile, signOut, loading, isAdmin } = useAuth();
   const displayName = getDisplayName(profile);
   const usernameLabel = getUsernameLabel(profile, user?.email);
+  const { notifications, unreadCount, markAsRead, markAllAsRead, loading: notificationLoading } = useNotifications();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+  const [messagePanelOpen, setMessagePanelOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const notificationPanelRef = useRef<HTMLDivElement>(null);
+  const messagePanelRef = useRef<HTMLDivElement>(null);
   const desktopNavItems = isAdmin
     ? [
         ...NAV_ITEMS,
@@ -443,11 +450,19 @@ export default function Navbar() {
       ]
     : NAV_ITEMS;
 
-  // Close user menu on click outside
+  // Close menu/panels on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
+      }
+
+      if (notificationPanelRef.current && !notificationPanelRef.current.contains(e.target as Node)) {
+        setNotificationPanelOpen(false);
+      }
+
+      if (messagePanelRef.current && !messagePanelRef.current.contains(e.target as Node)) {
+        setMessagePanelOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -458,6 +473,23 @@ export default function Navbar() {
     setUserMenuOpen(false);
     await signOut();
     router.push("/");
+  };
+
+  const latestNotifications = notifications.slice(0, 6);
+  const messagePreviews = getMessagePreviews();
+  const totalMessageUnread = messagePreviews.reduce((total, item) => total + item.unread, 0);
+
+  const getNotificationIconColor = (type: string) => {
+    switch (type) {
+      case "likes":
+        return "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400";
+      case "comments":
+        return "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
+      case "events":
+        return "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400";
+      default:
+        return "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300";
+    }
   };
 
   return (
@@ -502,15 +534,162 @@ export default function Navbar() {
               ) : user ? (
                 <>
                   {/* Notifications */}
-                  <button className="hidden sm:flex p-2.5 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800 transition-colors relative">
-                    <Bell size={20} />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-                  </button>
+                  <div ref={notificationPanelRef} className="relative hidden sm:block">
+                    <button
+                      onClick={() => {
+                        setNotificationPanelOpen((prev) => !prev);
+                        setUserMenuOpen(false);
+                      }}
+                      className="flex p-2.5 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800 transition-colors relative"
+                      aria-label="Bildirim panelini aç"
+                      aria-expanded={notificationPanelOpen}
+                    >
+                      <Bell size={20} />
+                      {unreadCount > 0 && (
+                        <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-[18px] text-center">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      )}
+                    </button>
+
+                    {notificationPanelOpen && (
+                      <div className="absolute right-0 top-full mt-2 w-[380px] max-w-[86vw] bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Bildirimler</h3>
+                            <p className="text-xs text-neutral-500">{unreadCount > 0 ? `${unreadCount} okunmamış bildirim` : "Tüm bildirimler okundu"}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={markAllAsRead}
+                              className="text-xs font-medium text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
+                            >
+                              Tümünü okundu yap
+                            </button>
+                            <Link
+                              href="/notifications"
+                              onClick={() => setNotificationPanelOpen(false)}
+                              className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                            >
+                              Tümünü gör
+                            </Link>
+                          </div>
+                        </div>
+
+                        <div className="max-h-[420px] overflow-y-auto">
+                          {notificationLoading ? (
+                            <div className="p-6 text-sm text-neutral-500">Bildirimler yükleniyor...</div>
+                          ) : latestNotifications.length === 0 ? (
+                            <div className="p-8 text-center">
+                              <Bell className="w-10 h-10 mx-auto mb-3 text-neutral-300 dark:text-neutral-600" />
+                              <p className="text-sm text-neutral-500">Yeni bildirimin yok.</p>
+                            </div>
+                          ) : (
+                            latestNotifications.map((notification) => (
+                              <Link
+                                key={notification.id}
+                                href={notification.actionUrl || "/notifications"}
+                                onClick={() => {
+                                  markAsRead(notification.id);
+                                  setNotificationPanelOpen(false);
+                                }}
+                                className={`flex items-start gap-3 px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/60 transition-colors ${
+                                  !notification.isRead ? "bg-blue-50/40 dark:bg-blue-900/10" : ""
+                                }`}
+                              >
+                                <Avatar
+                                  src={notification.user.avatar || undefined}
+                                  fallback={notification.user.name}
+                                  size="sm"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm leading-5 text-neutral-700 dark:text-neutral-200">
+                                    <span className="font-semibold">{notification.user.name}</span> {notification.message}
+                                  </p>
+                                  {notification.content && (
+                                    <p className="text-xs text-neutral-500 truncate mt-0.5">{notification.content}</p>
+                                  )}
+                                  <p className="text-xs text-neutral-400 mt-1">{getTimeAgo(notification.createdAt)}</p>
+                                </div>
+                                <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${getNotificationIconColor(notification.type)}`}>
+                                  {notification.type === "likes" ? "Beğeni" : notification.type === "comments" ? "Yorum" : "Etkinlik"}
+                                </span>
+                              </Link>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Messages */}
-                  <button className="hidden sm:flex p-2.5 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800 transition-colors">
-                    <MessageSquare size={20} />
-                  </button>
+                  <div ref={messagePanelRef} className="relative hidden sm:block">
+                    <button
+                      onClick={() => {
+                        setMessagePanelOpen((prev) => !prev);
+                        setUserMenuOpen(false);
+                        setNotificationPanelOpen(false);
+                      }}
+                      className="flex p-2.5 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800 transition-colors relative"
+                      aria-label="Mesaj panelini aç"
+                      aria-expanded={messagePanelOpen}
+                    >
+                      <MessageSquare size={20} />
+                      {totalMessageUnread > 0 && (
+                        <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-blue-500 text-white text-[10px] font-semibold leading-[18px] text-center">
+                          {totalMessageUnread > 99 ? "99+" : totalMessageUnread}
+                        </span>
+                      )}
+                    </button>
+
+                    {messagePanelOpen && (
+                      <div className="absolute right-0 top-full mt-2 w-[360px] max-w-[86vw] bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Mesajlar</h3>
+                            <p className="text-xs text-neutral-500">{totalMessageUnread > 0 ? `${totalMessageUnread} okunmamış mesaj` : "Tüm mesajlar okundu"}</p>
+                          </div>
+                          <Link
+                            href="/messages"
+                            onClick={() => setMessagePanelOpen(false)}
+                            className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                          >
+                            Tümünü gör
+                          </Link>
+                        </div>
+
+                        <div className="max-h-[420px] overflow-y-auto">
+                          {messagePreviews.map((conversation) => (
+                            <Link
+                              key={conversation.id}
+                              href="/messages"
+                              onClick={() => setMessagePanelOpen(false)}
+                              className="flex items-start gap-3 px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/60 transition-colors"
+                            >
+                              <div className="relative">
+                                <Avatar src={conversation.avatar} fallback={conversation.name} size="sm" />
+                                {conversation.isOnline && (
+                                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-500 border border-white dark:border-neutral-900" />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">{conversation.name}</p>
+                                  <span className="text-[11px] text-neutral-400 whitespace-nowrap">{conversation.timestamp}</span>
+                                </div>
+                                <p className="text-xs text-neutral-500 truncate mt-0.5">{conversation.lastMessage}</p>
+                              </div>
+                              {conversation.unread > 0 && (
+                                <span className="text-[10px] min-w-[18px] h-[18px] px-1 rounded-full bg-blue-500 text-white font-semibold leading-[18px] text-center">
+                                  {conversation.unread}
+                                </span>
+                              )}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* User Menu */}
                   <div ref={userMenuRef} className="relative hidden md:block">
