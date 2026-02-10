@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type TouchEvent } from "react";
-import { Users, MapPin, ArrowRight, Clock, Loader2, CalendarDays, Building2, BriefcaseBusiness, ShoppingBag } from "lucide-react";
+import { Users, MapPin, ArrowRight, Clock, Loader2, CalendarDays, Building2, BriefcaseBusiness, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import { Button } from "./components/ui/Button";
 import { useLanguage } from "./contexts/LanguageContext";
@@ -169,42 +169,72 @@ export default function Home() {
 function FeatureBoard() {
   const cards = [
     {
+      key: "events",
       title: "Etkinliklere Katıl !",
-      description: "Şehrindeki profesyonel buluşmaları, networking gecelerini ve topluluk etkinliklerini keşfet.",
+      description: "Profesyonel meetup, seminer ve networking buluşmalarını keşfet.",
       href: "/events",
       icon: CalendarDays,
-      theme: "from-[#0F172A] via-[#1D4ED8] to-[#0EA5E9]",
+      image:
+        "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1400&q=80",
       accent: "Etkinlik & Networking",
+      overlay: "from-slate-900/85 via-blue-900/70 to-cyan-700/60",
     },
     {
+      key: "realEstate",
       title: "Emlak İlanlarını Gör !",
-      description: "Kiralık, satılık ve ev arkadaşı ilanlarını filtreleyerek sana uygun yaşam alanını bul.",
+      description: "Kiralık, satılık ve ev arkadaşı seçenekleriyle yeni yaşam alanını bul.",
       href: "/emlak",
       icon: Building2,
-      theme: "from-[#1F2937] via-[#0F766E] to-[#14B8A6]",
+      image:
+        "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1400&q=80",
       accent: "Emlak & Yaşam",
+      overlay: "from-slate-950/80 via-slate-900/65 to-teal-800/55",
     },
     {
+      key: "jobs",
       title: "İş İlanlarını Gör !",
-      description: "Uzmanlığına uygun güncel pozisyonları incele, hızlı başvuru ile yeni kariyer adımını at.",
+      description: "Uzmanlığına uygun ilanlara ulaş, profesyonel kariyer adımını hızlandır.",
       href: "/is",
       icon: BriefcaseBusiness,
-      theme: "from-[#111827] via-[#7C3AED] to-[#C026D3]",
+      image:
+        "https://images.unsplash.com/photo-1521790797524-b2497295b8a0?auto=format&fit=crop&w=1400&q=80",
       accent: "Kariyer & Fırsatlar",
+      overlay: "from-slate-950/80 via-violet-950/65 to-fuchsia-800/50",
     },
     {
+      key: "marketplace",
       title: "Alışveriş !",
-      description: "Topluluk içinde güvenle al-sat yap, ihtiyaçlarına uygun ürünleri avantajlı fiyatlarla yakala.",
+      description: "Topluluktan güvenli al-sat ilanlarını incele, fırsatları kaçırma.",
       href: "/alisveris",
       icon: ShoppingBag,
-      theme: "from-[#1E1B4B] via-[#DB2777] to-[#FB7185]",
+      image:
+        "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80",
       accent: "Al-Sat & Topluluk",
+      overlay: "from-slate-950/80 via-rose-900/65 to-orange-800/55",
     },
   ] as const;
+
+  type CardKey = (typeof cards)[number]["key"];
+  type CatalogPost = {
+    id: string;
+    title: string;
+    description: string;
+    location: string;
+    meta: string;
+    href: string;
+    createdAt: string;
+  };
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogPosts, setCatalogPosts] = useState<Record<CardKey, CatalogPost[]>>({
+    events: [],
+    realEstate: [],
+    jobs: [],
+    marketplace: [],
+  });
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -213,6 +243,82 @@ function FeatureBoard() {
 
     return () => window.clearInterval(interval);
   }, [cards.length]);
+
+  useEffect(() => {
+    const formatAge = (createdAt: string) => {
+      const diff = Date.now() - new Date(createdAt).getTime();
+      const minutes = Math.max(1, Math.floor(diff / 1000 / 60));
+      if (minutes < 60) return `${minutes} dk önce`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours} saat önce`;
+      const days = Math.floor(hours / 24);
+      return `${days} gün önce`;
+    };
+
+    const fetchCatalogPosts = async () => {
+      setCatalogLoading(true);
+      try {
+        const [eventsRes, listingsRes, jobsRes, marketRes] = await Promise.all([
+          publicSupabase.from("events").select("id, title, city, state, created_at").eq("status", "approved").order("created_at", { ascending: false }).limit(4),
+          publicSupabase.from("listings").select("id, title, description, city, state, created_at").eq("status", "approved").order("created_at", { ascending: false }).limit(4),
+          publicSupabase.from("job_listings").select("id, title, description, city, state, created_at, is_remote").eq("status", "approved").order("created_at", { ascending: false }).limit(4),
+          publicSupabase.from("marketplace_listings").select("id, title, description, city, state, created_at").eq("status", "approved").order("created_at", { ascending: false }).limit(4),
+        ]);
+
+        setCatalogPosts({
+          events:
+            eventsRes.data?.map((item) => ({
+              id: item.id,
+              title: item.title,
+              description: "Topluluktaki en güncel etkinliği hemen incele.",
+              location: `${item.city}, ${item.state}`,
+              meta: formatAge(item.created_at),
+              href: `/events/${item.id}`,
+              createdAt: item.created_at,
+            })) ?? [],
+          realEstate:
+            listingsRes.data?.map((item) => ({
+              id: item.id,
+              title: item.title,
+              description: item.description || "Yeni emlak ilanını keşfet.",
+              location: `${item.city}, ${item.state}`,
+              meta: formatAge(item.created_at),
+              href: `/emlak/ilan/${item.id}`,
+              createdAt: item.created_at,
+            })) ?? [],
+          jobs:
+            jobsRes.data?.map((item) => ({
+              id: item.id,
+              title: item.title,
+              description: item.description || "İş ilanı detaylarına göz at.",
+              location: item.is_remote ? "Remote" : `${item.city}, ${item.state}`,
+              meta: formatAge(item.created_at),
+              href: `/is/ilan/${item.id}`,
+              createdAt: item.created_at,
+            })) ?? [],
+          marketplace:
+            marketRes.data?.map((item) => ({
+              id: item.id,
+              title: item.title,
+              description: item.description || "Yeni al-sat ilanını görüntüle.",
+              location: `${item.city}, ${item.state}`,
+              meta: formatAge(item.created_at),
+              href: `/alisveris/ilan/${item.id}`,
+              createdAt: item.created_at,
+            })) ?? [],
+        });
+      } catch (error) {
+        console.error("Feature board catalog fetch error:", error);
+      } finally {
+        setCatalogLoading(false);
+      }
+    };
+
+    fetchCatalogPosts();
+  }, []);
+
+  const nextSlide = () => setActiveIndex((prev) => (prev + 1) % cards.length);
+  const prevSlide = () => setActiveIndex((prev) => (prev - 1 + cards.length) % cards.length);
 
   const onTouchStart = (event: TouchEvent<HTMLDivElement>) => {
     setTouchStartX(event.touches[0]?.clientX ?? null);
@@ -229,55 +335,131 @@ function FeatureBoard() {
     const swipeDistance = touchStartX - touchEndX;
     const swipeThreshold = 50;
 
-    if (swipeDistance > swipeThreshold) {
-      setActiveIndex((prev) => (prev + 1) % cards.length);
-    } else if (swipeDistance < -swipeThreshold) {
-      setActiveIndex((prev) => (prev - 1 + cards.length) % cards.length);
-    }
+    if (swipeDistance > swipeThreshold) nextSlide();
+    if (swipeDistance < -swipeThreshold) prevSlide();
   };
 
   return (
-    <section className="border-b border-[var(--color-border-light)] bg-[var(--color-surface)] py-10 sm:py-14">
+    <section className="border-b border-[var(--color-border-light)] bg-[var(--color-surface)] py-12 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
-        <div className="mb-6 flex items-end justify-between gap-4 sm:mb-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-secondary)]">Öne Çıkan Panolar</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">Topluluğun profesyonel fırsatlarına hızlı erişim</h2>
-          </div>
+        <div className="mb-6 sm:mb-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-secondary)]">Öne Çıkan Panolar</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">Tanıtım ve güncel katalog akışları</h2>
         </div>
 
-        <div className="overflow-hidden" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
-          <div className="flex transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
-            {cards.map((card) => {
-              const Icon = card.icon;
-              return (
-                <div key={card.title} className="w-full flex-shrink-0 px-1">
-                  <Link
-                    href={card.href}
-                    className={`group relative block overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-r ${card.theme} p-6 text-white shadow-[0_20px_45px_-25px_rgba(15,23,42,0.65)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_30px_55px_-28px_rgba(15,23,42,0.8)] sm:p-8`}
-                  >
-                    <div className="absolute -right-10 -top-12 h-44 w-44 rounded-full bg-white/10 blur-2xl" />
-                    <div className="absolute -bottom-16 -left-8 h-48 w-48 rounded-full bg-black/20 blur-3xl" />
+        <div className="relative" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+          <button
+            type="button"
+            onClick={prevSlide}
+            aria-label="Önceki slayt"
+            className="absolute -left-4 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-[var(--color-border)] bg-white/90 p-2 text-[var(--color-ink)] shadow-lg backdrop-blur sm:block"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
 
-                    <div className="relative z-10 flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
-                      <div className="max-w-2xl">
-                        <span className="inline-flex items-center rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-white/95">
-                          {card.accent}
-                        </span>
-                        <h3 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">{card.title}</h3>
-                        <p className="mt-3 text-sm leading-relaxed text-white/85 sm:text-base">{card.description}</p>
-                      </div>
+          <button
+            type="button"
+            onClick={nextSlide}
+            aria-label="Sonraki slayt"
+            className="absolute -right-4 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-[var(--color-border)] bg-white/90 p-2 text-[var(--color-ink)] shadow-lg backdrop-blur sm:block"
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
 
-                      <div className="flex items-center gap-3 self-start rounded-2xl border border-white/30 bg-white/15 px-4 py-3 backdrop-blur-sm sm:self-auto">
-                        <Icon className="h-6 w-6" />
-                        <span className="text-sm font-medium">Menüye Git</span>
-                        <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="overflow-hidden rounded-3xl">
+              <div className="flex transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
+                {cards.map((card) => {
+                  const Icon = card.icon;
+                  return (
+                    <div key={card.title} className="w-full flex-shrink-0">
+                      <Link
+                        href={card.href}
+                        className="group relative block overflow-hidden rounded-3xl border border-white/20 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.9)]"
+                      >
+                        <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${card.image})` }} />
+                        <div className={`absolute inset-0 bg-gradient-to-br ${card.overlay}`} />
+
+                        <div className="relative z-10 flex aspect-square min-h-[360px] flex-col p-7 text-white sm:min-h-[500px] sm:p-10 lg:p-12">
+                          <span className="inline-flex w-fit items-center rounded-full border border-white/35 bg-black/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/95">
+                            {card.accent}
+                          </span>
+
+                          <div className="mt-5 max-w-xl">
+                            <h3 className="text-3xl font-semibold tracking-tight sm:text-5xl">{card.title}</h3>
+                            <p className="mt-4 text-base font-medium text-white/90 sm:text-lg">{card.description}</p>
+                          </div>
+
+                          <div className="mt-auto flex items-center justify-between gap-4">
+                            <span className="inline-flex items-center gap-2 rounded-2xl border border-white/30 bg-white/15 px-4 py-2.5 text-sm font-semibold backdrop-blur-md sm:px-5 sm:py-3 sm:text-base">
+                              <Icon className="h-5 w-5" />
+                              Menüye Git
+                              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                            </span>
+
+                            <Icon className="h-24 w-24 shrink-0 text-white/80 sm:h-32 sm:w-32 lg:h-36 lg:w-36" strokeWidth={1.25} />
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-3xl border border-[var(--color-border-light)] bg-[var(--color-surface-sunken)] p-5 sm:p-7">
+              <div className="flex transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
+                {cards.map((card) => {
+                  const posts = catalogPosts[card.key];
+                  return (
+                    <div key={`catalog-${card.key}`} className="w-full flex-shrink-0">
+                      <h3 className="mb-5 text-3xl font-semibold tracking-tight text-[var(--color-ink)]">En son ilanlar</h3>
+
+                      {catalogLoading ? (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          {Array.from({ length: 4 }).map((_, index) => (
+                            <div key={index} className="h-36 animate-pulse rounded-2xl border border-[var(--color-border-light)] bg-white/75" />
+                          ))}
+                        </div>
+                      ) : posts.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-white/70 p-6 text-sm text-[var(--color-ink-secondary)]">
+                          Bu kategori için henüz ilan bulunmuyor.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          {posts.map((post) => (
+                            <Link
+                              key={post.id}
+                              href={post.href}
+                              className="group rounded-2xl border border-[var(--color-border-light)] bg-white/85 p-4 transition-all hover:-translate-y-0.5 hover:border-[var(--color-border)]"
+                            >
+                              <div className="flex items-center justify-between text-[11px] font-medium text-[var(--color-ink-tertiary)]">
+                                <span>{card.accent}</span>
+                                <span>{post.meta}</span>
+                              </div>
+                              <h4 className="mt-2 line-clamp-2 text-sm font-semibold text-[var(--color-ink)]">{post.title}</h4>
+                              <p className="mt-1 line-clamp-2 text-xs text-[var(--color-ink-secondary)]">{post.description}</p>
+                              <p className="mt-2 text-xs text-[var(--color-ink-tertiary)]">{post.location}</p>
+                              <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)]">
+                                İlana Git
+                                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                              </span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="mt-5 flex justify-end">
+                        <Link href={card.href} className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-ink)] transition hover:bg-white">
+                          Tüm ilanları gör
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
                       </div>
                     </div>
-                  </Link>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
 
