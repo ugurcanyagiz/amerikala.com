@@ -86,48 +86,6 @@ const NAV_ITEMS = [
   },
 ];
 
-type MessagePreview = {
-  id: number;
-  name: string;
-  avatar: string;
-  isOnline: boolean;
-  lastMessage: string;
-  timestamp: string;
-  unread: number;
-};
-
-const MESSAGE_PREVIEWS: MessagePreview[] = [
-  {
-    id: 1,
-    name: "Ayşe Karaca",
-    avatar: "/avatars/ayse.jpg",
-    isOnline: true,
-    lastMessage: "Bu akşam meetup'a geliyor musun?",
-    timestamp: "2 dk",
-    unread: 2,
-  },
-  {
-    id: 2,
-    name: "Mehmet Şahin",
-    avatar: "/avatars/mehmet.jpg",
-    isOnline: false,
-    lastMessage: "İlan detaylarını gönderdim, bakabilir misin?",
-    timestamp: "18 dk",
-    unread: 1,
-  },
-  {
-    id: 3,
-    name: "Elif Demir",
-    avatar: "/avatars/elif.jpg",
-    isOnline: true,
-    lastMessage: "Yarın kahve için uygunsan haber ver 😊",
-    timestamp: "1 sa",
-    unread: 0,
-  },
-];
-
-
-
 function getDisplayName(profile: { first_name?: string | null; last_name?: string | null; username?: string | null } | null | undefined) {
   const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim();
   return fullName || profile?.username || "Kullanıcı";
