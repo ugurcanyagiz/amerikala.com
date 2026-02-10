@@ -46,7 +46,7 @@ export default function Home() {
         <main className="flex-1">
           {/* Hero Section - Full-bleed visual + single CTA */}
           <section className="relative overflow-hidden border-b border-[var(--color-border-light)]">
-            <div className="relative mx-auto min-h-[420px] max-w-7xl sm:min-h-[500px] lg:min-h-[620px]">
+            <div className="relative min-h-[420px] w-full sm:min-h-[500px] lg:min-h-[620px]">
               <Image
                 src="/amerikala.png"
                 alt="Amerikala ana görseli"
@@ -342,10 +342,6 @@ function FeatureBoard() {
   return (
     <section className="border-b border-[var(--color-border-light)] bg-[var(--color-surface)] py-12 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
-        <div className="mb-6 sm:mb-8">
-          <h2 className="text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">Son eklenen ilanlar</h2>
-        </div>
-
         <div className="relative" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
           <button
             type="button"
@@ -418,8 +414,6 @@ function FeatureBoard() {
                       className="absolute inset-0 flex w-full flex-col transition-transform duration-700 ease-out"
                       style={{ transform: `translateX(${translate}%)` }}
                     >
-                      <h3 className="mb-5 text-3xl font-semibold tracking-tight text-[var(--color-ink)]">Son eklenen ilanlar</h3>
-
                       <div className="flex-1">
                         {catalogLoading ? (
                           <div className="grid grid-cols-2 gap-3">
