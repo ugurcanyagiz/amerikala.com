@@ -6,6 +6,7 @@ import "./globals.css";
 import Navbar from "./components/Navbar";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import FloatingLanguageSwitcher from "./components/FloatingLanguageSwitcher";
 
 const inter = Inter({
@@ -82,16 +83,17 @@ export default function RootLayout({
       >
         <AuthProvider>
           <LanguageProvider>
-            {/* Floating Language Switcher */}
-            <FloatingLanguageSwitcher />
+            <NotificationProvider>
+              {/* Floating Language Switcher */}
+              <FloatingLanguageSwitcher />
 
-            {/* Main Layout */}
-            <div className="relative min-h-screen flex flex-col bg-[var(--color-surface)]">
-              <Suspense fallback={<NavbarFallback />}>
-                <Navbar />
-              </Suspense>
+              {/* Main Layout */}
+              <div className="relative min-h-screen flex flex-col bg-[var(--color-surface)]">
+                <Suspense fallback={<NavbarFallback />}>
+                  <Navbar />
+                </Suspense>
 
-              <main className="flex-1">{children}</main>
+                <main className="flex-1">{children}</main>
 
               {/* Footer */}
               <footer className="border-t border-[var(--color-border-light)] bg-[var(--color-surface)] mt-auto">
@@ -217,7 +219,8 @@ export default function RootLayout({
                   </div>
                 </div>
               </footer>
-            </div>
+              </div>
+            </NotificationProvider>
           </LanguageProvider>
         </AuthProvider>
       </body>
