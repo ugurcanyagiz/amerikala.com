@@ -260,7 +260,7 @@ function MobileBottomNav() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 z-50 safe-area-inset-bottom">
-      <div className="h-16 overflow-x-auto scrollbar-none">
+      <div className="h-16 overflow-x-auto scrollbar-hide">
         <div className="flex items-center gap-1 min-w-max px-2 h-full">
         {mobileItems.map((item) => {
           const Icon = item.icon;

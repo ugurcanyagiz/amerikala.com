@@ -39,7 +39,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[var(--color-surface)]">
+    <div className="min-h-[calc(100vh-64px)] overflow-x-hidden bg-[var(--color-surface)]">
       <div className="flex">
         <Sidebar />
 
@@ -58,9 +58,9 @@ export default function Home() {
 
               <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/35 to-black/55" />
 
-              <div className="relative z-10 flex min-h-[420px] flex-col justify-center px-6 py-16 sm:min-h-[500px] sm:px-10 lg:min-h-[620px] lg:px-16">
+              <div className="relative z-10 flex min-h-[420px] flex-col justify-center px-4 py-14 sm:min-h-[500px] sm:px-10 sm:py-16 lg:min-h-[620px] lg:px-16">
                 <div className="max-w-2xl">
-                  <p className="mb-4 inline-flex items-center rounded-full border border-white/35 bg-black/20 px-4 py-1 text-xs font-medium uppercase tracking-[0.18em] text-white/90 sm:text-sm">
+                  <p className="mb-4 inline-flex max-w-full items-center rounded-full border border-white/35 bg-black/20 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-white/90 sm:px-4 sm:text-sm sm:tracking-[0.18em]">
                     Amerika&apos;daki Türk Topluluğu
                   </p>
 
@@ -72,14 +72,14 @@ export default function Home() {
                     Yeni şehirde hayatını hızlandır: güvenilir ilanları keşfet, sosyal çevreni büyüt, fırsatları kaçırma.
                   </p>
 
-                  <div className="mt-8 flex flex-wrap gap-3 text-sm font-medium text-white/95">
+                  <div className="mt-8 flex flex-wrap gap-2 text-xs font-medium text-white/95 sm:gap-3 sm:text-sm">
                     {[
                       "🏠 Yeni Evini Bul",
                       "💼 Kariyer Fırsatları",
                       "🛍️ Topluluktan Al-Sat",
                       "🤝 MeetUp ile Bağlantı Kur",
                     ].map((tagline) => (
-                      <span key={tagline} className="rounded-full border border-white/30 bg-black/25 px-4 py-2 backdrop-blur-[2px]">
+                      <span key={tagline} className="max-w-full rounded-full border border-white/30 bg-black/25 px-3 py-1.5 backdrop-blur-[2px] [overflow-wrap:anywhere] sm:px-4 sm:py-2">
                         {tagline}
                       </span>
                     ))}
@@ -171,7 +171,7 @@ function EventRow({ event }: { event: Event }) {
   return (
     <Link
       href={`/events/${event.id}`}
-      className="flex items-center gap-6 p-4 rounded-xl border border-[var(--color-border-light)] hover:border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] transition-all duration-200 group"
+      className="group flex flex-col items-start gap-3 rounded-xl border border-[var(--color-border-light)] p-4 transition-all duration-200 hover:border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] sm:flex-row sm:items-center sm:gap-6"
     >
       {/* Date */}
       <div className="flex-shrink-0 w-14 text-center">
@@ -180,15 +180,15 @@ function EventRow({ event }: { event: Event }) {
       </div>
 
       {/* Divider */}
-      <div className="h-10 w-px bg-[var(--color-border-light)]" />
+      <div className="hidden h-10 w-px bg-[var(--color-border-light)] sm:block" />
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         <h3 className="font-medium text-[var(--color-ink)] group-hover:text-[var(--color-primary)] transition-colors truncate">
           {event.title}
         </h3>
-        <div className="flex items-center gap-4 mt-1 text-sm text-[var(--color-ink-secondary)]">
-          <span className="flex items-center gap-1">
+        <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-[var(--color-ink-secondary)]">
+          <span className="flex min-w-0 items-center gap-1 [overflow-wrap:anywhere]">
             <MapPin className="h-4 w-4" />
             {event.city}, {event.state}
           </span>
@@ -200,7 +200,7 @@ function EventRow({ event }: { event: Event }) {
       </div>
 
       {/* Arrow */}
-      <ArrowRight className="h-5 w-5 text-[var(--color-ink-tertiary)] group-hover:text-[var(--color-primary)] group-hover:translate-x-1 transition-all" />
+      <ArrowRight className="h-5 w-5 self-end text-[var(--color-ink-tertiary)] transition-all group-hover:translate-x-1 group-hover:text-[var(--color-primary)] sm:self-auto" />
     </Link>
   );
 }
@@ -343,7 +343,7 @@ function ActivityStream() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 mb-4">
+        <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
           {[
             { key: "all" as const, label: t("home.activityStream.filters.all") },
             { key: "realEstate" as const, label: t("home.activityStream.filters.realEstate") },
@@ -358,7 +358,7 @@ function ActivityStream() {
                 setSubcategory("all");
               }}
               aria-pressed={category === filter.key}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+              className={`w-full rounded-full border px-3 py-2 text-center text-sm font-medium transition-all sm:w-auto sm:px-4 ${
                 category === filter.key
                   ? "bg-[var(--color-primary)] text-white border-transparent shadow-sm"
                   : "bg-[var(--color-surface)] text-[var(--color-ink-secondary)] border-[var(--color-border-light)] hover:border-[var(--color-border)]"
@@ -370,8 +370,8 @@ function ActivityStream() {
         </div>
 
         <div
-          className={`flex flex-wrap gap-2 mb-10 transition-all duration-300 ${
-            showSubfilters ? "opacity-100 max-h-20" : "opacity-0 max-h-0 overflow-hidden"
+          className={`mb-10 flex flex-wrap gap-2 transition-all duration-300 ${
+            showSubfilters ? "max-h-40 opacity-100 sm:max-h-20" : "max-h-0 overflow-hidden opacity-0"
           }`}
           aria-hidden={!showSubfilters}
         >
@@ -406,11 +406,11 @@ function ActivityStream() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
             {filteredPosts.map((post) => (
               <article
                 key={post.id}
-                className="group flex h-full flex-col rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-5 transition-all duration-200 hover:border-[var(--color-border)] hover:shadow-[var(--shadow-sm)]"
+                className="group flex h-full flex-col rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-4 transition-all duration-200 hover:border-[var(--color-border)] hover:shadow-[var(--shadow-sm)] sm:p-5"
               >
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div className="flex min-w-0 flex-wrap items-center gap-2">
