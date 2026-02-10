@@ -8,6 +8,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { getTimeAgo, useNotifications } from "../contexts/NotificationContext";
 import { Avatar } from "./ui/Avatar";
 import { Button } from "./ui/Button";
+import { getMessagePreviews, type MessagePreview } from "@/lib/messages";
+import { supabase } from "@/lib/supabase/client";
 import {
   Home,
   Calendar,
@@ -27,8 +29,6 @@ import {
   List,
   Users,
   Shield,
-  MapPin,
-  Clock,
   Package,
 } from "lucide-react";
 
@@ -131,6 +131,21 @@ const MESSAGE_PREVIEWS: MessagePreview[] = [
 function getDisplayName(profile: { first_name?: string | null; last_name?: string | null; username?: string | null } | null | undefined) {
   const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim();
   return fullName || profile?.username || "Kullanıcı";
+}
+
+function formatMessageTime(dateString: string) {
+  const createdAt = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - createdAt.getTime();
+  const minutes = Math.floor(diffMs / 60000);
+
+  if (minutes < 1) return "Şimdi";
+  if (minutes < 60) return `${minutes} dk`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} sa`;
+
+  return createdAt.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
 }
 
 function getUsernameLabel(profile: { username?: string | null } | null | undefined, fallbackEmail?: string | null) {
@@ -508,6 +523,74 @@ export default function Navbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (messagesRef.current && !messagesRef.current.contains(e.target as Node)) {
+        setMessagesOpen(false);
+      }
+    };
+
+    if (messagesOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [messagesOpen]);
+
+  useEffect(() => {
+    const loadMessagePreviews = async () => {
+      if (!user) {
+        setMessagePreviews([]);
+        return;
+      }
+
+      setMessagesLoading(true);
+      setMessagesError(null);
+
+      try {
+        const previews = await getMessagePreviews(user.id);
+        setMessagePreviews(previews);
+      } catch (error) {
+        console.error("Mesaj önizlemeleri alınamadı:", error);
+        setMessagesError("Mesajlar yüklenemedi.");
+      } finally {
+        setMessagesLoading(false);
+      }
+    };
+
+    loadMessagePreviews();
+
+    if (!user) {
+      return;
+    }
+
+    const channel = supabase
+      .channel(`navbar-messages-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+        },
+        async () => {
+          try {
+            const previews = await getMessagePreviews(user.id);
+            setMessagePreviews(previews);
+          } catch (error) {
+            console.error("Realtime mesaj güncelleme hatası:", error);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const handleSignOut = async () => {
     setUserMenuOpen(false);
