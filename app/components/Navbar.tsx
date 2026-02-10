@@ -7,6 +7,8 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Avatar } from "./ui/Avatar";
 import { Button } from "./ui/Button";
+import { getMessagePreviews, type MessagePreview } from "@/lib/messages";
+import { supabase } from "@/lib/supabase/client";
 import {
   Home,
   Calendar,
@@ -26,8 +28,6 @@ import {
   List,
   Users,
   Shield,
-  MapPin,
-  Clock,
   Package,
 } from "lucide-react";
 
@@ -89,6 +89,21 @@ const NAV_ITEMS = [
 function getDisplayName(profile: { first_name?: string | null; last_name?: string | null; username?: string | null } | null | undefined) {
   const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim();
   return fullName || profile?.username || "Kullanıcı";
+}
+
+function formatMessageTime(dateString: string) {
+  const createdAt = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - createdAt.getTime();
+  const minutes = Math.floor(diffMs / 60000);
+
+  if (minutes < 1) return "Şimdi";
+  if (minutes < 60) return `${minutes} dk`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} sa`;
+
+  return createdAt.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
 }
 
 function getUsernameLabel(profile: { username?: string | null } | null | undefined, fallbackEmail?: string | null) {
@@ -430,7 +445,12 @@ export default function Navbar() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [messagesOpen, setMessagesOpen] = useState(false);
+  const [messagePreviews, setMessagePreviews] = useState<MessagePreview[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState<string | null>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const desktopNavItems = isAdmin
     ? [
         ...NAV_ITEMS,
@@ -454,11 +474,81 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (messagesRef.current && !messagesRef.current.contains(e.target as Node)) {
+        setMessagesOpen(false);
+      }
+    };
+
+    if (messagesOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [messagesOpen]);
+
+  useEffect(() => {
+    const loadMessagePreviews = async () => {
+      if (!user) {
+        setMessagePreviews([]);
+        return;
+      }
+
+      setMessagesLoading(true);
+      setMessagesError(null);
+
+      try {
+        const previews = await getMessagePreviews(user.id);
+        setMessagePreviews(previews);
+      } catch (error) {
+        console.error("Mesaj önizlemeleri alınamadı:", error);
+        setMessagesError("Mesajlar yüklenemedi.");
+      } finally {
+        setMessagesLoading(false);
+      }
+    };
+
+    loadMessagePreviews();
+
+    if (!user) {
+      return;
+    }
+
+    const channel = supabase
+      .channel(`navbar-messages-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+        },
+        async () => {
+          try {
+            const previews = await getMessagePreviews(user.id);
+            setMessagePreviews(previews);
+          } catch (error) {
+            console.error("Realtime mesaj güncelleme hatası:", error);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const handleSignOut = async () => {
     setUserMenuOpen(false);
     await signOut();
     router.push("/");
   };
+
+  const totalUnreadMessages = messagePreviews.reduce((sum, item) => sum + item.unreadCount, 0);
 
   return (
     <>
@@ -508,9 +598,85 @@ export default function Navbar() {
                   </button>
 
                   {/* Messages */}
-                  <button className="hidden sm:flex p-2.5 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800 transition-colors">
-                    <MessageSquare size={20} />
-                  </button>
+                  <div ref={messagesRef} className="relative hidden sm:block">
+                    <button
+                      onClick={() => setMessagesOpen((prev) => !prev)}
+                      className="flex p-2.5 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800 transition-colors relative"
+                      aria-label="Mesajlar"
+                    >
+                      <MessageSquare size={20} />
+                      {totalUnreadMessages > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 rounded-full bg-blue-600 text-white text-[10px] font-semibold flex items-center justify-center">
+                          {totalUnreadMessages > 99 ? "99+" : totalUnreadMessages}
+                        </span>
+                      )}
+                    </button>
+
+                    {messagesOpen && (
+                      <div className="absolute right-0 top-full mt-2 w-[370px] max-w-[90vw] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-800 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Mesajlar</p>
+                            <p className="text-xs text-neutral-500">{totalUnreadMessages} okunmamış mesaj</p>
+                          </div>
+                          <Link
+                            href="/messages"
+                            onClick={() => setMessagesOpen(false)}
+                            className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                          >
+                            Tümünü Gör
+                          </Link>
+                        </div>
+
+                        <div className="max-h-[420px] overflow-y-auto">
+                          {messagesLoading ? (
+                            <div className="p-4 text-sm text-neutral-500">Mesajlar yükleniyor...</div>
+                          ) : messagesError ? (
+                            <div className="p-4 text-sm text-red-500">{messagesError}</div>
+                          ) : messagePreviews.length === 0 ? (
+                            <div className="p-4 text-sm text-neutral-500">Henüz bir mesajınız yok.</div>
+                          ) : (
+                            messagePreviews.slice(0, 8).map((conversation) => (
+                              <button
+                                key={conversation.conversationId}
+                                onClick={() => {
+                                  setMessagesOpen(false);
+                                  router.push(`/messages?conversation=${conversation.conversationId}`);
+                                }}
+                                className="w-full px-4 py-3 flex items-start gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/70 transition-colors text-left border-b last:border-b-0 border-neutral-100 dark:border-neutral-800"
+                              >
+                                <Avatar
+                                  src={conversation.otherUserAvatar || undefined}
+                                  fallback={conversation.otherUserName}
+                                  size="md"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-2 mb-1">
+                                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">
+                                      {conversation.otherUserName}
+                                    </p>
+                                    <span className="text-xs text-neutral-500 flex-shrink-0">
+                                      {formatMessageTime(conversation.lastMessageCreatedAt)}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate">
+                                      {conversation.lastMessageText}
+                                    </p>
+                                    {conversation.unreadCount > 0 && (
+                                      <span className="min-w-5 h-5 px-1 rounded-full bg-blue-600 text-white text-[10px] font-semibold flex items-center justify-center">
+                                        {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* User Menu */}
                   <div ref={userMenuRef} className="relative hidden md:block">
