@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Search,
   MoreVertical,
@@ -11,11 +11,14 @@ import {
   Video,
   Info,
   Image as ImageIcon,
-
   Users,
   UserPlus,
   MessageSquarePlus,
   CheckCheck,
+  Loader2,
+  RefreshCw,
+  LogOut,
+  Check,
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import { Button } from "../components/ui/Button";
@@ -23,255 +26,508 @@ import { Avatar } from "../components/ui/Avatar";
 import { Badge } from "../components/ui/Badge";
 import { Input } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
+import { useAuth } from "../contexts/AuthContext";
+import { getMessagePreviews, MessagePreview } from "@/lib/messages";
+import { supabase } from "@/lib/supabase/client";
 
-type Person = {
-  id: number;
-  name: string;
-  avatar: string;
-  isOnline: boolean;
-};
-
-type ConversationType = "direct" | "group";
 type InboxFilter = "all" | "unread" | "groups";
 
-type Conversation = {
-  id: number;
-  type: ConversationType;
-  title: string;
-  avatar: string;
-  isOnline?: boolean;
-  participantIds: number[];
-  lastMessage: string;
-  timestamp: string;
-  unread: number;
+type ProfileRow = {
+  id: string;
+  username: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
 };
 
-type Message = {
-  id: number;
-  senderId: number;
+type ParticipantRow = {
+  conversation_id: string;
+  user_id: string;
+  profiles: ProfileRow[] | ProfileRow | null;
+};
+
+type ConversationMeta = {
+  id: string;
+  title?: string | null;
+  name?: string | null;
+  is_group?: boolean | null;
+};
+
+type ConversationItem = {
+  id: string;
+  type: "direct" | "group";
+  title: string;
+  avatarUrl: string | null;
+  avatarFallback: string;
+  participantIds: string[];
+  participantNames: string[];
+  lastMessage: string;
+  timestampLabel: string;
+  unread: number;
+  updatedAtRaw: string;
+  onlineCount: number;
+};
+
+type MessageRow = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  read_at: string | null;
+};
+
+type MessageItem = {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string | null;
   text: string;
   timestamp: string;
+  createdAtRaw: string;
   isRead: boolean;
 };
 
-const CURRENT_USER_ID = 0;
-
-const PEOPLE: Person[] = [
-  { id: 1, name: "Zeynep Kaya", avatar: "/avatars/zeynep.jpg", isOnline: true },
-  { id: 2, name: "Mehmet Şahin", avatar: "/avatars/mehmet.jpg", isOnline: false },
-  { id: 3, name: "Elif Demir", avatar: "/avatars/elif.jpg", isOnline: true },
-  { id: 4, name: "Can Özdemir", avatar: "/avatars/can.jpg", isOnline: false },
-  { id: 5, name: "Aylin Er", avatar: "/avatars/aylin.jpg", isOnline: true },
-  { id: 6, name: "Burak T", avatar: "/avatars/burak.jpg", isOnline: false },
-];
-
-const INITIAL_CONVERSATIONS: Conversation[] = [
-  {
-    id: 1,
-    type: "direct",
-    title: "Zeynep Kaya",
-    avatar: "/avatars/zeynep.jpg",
-    isOnline: true,
-    participantIds: [1],
-    lastMessage: "Yarınki etkinlik için hazır mısın?",
-    timestamp: "2 dk",
-    unread: 2,
-  },
-  {
-    id: 2,
-    type: "direct",
-    title: "Mehmet Şahin",
-    avatar: "/avatars/mehmet.jpg",
-    isOnline: false,
-    participantIds: [2],
-    lastMessage: "Teşekkürler, çok yardımcı oldun!",
-    timestamp: "1 sa",
-    unread: 0,
-  },
-  {
-    id: 3,
-    type: "group",
-    title: "NYC Networking Crew",
-    avatar: "N",
-    participantIds: [1, 3, 5],
-    lastMessage: "Elif: Toplantı linkini gruba attım.",
-    timestamp: "15 dk",
-    unread: 4,
-  },
-  {
-    id: 4,
-    type: "group",
-    title: "Ev Arkadaşı Adayları",
-    avatar: "E",
-    participantIds: [4, 6],
-    lastMessage: "Can: Yarın 18:00 uygun mu?",
-    timestamp: "Dün",
-    unread: 0,
-  },
-];
-
-const INITIAL_MESSAGES: Record<number, Message[]> = {
-  1: [
-    { id: 1, senderId: 1, text: "Merhaba! NYC'deki etkinliğe katılacak mısın?", timestamp: "14:30", isRead: true },
-    { id: 2, senderId: CURRENT_USER_ID, text: "Evet kesinlikle! Çok heyecanlıyım 🎉", timestamp: "14:32", isRead: true },
-    { id: 3, senderId: 1, text: "Harika! Yanında birini getirmek ister misin?", timestamp: "14:35", isRead: true },
-    { id: 4, senderId: CURRENT_USER_ID, text: "Evet, bir arkadaşımı da getireceğim", timestamp: "14:40", isRead: true },
-    { id: 5, senderId: 1, text: "Yarınki etkinlik için hazır mısın?", timestamp: "Az önce", isRead: false },
-  ],
-  2: [
-    { id: 1, senderId: 2, text: "İş ilanı paylaşımın için teşekkürler!", timestamp: "10:15", isRead: true },
-    { id: 2, senderId: CURRENT_USER_ID, text: "Rica ederim, umarım işe yarar 😊", timestamp: "10:20", isRead: true },
-  ],
-  3: [
-    { id: 1, senderId: 3, text: "Herkes yarınki buluşma için hazır mı?", timestamp: "12:10", isRead: true },
-    { id: 2, senderId: 1, text: "Ben hazırım 🙌", timestamp: "12:11", isRead: true },
-    { id: 3, senderId: CURRENT_USER_ID, text: "Ben de oradayım.", timestamp: "12:14", isRead: true },
-    { id: 4, senderId: 3, text: "Toplantı linkini gruba attım.", timestamp: "12:15", isRead: false },
-  ],
+const formatDisplayName = (profile: ProfileRow | null | undefined) => {
+  if (!profile) return "Kullanıcı";
+  const full = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
+  return full || profile.username || "Kullanıcı";
 };
 
-const formatNow = () =>
-  new Date().toLocaleTimeString("tr-TR", {
+const resolveProfile = (profile: ParticipantRow["profiles"]) => {
+  if (!profile) return null;
+  return Array.isArray(profile) ? profile[0] || null : profile;
+};
+
+const formatRelativeLabel = (iso: string) => {
+  const created = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - created.getTime();
+  const diffMinutes = Math.floor(diffMs / 60000);
+
+  if (diffMinutes < 1) return "Şimdi";
+  if (diffMinutes < 60) return `${diffMinutes} dk`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours} sa`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return "Dün";
+
+  return created.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
+};
+
+const formatClock = (iso: string) =>
+  new Date(iso).toLocaleTimeString("tr-TR", {
     hour: "2-digit",
     minute: "2-digit",
   });
 
 export default function MessagesPage() {
-  const [conversations, setConversations] = useState(INITIAL_CONVERSATIONS);
-  const [messages, setMessages] = useState<Record<number, Message[]>>(INITIAL_MESSAGES);
-  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(INITIAL_CONVERSATIONS[0].id);
+  const { user, loading: authLoading } = useAuth();
+
+  const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<MessageItem[]>([]);
   const [messageText, setMessageText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [inboxFilter, setInboxFilter] = useState<InboxFilter>("all");
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [groupName, setGroupName] = useState("");
-  const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [statusNote, setStatusNote] = useState<string | null>(null);
+  const [memberOptions, setMemberOptions] = useState<ProfileRow[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
 
   const selectedConversation = conversations.find((item) => item.id === selectedConversationId) ?? null;
-  const selectedMessages = selectedConversationId ? messages[selectedConversationId] || [] : [];
 
   const filteredConversations = useMemo(() => {
     return conversations.filter((conversation) => {
+      const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
-        conversation.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        conversation.lastMessage.toLowerCase().includes(searchQuery.toLowerCase());
+        q.length === 0 ||
+        conversation.title.toLowerCase().includes(q) ||
+        conversation.lastMessage.toLowerCase().includes(q) ||
+        conversation.participantNames.some((name) => name.toLowerCase().includes(q));
 
-      if (!matchesSearch) {
-        return false;
-      }
-
-      if (inboxFilter === "unread") {
-        return conversation.unread > 0;
-      }
-
-      if (inboxFilter === "groups") {
-        return conversation.type === "group";
-      }
-
+      if (!matchesSearch) return false;
+      if (inboxFilter === "unread") return conversation.unread > 0;
+      if (inboxFilter === "groups") return conversation.type === "group";
       return true;
     });
-  }, [conversations, searchQuery, inboxFilter]);
+  }, [conversations, inboxFilter, searchQuery]);
 
-  const onlineCount = conversations.filter((item) => item.isOnline).length;
+  const onlineCount = conversations.reduce((acc, item) => acc + item.onlineCount, 0);
 
-  const markAsRead = (conversationId: number) => {
-    setConversations((prev) =>
-      prev.map((conversation) =>
-        conversation.id === conversationId
-          ? {
-              ...conversation,
-              unread: 0,
-            }
-          : conversation
-      )
-    );
-  };
+  const loadMemberOptions = useCallback(async () => {
+    if (!user) return;
 
-  const handleSelectConversation = (conversationId: number) => {
-    setSelectedConversationId(conversationId);
-    markAsRead(conversationId);
-  };
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, username, first_name, last_name, avatar_url")
+      .neq("id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(60);
 
-  const handleSendMessage = (event?: FormEvent) => {
-    event?.preventDefault();
-    if (!messageText.trim() || !selectedConversationId) {
+    if (!error) {
+      setMemberOptions((data as ProfileRow[] | null) || []);
+    }
+  }, [user]);
+
+  const loadConversations = useCallback(async () => {
+    if (!user) {
+      setConversations([]);
+      setSelectedConversationId(null);
+      setIsLoadingConversations(false);
       return;
     }
 
-    const currentId = selectedConversationId;
-    const newMessage: Message = {
-      id: Date.now(),
-      senderId: CURRENT_USER_ID,
-      text: messageText.trim(),
-      timestamp: formatNow(),
-      isRead: true,
-    };
+    setIsLoadingConversations(true);
 
-    setMessages((prev) => ({
-      ...prev,
-      [currentId]: [...(prev[currentId] || []), newMessage],
-    }));
+    try {
+      const previews = await getMessagePreviews(user.id);
+      const ids = previews.map((item) => item.conversationId);
 
-    setConversations((prev) =>
-      prev
-        .map((conversation) =>
-          conversation.id === currentId
+      if (ids.length === 0) {
+        setConversations([]);
+        setSelectedConversationId(null);
+        return;
+      }
+
+      const [{ data: participantsData }, { data: metaData }] = await Promise.all([
+        supabase
+          .from("conversation_participants")
+          .select("conversation_id, user_id, profiles!conversation_participants_user_id_fkey(id, username, first_name, last_name, avatar_url)")
+          .in("conversation_id", ids),
+        supabase.from("conversations").select("id, title, name, is_group").in("id", ids),
+      ]);
+
+      const participants = (participantsData as ParticipantRow[] | null) || [];
+      const metaById = new Map<string, ConversationMeta>();
+      ((metaData as ConversationMeta[] | null) || []).forEach((meta) => {
+        metaById.set(meta.id, meta);
+      });
+
+      const participantsByConversation = new Map<string, ParticipantRow[]>();
+      participants.forEach((participant) => {
+        const arr = participantsByConversation.get(participant.conversation_id) || [];
+        arr.push(participant);
+        participantsByConversation.set(participant.conversation_id, arr);
+      });
+
+      const nextConversations: ConversationItem[] = previews.map((preview: MessagePreview) => {
+        const conversationParticipants = participantsByConversation.get(preview.conversationId) || [];
+        const otherParticipants = conversationParticipants.filter((item) => item.user_id !== user.id);
+        const otherProfiles = otherParticipants.map((item) => resolveProfile(item.profiles)).filter((item): item is ProfileRow => !!item);
+        const meta = metaById.get(preview.conversationId);
+
+        const inferredGroup = (meta?.is_group ?? false) || otherParticipants.length > 1;
+        const participantNames = otherProfiles.map((item) => formatDisplayName(item));
+        const onlineHints = conversationParticipants.filter((item) => item.user_id !== user.id).length;
+
+        const title = inferredGroup
+          ? meta?.title ||
+            meta?.name ||
+            participantNames.slice(0, 3).join(", ") ||
+            "Grup Sohbeti"
+          : preview.otherUserName;
+
+        const avatarFallback = inferredGroup
+          ? title.charAt(0).toUpperCase() || "G"
+          : preview.otherUserName;
+
+        const avatarUrl = inferredGroup ? null : preview.otherUserAvatar;
+
+        return {
+          id: preview.conversationId,
+          type: inferredGroup ? "group" : "direct",
+          title,
+          avatarUrl,
+          avatarFallback,
+          participantIds: otherParticipants.map((item) => item.user_id),
+          participantNames,
+          lastMessage: preview.lastMessageText,
+          timestampLabel: formatRelativeLabel(preview.lastMessageCreatedAt),
+          unread: preview.unreadCount,
+          updatedAtRaw: preview.lastMessageCreatedAt,
+          onlineCount: onlineHints > 0 ? 1 : 0,
+        };
+      });
+
+      nextConversations.sort((a, b) => new Date(b.updatedAtRaw).getTime() - new Date(a.updatedAtRaw).getTime());
+      setConversations(nextConversations);
+
+      setSelectedConversationId((prev) => {
+        if (prev && nextConversations.some((item) => item.id === prev)) return prev;
+        return nextConversations[0]?.id || null;
+      });
+    } catch (error) {
+      console.error("Konuşmalar alınamadı:", error);
+      setStatusNote("Konuşmalar yüklenirken hata oluştu.");
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  }, [user]);
+
+  const markConversationAsRead = useCallback(
+    async (conversationId: string) => {
+      if (!user) return;
+
+      setConversations((prev) =>
+        prev.map((conversation) =>
+          conversation.id === conversationId
             ? {
                 ...conversation,
-                lastMessage: newMessage.text,
-                timestamp: "Şimdi",
                 unread: 0,
               }
             : conversation
         )
-        .sort((a, b) => (a.id === currentId ? -1 : b.id === currentId ? 1 : 0))
-    );
+      );
 
-    setMessageText("");
+      await supabase
+        .from("messages")
+        .update({ read_at: new Date().toISOString() })
+        .eq("conversation_id", conversationId)
+        .neq("sender_id", user.id)
+        .is("read_at", null);
+    },
+    [user]
+  );
+
+  const loadMessages = useCallback(
+    async (conversationId: string) => {
+      if (!user) return;
+
+      setIsLoadingMessages(true);
+      try {
+        const { data, error } = await supabase
+          .from("messages")
+          .select("id, conversation_id, sender_id, content, created_at, read_at")
+          .eq("conversation_id", conversationId)
+          .order("created_at", { ascending: true });
+
+        if (error) throw error;
+
+        const rows = ((data as MessageRow[] | null) || []).filter((item) => item.content);
+        const senderIds = [...new Set(rows.map((item) => item.sender_id))];
+
+        const { data: senderProfiles } = await supabase
+          .from("profiles")
+          .select("id, username, first_name, last_name, avatar_url")
+          .in("id", senderIds);
+
+        const profileMap = new Map<string, ProfileRow>();
+        ((senderProfiles as ProfileRow[] | null) || []).forEach((profile) => {
+          profileMap.set(profile.id, profile);
+        });
+
+        const nextMessages = rows.map((item) => {
+          const profile = profileMap.get(item.sender_id);
+          return {
+            id: item.id,
+            senderId: item.sender_id,
+            senderName: formatDisplayName(profile),
+            senderAvatar: profile?.avatar_url || null,
+            text: item.content,
+            timestamp: formatClock(item.created_at),
+            createdAtRaw: item.created_at,
+            isRead: !!item.read_at,
+          };
+        });
+
+        setMessages(nextMessages);
+        await markConversationAsRead(conversationId);
+      } catch (error) {
+        console.error("Mesajlar alınamadı:", error);
+        setStatusNote("Mesajlar yüklenirken hata oluştu.");
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    },
+    [markConversationAsRead, user]
+  );
+
+  useEffect(() => {
+    loadConversations();
+    loadMemberOptions();
+  }, [loadConversations, loadMemberOptions]);
+
+  useEffect(() => {
+    if (!selectedConversationId) {
+      setMessages([]);
+      return;
+    }
+
+    loadMessages(selectedConversationId);
+  }, [selectedConversationId, loadMessages]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`messages-feed-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+        },
+        (payload) => {
+          const row = payload.new as MessageRow;
+          if (!row?.conversation_id) return;
+
+          if (row.conversation_id === selectedConversationId) {
+            loadMessages(row.conversation_id);
+          }
+          loadConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, selectedConversationId, loadConversations, loadMessages]);
+
+  const handleSelectConversation = (conversationId: string) => {
+    setSelectedConversationId(conversationId);
+    setIsActionsOpen(false);
   };
 
-  const toggleMember = (memberId: number) => {
+  const handleSendMessage = async (event?: FormEvent) => {
+    event?.preventDefault();
+    if (!user || !selectedConversationId || !messageText.trim() || isSending) {
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const content = messageText.trim();
+      const { error } = await supabase.from("messages").insert({
+        conversation_id: selectedConversationId,
+        sender_id: user.id,
+        content,
+      });
+
+      if (error) throw error;
+
+      setMessageText("");
+      await Promise.all([loadMessages(selectedConversationId), loadConversations()]);
+    } catch (error) {
+      console.error("Mesaj gönderilemedi:", error);
+      setStatusNote("Mesaj gönderilemedi. Lütfen tekrar deneyin.");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const toggleMember = (memberId: string) => {
     setSelectedMembers((prev) =>
       prev.includes(memberId) ? prev.filter((item) => item !== memberId) : [...prev, memberId]
     );
   };
 
-  const handleCreateGroup = () => {
-    if (!groupName.trim() || selectedMembers.length < 2) {
+  const createConversationRecord = async (name: string) => {
+    const payloads = [
+      { title: name, name, is_group: true, created_by: user?.id },
+      { title: name, is_group: true, created_by: user?.id },
+      { name, is_group: true, created_by: user?.id },
+      { title: name, name },
+      { title: name },
+      { name },
+      {},
+    ];
+
+    for (const payload of payloads) {
+      const { data, error } = await supabase.from("conversations").insert(payload).select("id").single();
+      if (!error && data?.id) {
+        return data.id as string;
+      }
+    }
+
+    throw new Error("Konuşma kaydı oluşturulamadı.");
+  };
+
+  const handleCreateGroup = async () => {
+    if (!user || !groupName.trim() || selectedMembers.length < 2 || isCreatingGroup) return;
+
+    setIsCreatingGroup(true);
+    try {
+      const conversationId = await createConversationRecord(groupName.trim());
+      const participantIds = [...new Set([user.id, ...selectedMembers])];
+
+      const { error: participantError } = await supabase.from("conversation_participants").insert(
+        participantIds.map((memberId) => ({
+          conversation_id: conversationId,
+          user_id: memberId,
+        }))
+      );
+
+      if (participantError) throw participantError;
+
+      const { error: messageError } = await supabase.from("messages").insert({
+        conversation_id: conversationId,
+        sender_id: user.id,
+        content: `"${groupName.trim()}" grubu oluşturuldu.`,
+      });
+
+      if (messageError) throw messageError;
+
+      setGroupName("");
+      setSelectedMembers([]);
+      setIsGroupModalOpen(false);
+      setStatusNote("Grup başarıyla oluşturuldu.");
+
+      await loadConversations();
+      setSelectedConversationId(conversationId);
+    } catch (error) {
+      console.error("Grup oluşturulamadı:", error);
+      setStatusNote("Grup oluşturulamadı. Yetki veya tablo yapılarını kontrol edin.");
+    } finally {
+      setIsCreatingGroup(false);
+    }
+  };
+
+  const handleLeaveConversation = async () => {
+    if (!user || !selectedConversationId) return;
+
+    const { error } = await supabase
+      .from("conversation_participants")
+      .delete()
+      .eq("conversation_id", selectedConversationId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      setStatusNote("Sohbetten ayrılamadınız.");
       return;
     }
 
-    const conversationId = Date.now();
-    const groupConversation: Conversation = {
-      id: conversationId,
-      type: "group",
-      title: groupName.trim(),
-      avatar: groupName.trim().charAt(0).toUpperCase(),
-      participantIds: selectedMembers,
-      lastMessage: "Sohbet oluşturuldu.",
-      timestamp: "Şimdi",
-      unread: 0,
-    };
-
-    setConversations((prev) => [groupConversation, ...prev]);
-    setMessages((prev) => ({
-      ...prev,
-      [conversationId]: [
-        {
-          id: Date.now() + 1,
-          senderId: CURRENT_USER_ID,
-          text: `"${groupConversation.title}" grubu oluşturuldu.`,
-          timestamp: formatNow(),
-          isRead: true,
-        },
-      ],
-    }));
-
-    setGroupName("");
-    setSelectedMembers([]);
-    setSelectedConversationId(conversationId);
-    setIsGroupModalOpen(false);
+    setStatusNote("Sohbetten ayrıldınız.");
+    await loadConversations();
+    setIsActionsOpen(false);
   };
+
+  if (authLoading) {
+    return (
+      <div className="h-[calc(100vh-65px)] flex items-center justify-center">
+        <Loader2 className="animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="h-[calc(100vh-65px)] flex items-center justify-center">
+        <p>Mesajlarınızı görmek için giriş yapmalısınız.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
@@ -317,169 +573,228 @@ export default function MessagesPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              {filteredConversations.map((conversation) => (
-                <button
-                  key={conversation.id}
-                  onClick={() => handleSelectConversation(conversation.id)}
-                  className={`w-full p-4 flex items-start gap-3 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-smooth border-b border-neutral-100 dark:border-neutral-800 ${
-                    selectedConversationId === conversation.id
-                      ? "bg-blue-50 dark:bg-blue-950/20 border-l-4 border-l-blue-500"
-                      : ""
-                  }`}
-                >
-                  <div className="relative">
-                    <Avatar src={conversation.type === "direct" ? conversation.avatar : undefined} fallback={conversation.avatar} size="md" />
-                    {conversation.type === "direct" && conversation.isOnline && (
-                      <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-white dark:border-neutral-900" />
-                    )}
-                  </div>
+              {isLoadingConversations ? (
+                <div className="p-6 flex items-center justify-center text-neutral-500">
+                  <Loader2 size={16} className="animate-spin mr-2" /> Sohbetler yükleniyor...
+                </div>
+              ) : filteredConversations.length === 0 ? (
+                <div className="p-6 text-center text-sm text-neutral-500">Henüz konuşmanız bulunmuyor.</div>
+              ) : (
+                filteredConversations.map((conversation) => (
+                  <button
+                    key={conversation.id}
+                    onClick={() => handleSelectConversation(conversation.id)}
+                    className={`w-full p-4 flex items-start gap-3 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-smooth border-b border-neutral-100 dark:border-neutral-800 ${
+                      selectedConversationId === conversation.id
+                        ? "bg-blue-50 dark:bg-blue-950/20 border-l-4 border-l-blue-500"
+                        : ""
+                    }`}
+                  >
+                    <Avatar src={conversation.avatarUrl || undefined} fallback={conversation.avatarFallback} size="md" />
 
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <p className="font-semibold text-sm truncate">{conversation.title}</p>
-                        {conversation.type === "group" && (
-                          <Badge variant="outline" size="sm" className="text-[10px]">
-                            <Users size={10} className="mr-1" /> Grup
+                    <div className="flex-1 text-left min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <p className="font-semibold text-sm truncate">{conversation.title}</p>
+                          {conversation.type === "group" && (
+                            <Badge variant="outline" size="sm" className="text-[10px]">
+                              <Users size={10} className="mr-1" /> Grup
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-xs text-neutral-500 flex-shrink-0 ml-2">{conversation.timestampLabel}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate">{conversation.lastMessage}</p>
+                        {conversation.unread > 0 && (
+                          <Badge variant="primary" size="sm" className="h-5 min-w-5 px-1 flex items-center justify-center text-xs">
+                            {conversation.unread}
                           </Badge>
                         )}
                       </div>
-                      <span className="text-xs text-neutral-500 flex-shrink-0 ml-2">{conversation.timestamp}</span>
                     </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate">{conversation.lastMessage}</p>
-                      {conversation.unread > 0 && (
-                        <Badge variant="primary" size="sm" className="h-5 min-w-5 px-1 flex items-center justify-center text-xs">
-                          {conversation.unread}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              ))}
-
-              {filteredConversations.length === 0 && (
-                <div className="p-6 text-center text-sm text-neutral-500">
-                  Aradığınız kriterlerde sohbet bulunamadı.
-                </div>
+                  </button>
+                ))
               )}
             </div>
           </aside>
 
           {selectedConversation ? (
-            <section className="flex-1 flex flex-col bg-white dark:bg-neutral-950 min-w-0">
-              <header className="p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between glass">
-                <div className="flex items-center gap-3 min-w-0">
-                  <Avatar
-                    src={selectedConversation.type === "direct" ? selectedConversation.avatar : undefined}
-                    fallback={selectedConversation.avatar}
-                    size="md"
-                    status={selectedConversation.type === "direct" && selectedConversation.isOnline ? "online" : "offline"}
-                  />
-                  <div className="min-w-0">
-                    <h3 className="font-bold truncate">{selectedConversation.title}</h3>
-                    <p className="text-xs text-neutral-500 truncate">
-                      {selectedConversation.type === "group"
-                        ? `${selectedConversation.participantIds.length + 1} üyeli grup`
-                        : selectedConversation.isOnline
-                        ? "Çevrimiçi"
-                        : "Çevrimdışı"}
-                    </p>
+            <section className="flex-1 flex bg-white dark:bg-neutral-950 min-w-0">
+              <div className="flex-1 flex flex-col min-w-0">
+                <header className="p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between glass relative">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar src={selectedConversation.avatarUrl || undefined} fallback={selectedConversation.avatarFallback} size="md" />
+                    <div className="min-w-0">
+                      <h3 className="font-bold truncate">{selectedConversation.title}</h3>
+                      <p className="text-xs text-neutral-500 truncate">
+                        {selectedConversation.type === "group"
+                          ? `${selectedConversation.participantIds.length + 1} üyeli grup`
+                          : "Birebir sohbet"}
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon">
-                    <Phone size={18} />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <Video size={18} />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <Info size={18} />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <MoreVertical size={18} />
-                  </Button>
-                </div>
-              </header>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => setStatusNote("Sesli arama özelliği yakında aktif edilecek.") }>
+                      <Phone size={18} />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setStatusNote("Görüntülü arama özelliği yakında aktif edilecek.") }>
+                      <Video size={18} />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setIsInfoPanelOpen((prev) => !prev)}>
+                      <Info size={18} />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setIsActionsOpen((prev) => !prev)}>
+                      <MoreVertical size={18} />
+                    </Button>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {selectedMessages.map((message) => {
-                  const isSent = message.senderId === CURRENT_USER_ID;
-                  const sender = PEOPLE.find((person) => person.id === message.senderId);
-                  return (
-                    <div key={message.id} className={`flex ${isSent ? "justify-end" : "justify-start"}`}>
-                      <div className={`flex gap-2 max-w-[75%] ${isSent ? "flex-row-reverse" : "flex-row"}`}>
-                        {!isSent && (
-                          <Avatar
-                            src={sender?.avatar || (selectedConversation.type === "direct" ? selectedConversation.avatar : undefined)}
-                            fallback={sender?.name || selectedConversation.title}
-                            size="sm"
-                          />
-                        )}
-                        <div>
-                          <div
-                            className={`rounded-2xl px-4 py-2 ${
-                              isSent
-                                ? "bg-blue-500 text-white"
-                                : "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
-                            }`}
-                          >
-                            {selectedConversation.type === "group" && !isSent && (
-                              <p className="text-[11px] font-semibold mb-1 opacity-80">{sender?.name || "Üye"}</p>
-                            )}
-                            <p className="text-sm leading-relaxed">{message.text}</p>
-                          </div>
-                          <div className={`flex items-center gap-1 mt-1 ${isSent ? "justify-end" : "justify-start"}`}>
-                            <span className="text-xs text-neutral-500">{message.timestamp}</span>
-                            {isSent && (
-                              <span className="text-xs text-blue-500 inline-flex items-center gap-1">
-                                <CheckCheck size={12} />
-                              </span>
-                            )}
+                    {isActionsOpen && (
+                      <div className="absolute right-4 top-14 w-52 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl p-1 z-20">
+                        <button
+                          className="w-full px-3 py-2 text-left text-sm rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-2"
+                          onClick={() => {
+                            if (selectedConversationId) markConversationAsRead(selectedConversationId);
+                            setIsActionsOpen(false);
+                          }}
+                        >
+                          <Check size={14} /> Okundu işaretle
+                        </button>
+                        <button
+                          className="w-full px-3 py-2 text-left text-sm rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-2"
+                          onClick={() => {
+                            loadConversations();
+                            if (selectedConversationId) loadMessages(selectedConversationId);
+                            setIsActionsOpen(false);
+                          }}
+                        >
+                          <RefreshCw size={14} /> Yenile
+                        </button>
+                        <button
+                          className="w-full px-3 py-2 text-left text-sm rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 flex items-center gap-2"
+                          onClick={handleLeaveConversation}
+                        >
+                          <LogOut size={14} /> Sohbetten ayrıl
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </header>
+
+                {statusNote && (
+                  <div className="px-4 py-2 text-xs bg-blue-50 text-blue-700 border-b border-blue-100 dark:bg-blue-950/20 dark:text-blue-300 dark:border-blue-900/50">
+                    {statusNote}
+                  </div>
+                )}
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {isLoadingMessages ? (
+                    <div className="text-sm text-neutral-500 flex items-center gap-2">
+                      <Loader2 size={14} className="animate-spin" /> Mesajlar yükleniyor...
+                    </div>
+                  ) : messages.length === 0 ? (
+                    <div className="text-sm text-neutral-500">Bu sohbette henüz mesaj yok. İlk mesajı gönderin.</div>
+                  ) : (
+                    messages.map((message) => {
+                      const isSent = message.senderId === user.id;
+
+                      return (
+                        <div key={message.id} className={`flex ${isSent ? "justify-end" : "justify-start"}`}>
+                          <div className={`flex gap-2 max-w-[75%] ${isSent ? "flex-row-reverse" : "flex-row"}`}>
+                            {!isSent && <Avatar src={message.senderAvatar || undefined} fallback={message.senderName} size="sm" />}
+                            <div>
+                              <div
+                                className={`rounded-2xl px-4 py-2 ${
+                                  isSent
+                                    ? "bg-blue-500 text-white"
+                                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+                                }`}
+                              >
+                                {selectedConversation.type === "group" && !isSent && (
+                                  <p className="text-[11px] font-semibold mb-1 opacity-80">{message.senderName}</p>
+                                )}
+                                <p className="text-sm leading-relaxed">{message.text}</p>
+                              </div>
+                              <div className={`flex items-center gap-1 mt-1 ${isSent ? "justify-end" : "justify-start"}`}>
+                                <span className="text-xs text-neutral-500">{message.timestamp}</span>
+                                {isSent && message.isRead && (
+                                  <span className="text-xs text-blue-500 inline-flex items-center gap-1">
+                                    <CheckCheck size={12} />
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <form onSubmit={handleSendMessage} className="p-4 border-t border-neutral-200 dark:border-neutral-800 glass">
+                  <div className="flex items-end gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setStatusNote("Dosya ekleme özelliği bir sonraki sürümde aktif olacak.")}
+                    >
+                      <Paperclip size={18} />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setStatusNote("Medya yükleme özelliği bir sonraki sürümde aktif olacak.")}
+                    >
+                      <ImageIcon size={18} />
+                    </Button>
+
+                    <div className="flex-1">
+                      <textarea
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
+                        placeholder="Mesajınızı yazın..."
+                        className="w-full resize-none rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 max-h-32"
+                        rows={1}
+                      />
                     </div>
-                  );
-                })}
+
+                    <Button type="button" variant="ghost" size="icon" onClick={() => setStatusNote("Emoji paneli yakında eklenecek.")}>
+                      <Smile size={18} />
+                    </Button>
+
+                    <Button variant="primary" size="icon" type="submit" disabled={!messageText.trim() || isSending} className="h-11 w-11">
+                      {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                    </Button>
+                  </div>
+                </form>
               </div>
 
-              <form onSubmit={handleSendMessage} className="p-4 border-t border-neutral-200 dark:border-neutral-800 glass">
-                <div className="flex items-end gap-2">
-                  <Button type="button" variant="ghost" size="icon">
-                    <Paperclip size={18} />
-                  </Button>
-                  <Button type="button" variant="ghost" size="icon">
-                    <ImageIcon size={18} />
-                  </Button>
-
-                  <div className="flex-1">
-                    <textarea
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      placeholder="Mesajınızı yazın..."
-                      className="w-full resize-none rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 max-h-32"
-                      rows={1}
-                    />
-                  </div>
-
-                  <Button type="button" variant="ghost" size="icon">
-                    <Smile size={18} />
-                  </Button>
-
-                  <Button variant="primary" size="icon" type="submit" disabled={!messageText.trim()} className="h-11 w-11">
-                    <Send size={18} />
-                  </Button>
-                </div>
-              </form>
+              {isInfoPanelOpen && (
+                <aside className="w-72 border-l border-neutral-200 dark:border-neutral-800 p-4 bg-neutral-50/70 dark:bg-neutral-900/40">
+                  <h4 className="font-semibold mb-2">Sohbet Bilgisi</h4>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">{selectedConversation.title}</p>
+                  <p className="text-xs text-neutral-500 mb-2">Katılımcılar</p>
+                  <ul className="space-y-2">
+                    {selectedConversation.participantNames.length > 0 ? (
+                      selectedConversation.participantNames.map((name) => (
+                        <li key={name} className="text-sm rounded-lg px-2 py-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+                          {name}
+                        </li>
+                      ))
+                    ) : (
+                      <li className="text-sm text-neutral-500">Katılımcı bilgisi bulunamadı.</li>
+                    )}
+                  </ul>
+                </aside>
+              )}
             </section>
           ) : (
             <section className="flex-1 flex items-center justify-center bg-white dark:bg-neutral-950">
@@ -488,7 +803,7 @@ export default function MessagesPage() {
                   <Send size={40} className="text-neutral-400" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">Mesajlarınız</h3>
-                <p className="text-neutral-600 dark:text-neutral-400">Bir sohbet seçin veya yeni bir konuşma başlatın</p>
+                <p className="text-neutral-600 dark:text-neutral-400">Yeni konuşma başlatın veya mevcut bir sohbet seçin.</p>
               </div>
             </section>
           )}
@@ -508,8 +823,10 @@ export default function MessagesPage() {
           <div>
             <p className="text-sm font-medium mb-2">Üyeleri seçin (en az 2)</p>
             <div className="max-h-56 overflow-y-auto border rounded-xl border-neutral-200 dark:border-neutral-800 divide-y divide-neutral-100 dark:divide-neutral-800">
-              {PEOPLE.map((person) => {
+              {memberOptions.map((person) => {
                 const checked = selectedMembers.includes(person.id);
+                const name = formatDisplayName(person);
+
                 return (
                   <button
                     type="button"
@@ -518,16 +835,20 @@ export default function MessagesPage() {
                     className="w-full flex items-center justify-between p-3 hover:bg-neutral-50 dark:hover:bg-neutral-900"
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar src={person.avatar} fallback={person.name} size="sm" />
+                      <Avatar src={person.avatar_url || undefined} fallback={name} size="sm" />
                       <div className="text-left">
-                        <p className="text-sm font-medium">{person.name}</p>
-                        <p className="text-xs text-neutral-500">{person.isOnline ? "Çevrimiçi" : "Çevrimdışı"}</p>
+                        <p className="text-sm font-medium">{name}</p>
+                        <p className="text-xs text-neutral-500">{person.username ? `@${person.username}` : "Kullanıcı"}</p>
                       </div>
                     </div>
                     <div className={`h-5 w-5 rounded-full border ${checked ? "bg-blue-500 border-blue-500" : "border-neutral-300"}`} />
                   </button>
                 );
               })}
+
+              {memberOptions.length === 0 && (
+                <div className="p-3 text-sm text-neutral-500">Kullanıcı listesi alınamadı veya boş.</div>
+              )}
             </div>
           </div>
 
@@ -535,8 +856,12 @@ export default function MessagesPage() {
             <Button variant="ghost" onClick={() => setIsGroupModalOpen(false)}>
               Vazgeç
             </Button>
-            <Button variant="primary" onClick={handleCreateGroup} disabled={!groupName.trim() || selectedMembers.length < 2}>
-              <UserPlus size={16} className="mr-2" />
+            <Button
+              variant="primary"
+              onClick={handleCreateGroup}
+              disabled={!groupName.trim() || selectedMembers.length < 2 || isCreatingGroup}
+            >
+              {isCreatingGroup ? <Loader2 size={16} className="mr-2 animate-spin" /> : <UserPlus size={16} className="mr-2" />}
               Grup Oluştur
             </Button>
           </div>
