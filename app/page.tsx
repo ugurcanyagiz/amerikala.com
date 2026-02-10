@@ -407,7 +407,7 @@ function FeatureBoard() {
             </div>
 
             <div className="relative overflow-hidden rounded-3xl border border-[var(--color-border-light)] bg-[var(--color-surface-sunken)] p-5 sm:p-7">
-              <div className="relative min-h-[360px] sm:min-h-[500px]">
+              <div className="relative min-h-[360px] overflow-hidden sm:min-h-[500px]">
                 {cards.map((card, index) => {
                   const posts = catalogPosts[card.key];
                   const translate = (index - activeIndex) * 100;
@@ -415,7 +415,7 @@ function FeatureBoard() {
                   return (
                     <div
                       key={`catalog-${card.key}`}
-                      className="absolute inset-0 flex flex-col transition-transform duration-700 ease-out"
+                      className="absolute inset-0 flex w-full flex-col transition-transform duration-700 ease-out"
                       style={{ transform: `translateX(${translate}%)` }}
                     >
                       <h3 className="mb-5 text-3xl font-semibold tracking-tight text-[var(--color-ink)]">Son eklenen ilanlar</h3>
