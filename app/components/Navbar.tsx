@@ -92,12 +92,57 @@ function getNotificationTypeClasses(type: "likes" | "comments" | "events") {
   return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200";
 }
 
-function getDisplayName(profile: { first_name?: string | null; last_name?: string | null; full_name?: string | null; username?: string | null } | null | undefined) {
+function getDisplayName(
+  profile: { first_name?: string | null; last_name?: string | null; full_name?: string | null; username?: string | null } | null | undefined,
+  user?: { email?: string | null; user_metadata?: unknown } | null
+) {
+  const metadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  const metadataFullName = typeof metadata.full_name === "string" ? metadata.full_name.trim() : "";
+  const metadataName = typeof metadata.name === "string" ? metadata.name.trim() : "";
+
   const explicitFullName = profile?.full_name?.trim();
   if (explicitFullName) return explicitFullName;
+  if (metadataFullName) return metadataFullName;
+  if (metadataName) return metadataName;
 
-  const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim();
-  return fullName || profile?.username || "Kullanıcı";
+  const profileName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim();
+  if (profileName) return profileName;
+
+  const metadataFirstName = typeof metadata.first_name === "string" ? metadata.first_name.trim() : "";
+  const metadataLastName = typeof metadata.last_name === "string" ? metadata.last_name.trim() : "";
+  const metadataCombinedName = [metadataFirstName, metadataLastName].filter(Boolean).join(" ").trim();
+  if (metadataCombinedName) return metadataCombinedName;
+
+  const metadataUsername = typeof metadata.username === "string" ? metadata.username.trim() : "";
+  const emailLocalPart = user?.email?.split("@")[0]?.trim();
+
+  return profile?.username || metadataUsername || emailLocalPart || "Kullanıcı";
+}
+
+function getAvatarUrl(
+  profile: { avatar_url?: string | null } | null | undefined,
+  user?: { user_metadata?: unknown } | null
+) {
+  const metadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  const metadataAvatar = typeof metadata.avatar_url === "string" ? metadata.avatar_url : typeof metadata.picture === "string" ? metadata.picture : null;
+
+  return profile?.avatar_url || metadataAvatar || undefined;
+}
+
+function getUsernameLabel(
+  profile: { username?: string | null } | null | undefined,
+  user?: { email?: string | null; user_metadata?: unknown } | null
+) {
+  const metadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  const metadataUsername = typeof metadata.username === "string" ? metadata.username.trim() : "";
+  const username = profile?.username?.trim() || metadataUsername;
+
+  if (username) return username.startsWith("@") ? username : `@${username}`;
+
+  const emailLocalPart = user?.email?.split("@")[0]?.trim();
+  if (emailLocalPart) return `@${emailLocalPart}`;
+
+  return "@user";
 }
 
 function formatMessageTime(dateString: string) {
@@ -113,17 +158,6 @@ function formatMessageTime(dateString: string) {
   if (hours < 24) return `${hours} sa`;
 
   return createdAt.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
-}
-
-function getUsernameLabel(profile: { username?: string | null } | null | undefined) {
-  if (profile?.username) return `@${profile.username}`;
-  return "@user";
-}
-
-function getPreferredUsername(profile: { username?: string | null } | null | undefined, fallbackEmail?: string | null) {
-  if (profile?.username) return profile.username;
-  if (fallbackEmail) return fallbackEmail;
-  return "user";
 }
 
 // Dropdown Component
@@ -314,8 +348,8 @@ function MobileBottomNav() {
 function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { user, profile, signOut, isAdmin } = useAuth();
   const router = useRouter();
-  const displayName = getDisplayName(profile);
-  const usernameLabel = getUsernameLabel(profile);
+  const displayName = getDisplayName(profile, user);
+  const usernameLabel = getUsernameLabel(profile, user);
 
   const handleSignOut = async () => {
     await signOut();
@@ -348,12 +382,12 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           </div>
 
           {/* User Info */}
-          {user && profile && (
+          {user && (
             <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
               <Link href="/profile" onClick={onClose} className="flex items-center gap-3">
                 <Avatar
-                  src={profile.avatar_url || undefined}
-                  fallback={profile.first_name || profile.username || "U"}
+                  src={getAvatarUrl(profile, user)}
+                  fallback={displayName}
                   size="lg"
                 />
                 <div>
@@ -468,8 +502,8 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 export default function Navbar() {
   const router = useRouter();
   const { user, profile, signOut, loading, isAdmin } = useAuth();
-  const displayName = getDisplayName(profile);
-  const usernameLabel = getUsernameLabel(profile);
+  const displayName = getDisplayName(profile, user);
+  const usernameLabel = getUsernameLabel(profile, user);
   const { notifications, unreadCount, markAsRead, markAllAsRead, loading: notificationLoading } = useNotifications();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -793,8 +827,8 @@ export default function Navbar() {
                       className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 rounded-full border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                     >
                       <Avatar
-                        src={profile?.avatar_url || undefined}
-                        fallback={profile?.first_name || profile?.username || "U"}
+                        src={getAvatarUrl(profile, user)}
+                        fallback={displayName}
                         size="sm"
                       />
                       <div className="text-left max-w-[140px]">
