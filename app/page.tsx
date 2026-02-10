@@ -47,16 +47,14 @@ export default function Home() {
           {/* Hero Section - Static Visual + Auth Actions */}
           <section className="relative overflow-hidden border-b border-[var(--color-border-light)] bg-gradient-to-b from-[var(--color-surface-raised)] to-[var(--color-surface)] py-10 sm:py-12 lg:py-16">
             <div className="mx-auto flex max-w-6xl flex-col items-center px-4 sm:px-6 lg:px-8">
-              <div className="w-full max-w-5xl overflow-hidden rounded-3xl border border-[var(--color-border-light)] bg-white/80 p-2 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.35)] backdrop-blur-sm">
-                <Image
-                  src="/amerikala.png"
-                  alt="Amerikala ana görseli"
-                  width={1536}
-                  height={2048}
-                  priority
-                  className="h-auto w-full rounded-2xl object-contain"
-                />
-              </div>
+              <Image
+                src="/amerikala.png"
+                alt="Amerikala ana görseli"
+                width={1536}
+                height={2048}
+                priority
+                className="h-auto w-full max-w-5xl object-contain"
+              />
 
               <div className="mt-8 flex w-full max-w-xl flex-col gap-3 sm:mt-10 sm:flex-row sm:justify-center sm:gap-4">
                 <Link href="/register" className="w-full sm:w-auto">
