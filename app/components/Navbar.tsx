@@ -118,6 +118,12 @@ function getUsernameLabel(profile: { username?: string | null } | null | undefin
   return "@user";
 }
 
+function getPreferredUsername(profile: { username?: string | null } | null | undefined, fallbackEmail?: string | null) {
+  if (profile?.username) return profile.username;
+  if (fallbackEmail) return fallbackEmail;
+  return "user";
+}
+
 // Dropdown Component
 function NavDropdown({
   item, 
@@ -462,6 +468,7 @@ export default function Navbar() {
   const { user, profile, signOut, loading, isAdmin } = useAuth();
   const displayName = getDisplayName(profile);
   const usernameLabel = getUsernameLabel(profile, user?.email);
+  const preferredUsername = getPreferredUsername(profile, user?.email);
   const { notifications, unreadCount, markAsRead, markAllAsRead, loading: notificationLoading } = useNotifications();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -789,9 +796,9 @@ export default function Navbar() {
                         fallback={profile?.first_name || profile?.username || "U"}
                         size="sm"
                       />
-                      <div className="hidden lg:block text-left max-w-[140px]">
-                        <div className="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{displayName}</div>
-                        <div className="text-xs text-neutral-500 truncate">{usernameLabel}</div>
+                      <div className="text-left max-w-[140px]">
+                        <div className="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{preferredUsername}</div>
+                        <div className="hidden lg:block text-xs text-neutral-500 truncate">{displayName}</div>
                       </div>
                       <ChevronDown size={14} className={`transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
                     </button>
