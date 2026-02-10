@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
@@ -81,6 +81,27 @@ export default function EventDetailPage() {
   const [commentInput, setCommentInput] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
+
+  const fetchAttendees = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("event_attendees")
+      .select(`
+        *,
+        profile:user_id (id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession)
+      `)
+      .eq("event_id", eventId)
+      .eq("status", "going");
+
+    if (error) throw error;
+
+    const list = (data as EventAttendee[] | null) || [];
+    setAttendees(list);
+
+    if (user) {
+      setAttending(list.some((item) => item.user_id === user.id));
+    }
+  }, [eventId, user]);
 
   // Fetch event
   useEffect(() => {
@@ -101,16 +122,7 @@ export default function EventDetailPage() {
         setEvent(eventData);
 
         // Fetch attendees
-        const { data: attendeesData } = await supabase
-          .from("event_attendees")
-          .select(`
-            *,
-            profile:user_id (id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession)
-          `)
-          .eq("event_id", eventId)
-          .eq("status", "going");
-
-        setAttendees(attendeesData || []);
+        await fetchAttendees();
 
         const { data: commentsData, error: commentsError } = await supabase
           .from("event_comments")
@@ -133,12 +145,6 @@ export default function EventDetailPage() {
           setCommentError(null);
         }
 
-        // Check if current user is attending
-        if (user) {
-          const isAttending = attendeesData?.some(a => a.user_id === user.id);
-          setAttending(!!isAttending);
-        }
-
       } catch (error) {
         console.error("Error fetching event:", error);
         router.push("/meetups");
@@ -150,7 +156,7 @@ export default function EventDetailPage() {
     if (eventId) {
       fetchEvent();
     }
-  }, [eventId, user, router]);
+  }, [eventId, user, router, fetchAttendees]);
 
   // Handle attendance
   const handleAttendance = async () => {
@@ -160,42 +166,87 @@ export default function EventDetailPage() {
     }
 
     setAttendanceLoading(true);
+    setAttendanceError(null);
 
     try {
       if (attending) {
-        // Remove attendance
+        // Remove attendance (fallback to status update if hard delete fails due policies)
         const { error } = await supabase
           .from("event_attendees")
           .delete()
           .eq("event_id", eventId)
           .eq("user_id", user.id);
 
-        if (error) throw error;
-        setAttending(false);
-        setAttendees(prev => prev.filter(a => a.user_id !== user.id));
+        if (error) {
+          const { error: updateError } = await supabase
+            .from("event_attendees")
+            .update({ status: "not_going" })
+            .eq("event_id", eventId)
+            .eq("user_id", user.id);
+
+          if (updateError) throw updateError;
+        }
+
+        await fetchAttendees();
       } else {
-        // Add attendance
-        const { data, error } = await supabase
+        // Add attendance (upsert first, then fallback insert/update for schema-policy tolerance)
+        const { error: upsertError } = await supabase
           .from("event_attendees")
-          .insert({
-            event_id: eventId,
-            user_id: user.id,
-            status: "going"
-          })
+          .upsert(
+            {
+              event_id: eventId,
+              user_id: user.id,
+              status: "going",
+            },
+            {
+              onConflict: "event_id,user_id",
+              ignoreDuplicates: false,
+            }
+          );
+
+        if (upsertError) {
+          const { error: insertError } = await supabase
+            .from("event_attendees")
+            .insert({
+              event_id: eventId,
+              user_id: user.id,
+              status: "going",
+            });
+
+          if (insertError) {
+            const { error: updateError } = await supabase
+              .from("event_attendees")
+              .update({ status: "going" })
+              .eq("event_id", eventId)
+              .eq("user_id", user.id);
+
+            if (updateError) throw updateError;
+          }
+        }
+
+        const { data: insertedAttendee } = await supabase
+          .from("event_attendees")
           .select(`
             *,
             profile:user_id (id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession)
           `)
+          .eq("event_id", eventId)
+          .eq("user_id", user.id)
           .single();
 
-        if (error) throw error;
-        setAttending(true);
-        if (data) {
-          setAttendees(prev => [...prev, data]);
+        if (insertedAttendee) {
+          setAttending(true);
+          setAttendees((prev) => {
+            const filtered = prev.filter((item) => item.user_id !== user.id);
+            return [...filtered, insertedAttendee as EventAttendee];
+          });
+        } else {
+          await fetchAttendees();
         }
       }
     } catch (error) {
       console.error("Error updating attendance:", error);
+      setAttendanceError("Katılım işlemi tamamlanamadı. Lütfen tekrar deneyin.");
     } finally {
       setAttendanceLoading(false);
     }
@@ -548,6 +599,9 @@ export default function EventDetailPage() {
                     {copied ? "Kopyalandı!" : "Link Kopyala"}
                   </Button>
                 </div>
+                {attendanceError && (
+                  <p className="mt-3 text-sm text-red-500">{attendanceError}</p>
+                )}
               </CardContent>
             </Card>
 
