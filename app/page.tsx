@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { Users, MapPin, ArrowRight, Clock, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState, type TouchEvent } from "react";
+import { Users, MapPin, ArrowRight, Clock, Loader2, CalendarDays, Building2, BriefcaseBusiness, ShoppingBag } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import { Button } from "./components/ui/Button";
 import { useLanguage } from "./contexts/LanguageContext";
@@ -97,6 +97,9 @@ export default function Home() {
             </div>
           </section>
 
+          {/* Feature Carousel Section */}
+          <FeatureBoard />
+
           {/* Activity Stream Section - Jony Ive Inspired */}
           <ActivityStream />
 
@@ -162,6 +165,139 @@ export default function Home() {
 }
 
 // Sub-components
+
+function FeatureBoard() {
+  const cards = [
+    {
+      title: "Etkinliklere Katıl !",
+      description: "Şehrindeki profesyonel buluşmaları, networking gecelerini ve topluluk etkinliklerini keşfet.",
+      href: "/events",
+      icon: CalendarDays,
+      theme: "from-[#0F172A] via-[#1D4ED8] to-[#0EA5E9]",
+      accent: "Etkinlik & Networking",
+    },
+    {
+      title: "Emlak İlanlarını Gör !",
+      description: "Kiralık, satılık ve ev arkadaşı ilanlarını filtreleyerek sana uygun yaşam alanını bul.",
+      href: "/emlak",
+      icon: Building2,
+      theme: "from-[#1F2937] via-[#0F766E] to-[#14B8A6]",
+      accent: "Emlak & Yaşam",
+    },
+    {
+      title: "İş İlanlarını Gör !",
+      description: "Uzmanlığına uygun güncel pozisyonları incele, hızlı başvuru ile yeni kariyer adımını at.",
+      href: "/is",
+      icon: BriefcaseBusiness,
+      theme: "from-[#111827] via-[#7C3AED] to-[#C026D3]",
+      accent: "Kariyer & Fırsatlar",
+    },
+    {
+      title: "Alışveriş !",
+      description: "Topluluk içinde güvenle al-sat yap, ihtiyaçlarına uygun ürünleri avantajlı fiyatlarla yakala.",
+      href: "/alisveris",
+      icon: ShoppingBag,
+      theme: "from-[#1E1B4B] via-[#DB2777] to-[#FB7185]",
+      accent: "Al-Sat & Topluluk",
+    },
+  ] as const;
+
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % cards.length);
+    }, 10000);
+
+    return () => window.clearInterval(interval);
+  }, [cards.length]);
+
+  const onTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    setTouchStartX(event.touches[0]?.clientX ?? null);
+    setTouchEndX(null);
+  };
+
+  const onTouchMove = (event: TouchEvent<HTMLDivElement>) => {
+    setTouchEndX(event.touches[0]?.clientX ?? null);
+  };
+
+  const onTouchEnd = () => {
+    if (touchStartX === null || touchEndX === null) return;
+
+    const swipeDistance = touchStartX - touchEndX;
+    const swipeThreshold = 50;
+
+    if (swipeDistance > swipeThreshold) {
+      setActiveIndex((prev) => (prev + 1) % cards.length);
+    } else if (swipeDistance < -swipeThreshold) {
+      setActiveIndex((prev) => (prev - 1 + cards.length) % cards.length);
+    }
+  };
+
+  return (
+    <section className="border-b border-[var(--color-border-light)] bg-[var(--color-surface)] py-10 sm:py-14">
+      <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
+        <div className="mb-6 flex items-end justify-between gap-4 sm:mb-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-secondary)]">Öne Çıkan Panolar</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-3xl">Topluluğun profesyonel fırsatlarına hızlı erişim</h2>
+          </div>
+        </div>
+
+        <div className="overflow-hidden" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+          <div className="flex transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
+            {cards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <div key={card.title} className="w-full flex-shrink-0 px-1">
+                  <Link
+                    href={card.href}
+                    className={`group relative block overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-r ${card.theme} p-6 text-white shadow-[0_20px_45px_-25px_rgba(15,23,42,0.65)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_30px_55px_-28px_rgba(15,23,42,0.8)] sm:p-8`}
+                  >
+                    <div className="absolute -right-10 -top-12 h-44 w-44 rounded-full bg-white/10 blur-2xl" />
+                    <div className="absolute -bottom-16 -left-8 h-48 w-48 rounded-full bg-black/20 blur-3xl" />
+
+                    <div className="relative z-10 flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
+                      <div className="max-w-2xl">
+                        <span className="inline-flex items-center rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-white/95">
+                          {card.accent}
+                        </span>
+                        <h3 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">{card.title}</h3>
+                        <p className="mt-3 text-sm leading-relaxed text-white/85 sm:text-base">{card.description}</p>
+                      </div>
+
+                      <div className="flex items-center gap-3 self-start rounded-2xl border border-white/30 bg-white/15 px-4 py-3 backdrop-blur-sm sm:self-auto">
+                        <Icon className="h-6 w-6" />
+                        <span className="text-sm font-medium">Menüye Git</span>
+                        <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-5 flex items-center justify-center gap-2">
+          {cards.map((card, index) => (
+            <button
+              key={card.title}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              className={`h-2.5 rounded-full transition-all ${
+                activeIndex === index ? "w-8 bg-[var(--color-primary)]" : "w-2.5 bg-[var(--color-border)] hover:bg-[var(--color-border-dark)]"
+              }`}
+              aria-label={`${card.title} kartına git`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function EventRow({ event }: { event: Event }) {
   const date = new Date(event.event_date);
