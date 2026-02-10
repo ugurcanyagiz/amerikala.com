@@ -406,48 +406,54 @@ function FeatureBoard() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-3xl border border-[var(--color-border-light)] bg-[var(--color-surface-sunken)] p-5 sm:p-7">
-              <div className="flex w-full transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
-                {cards.map((card) => {
+            <div className="relative overflow-hidden rounded-3xl border border-[var(--color-border-light)] bg-[var(--color-surface-sunken)] p-5 sm:p-7">
+              <div className="relative min-h-[360px] sm:min-h-[500px]">
+                {cards.map((card, index) => {
                   const posts = catalogPosts[card.key];
+                  const translate = (index - activeIndex) * 100;
+
                   return (
-                    <div key={`catalog-${card.key}`} className="flex min-h-[360px] min-w-full flex-shrink-0 basis-full flex-col sm:min-h-[500px]">
+                    <div
+                      key={`catalog-${card.key}`}
+                      className="absolute inset-0 flex flex-col transition-transform duration-700 ease-out"
+                      style={{ transform: `translateX(${translate}%)` }}
+                    >
                       <h3 className="mb-5 text-3xl font-semibold tracking-tight text-[var(--color-ink)]">Son eklenen ilanlar</h3>
 
                       <div className="flex-1">
-                      {catalogLoading ? (
-                        <div className="grid grid-cols-2 gap-3">
-                          {Array.from({ length: 6 }).map((_, index) => (
-                            <div key={index} className="h-36 animate-pulse rounded-2xl border border-[var(--color-border-light)] bg-white/75" />
-                          ))}
-                        </div>
-                      ) : posts.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-white/70 p-6 text-sm text-[var(--color-ink-secondary)]">
-                          Bu kategori için henüz ilan bulunmuyor.
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-3">
-                          {posts.map((post) => (
-                            <Link
-                              key={post.id}
-                              href={post.href}
-                              className="group flex h-full min-h-40 flex-col overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white/85 p-4 transition-all hover:-translate-y-0.5 hover:border-[var(--color-border)]"
-                            >
-                              <div className="flex items-center justify-between gap-2 text-[11px] font-medium text-[var(--color-ink-tertiary)]">
-                                <span>{card.accent}</span>
-                                <span>{post.meta}</span>
-                              </div>
-                              <h4 className="mt-2 line-clamp-2 break-words text-sm font-semibold text-[var(--color-ink)]">{post.title}</h4>
-                              <p className="mt-1 line-clamp-2 break-words text-xs text-[var(--color-ink-secondary)]">{post.description}</p>
-                              <p className="mt-2 line-clamp-1 break-words text-xs text-[var(--color-ink-tertiary)]">{post.location}</p>
-                              <span className="mt-auto inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)]">
-                                İlana Git
-                                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                              </span>
-                            </Link>
-                          ))}
-                        </div>
-                      )}
+                        {catalogLoading ? (
+                          <div className="grid grid-cols-2 gap-3">
+                            {Array.from({ length: 6 }).map((_, index) => (
+                              <div key={index} className="h-36 animate-pulse rounded-2xl border border-[var(--color-border-light)] bg-white/75" />
+                            ))}
+                          </div>
+                        ) : posts.length === 0 ? (
+                          <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-white/70 p-6 text-sm text-[var(--color-ink-secondary)]">
+                            Bu kategori için henüz ilan bulunmuyor.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-3">
+                            {posts.map((post) => (
+                              <Link
+                                key={post.id}
+                                href={post.href}
+                                className="group flex h-full min-h-40 flex-col overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white/85 p-4 transition-all hover:-translate-y-0.5 hover:border-[var(--color-border)]"
+                              >
+                                <div className="flex items-center justify-between gap-2 text-[11px] font-medium text-[var(--color-ink-tertiary)]">
+                                  <span>{card.accent}</span>
+                                  <span>{post.meta}</span>
+                                </div>
+                                <h4 className="mt-2 line-clamp-2 break-words text-sm font-semibold text-[var(--color-ink)]">{post.title}</h4>
+                                <p className="mt-1 line-clamp-2 break-words text-xs text-[var(--color-ink-secondary)]">{post.description}</p>
+                                <p className="mt-2 line-clamp-1 break-words text-xs text-[var(--color-ink-tertiary)]">{post.location}</p>
+                                <span className="mt-auto inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)]">
+                                  İlana Git
+                                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                                </span>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       <div className="mt-auto flex justify-end pt-5">
