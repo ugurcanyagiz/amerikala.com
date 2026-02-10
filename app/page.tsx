@@ -367,11 +367,11 @@ function FeatureBoard() {
 
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="overflow-hidden rounded-3xl">
-              <div className="flex transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
+              <div className="flex w-full transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
                 {cards.map((card) => {
                   const Icon = card.icon;
                   return (
-                    <div key={card.title} className="w-full flex-shrink-0">
+                    <div key={card.title} className="min-w-full flex-shrink-0 basis-full">
                       <Link
                         href={card.href}
                         className="group relative block overflow-hidden rounded-3xl border border-white/20 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.9)]"
@@ -407,13 +407,14 @@ function FeatureBoard() {
             </div>
 
             <div className="overflow-hidden rounded-3xl border border-[var(--color-border-light)] bg-[var(--color-surface-sunken)] p-5 sm:p-7">
-              <div className="flex transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
+              <div className="flex w-full transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeIndex * 100}%)` }}>
                 {cards.map((card) => {
                   const posts = catalogPosts[card.key];
                   return (
-                    <div key={`catalog-${card.key}`} className="w-full flex-shrink-0">
+                    <div key={`catalog-${card.key}`} className="flex min-h-[360px] min-w-full flex-shrink-0 basis-full flex-col sm:min-h-[500px]">
                       <h3 className="mb-5 text-3xl font-semibold tracking-tight text-[var(--color-ink)]">Son eklenen ilanlar</h3>
 
+                      <div className="flex-1">
                       {catalogLoading ? (
                         <div className="grid grid-cols-2 gap-3">
                           {Array.from({ length: 6 }).map((_, index) => (
@@ -447,8 +448,9 @@ function FeatureBoard() {
                           ))}
                         </div>
                       )}
+                      </div>
 
-                      <div className="mt-5 flex justify-end">
+                      <div className="mt-auto flex justify-end pt-5">
                         <Link href={card.href} className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-ink)] transition hover:bg-white">
                           Tüm ilanları gör
                           <ArrowRight className="h-4 w-4" />
