@@ -250,15 +250,18 @@ function MobileBottomNav() {
   const pathname = usePathname();
 
   const mobileItems = [
-    { href: "/", icon: Home, label: "Ana" },
-    { href: "/meetups", icon: Calendar, label: "Etkinlik" },
+    { href: "/", icon: null, label: "amerikala", isLogo: true },
     { href: "/emlak", icon: Building2, label: "Emlak" },
+    { href: "/is", icon: Briefcase, label: "İş" },
     { href: "/alisveris", icon: ShoppingBag, label: "Market" },
+    { href: "/meetups", icon: Calendar, label: "Etkinlik" },
+    { href: "/profile", icon: User, label: "Profil" },
   ];
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 z-50 safe-area-inset-bottom">
-      <div className="flex items-center justify-around h-16">
+      <div className="h-16 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-1 min-w-max px-2 h-full">
         {mobileItems.map((item) => {
           const Icon = item.icon;
           const isActive = item.href === "/" 
@@ -270,7 +273,7 @@ function MobileBottomNav() {
               key={item.href}
               href={item.href}
               className={`
-                flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl
+                flex items-center justify-center gap-2 h-11 px-4 rounded-xl shrink-0
                 transition-all duration-200
                 ${isActive 
                   ? "text-blue-600 dark:text-blue-400" 
@@ -278,11 +281,22 @@ function MobileBottomNav() {
                 }
               `}
             >
-              <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              {item.isLogo ? (
+                <Image
+                  src="/logo.png"
+                  alt="Amerikala"
+                  width={18}
+                  height={18}
+                  className="h-[18px] w-auto"
+                />
+              ) : Icon ? (
+                <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+              ) : null}
+              <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>
             </Link>
           );
         })}
+        </div>
       </div>
     </nav>
   );
@@ -555,7 +569,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full bg-white/80 dark:bg-neutral-950/80 backdrop-blur-xl border-b border-neutral-200/50 dark:border-neutral-800/50">
+      <header className="hidden md:block sticky top-0 z-40 w-full bg-white/80 dark:bg-neutral-950/80 backdrop-blur-xl border-b border-neutral-200/50 dark:border-neutral-800/50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
