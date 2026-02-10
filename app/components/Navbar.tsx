@@ -92,7 +92,10 @@ function getNotificationTypeClasses(type: "likes" | "comments" | "events") {
   return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200";
 }
 
-function getDisplayName(profile: { first_name?: string | null; last_name?: string | null; username?: string | null } | null | undefined) {
+function getDisplayName(profile: { first_name?: string | null; last_name?: string | null; full_name?: string | null; username?: string | null } | null | undefined) {
+  const explicitFullName = profile?.full_name?.trim();
+  if (explicitFullName) return explicitFullName;
+
   const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim();
   return fullName || profile?.username || "Kullanıcı";
 }
@@ -112,9 +115,8 @@ function formatMessageTime(dateString: string) {
   return createdAt.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
 }
 
-function getUsernameLabel(profile: { username?: string | null } | null | undefined, fallbackEmail?: string | null) {
+function getUsernameLabel(profile: { username?: string | null } | null | undefined) {
   if (profile?.username) return `@${profile.username}`;
-  if (fallbackEmail) return fallbackEmail;
   return "@user";
 }
 
@@ -307,7 +309,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   const { user, profile, signOut, isAdmin } = useAuth();
   const router = useRouter();
   const displayName = getDisplayName(profile);
-  const usernameLabel = getUsernameLabel(profile, user?.email);
+  const usernameLabel = getUsernameLabel(profile);
 
   const handleSignOut = async () => {
     await signOut();
@@ -461,7 +463,7 @@ export default function Navbar() {
   const router = useRouter();
   const { user, profile, signOut, loading, isAdmin } = useAuth();
   const displayName = getDisplayName(profile);
-  const usernameLabel = getUsernameLabel(profile, user?.email);
+  const usernameLabel = getUsernameLabel(profile);
   const { notifications, unreadCount, markAsRead, markAllAsRead, loading: notificationLoading } = useNotifications();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -789,9 +791,8 @@ export default function Navbar() {
                         fallback={profile?.first_name || profile?.username || "U"}
                         size="sm"
                       />
-                      <div className="hidden lg:block text-left max-w-[140px]">
-                        <div className="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{displayName}</div>
-                        <div className="text-xs text-neutral-500 truncate">{usernameLabel}</div>
+                      <div className="text-left max-w-[140px]">
+                        <div className="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{usernameLabel}</div>
                       </div>
                       <ChevronDown size={14} className={`transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
                     </button>
