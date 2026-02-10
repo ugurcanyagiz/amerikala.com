@@ -414,7 +414,7 @@ function ActivityStream() {
                 className="group flex h-full min-w-0 flex-col rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3 transition-all duration-200 hover:border-[var(--color-border)] hover:shadow-[var(--shadow-sm)] sm:rounded-2xl sm:p-4"
               >
                 <div className="mb-2 flex min-w-0 items-start justify-between gap-2">
-                  <span className="truncate rounded-full bg-[var(--color-surface-sunken)] px-2 py-1 text-[10px] font-semibold tracking-wide text-[var(--color-ink)] sm:text-xs">
+                  <span className="max-w-[65%] break-words rounded-full bg-[var(--color-surface-sunken)] px-2 py-1 text-[10px] font-semibold tracking-wide text-[var(--color-ink)] sm:text-xs">
                     {t(`home.activityStream.categories.${post.category}`)}
                   </span>
                   <span className="shrink-0 flex items-center gap-1 text-[10px] text-[var(--color-ink-tertiary)] sm:text-xs">
@@ -423,28 +423,28 @@ function ActivityStream() {
                   </span>
                 </div>
 
-                <h3 className="mb-1 truncate text-sm font-semibold leading-snug text-[var(--color-ink)] sm:text-base">
-                  {truncateText(post.title, 42)}
+                <h3 className="mb-1 line-clamp-2 break-words text-sm font-semibold leading-snug text-[var(--color-ink)] sm:text-base">
+                  {post.title}
                 </h3>
-                <p className="mb-2 text-xs leading-relaxed text-[var(--color-ink-secondary)] sm:text-sm">
-                  {truncateText(post.summary, 72)}
+                <p className="mb-2 line-clamp-3 break-words text-xs leading-relaxed text-[var(--color-ink-secondary)] sm:text-sm">
+                  {post.summary}
                 </p>
 
                 <div className="mt-auto space-y-1 text-[10px] text-[var(--color-ink-secondary)] sm:text-xs">
-                  <span className="flex items-center gap-1 truncate">
+                  <span className="flex min-w-0 items-start gap-1">
                     <MapPin className="h-3.5 w-3.5 shrink-0" />
-                    {truncateText(post.location, 28)}
+                    <span className="line-clamp-2 break-words">{post.location}</span>
                   </span>
 
                   <div className="flex min-w-0 flex-wrap items-center gap-1">
                     {post.price && (
-                      <span className="max-w-full truncate rounded-full bg-[var(--color-surface-sunken)] px-2 py-1">
-                        {truncateText(post.price, 18)}
+                      <span className="max-w-full break-words rounded-full bg-[var(--color-surface-sunken)] px-2 py-1">
+                        {truncateText(post.price, 22)}
                       </span>
                     )}
                     {post.tagLabel && (
-                      <span className="max-w-full truncate rounded-full bg-[var(--color-surface-sunken)] px-2 py-1">
-                        {truncateText(post.tagLabel, 16)}
+                      <span className="max-w-full break-words rounded-full bg-[var(--color-surface-sunken)] px-2 py-1">
+                        {truncateText(post.tagLabel, 22)}
                       </span>
                     )}
                   </div>
