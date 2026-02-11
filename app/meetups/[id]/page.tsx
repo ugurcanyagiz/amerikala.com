@@ -83,19 +83,73 @@ export default function EventDetailPage() {
   const [commentError, setCommentError] = useState<string | null>(null);
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
 
+  const ATTENDEE_PROFILE_SELECT_FULL = "id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession";
+  const ATTENDEE_PROFILE_SELECT_MINIMAL = "id, username, full_name, avatar_url";
+
+  const normalizeAttendees = (rows: Array<Record<string, unknown>> | null) => {
+    return (rows || []).map((row) => {
+      const profile = row.profile as Record<string, unknown> | Record<string, unknown>[] | null | undefined;
+      const resolved = Array.isArray(profile) ? profile[0] || null : profile || null;
+
+      const eventIdValue = typeof row.event_id === "string" ? row.event_id : "";
+      const userIdValue = typeof row.user_id === "string" ? row.user_id : "";
+      const statusValue = typeof row.status === "string" ? row.status : "going";
+      const createdAtValue = typeof row.created_at === "string" ? row.created_at : new Date().toISOString();
+
+      return {
+        event_id: eventIdValue,
+        user_id: userIdValue,
+        status: statusValue as EventAttendee["status"],
+        created_at: createdAtValue,
+        profile: resolved
+          ? {
+              id: (resolved.id as string) || "",
+              username: (resolved.username as string | null) ?? null,
+              full_name: (resolved.full_name as string | null) ?? null,
+              first_name: (resolved.first_name as string | null) ?? null,
+              last_name: (resolved.last_name as string | null) ?? null,
+              avatar_url: (resolved.avatar_url as string | null) ?? null,
+              bio: (resolved.bio as string | null) ?? null,
+              city: (resolved.city as string | null) ?? null,
+              state: (resolved.state as string | null) ?? null,
+              profession: (resolved.profession as string | null) ?? null,
+            }
+          : null,
+      } as EventAttendee;
+    });
+  };
+
   const fetchAttendees = useCallback(async () => {
     const { data, error } = await supabase
       .from("event_attendees")
       .select(`
         *,
-        profile:user_id (id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession)
+        profile:user_id (${ATTENDEE_PROFILE_SELECT_FULL})
       `)
       .eq("event_id", eventId)
       .eq("status", "going");
 
-    if (error) throw error;
+    let list: EventAttendee[] = [];
 
-    const list = (data as EventAttendee[] | null) || [];
+    if (!error) {
+      list = normalizeAttendees((data as Array<Record<string, unknown>> | null) || []);
+    } else {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from("event_attendees")
+        .select(`
+          *,
+          profile:user_id (${ATTENDEE_PROFILE_SELECT_MINIMAL})
+        `)
+        .eq("event_id", eventId)
+        .eq("status", "going");
+
+      if (fallbackError) {
+        console.error("fetchAttendees failed:", fallbackError);
+      } else {
+        list = normalizeAttendees((fallbackData as Array<Record<string, unknown>> | null) || []);
+      }
+    }
+
     setAttendees(list);
 
     if (user) {
@@ -108,7 +162,6 @@ export default function EventDetailPage() {
     const fetchEvent = async () => {
       setLoading(true);
       try {
-        // Fetch event
         const { data: eventData, error: eventError } = await supabase
           .from("events")
           .select(`
@@ -118,10 +171,12 @@ export default function EventDetailPage() {
           .eq("id", eventId)
           .single();
 
-        if (eventError) throw eventError;
+        if (eventError) {
+          throw eventError;
+        }
+
         setEvent(eventData);
 
-        // Fetch attendees
         await fetchAttendees();
 
         const { data: commentsData, error: commentsError } = await supabase
@@ -147,7 +202,7 @@ export default function EventDetailPage() {
 
       } catch (error) {
         console.error("Error fetching event:", error);
-        router.push("/meetups");
+        setEvent(null);
       } finally {
         setLoading(false);
       }
@@ -224,21 +279,30 @@ export default function EventDetailPage() {
           }
         }
 
-        const { data: insertedAttendee } = await supabase
+        const { data: insertedAttendee, error: attendeeFetchError } = await supabase
           .from("event_attendees")
           .select(`
             *,
-            profile:user_id (id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession)
+            profile:user_id (${ATTENDEE_PROFILE_SELECT_FULL})
           `)
           .eq("event_id", eventId)
           .eq("user_id", user.id)
           .single();
 
-        if (insertedAttendee) {
+        if (attendeeFetchError) {
+          await fetchAttendees();
+          return;
+        }
+
+        const normalizedAttendee = normalizeAttendees([
+          insertedAttendee as unknown as Record<string, unknown>,
+        ])[0];
+
+        if (normalizedAttendee) {
           setAttending(true);
           setAttendees((prev) => {
             const filtered = prev.filter((item) => item.user_id !== user.id);
-            return [...filtered, insertedAttendee as EventAttendee];
+            return [...filtered, normalizedAttendee];
           });
         } else {
           await fetchAttendees();
