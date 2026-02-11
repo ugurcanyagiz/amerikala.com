@@ -71,7 +71,7 @@ export type EventCategory =
   | 'travel'
   | 'other';
 
-export type AttendanceStatus = 'going' | 'interested' | 'not_going';
+export type AttendanceStatus = 'pending' | 'going' | 'interested' | 'not_going';
 
 export interface Event {
   id: string;
