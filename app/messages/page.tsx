@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Search,
   MoreVertical,
@@ -125,6 +126,7 @@ const formatClock = (iso: string) =>
 
 export default function MessagesPage() {
   const { user, loading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
 
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
@@ -145,6 +147,15 @@ export default function MessagesPage() {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
 
   const selectedConversation = conversations.find((item) => item.id === selectedConversationId) ?? null;
+
+  useEffect(() => {
+    const requestedConversation = searchParams.get("conversation");
+    if (!requestedConversation || conversations.length === 0) return;
+    const exists = conversations.some((conversation) => conversation.id === requestedConversation);
+    if (exists) {
+      setSelectedConversationId(requestedConversation);
+    }
+  }, [conversations, searchParams]);
 
   const filteredConversations = useMemo(() => {
     return conversations.filter((conversation) => {
