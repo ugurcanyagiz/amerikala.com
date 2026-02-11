@@ -590,6 +590,173 @@ export default function EventDetailPage() {
     }
   };
 
+  const getDisplayName = (profile?: BasicProfile | BasicProfile[] | null) => {
+    if (!profile) return "Anonim";
+    const p = Array.isArray(profile) ? profile[0] : profile;
+    if (!p) return "Anonim";
+    return p.full_name || [p.first_name, p.last_name].filter(Boolean).join(" ") || p.username || "Anonim";
+  };
+
+  const getProfileRecord = (profile?: BasicProfile | BasicProfile[] | null) => {
+    if (!profile) return null;
+    return Array.isArray(profile) ? profile[0] || null : profile;
+  };
+
+  const checkFollowing = async (targetUserId: string) => {
+    if (!user || user.id === targetUserId) return;
+    const candidates: Array<{ from: string; to: string }> = [
+      { from: "follower_id", to: "following_id" },
+      { from: "user_id", to: "target_user_id" },
+      { from: "user_id", to: "followed_user_id" },
+    ];
+
+    for (const pair of candidates) {
+      const { data, error } = await supabase
+        .from("follows")
+        .select("*")
+        .eq(pair.from, user.id)
+        .eq(pair.to, targetUserId)
+        .limit(1);
+
+      if (!error) {
+        setIsFollowing((data?.length || 0) > 0);
+        return;
+      }
+    }
+
+    setIsFollowing(false);
+  };
+
+  const handleToggleFollow = async () => {
+    if (!user || !selectedAttendee || user.id === selectedAttendee.id) return;
+    setFollowLoading(true);
+
+    try {
+      const pairs: Array<{ from: string; to: string }> = [
+        { from: "follower_id", to: "following_id" },
+        { from: "user_id", to: "target_user_id" },
+        { from: "user_id", to: "followed_user_id" },
+      ];
+
+      if (isFollowing) {
+        for (const pair of pairs) {
+          const { error } = await supabase
+            .from("follows")
+            .delete()
+            .eq(pair.from, user.id)
+            .eq(pair.to, selectedAttendee.id);
+          if (!error) {
+            setIsFollowing(false);
+            return;
+          }
+        }
+      } else {
+        for (const pair of pairs) {
+          const { error } = await supabase
+            .from("follows")
+            .insert({ [pair.from]: user.id, [pair.to]: selectedAttendee.id });
+          if (!error) {
+            setIsFollowing(true);
+            return;
+          }
+        }
+      }
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!user || !selectedAttendee || user.id === selectedAttendee.id) return;
+    setDmLoading(true);
+    try {
+      const { data: myRows } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", user.id);
+
+      const candidateConversationIds = ((myRows as Array<{ conversation_id: string }> | null) || []).map((row) => row.conversation_id);
+      if (candidateConversationIds.length > 0) {
+        const { data: otherRows } = await supabase
+          .from("conversation_participants")
+          .select("conversation_id")
+          .eq("user_id", selectedAttendee.id)
+          .in("conversation_id", candidateConversationIds);
+
+        const existingId = (otherRows as Array<{ conversation_id: string }> | null)?.[0]?.conversation_id;
+        if (existingId) {
+          router.push(`/messages?conversation=${existingId}`);
+          return;
+        }
+      }
+
+      const conversationPayloads = [
+        { is_group: false, created_by: user.id },
+        { is_group: false },
+        {},
+      ];
+
+      let conversationId = "";
+      for (const payload of conversationPayloads) {
+        const { data, error } = await supabase.from("conversations").insert(payload).select("id").single();
+        if (!error && data?.id) {
+          conversationId = data.id as string;
+          break;
+        }
+      }
+
+      if (!conversationId) {
+        router.push("/messages");
+        return;
+      }
+
+      await supabase.from("conversation_participants").insert([
+        { conversation_id: conversationId, user_id: user.id },
+        { conversation_id: conversationId, user_id: selectedAttendee.id },
+      ]);
+
+      router.push(`/messages?conversation=${conversationId}`);
+    } finally {
+      setDmLoading(false);
+    }
+  };
+
+  const handleCommentSubmit = async () => {
+    if (!user || !commentInput.trim() || !attending) return;
+    setCommentLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("event_comments")
+        .insert({
+          event_id: eventId,
+          user_id: user.id,
+          content: commentInput.trim(),
+        })
+        .select(`
+          id,
+          event_id,
+          user_id,
+          content,
+          created_at,
+          profile:user_id (id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession)
+        `)
+        .single();
+
+      if (error) {
+        setCommentError("Yorum paylaşılırken bir sorun oluştu.");
+        return;
+      }
+
+      if (data) {
+        setComments((prev) => [data as EventComment, ...prev]);
+      }
+      setCommentInput("");
+      setCommentError(null);
+    } finally {
+      setCommentLoading(false);
+    }
+  };
+
   // Copy link
   const copyLink = async () => {
     await navigator.clipboard.writeText(window.location.href);
