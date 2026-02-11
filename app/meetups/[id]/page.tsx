@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
@@ -17,6 +17,7 @@ import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/Card";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
+import { Modal } from "@/app/components/ui/Modal";
 import { 
   ArrowLeft,
   Calendar,
@@ -35,8 +36,32 @@ import {
   Copy,
   Twitter,
   Facebook,
-  MessageCircle
+  MessageCircle,
+  Check,
+  X
 } from "lucide-react";
+
+type BasicProfile = {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  city: string | null;
+  state: string | null;
+  profession: string | null;
+};
+
+type EventComment = {
+  id: string;
+  event_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  profile?: BasicProfile | BasicProfile[] | null;
+};
 
 export default function EventDetailPage() {
   const router = useRouter();
@@ -47,16 +72,142 @@ export default function EventDetailPage() {
   const [event, setEvent] = useState<Event | null>(null);
   const [attendees, setAttendees] = useState<EventAttendee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [attending, setAttending] = useState(false);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [joinConfirmOpen, setJoinConfirmOpen] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<EventAttendee[]>([]);
+  const [myAttendanceStatus, setMyAttendanceStatus] = useState<EventAttendee["status"] | null>(null);
+  const [selectedAttendee, setSelectedAttendee] = useState<BasicProfile | null>(null);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [dmLoading, setDmLoading] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [comments, setComments] = useState<EventComment[]>([]);
+  const [commentInput, setCommentInput] = useState("");
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
+  const [attendanceNotice, setAttendanceNotice] = useState<string | null>(null);
+
+  const ATTENDEE_PROFILE_SELECT_FULL = "id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession";
+  const ATTENDEE_PROFILE_SELECT_MINIMAL = "id, username, full_name, avatar_url";
+
+  const isOrganizer = !!(user && event?.organizer_id === user.id);
+
+  const normalizeAttendees = (rows: Array<Record<string, unknown>> | null) => {
+    return (rows || []).map((row) => {
+      const profile = row.profile as Record<string, unknown> | Record<string, unknown>[] | null | undefined;
+      const resolved = Array.isArray(profile) ? profile[0] || null : profile || null;
+
+      const eventIdValue = typeof row.event_id === "string" ? row.event_id : "";
+      const userIdValue = typeof row.user_id === "string" ? row.user_id : "";
+      const statusValue = typeof row.status === "string" ? row.status : "going";
+      const createdAtValue = typeof row.created_at === "string" ? row.created_at : new Date().toISOString();
+
+      return {
+        event_id: eventIdValue,
+        user_id: userIdValue,
+        status: statusValue as EventAttendee["status"],
+        created_at: createdAtValue,
+        profile: resolved
+          ? {
+              id: (resolved.id as string) || "",
+              username: (resolved.username as string | null) ?? null,
+              full_name: (resolved.full_name as string | null) ?? null,
+              first_name: (resolved.first_name as string | null) ?? null,
+              last_name: (resolved.last_name as string | null) ?? null,
+              avatar_url: (resolved.avatar_url as string | null) ?? null,
+              bio: (resolved.bio as string | null) ?? null,
+              city: (resolved.city as string | null) ?? null,
+              state: (resolved.state as string | null) ?? null,
+              profession: (resolved.profession as string | null) ?? null,
+            }
+          : null,
+      } as EventAttendee;
+    });
+  };
+
+  const fetchAttendees = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("event_attendees")
+      .select(`
+        *,
+        profile:user_id (${ATTENDEE_PROFILE_SELECT_FULL})
+      `)
+      .eq("event_id", eventId)
+      .eq("status", "going");
+
+    let list: EventAttendee[] = [];
+
+    if (!error) {
+      list = normalizeAttendees((data as Array<Record<string, unknown>> | null) || []);
+    } else {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from("event_attendees")
+        .select(`
+          *,
+          profile:user_id (${ATTENDEE_PROFILE_SELECT_MINIMAL})
+        `)
+        .eq("event_id", eventId)
+        .eq("status", "going");
+
+      if (fallbackError) {
+        console.error("fetchAttendees failed:", fallbackError);
+      } else {
+        list = normalizeAttendees((fallbackData as Array<Record<string, unknown>> | null) || []);
+      }
+    }
+
+    setAttendees(list);
+
+  }, [eventId]);
+
+  const fetchMyAttendanceStatus = useCallback(async () => {
+    if (!user) {
+      setMyAttendanceStatus(null);
+      return;
+    }
+
+    const { data } = await supabase
+      .from("event_attendees")
+      .select("status")
+      .eq("event_id", eventId)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const status = (data?.status as EventAttendee["status"] | undefined) || null;
+    setMyAttendanceStatus(status);
+  }, [eventId, user]);
+
+  const fetchPendingRequests = useCallback(async () => {
+    if (!user || !isOrganizer) {
+      setPendingRequests([]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("event_attendees")
+      .select(`
+        *,
+        profile:user_id (${ATTENDEE_PROFILE_SELECT_FULL})
+      `)
+      .eq("event_id", eventId)
+      .eq("status", "pending");
+
+    if (error) {
+      setPendingRequests([]);
+      return;
+    }
+
+    setPendingRequests(normalizeAttendees((data as Array<Record<string, unknown>> | null) || []));
+  }, [ATTENDEE_PROFILE_SELECT_FULL, eventId, isOrganizer, user]);
 
   // Fetch event
   useEffect(() => {
     const fetchEvent = async () => {
       setLoading(true);
       try {
-        // Fetch event
         const { data: eventData, error: eventError } = await supabase
           .from("events")
           .select(`
@@ -66,30 +217,42 @@ export default function EventDetailPage() {
           .eq("id", eventId)
           .single();
 
-        if (eventError) throw eventError;
+        if (eventError) {
+          throw eventError;
+        }
+
         setEvent(eventData);
 
-        // Fetch attendees
-        const { data: attendeesData } = await supabase
-          .from("event_attendees")
+        await fetchAttendees();
+        await fetchMyAttendanceStatus();
+        await fetchPendingRequests();
+
+        const { data: commentsData, error: commentsError } = await supabase
+          .from("event_comments")
           .select(`
-            *,
-            profile:user_id (id, username, full_name, avatar_url)
+            id,
+            event_id,
+            user_id,
+            content,
+            created_at,
+            profile:user_id (id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession)
           `)
           .eq("event_id", eventId)
-          .eq("status", "going");
+          .order("created_at", { ascending: false })
+          .limit(50);
 
-        setAttendees(attendeesData || []);
-
-        // Check if current user is attending
-        if (user) {
-          const isAttending = attendeesData?.some(a => a.user_id === user.id);
-          setAttending(!!isAttending);
+        if (commentsError) {
+          console.warn("Comments unavailable:", commentsError.message);
+          setComments([]);
+          setCommentError(null);
+        } else {
+          setComments((commentsData as EventComment[] | null) || []);
+          setCommentError(null);
         }
 
       } catch (error) {
         console.error("Error fetching event:", error);
-        router.push("/meetups");
+        setEvent(null);
       } finally {
         setLoading(false);
       }
@@ -98,54 +261,332 @@ export default function EventDetailPage() {
     if (eventId) {
       fetchEvent();
     }
-  }, [eventId, user, router]);
+  }, [eventId, user, router, fetchAttendees, fetchMyAttendanceStatus, fetchPendingRequests]);
 
   // Handle attendance
-  const handleAttendance = async () => {
+  const submitJoinRequest = async () => {
     if (!user) {
       router.push(`/login?redirect=/meetups/${eventId}`);
       return;
     }
 
     setAttendanceLoading(true);
+    setAttendanceError(null);
+    setAttendanceNotice(null);
 
     try {
-      if (attending) {
-        // Remove attendance
+      const targetStatus: EventAttendee["status"] = isOrganizer ? "going" : "pending";
+
+      const { error: upsertError } = await supabase
+        .from("event_attendees")
+        .upsert(
+          {
+            event_id: eventId,
+            user_id: user.id,
+            status: targetStatus,
+          },
+          {
+            onConflict: "event_id,user_id",
+            ignoreDuplicates: false,
+          }
+        );
+
+      if (upsertError) {
+        const { error: insertError } = await supabase
+          .from("event_attendees")
+          .insert({
+            event_id: eventId,
+            user_id: user.id,
+            status: targetStatus,
+          });
+
+        if (insertError) {
+          const { error: updateError } = await supabase
+            .from("event_attendees")
+            .update({ status: targetStatus })
+            .eq("event_id", eventId)
+            .eq("user_id", user.id);
+
+          if (updateError) throw updateError;
+        }
+      }
+
+      await fetchMyAttendanceStatus();
+      await fetchAttendees();
+      await fetchPendingRequests();
+
+      if (targetStatus === "pending") {
+        setAttendanceNotice("Başvurun organizatör onayına gönderildi.");
+      } else {
+        setAttendanceNotice("Etkinliğe katılımın onaylandı.");
+      }
+    } catch (error) {
+      console.error("Error updating attendance:", error);
+      setAttendanceError("Katılım işlemi tamamlanamadı. Lütfen tekrar deneyin.");
+    } finally {
+      setAttendanceLoading(false);
+      setJoinConfirmOpen(false);
+    }
+  };
+
+  const handleAttendance = async () => {
+    if (!user) {
+      router.push(`/login?redirect=/meetups/${eventId}`);
+      return;
+    }
+
+    if (myAttendanceStatus === "going" || myAttendanceStatus === "pending") {
+      setAttendanceLoading(true);
+      setAttendanceError(null);
+      setAttendanceNotice(null);
+
+      try {
         const { error } = await supabase
           .from("event_attendees")
           .delete()
           .eq("event_id", eventId)
           .eq("user_id", user.id);
 
-        if (error) throw error;
-        setAttending(false);
-        setAttendees(prev => prev.filter(a => a.user_id !== user.id));
-      } else {
-        // Add attendance
-        const { data, error } = await supabase
-          .from("event_attendees")
-          .insert({
-            event_id: eventId,
-            user_id: user.id,
-            status: "going"
-          })
-          .select(`
-            *,
-            profile:user_id (id, username, full_name, avatar_url)
-          `)
-          .single();
+        if (error) {
+          const { error: updateError } = await supabase
+            .from("event_attendees")
+            .update({ status: "not_going" })
+            .eq("event_id", eventId)
+            .eq("user_id", user.id);
 
-        if (error) throw error;
-        setAttending(true);
-        if (data) {
-          setAttendees(prev => [...prev, data]);
+          if (updateError) throw updateError;
+        }
+
+        await fetchMyAttendanceStatus();
+        await fetchAttendees();
+        await fetchPendingRequests();
+      } catch (error) {
+        console.error("Error updating attendance:", error);
+        setAttendanceError("Katılım işlemi tamamlanamadı. Lütfen tekrar deneyin.");
+      } finally {
+        setAttendanceLoading(false);
+      }
+
+      return;
+    }
+
+    setJoinConfirmOpen(true);
+  };
+
+  const handleApproveRequest = async (requestUserId: string) => {
+    if (!isOrganizer) return;
+    const { error } = await supabase
+      .from("event_attendees")
+      .update({ status: "going" })
+      .eq("event_id", eventId)
+      .eq("user_id", requestUserId)
+      .eq("status", "pending");
+
+    if (error) {
+      setAttendanceError("Katılım başvurusu onaylanamadı.");
+      return;
+    }
+
+    await fetchPendingRequests();
+    await fetchAttendees();
+  };
+
+  const handleRejectRequest = async (requestUserId: string) => {
+    if (!isOrganizer) return;
+    const { error } = await supabase
+      .from("event_attendees")
+      .delete()
+      .eq("event_id", eventId)
+      .eq("user_id", requestUserId)
+      .eq("status", "pending");
+
+    if (error) {
+      const { error: updateError } = await supabase
+        .from("event_attendees")
+        .update({ status: "not_going" })
+        .eq("event_id", eventId)
+        .eq("user_id", requestUserId)
+        .eq("status", "pending");
+
+      if (updateError) {
+        setAttendanceError("Katılım başvurusu reddedilemedi.");
+        return;
+      }
+    }
+
+    await fetchPendingRequests();
+  };
+
+  const getDisplayName = (profile?: BasicProfile | BasicProfile[] | null) => {
+    if (!profile) return "Anonim";
+    const p = Array.isArray(profile) ? profile[0] : profile;
+    if (!p) return "Anonim";
+    return p.full_name || [p.first_name, p.last_name].filter(Boolean).join(" ") || p.username || "Anonim";
+  };
+
+  const getProfileRecord = (profile?: BasicProfile | BasicProfile[] | null) => {
+    if (!profile) return null;
+    return Array.isArray(profile) ? profile[0] || null : profile;
+  };
+
+  const getUsernameText = (profile: BasicProfile | null, userId?: string) => {
+    if (profile?.username) return `@${profile.username}`;
+    if (userId) return `ID: ${userId.slice(0, 8)}`;
+    return "Kullanıcı adı yok";
+  };
+
+  const checkFollowing = async (targetUserId: string) => {
+    if (!user || user.id === targetUserId) return;
+    const candidates: Array<{ from: string; to: string }> = [
+      { from: "follower_id", to: "following_id" },
+      { from: "user_id", to: "target_user_id" },
+      { from: "user_id", to: "followed_user_id" },
+    ];
+
+    for (const pair of candidates) {
+      const { data, error } = await supabase
+        .from("follows")
+        .select("*")
+        .eq(pair.from, user.id)
+        .eq(pair.to, targetUserId)
+        .limit(1);
+
+      if (!error) {
+        setIsFollowing((data?.length || 0) > 0);
+        return;
+      }
+    }
+
+    setIsFollowing(false);
+  };
+
+  const handleToggleFollow = async () => {
+    if (!user || !selectedAttendee || user.id === selectedAttendee.id) return;
+    setFollowLoading(true);
+
+    try {
+      const pairs: Array<{ from: string; to: string }> = [
+        { from: "follower_id", to: "following_id" },
+        { from: "user_id", to: "target_user_id" },
+        { from: "user_id", to: "followed_user_id" },
+      ];
+
+      if (isFollowing) {
+        for (const pair of pairs) {
+          const { error } = await supabase
+            .from("follows")
+            .delete()
+            .eq(pair.from, user.id)
+            .eq(pair.to, selectedAttendee.id);
+          if (!error) {
+            setIsFollowing(false);
+            return;
+          }
+        }
+      } else {
+        for (const pair of pairs) {
+          const { error } = await supabase
+            .from("follows")
+            .insert({ [pair.from]: user.id, [pair.to]: selectedAttendee.id });
+          if (!error) {
+            setIsFollowing(true);
+            return;
+          }
         }
       }
-    } catch (error) {
-      console.error("Error updating attendance:", error);
     } finally {
-      setAttendanceLoading(false);
+      setFollowLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!user || !selectedAttendee || user.id === selectedAttendee.id) return;
+    setDmLoading(true);
+    try {
+      const { data: myRows } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", user.id);
+
+      const candidateConversationIds = ((myRows as Array<{ conversation_id: string }> | null) || []).map((row) => row.conversation_id);
+      if (candidateConversationIds.length > 0) {
+        const { data: otherRows } = await supabase
+          .from("conversation_participants")
+          .select("conversation_id")
+          .eq("user_id", selectedAttendee.id)
+          .in("conversation_id", candidateConversationIds);
+
+        const existingId = (otherRows as Array<{ conversation_id: string }> | null)?.[0]?.conversation_id;
+        if (existingId) {
+          router.push(`/messages?conversation=${existingId}`);
+          return;
+        }
+      }
+
+      const conversationPayloads = [
+        { is_group: false, created_by: user.id },
+        { is_group: false },
+        {},
+      ];
+
+      let conversationId = "";
+      for (const payload of conversationPayloads) {
+        const { data, error } = await supabase.from("conversations").insert(payload).select("id").single();
+        if (!error && data?.id) {
+          conversationId = data.id as string;
+          break;
+        }
+      }
+
+      if (!conversationId) {
+        router.push("/messages");
+        return;
+      }
+
+      await supabase.from("conversation_participants").insert([
+        { conversation_id: conversationId, user_id: user.id },
+        { conversation_id: conversationId, user_id: selectedAttendee.id },
+      ]);
+
+      router.push(`/messages?conversation=${conversationId}`);
+    } finally {
+      setDmLoading(false);
+    }
+  };
+
+  const handleCommentSubmit = async () => {
+    if (!user || !commentInput.trim() || (myAttendanceStatus !== "going" && !isOrganizer)) return;
+    setCommentLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("event_comments")
+        .insert({
+          event_id: eventId,
+          user_id: user.id,
+          content: commentInput.trim(),
+        })
+        .select(`
+          id,
+          event_id,
+          user_id,
+          content,
+          created_at,
+          profile:user_id (id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession)
+        `)
+        .single();
+
+      if (error) {
+        setCommentError("Yorum paylaşılırken bir sorun oluştu.");
+        return;
+      }
+
+      if (data) {
+        setComments((prev) => [data as EventComment, ...prev]);
+      }
+      setCommentInput("");
+      setCommentError(null);
+    } finally {
+      setCommentLoading(false);
     }
   };
 
@@ -189,25 +630,17 @@ export default function EventDetailPage() {
     );
   }
 
-  const organizer = event.organizer as any;
+  const organizer = event.organizer as BasicProfile | undefined;
   const isFull = event.max_attendees && event.current_attendees >= event.max_attendees;
   const isPast = new Date(event.event_date) < new Date(new Date().toDateString());
 
   return (
     <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
-      {/* Cover Image */}
+      {/* Header */}
       <div className="relative h-64 sm:h-80 bg-gradient-to-br from-red-500 to-orange-500">
-        {event.cover_image_url ? (
-          <img 
-            src={event.cover_image_url} 
-            alt={event.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-8xl">{EVENT_CATEGORY_ICONS[event.category]}</span>
-          </div>
-        )}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-8xl">{EVENT_CATEGORY_ICONS[event.category]}</span>
+        </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         
         {/* Back Button */}
@@ -297,11 +730,11 @@ export default function EventDetailPage() {
                 <div className="flex flex-wrap gap-3">
                   {isPast ? (
                     <Badge variant="default" size="lg">Etkinlik Sona Erdi</Badge>
-                  ) : isFull && !attending ? (
+                  ) : isFull && myAttendanceStatus !== "going" && myAttendanceStatus !== "pending" ? (
                     <Badge variant="warning" size="lg">Kontenjan Dolu</Badge>
                   ) : (
                     <Button
-                      variant={attending ? "outline" : "primary"}
+                      variant={myAttendanceStatus === "going" || myAttendanceStatus === "pending" ? "outline" : "primary"}
                       size="lg"
                       onClick={handleAttendance}
                       disabled={attendanceLoading}
@@ -309,10 +742,15 @@ export default function EventDetailPage() {
                     >
                       {attendanceLoading ? (
                         <Loader2 size={18} className="animate-spin" />
-                      ) : attending ? (
+                      ) : myAttendanceStatus === "going" ? (
                         <>
                           <UserMinus size={18} />
                           Katılımı İptal Et
+                        </>
+                      ) : myAttendanceStatus === "pending" ? (
+                        <>
+                          <UserMinus size={18} />
+                          Başvuruyu Geri Çek
                         </>
                       ) : (
                         <>
@@ -329,6 +767,12 @@ export default function EventDetailPage() {
                     {copied ? "Kopyalandı!" : "Link Kopyala"}
                   </Button>
                 </div>
+                {attendanceError && (
+                  <p className="mt-3 text-sm text-red-500">{attendanceError}</p>
+                )}
+                {attendanceNotice && (
+                  <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">{attendanceNotice}</p>
+                )}
               </CardContent>
             </Card>
 
@@ -364,28 +808,152 @@ export default function EventDetailPage() {
                     Henüz katılımcı yok. İlk katılan sen ol!
                   </p>
                 ) : (
-                  <div className="flex flex-wrap gap-3">
+                  <div className="grid sm:grid-cols-2 gap-3">
                     {attendees.map(attendee => {
-                      const profile = attendee.profile as any;
+                      const profile = getProfileRecord(attendee.profile as BasicProfile | BasicProfile[] | null);
                       return (
-                        <Link 
+                        <button
                           key={attendee.user_id} 
-                          href={`/profile/${attendee.user_id}`}
-                          className="flex items-center gap-2 p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                          onClick={() => {
+                            if (profile) {
+                              setSelectedAttendee(profile);
+                              if (user && user.id !== profile.id) {
+                                checkFollowing(profile.id);
+                              }
+                            }
+                          }}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl border border-neutral-200/80 dark:border-neutral-700/60 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-left"
                         >
                           <Avatar 
-                            src={profile?.avatar_url} 
-                            fallback={profile?.full_name || profile?.username || "U"} 
+                            src={profile?.avatar_url ?? undefined} 
+                            fallback={getDisplayName(profile)} 
                             size="sm"
                           />
-                          <span className="text-sm font-medium">
-                            {profile?.full_name || profile?.username || "Anonim"}
-                          </span>
-                        </Link>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold truncate">{getDisplayName(profile)}</p>
+                            <p className="text-xs text-neutral-500 truncate">{getUsernameText(profile, attendee.user_id)}</p>
+                          </div>
+                        </button>
                       );
                     })}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {isOrganizer && (
+              <Card className="glass">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Katılım Başvuruları</span>
+                    <Badge variant="warning">{pendingRequests.length}</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {pendingRequests.length === 0 ? (
+                    <p className="text-sm text-neutral-500">Bekleyen katılım başvurusu yok.</p>
+                  ) : (
+                    pendingRequests.map((request) => {
+                      const profile = getProfileRecord(request.profile as BasicProfile | BasicProfile[] | null);
+                      return (
+                        <div key={request.user_id} className="flex items-center justify-between gap-3 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Avatar src={profile?.avatar_url ?? undefined} fallback={getDisplayName(profile)} size="sm" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold truncate">{getDisplayName(profile)}</p>
+                              <p className="text-xs text-neutral-500 truncate">{getUsernameText(profile, request.user_id)}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" className="gap-1" onClick={() => handleApproveRequest(request.user_id)}>
+                              <Check size={14} />
+                              Onayla
+                            </Button>
+                            <Button variant="outline" size="sm" className="gap-1" onClick={() => handleRejectRequest(request.user_id)}>
+                              <X size={14} />
+                              Reddet
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle size={20} />
+                  Etkinlik Aktivitesi
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {myAttendanceStatus === "going" || isOrganizer ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={commentInput}
+                      onChange={(e) => setCommentInput(e.target.value)}
+                      className="w-full rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white/70 dark:bg-neutral-900/70 p-3 text-sm outline-none focus:ring-2 focus:ring-red-500"
+                      placeholder="Katıldığın bu etkinlik hakkında bir yorum yaz..."
+                      rows={3}
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        onClick={handleCommentSubmit}
+                        disabled={commentLoading || !commentInput.trim()}
+                      >
+                        {commentLoading ? "Paylaşılıyor..." : "Yorum Paylaş"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-neutral-500">
+                    Yorum yazabilmek için önce etkinliğe katılman gerekiyor.
+                  </p>
+                )}
+
+                {commentError && <p className="text-sm text-red-500">{commentError}</p>}
+
+                <div className="space-y-3">
+                  {comments.length === 0 ? (
+                    <p className="text-sm text-neutral-500">Henüz yorum yok. İlk yorumu sen yaz!</p>
+                  ) : (
+                    comments.map((comment) => {
+                      const commentProfile = getProfileRecord(comment.profile);
+                      return (
+                        <div key={comment.id} className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <button
+                              onClick={() => {
+                                if (commentProfile) {
+                                  setSelectedAttendee(commentProfile);
+                                  if (user && user.id !== commentProfile.id) {
+                                    checkFollowing(commentProfile.id);
+                                  }
+                                }
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <Avatar
+                                src={commentProfile?.avatar_url ?? undefined}
+                                fallback={getDisplayName(commentProfile)}
+                                size="sm"
+                              />
+                              <div className="text-left">
+                                <p className="text-sm font-semibold">{getDisplayName(commentProfile)}</p>
+                                <p className="text-xs text-neutral-500">{new Date(comment.created_at).toLocaleString("tr-TR")}</p>
+                              </div>
+                            </button>
+                          </div>
+                          <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">{comment.content}</p>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -403,7 +971,7 @@ export default function EventDetailPage() {
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
                   <Avatar 
-                    src={organizer?.avatar_url} 
+                    src={organizer?.avatar_url ?? undefined} 
                     fallback={organizer?.full_name || organizer?.username || "O"} 
                     size="lg"
                   />
@@ -490,6 +1058,79 @@ export default function EventDetailPage() {
           </div>
         </div>
       </div>
+
+      <Modal
+        open={joinConfirmOpen}
+        onClose={() => setJoinConfirmOpen(false)}
+        title="Katılım Başvurusu"
+        description={`${event.title} etkinliğine katılmak istiyor musunuz?`}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-neutral-600 dark:text-neutral-300">
+            Katılım başvurunuz organizatör onayından sonra kabul edilecektir.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setJoinConfirmOpen(false)}>
+              Vazgeç
+            </Button>
+            <Button onClick={submitJoinRequest} disabled={attendanceLoading}>
+              {attendanceLoading ? "Gönderiliyor..." : "Başvuruyu Gönder"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={!!selectedAttendee}
+        onClose={() => setSelectedAttendee(null)}
+        title={selectedAttendee ? getDisplayName(selectedAttendee) : "Profil"}
+        description={selectedAttendee?.username ? `@${selectedAttendee.username}` : "Etkinlik katılımcısı"}
+      >
+        {selectedAttendee && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-4">
+              <Avatar
+                src={selectedAttendee.avatar_url ?? undefined}
+                fallback={getDisplayName(selectedAttendee)}
+                size="xl"
+              />
+              <div>
+                <p className="text-lg font-semibold">{getDisplayName(selectedAttendee)}</p>
+                <p className="text-sm text-neutral-500">{selectedAttendee.profession || "Topluluk üyesi"}</p>
+                <p className="text-sm text-neutral-500">
+                  {[selectedAttendee.city, selectedAttendee.state].filter(Boolean).join(", ") || "Konum belirtilmemiş"}
+                </p>
+              </div>
+            </div>
+
+            {selectedAttendee.bio && (
+              <p className="text-sm text-neutral-700 dark:text-neutral-300">{selectedAttendee.bio}</p>
+            )}
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <Button
+                variant={isFollowing ? "outline" : "primary"}
+                onClick={handleToggleFollow}
+                disabled={!user || user.id === selectedAttendee.id || followLoading}
+                className="gap-2"
+              >
+                <Heart size={16} />
+                {isFollowing ? "Takibi Bırak" : "Arkadaş Ekle / Takip Et"}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={handleSendMessage}
+                disabled={!user || user.id === selectedAttendee.id || dmLoading}
+                className="gap-2"
+              >
+                <MessageCircle size={16} />
+                Özel Mesaj Gönder
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

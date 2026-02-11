@@ -170,17 +170,40 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             .neq("user_id", user.id)
         : { data: [], error: null };
 
+      const myAttendanceApprovalsResult = await supabase
+        .from("event_attendees")
+        .select("event_id, status, created_at")
+        .eq("user_id", user.id)
+        .eq("status", "going")
+        .limit(500);
+
       if (eventAttendeesResult.error) throw eventAttendeesResult.error;
+      if (myAttendanceApprovalsResult.error) throw myAttendanceApprovalsResult.error;
 
       const likes = likesResult.data || [];
       const comments = commentsResult.data || [];
       const eventAttendees = eventAttendeesResult.data || [];
+      const myApprovals = myAttendanceApprovalsResult.data || [];
+
+      const approvalEventIds = Array.from(new Set(myApprovals.map((item) => item.event_id)));
+      const approvalEventsResult = approvalEventIds.length
+        ? await supabase
+            .from("events")
+            .select("id, title, organizer_id")
+            .in("id", approvalEventIds)
+            .neq("organizer_id", user.id)
+        : { data: [], error: null };
+
+      if (approvalEventsResult.error) throw approvalEventsResult.error;
+      const approvalEvents = approvalEventsResult.data || [];
+      const approvalEventById = new Map(approvalEvents.map((item) => [item.id, item]));
 
       const actorIds = Array.from(
         new Set([
           ...likes.map((like) => like.user_id),
           ...comments.map((comment) => comment.user_id),
           ...eventAttendees.map((attendee) => attendee.user_id),
+          ...approvalEvents.map((event) => event.organizer_id),
         ])
       );
 
@@ -239,9 +262,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         };
       });
 
-      const attendeeNotifications: AppNotification[] = eventAttendees.map((attendee) => {
+      const attendeeNotifications: AppNotification[] = eventAttendees
+        .filter((attendee) => attendee.status === "pending")
+        .map((attendee) => {
         const actor = profilesById.get(attendee.user_id);
-        const id = `event_attendees:${attendee.event_id}:${attendee.user_id}`;
+        const id = `event_attendees:pending:${attendee.event_id}:${attendee.user_id}`;
         const eventTitle = eventTitleById.get(attendee.event_id);
 
         return {
@@ -253,16 +278,42 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             name: getDisplayName(actor),
             avatar: actor?.avatar_url || null,
           },
-          message: "etkinliğinize katılım gösterdi",
+          message: "etkinliğinize katılmak istiyor",
           content: eventTitle || undefined,
           createdAt: attendee.created_at,
           isRead: readIds.has(id),
-          actionUrl: `/events/${attendee.event_id}`,
-          actionLabel: "Etkinliği Gör",
+          actionUrl: `/meetups/${attendee.event_id}`,
+          actionLabel: "Başvuruyu Gör",
         };
       });
 
-      const merged = [...likeNotifications, ...commentNotifications, ...attendeeNotifications]
+      const approvedNotifications: AppNotification[] = myApprovals
+        .map((approval) => {
+          const evt = approvalEventById.get(approval.event_id);
+          if (!evt) return null;
+          const organizer = profilesById.get(evt.organizer_id);
+          const id = `event_attendees:approved:${approval.event_id}:${user.id}`;
+
+          return {
+            id,
+            source: "event_attendees" as const,
+            type: "events" as const,
+            user: {
+              id: evt.organizer_id,
+              name: getDisplayName(organizer),
+              avatar: organizer?.avatar_url || null,
+            },
+            message: "etkinlik başvurunu onayladı",
+            content: evt.title || undefined,
+            createdAt: approval.created_at,
+            isRead: readIds.has(id),
+            actionUrl: `/meetups/${approval.event_id}`,
+            actionLabel: "Etkinliği Aç",
+          };
+        })
+        .filter((item): item is AppNotification => item !== null);
+
+      const merged = [...likeNotifications, ...commentNotifications, ...attendeeNotifications, ...approvedNotifications]
         .filter((notification) => !dismissedIds.has(notification.id))
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 

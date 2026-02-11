@@ -18,12 +18,10 @@ import { Textarea } from "@/app/components/ui/Textarea";
 import { 
   ArrowLeft,
   Calendar,
-  Clock,
   MapPin,
   Globe,
   Users,
   DollarSign,
-  Image as ImageIcon,
   Loader2,
   CheckCircle2,
   AlertCircle,
@@ -51,7 +49,6 @@ export default function CreateEventPage() {
   const [maxAttendees, setMaxAttendees] = useState("");
   const [isFree, setIsFree] = useState(true);
   const [price, setPrice] = useState("");
-  const [coverImageUrl, setCoverImageUrl] = useState("");
 
   // UI state
   const [saving, setSaving] = useState(false);
@@ -123,7 +120,7 @@ export default function CreateEventPage() {
     setStatus(null);
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("events")
         .insert({
           title: title.trim(),
@@ -142,7 +139,7 @@ export default function CreateEventPage() {
           max_attendees: maxAttendees ? parseInt(maxAttendees) : null,
           is_free: isFree,
           price: isFree ? null : parseFloat(price),
-          cover_image_url: coverImageUrl || null,
+          cover_image_url: null,
           organizer_id: user.id,
           status: "pending"
         })
@@ -161,11 +158,12 @@ export default function CreateEventPage() {
         router.push("/meetups/my-events");
       }, 2000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Etkinlik oluşturulurken bir hata oluştu";
       console.error("Error creating event:", error);
       setStatus({
         type: "error",
-        message: error.message || "Etkinlik oluşturulurken bir hata oluştu"
+        message
       });
     } finally {
       setSaving(false);
@@ -487,44 +485,6 @@ export default function CreateEventPage() {
                     step="0.01"
                     icon={<DollarSign size={18} />}
                     error={errors.price}
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Cover Image */}
-          <Card className="glass mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <ImageIcon size={20} />
-                Kapak Görseli
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">
-                  Görsel URL <span className="text-neutral-400">(Opsiyonel)</span>
-                </label>
-                <Input
-                  placeholder="https://example.com/image.jpg"
-                  value={coverImageUrl}
-                  onChange={(e) => setCoverImageUrl(e.target.value)}
-                />
-                <p className="text-xs text-neutral-500 mt-1">
-                  Görsel URL&apos;si girin veya boş bırakarak varsayılan görseli kullanın
-                </p>
-              </div>
-
-              {coverImageUrl && (
-                <div className="mt-4 rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-700">
-                  <img 
-                    src={coverImageUrl} 
-                    alt="Preview" 
-                    className="w-full h-48 object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
                   />
                 </div>
               )}
