@@ -21,14 +21,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants: Record<string, string> = {
       primary: `
-        bg-[var(--color-primary)] text-white
-        hover:bg-[var(--color-primary-hover)]
+        bg-gradient-to-r from-sky-500 to-blue-600 text-white
+        hover:from-sky-600 hover:to-blue-700
         shadow-sm hover:shadow-md
       `,
       secondary: `
         bg-[var(--color-surface-raised)] text-[var(--color-ink)]
-        border border-[var(--color-border)]
-        hover:bg-[var(--color-surface-sunken)] hover:border-[var(--color-border-strong)]
+        border border-sky-100
+        hover:bg-[var(--color-surface-sunken)] hover:border-sky-200
       `,
       ghost: `
         bg-transparent text-[var(--color-ink-secondary)]
@@ -36,8 +36,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       `,
       outline: `
         bg-transparent text-[var(--color-ink)]
-        border border-[var(--color-border)]
-        hover:bg-[var(--color-surface-sunken)] hover:border-[var(--color-border-strong)]
+        border border-sky-200
+        hover:bg-[var(--color-surface-sunken)] hover:border-sky-300
       `,
       destructive: `
         bg-[var(--color-error)] text-white

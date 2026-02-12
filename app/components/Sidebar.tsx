@@ -14,7 +14,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Users,
   Plus,
   List,
   type LucideIcon,
@@ -115,7 +114,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   // Use static labels
@@ -138,21 +137,21 @@ export default function Sidebar() {
       className={`
         sticky top-16 h-[calc(100vh-64px)]
         hidden md:flex flex-col
-        border-r border-[var(--color-border-light)]
-        bg-[var(--color-surface)]
+        border-r border-sky-100
+        bg-white/95 backdrop-blur
         transition-all duration-200 ease-out
         ${isExpanded ? "w-60" : "w-16"}
       `}
     >
       {/* Toggle Button */}
-      <div className="flex items-center justify-end p-2 border-b border-[var(--color-border-light)]">
+      <div className="flex items-center justify-end p-2 border-b border-sky-100">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="
-            p-2 rounded-lg
-            text-[var(--color-ink-tertiary)]
-            hover:text-[var(--color-ink)]
-            hover:bg-[var(--color-surface-sunken)]
+            p-2 rounded-xl
+            text-slate-500
+            hover:text-slate-900
+            hover:bg-sky-50
             transition-colors
           "
           title={isExpanded ? "Collapse" : "Expand"}
@@ -184,14 +183,14 @@ export default function Sidebar() {
                       relative flex items-center gap-3 px-3 py-2.5 rounded-lg
                       transition-colors duration-150
                       ${active
-                        ? "text-[var(--color-primary)] bg-[var(--color-primary-subtle)]"
-                        : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)]"
+                        ? "text-[var(--color-primary)] bg-sky-50"
+                        : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] hover:bg-sky-50"
                       }
                       ${!isExpanded ? "justify-center" : ""}
                     `}
                   >
                     {active && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-[var(--color-primary)] rounded-r" />
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[var(--color-primary)] rounded-r-full" />
                     )}
                     <Icon className="h-5 w-5 flex-shrink-0" />
                     {isExpanded && (
@@ -215,8 +214,8 @@ export default function Sidebar() {
                     w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
                     transition-colors duration-150
                     ${hasActiveChild
-                      ? "text-[var(--color-primary)]"
-                      : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)]"
+                      ? "text-[var(--color-primary)] bg-sky-50"
+                      : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] hover:bg-sky-50"
                     }
                     ${!isExpanded ? "justify-center" : ""}
                   `}
@@ -238,7 +237,7 @@ export default function Sidebar() {
 
                 {/* Submenu */}
                 {isExpanded && groupExpanded && (
-                  <ul className="mt-1 ml-5 pl-3 border-l border-[var(--color-border-light)] space-y-1">
+                  <ul className="mt-1 ml-5 pl-3 border-l border-sky-100 space-y-1">
                     {item.children.map((child) => {
                       const active = isActive(child.href);
                       const childLabel = t(child.labelKey);
@@ -252,8 +251,8 @@ export default function Sidebar() {
                               flex items-center gap-2 px-3 py-2 rounded-lg text-sm
                               transition-colors duration-150
                               ${active
-                                ? "text-[var(--color-primary)] bg-[var(--color-primary-subtle)]"
-                                : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)]"
+                                ? "text-[var(--color-primary)] bg-sky-50"
+                                : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] hover:bg-sky-50"
                               }
                             `}
                           >

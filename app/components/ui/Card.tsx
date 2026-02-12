@@ -11,8 +11,8 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     const variants: Record<string, string> = {
       default: `
         bg-[var(--color-surface)]
-        border border-[var(--color-border-light)]
-        shadow-[var(--shadow-xs)]
+        border border-sky-100
+        shadow-[var(--shadow-sm)]
       `,
       elevated: `
         bg-[var(--color-surface)]
@@ -21,10 +21,10 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       `,
       interactive: `
         bg-[var(--color-surface)]
-        border border-[var(--color-border-light)]
-        shadow-[var(--shadow-xs)]
+        border border-sky-100
+        shadow-[var(--shadow-sm)]
         hover:shadow-[var(--shadow-md)]
-        hover:border-[var(--color-border)]
+        hover:border-sky-200
         transition-all duration-200 ease-out
         cursor-pointer
       `,
@@ -46,7 +46,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={`rounded-xl ${variants[variant]} ${paddings[padding]} ${className}`}
+        className={`rounded-2xl ${variants[variant]} ${paddings[padding]} ${className}`}
         {...props}
       >
         {children}
