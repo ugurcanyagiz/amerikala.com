@@ -47,6 +47,7 @@ const CATEGORY_CONFIG: Record<
     icon: typeof Building2;
     badgeClass: string;
     cardClass: string;
+    iconCircleClass: string;
   }
 > = {
   events: {
@@ -56,6 +57,7 @@ const CATEGORY_CONFIG: Record<
     icon: CalendarDays,
     badgeClass: "bg-sky-100 text-sky-700",
     cardClass: "from-sky-100 via-white to-cyan-50",
+    iconCircleClass: "bg-[#7fb24f] text-white",
   },
   realEstate: {
     title: "Emlak",
@@ -64,6 +66,7 @@ const CATEGORY_CONFIG: Record<
     icon: Building2,
     badgeClass: "bg-emerald-100 text-emerald-700",
     cardClass: "from-emerald-100 via-white to-teal-50",
+    iconCircleClass: "bg-[#36b0ba] text-white",
   },
   jobs: {
     title: "İş",
@@ -72,6 +75,7 @@ const CATEGORY_CONFIG: Record<
     icon: BriefcaseBusiness,
     badgeClass: "bg-violet-100 text-violet-700",
     cardClass: "from-violet-100 via-white to-fuchsia-50",
+    iconCircleClass: "bg-[#63a0df] text-white",
   },
   marketplace: {
     title: "Alışveriş",
@@ -80,6 +84,7 @@ const CATEGORY_CONFIG: Record<
     icon: ShoppingBag,
     badgeClass: "bg-amber-100 text-amber-700",
     cardClass: "from-amber-100 via-white to-orange-50",
+    iconCircleClass: "bg-[#57c0cf] text-white",
   },
 };
 
@@ -434,25 +439,35 @@ export default function Home() {
 
                   <div className="mt-5 flex flex-wrap gap-3">
                     <Link href="/register">
-                      <Button variant="primary" size="lg" className="rounded-xl">
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        className="rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-7 font-semibold shadow-[0_12px_26px_-16px_rgba(37,99,235,0.8)]"
+                      >
                         Hemen İlan Ver
                       </Button>
                     </Link>
                     <Link href="/feed">
-                      <Button variant="outline" size="lg" className="rounded-xl">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="rounded-xl border-slate-200 bg-white px-7 font-medium text-slate-700 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.45)] hover:border-slate-300"
+                      >
                         Paylaşımları Gör
                       </Button>
                     </Link>
                   </div>
                 </div>
 
-                <div className="relative h-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_22px_50px_-30px_rgba(14,116,144,0.6)] sm:h-[380px]">
-                  <Image src="/amerikala.png" alt="Amerikala classified hero" fill className="object-cover" priority />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-                    <p className="text-xs uppercase tracking-[0.16em] text-white/85">Amerika’daki Türk topluluğu</p>
-                    <p className="mt-1 text-xl font-semibold">Data tamamen sizde, layout yenilenmiş deneyim.</p>
-                  </div>
+                <div className="flex items-center justify-center">
+                  <Image
+                    src="/amerikala.png"
+                    alt="Amerikala classified hero"
+                    width={760}
+                    height={520}
+                    priority
+                    className="h-auto w-full max-w-[760px] object-contain"
+                  />
                 </div>
               </div>
             </div>
@@ -471,17 +486,18 @@ export default function Home() {
                   <Link
                     key={key}
                     href={config.href}
-                    className={`group rounded-2xl border border-slate-200 bg-gradient-to-br ${config.cardClass} p-5 transition hover:-translate-y-0.5 hover:shadow-md`}
+                    className="group rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-[0_14px_26px_-24px_rgba(15,23,42,0.7)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-30px_rgba(14,116,144,0.45)]"
                   >
-                    <span className={`inline-flex rounded-full p-3 ${config.badgeClass}`}>
-                      <Icon className="h-5 w-5" />
+                    <span className={`mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full ${config.iconCircleClass}`}>
+                      <Icon className="h-8 w-8" />
                     </span>
-                    <h3 className="mt-4 text-lg font-semibold text-slate-900">{config.title}</h3>
-                    <p className="text-sm text-slate-600">{config.subtitle}</p>
-                    <div className="mt-4 flex items-center justify-between text-sm text-slate-700">
-                      <span>{categoryCounts[key]} aktif ilan</span>
+                    <h3 className="mt-5 text-xl font-semibold text-slate-900">{config.title}</h3>
+                    <p className="mt-1 text-sm text-slate-500">{config.subtitle}</p>
+                    <p className="mt-2 text-lg font-semibold text-rose-500">{categoryCounts[key]} ilan</p>
+                    <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-slate-600 transition group-hover:text-sky-700">
+                      Kategoriye git
                       <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-                    </div>
+                    </span>
                   </Link>
                 );
               })}
