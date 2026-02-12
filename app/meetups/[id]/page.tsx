@@ -84,12 +84,35 @@ export default function EventDetailPage() {
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
 
   const ATTENDEE_PROFILE_SELECT_FULL = "id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession";
-  const ATTENDEE_PROFILE_SELECT_MINIMAL = "id, username, full_name, avatar_url";
+
+  const fetchProfilesByIds = useCallback(async (userIds: string[]) => {
+    const uniqueIds = Array.from(new Set(userIds.filter(Boolean)));
+    if (uniqueIds.length === 0) return new Map<string, BasicProfile>();
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select(ATTENDEE_PROFILE_SELECT_FULL)
+      .in("id", uniqueIds);
+
+    if (error) {
+      console.error("fetchProfilesByIds failed:", error);
+      return new Map<string, BasicProfile>();
+    }
+
+    const profileMap = new Map<string, BasicProfile>();
+    ((data as BasicProfile[] | null) || []).forEach((profile) => {
+      if (profile.id) {
+        profileMap.set(profile.id, profile);
+      }
+    });
+
+    return profileMap;
+  }, []);
 
   const normalizeAttendees = (rows: Array<Record<string, unknown>> | null) => {
     return (rows || []).map((row) => {
-      const profile = row.profile as Record<string, unknown> | Record<string, unknown>[] | null | undefined;
-      const resolved = Array.isArray(profile) ? profile[0] || null : profile || null;
+      const profile = row.profile as Record<string, unknown> | null | undefined;
+      const resolved = profile || null;
 
       const eventIdValue = typeof row.event_id === "string" ? row.event_id : "";
       const userIdValue = typeof row.user_id === "string" ? row.user_id : "";
@@ -122,40 +145,34 @@ export default function EventDetailPage() {
   const fetchAttendees = useCallback(async () => {
     const { data, error } = await supabase
       .from("event_attendees")
-      .select(`
-        *,
-        profile:user_id (${ATTENDEE_PROFILE_SELECT_FULL})
-      `)
+      .select("event_id, user_id, status, created_at")
       .eq("event_id", eventId)
       .eq("status", "going");
 
-    let list: EventAttendee[] = [];
-
-    if (!error) {
-      list = normalizeAttendees((data as Array<Record<string, unknown>> | null) || []);
-    } else {
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from("event_attendees")
-        .select(`
-          *,
-          profile:user_id (${ATTENDEE_PROFILE_SELECT_MINIMAL})
-        `)
-        .eq("event_id", eventId)
-        .eq("status", "going");
-
-      if (fallbackError) {
-        console.error("fetchAttendees failed:", fallbackError);
-      } else {
-        list = normalizeAttendees((fallbackData as Array<Record<string, unknown>> | null) || []);
-      }
+    if (error) {
+      console.error("fetchAttendees failed:", error);
+      setAttendees([]);
+      return;
     }
+
+    const attendeeRows = (data as Array<Record<string, unknown>> | null) || [];
+    const profileMap = await fetchProfilesByIds(
+      attendeeRows.map((row) => (typeof row.user_id === "string" ? row.user_id : "")).filter(Boolean)
+    );
+
+    const list = normalizeAttendees(
+      attendeeRows.map((row) => ({
+        ...row,
+        profile: profileMap.get((row.user_id as string) || "") || null,
+      }))
+    );
 
     setAttendees(list);
 
     if (user) {
       setAttending(list.some((item) => item.user_id === user.id));
     }
-  }, [eventId, user]);
+  }, [eventId, user, fetchProfilesByIds]);
 
   // Fetch event
   useEffect(() => {
@@ -164,10 +181,7 @@ export default function EventDetailPage() {
       try {
         const { data: eventData, error: eventError } = await supabase
           .from("events")
-          .select(`
-            *,
-            organizer:organizer_id (id, username, full_name, avatar_url, bio)
-          `)
+          .select("*")
           .eq("id", eventId)
           .single();
 
@@ -175,20 +189,17 @@ export default function EventDetailPage() {
           throw eventError;
         }
 
-        setEvent(eventData);
+        const organizerProfileMap = await fetchProfilesByIds([eventData.organizer_id as string]);
+        setEvent({
+          ...eventData,
+          organizer: organizerProfileMap.get(eventData.organizer_id as string) || null,
+        });
 
         await fetchAttendees();
 
         const { data: commentsData, error: commentsError } = await supabase
           .from("event_comments")
-          .select(`
-            id,
-            event_id,
-            user_id,
-            content,
-            created_at,
-            profile:user_id (id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession)
-          `)
+          .select("id, event_id, user_id, content, created_at")
           .eq("event_id", eventId)
           .order("created_at", { ascending: false })
           .limit(50);
@@ -196,7 +207,14 @@ export default function EventDetailPage() {
         if (commentsError) {
           setCommentError("Yorumlar şu an yüklenemedi.");
         } else {
-          setComments((commentsData as EventComment[] | null) || []);
+          const commentRows = (commentsData as EventComment[] | null) || [];
+          const commentProfileMap = await fetchProfilesByIds(commentRows.map((comment) => comment.user_id));
+          setComments(
+            commentRows.map((comment) => ({
+              ...comment,
+              profile: commentProfileMap.get(comment.user_id) || null,
+            }))
+          );
           setCommentError(null);
         }
 
@@ -211,7 +229,7 @@ export default function EventDetailPage() {
     if (eventId) {
       fetchEvent();
     }
-  }, [eventId, user, router, fetchAttendees]);
+  }, [eventId, user, router, fetchAttendees, fetchProfilesByIds]);
 
   // Handle attendance
   const handleAttendance = async () => {
@@ -281,10 +299,7 @@ export default function EventDetailPage() {
 
         const { data: insertedAttendee, error: attendeeFetchError } = await supabase
           .from("event_attendees")
-          .select(`
-            *,
-            profile:user_id (${ATTENDEE_PROFILE_SELECT_FULL})
-          `)
+          .select("event_id, user_id, status, created_at")
           .eq("event_id", eventId)
           .eq("user_id", user.id)
           .single();
@@ -294,8 +309,12 @@ export default function EventDetailPage() {
           return;
         }
 
+        const insertedProfileMap = await fetchProfilesByIds([user.id]);
         const normalizedAttendee = normalizeAttendees([
-          insertedAttendee as unknown as Record<string, unknown>,
+          {
+            ...(insertedAttendee as unknown as Record<string, unknown>),
+            profile: insertedProfileMap.get(user.id) || null,
+          },
         ])[0];
 
         if (normalizedAttendee) {
@@ -320,7 +339,7 @@ export default function EventDetailPage() {
     if (!profile) return "Anonim";
     const p = Array.isArray(profile) ? profile[0] : profile;
     if (!p) return "Anonim";
-    return p.full_name || [p.first_name, p.last_name].filter(Boolean).join(" ") || p.username || "Anonim";
+    return [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.full_name || p.username || "Anonim";
   };
 
   const getProfileRecord = (profile?: BasicProfile | BasicProfile[] | null) => {
@@ -464,14 +483,7 @@ export default function EventDetailPage() {
           user_id: user.id,
           content: commentInput.trim(),
         })
-        .select(`
-          id,
-          event_id,
-          user_id,
-          content,
-          created_at,
-          profile:user_id (id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession)
-        `)
+        .select("id, event_id, user_id, content, created_at")
         .single();
 
       if (error) {
@@ -480,7 +492,14 @@ export default function EventDetailPage() {
       }
 
       if (data) {
-        setComments((prev) => [data as EventComment, ...prev]);
+        const commentProfileMap = await fetchProfilesByIds([user.id]);
+        setComments((prev) => [
+          {
+            ...(data as EventComment),
+            profile: commentProfileMap.get(user.id) || null,
+          },
+          ...prev,
+        ]);
       }
       setCommentInput("");
       setCommentError(null);
@@ -529,7 +548,7 @@ export default function EventDetailPage() {
     );
   }
 
-  const organizer = event.organizer as BasicProfile | undefined;
+  const organizer = (event.organizer as BasicProfile | null | undefined) || null;
   const isFull = event.max_attendees && event.current_attendees >= event.max_attendees;
   const isPast = new Date(event.event_date) < new Date(new Date().toDateString());
 
@@ -830,14 +849,14 @@ export default function EventDetailPage() {
                 >
                   <Avatar 
                     src={organizer?.avatar_url || "/logo.png"} 
-                    fallback={organizer?.full_name || organizer?.username || "O"} 
+                    fallback={getDisplayName(organizer) || "O"} 
                     size="lg"
                   />
                   <div>
                     <p className="font-semibold">
-                      {organizer?.full_name || organizer?.username || "Organizatör"}
+                      {getDisplayName(organizer) || "Organizatör"}
                     </p>
-                    <p className="text-sm text-neutral-500">@{organizer?.username}</p>
+                    <p className="text-sm text-neutral-500">{getUsernameLabel(organizer)}</p>
                   </div>
                 </Link>
                 {organizer?.bio && (
