@@ -20,7 +20,6 @@ import {
   Loader2,
   Shield,
   CheckCircle,
-  EyeOff,
   Briefcase,
   Activity,
   History,
@@ -107,11 +106,10 @@ export default function ProfilePage() {
     }
   };
 
-  // Get display name based on privacy setting - with safe access
+  // Get display name
   const getDisplayName = () => {
     if (!profile) return user?.email?.split('@')[0] || "Kullanıcı";
-    const showFullName = profile.show_full_name ?? true;
-    if (showFullName && profile.full_name) {
+    if (profile.full_name) {
       return profile.full_name;
     }
     return profile.username || user?.email?.split('@')[0] || "Kullanıcı";
@@ -172,7 +170,6 @@ export default function ProfilePage() {
   }
 
   // Safe access to profile fields
-  const showFullName = profile.show_full_name ?? true;
   const isVerified = profile.is_verified ?? false;
   const profession = profile.profession || null;
   const avatarSrc = profile.avatar_url || "/logo.png";
@@ -224,11 +221,6 @@ export default function ProfilePage() {
                             </Badge>
                           )}
                           
-                          {!showFullName && (
-                            <span className="text-neutral-400" title="İsim gizli">
-                              <EyeOff size={14} />
-                            </span>
-                          )}
                         </div>
                         
                         <p className="text-neutral-500 dark:text-neutral-400 mb-2">
