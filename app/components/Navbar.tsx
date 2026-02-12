@@ -126,7 +126,7 @@ function getAvatarUrl(
   const metadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
   const metadataAvatar = typeof metadata.avatar_url === "string" ? metadata.avatar_url : typeof metadata.picture === "string" ? metadata.picture : null;
 
-  return profile?.avatar_url || metadataAvatar || undefined;
+  return profile?.avatar_url || metadataAvatar || "/logo.png";
 }
 
 function getUsernameLabel(
