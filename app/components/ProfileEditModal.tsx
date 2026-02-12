@@ -14,7 +14,6 @@ import {
   MapPin,
   FileText,
   Building,
-  Briefcase,
   Lock,
   Info,
 } from "lucide-react";
@@ -89,7 +88,6 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
   const [bio, setBio] = useState(profile.bio || "");
   const [city, setCity] = useState(profile.city || "");
   const [state, setState] = useState(profile.state || "");
-  const [profession, setProfession] = useState(profile.profession || "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
   const [avatarVersion, setAvatarVersion] = useState(() => Date.now());
   const [accountIdentity, setAccountIdentity] = useState({
@@ -108,7 +106,6 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
     setBio(profile.bio || "");
     setCity(profile.city || "");
     setState(profile.state || "");
-    setProfession(profile.profession || "");
     setAvatarUrl(profile.avatar_url || "");
     setAvatarVersion(Date.now());
     setAccountIdentity({
@@ -264,9 +261,6 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
       newErrors.city = "En fazla 50 karakter olabilir";
     }
 
-    if (profession && profession.length > 60) {
-      newErrors.profession = "En fazla 60 karakter olabilir";
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -286,7 +280,6 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
           bio: bio.trim() || null,
           city: city.trim() || null,
           state: state || null,
-          profession: profession.trim() || null,
           avatar_url: avatarUrl || null,
           updated_at: new Date().toISOString(),
         })
@@ -424,31 +417,6 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
                 )}
                 <span className="text-xs text-neutral-500">{bio.length}/160</span>
               </div>
-            </div>
-
-            {/* Profession */}
-            <div>
-              <label className="block text-sm font-medium mb-1.5">
-                Meslek
-              </label>
-              <div className="relative">
-                <Briefcase size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                <input
-                  type="text"
-                  value={profession}
-                  onChange={(e) => setProfession(e.target.value)}
-                  placeholder="örn: Ürün Tasarımcısı"
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${
-                    errors.profession
-                      ? "border-red-500 focus:ring-red-500" 
-                      : "border-neutral-200 dark:border-neutral-700 focus:ring-red-500"
-                  } bg-neutral-50 dark:bg-neutral-800 focus:outline-none focus:ring-2 transition-colors`}
-                  maxLength={60}
-                />
-              </div>
-              {errors.profession && (
-                <p className="text-red-500 text-sm mt-1">{errors.profession}</p>
-              )}
             </div>
 
             {/* City */}
