@@ -18,7 +18,7 @@ import {
   Eye,
   EyeOff,
   Lock,
-  Info
+  Info,
 } from "lucide-react";
 
 interface ProfileEditModalProps {
@@ -88,12 +88,12 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
   const MIN_AVATAR_SIDE = 200;
   
   // Form state - İsim alanları kaldırıldı, sadece düzenlenebilir alanlar
-  const [username, setUsername] = useState(profile.username || "");
   const [bio, setBio] = useState(profile.bio || "");
   const [city, setCity] = useState(profile.city || "");
   const [state, setState] = useState(profile.state || "");
   const [profession, setProfession] = useState(profile.profession || "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
+  const [avatarVersion, setAvatarVersion] = useState(() => Date.now());
   const [showFullName, setShowFullName] = useState(profile.show_full_name ?? true);
   
   // UI state
@@ -104,12 +104,12 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
 
   // Reset form when profile changes
   useEffect(() => {
-    setUsername(profile.username || "");
     setBio(profile.bio || "");
     setCity(profile.city || "");
     setState(profile.state || "");
     setProfession(profile.profession || "");
     setAvatarUrl(profile.avatar_url || "");
+    setAvatarVersion(Date.now());
     setShowFullName(profile.show_full_name ?? true);
     setStatus(null);
     setErrors({});
@@ -206,12 +206,13 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
         throw new Error("Fotoğraf URL'i alınamadı.");
       }
 
-      const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
-      setAvatarUrl(cacheBustedUrl);
+      setAvatarUrl(publicUrl);
+      setAvatarVersion(Date.now());
       setStatus({ type: "success", message: "Fotoğraf yüklendi!" });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Avatar upload error:", error);
-      setStatus({ type: "error", message: "Fotoğraf yüklenemedi: " + error.message });
+      const message = error instanceof Error ? error.message : "Bilinmeyen hata";
+      setStatus({ type: "error", message: "Fotoğraf yüklenemedi: " + message });
     } finally {
       setUploadingAvatar(false);
       if (fileInputRef.current) {
@@ -223,17 +224,6 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
   // Validate form
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-
-    const trimmedUsername = username.trim();
-    if (!trimmedUsername) {
-      newErrors.username = "Kullanıcı adı zorunludur";
-    } else if (trimmedUsername.length < 3) {
-      newErrors.username = "En az 3 karakter olmalı";
-    } else if (trimmedUsername.length > 30) {
-      newErrors.username = "En fazla 30 karakter olabilir";
-    } else if (!/^[a-zA-Z0-9._-]+$/.test(trimmedUsername)) {
-      newErrors.username = "Sadece harf, rakam, nokta, tire ve alt çizgi kullanın";
-    }
 
     if (bio && bio.length > 160) {
       newErrors.bio = "En fazla 160 karakter olabilir";
@@ -259,11 +249,9 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
     setStatus(null);
 
     try {
-      const trimmedUsername = username.trim();
       const { error } = await supabase
         .from("profiles")
         .update({
-          username: trimmedUsername,
           bio: bio.trim() || null,
           city: city.trim() || null,
           state: state || null,
@@ -285,9 +273,10 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
       setTimeout(() => {
         onClose();
       }, 1000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Profile update error:", error);
-      setStatus({ type: "error", message: error.message || "Profil güncellenemedi" });
+      const message = error instanceof Error ? error.message : "Profil güncellenemedi";
+      setStatus({ type: "error", message });
     } finally {
       setSaving(false);
     }
@@ -297,7 +286,9 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
 
   // Display name for avatar fallback
   const displayName = profile.full_name || profile.username || "U";
-  const avatarPreview = avatarUrl || "/logo.png";
+  const avatarPreview = avatarUrl
+    ? `${avatarUrl}${avatarUrl.includes("?") ? "&" : "?"}t=${avatarVersion}`
+    : "/logo.png";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -403,32 +394,6 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
 
           {/* Form Fields */}
           <div className="space-y-4">
-            {/* Username */}
-            <div>
-              <label className="block text-sm font-medium mb-1.5 text-neutral-500">
-                Kullanıcı Adı
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">@</span>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className={`w-full pl-8 pr-4 py-2.5 rounded-lg border ${
-                    errors.username
-                      ? "border-red-500 focus:ring-red-500"
-                      : "border-neutral-200 dark:border-neutral-700 focus:ring-red-500"
-                  } bg-neutral-50 dark:bg-neutral-800 focus:outline-none focus:ring-2 transition-colors`}
-                  maxLength={30}
-                />
-              </div>
-              {errors.username ? (
-                <p className="text-xs text-red-500 mt-1">{errors.username}</p>
-              ) : (
-                <p className="text-xs text-neutral-500 mt-1">Kullanıcı adınız profilinizde görünür.</p>
-              )}
-            </div>
-
             {/* Bio */}
             <div>
               <label className="block text-sm font-medium mb-1.5">
