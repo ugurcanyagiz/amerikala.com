@@ -16,20 +16,20 @@
        PRIMARY COLORS
        Sıcak Terracotta - Türk Kilimi İlhamı
        ───────────────────────────────────────── */
-    --color-primary: #C45C4A;
-    --color-primary-hover: #A84D3D;
-    --color-primary-light: #E8D5D0;
-    --color-primary-subtle: #FAF6F5;
-    --color-primary-50: #FAF6F5;
-    --color-primary-100: #F5EDEB;
-    --color-primary-200: #E8D5D0;
-    --color-primary-300: #D4AEA5;
-    --color-primary-400: #C07A6C;
-    --color-primary-500: #C45C4A;
-    --color-primary-600: #A84D3D;
-    --color-primary-700: #8C3F32;
-    --color-primary-800: #733428;
-    --color-primary-900: #5F2B21;
+    --color-primary: #2796ff;
+    --color-primary-hover: #0f79df;
+    --color-primary-light: #cfe7ff;
+    --color-primary-subtle: #f3f9ff;
+    --color-primary-50: #f3f9ff;
+    --color-primary-100: #e6f3ff;
+    --color-primary-200: #cfe7ff;
+    --color-primary-300: #a8d4ff;
+    --color-primary-400: #74bbff;
+    --color-primary-500: #2796ff;
+    --color-primary-600: #0f79df;
+    --color-primary-700: #0c61b6;
+    --color-primary-800: #114f8f;
+    --color-primary-900: #133f70;
 
     /* ─────────────────────────────────────────
        INK COLORS (Text)
@@ -42,17 +42,17 @@
     /* ─────────────────────────────────────────
        SURFACE COLORS (Backgrounds)
        ───────────────────────────────────────── */
-    --color-surface: #FFFFFF;
-    --color-surface-raised: #FAFAFA;
-    --color-surface-sunken: #F5F5F5;
+    --color-surface: #ffffff;
+    --color-surface-raised: #f9fcff;
+    --color-surface-sunken: #f2f8ff;
     --color-surface-overlay: rgba(0, 0, 0, 0.4);
 
     /* ─────────────────────────────────────────
        BORDER COLORS
        ───────────────────────────────────────── */
-    --color-border: #E8E8E8;
-    --color-border-light: #F0F0F0;
-    --color-border-strong: #D4D4D4;
+    --color-border: #d9e7f5;
+    --color-border-light: #e9f2fb;
+    --color-border-strong: #bdd3ea;
 
     /* ─────────────────────────────────────────
        SEMANTIC COLORS
@@ -147,11 +147,11 @@
     /* ─────────────────────────────────────────
        SHADOWS (Subtle, Layered)
        ───────────────────────────────────────── */
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.02);
-    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.04), 0 4px 6px rgba(0, 0, 0, 0.02);
-    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.05), 0 10px 10px rgba(0, 0, 0, 0.02);
+    --shadow-xs: 0 1px 2px rgba(20, 54, 84, 0.05);
+    --shadow-sm: 0 4px 14px rgba(20, 54, 84, 0.06);
+    --shadow-md: 0 12px 24px rgba(20, 54, 84, 0.08);
+    --shadow-lg: 0 18px 36px rgba(20, 54, 84, 0.1);
+    --shadow-xl: 0 24px 48px rgba(20, 54, 84, 0.12);
 
     /* ─────────────────────────────────────────
        ANIMATION
@@ -241,7 +241,7 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: var(--color-surface);
+    background: radial-gradient(circle at top, #ecf6ff 0%, #f7fbff 35%, #ffffff 100%);
     color: var(--color-ink);
     line-height: var(--leading-normal);
     letter-spacing: var(--tracking-normal);
