@@ -328,6 +328,12 @@ export default function EventDetailPage() {
     return Array.isArray(profile) ? profile[0] || null : profile;
   };
 
+  const getUsernameLabel = (profile?: BasicProfile | BasicProfile[] | null) => {
+    const p = getProfileRecord(profile);
+    if (!p?.username) return "@kullanici";
+    return p.username.startsWith("@") ? p.username : `@${p.username}`;
+  };
+
   const checkFollowing = async (targetUserId: string) => {
     if (!user || user.id === targetUserId) return;
     const candidates: Array<{ from: string; to: string }> = [
@@ -538,8 +544,8 @@ export default function EventDetailPage() {
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-8xl">{EVENT_CATEGORY_ICONS[event.category]}</span>
+          <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 dark:bg-neutral-900">
+            <img src="/logo.png" alt="No picture" className="h-28 w-28 object-contain opacity-90" />
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -718,13 +724,13 @@ export default function EventDetailPage() {
                           className="w-full flex items-center gap-3 p-3 rounded-xl border border-neutral-200/80 dark:border-neutral-700/60 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-left"
                         >
                           <Avatar 
-                            src={profile?.avatar_url ?? undefined} 
+                            src={profile?.avatar_url || "/logo.png"} 
                             fallback={getDisplayName(profile)} 
                             size="sm"
                           />
                           <div className="min-w-0">
                             <p className="text-sm font-semibold truncate">{getDisplayName(profile)}</p>
-                            <p className="text-xs text-neutral-500 truncate">@{profile?.username || "kullanici"}</p>
+                            <p className="text-xs text-neutral-500 truncate">{getUsernameLabel(profile)}</p>
                           </div>
                         </button>
                       );
@@ -790,7 +796,7 @@ export default function EventDetailPage() {
                               className="flex items-center gap-2"
                             >
                               <Avatar
-                                src={commentProfile?.avatar_url ?? undefined}
+                                src={commentProfile?.avatar_url || "/logo.png"}
                                 fallback={getDisplayName(commentProfile)}
                                 size="sm"
                               />
@@ -823,7 +829,7 @@ export default function EventDetailPage() {
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
                   <Avatar 
-                    src={organizer?.avatar_url ?? undefined} 
+                    src={organizer?.avatar_url || "/logo.png"} 
                     fallback={organizer?.full_name || organizer?.username || "O"} 
                     size="lg"
                   />
@@ -921,7 +927,7 @@ export default function EventDetailPage() {
           <div className="space-y-5">
             <div className="flex items-center gap-4">
               <Avatar
-                src={selectedAttendee.avatar_url ?? undefined}
+                src={selectedAttendee.avatar_url || "/logo.png"}
                 fallback={getDisplayName(selectedAttendee)}
                 size="xl"
               />
@@ -958,6 +964,20 @@ export default function EventDetailPage() {
                 <MessageCircle size={16} />
                 Özel Mesaj Gönder
               </Button>
+
+              <Link href={`/profile/${selectedAttendee.id}`} className="sm:col-span-2">
+                <Button variant="outline" className="w-full gap-2">
+                  <ExternalLink size={16} />
+                  Profili Görüntüle
+                </Button>
+              </Link>
+
+              <Link href="/groups/create" className="sm:col-span-2">
+                <Button variant="outline" className="w-full gap-2">
+                  <Users size={16} />
+                  Birlikte Grup Oluştur
+                </Button>
+              </Link>
             </div>
           </div>
         )}

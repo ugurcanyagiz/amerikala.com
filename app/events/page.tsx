@@ -377,8 +377,12 @@ function FeaturedEventCard({ event }: { event: Event }) {
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-5xl">{EVENT_CATEGORY_ICONS[event.category]}</span>
+            <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 dark:bg-neutral-900">
+              <img
+                src="/logo.png"
+                alt="No picture"
+                className="h-16 w-16 object-contain opacity-90"
+              />
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -472,15 +476,21 @@ function EventListCard({ event }: { event: Event }) {
                 </div>
 
                 {/* Cover Thumbnail */}
-                {event.cover_image_url && (
-                  <div className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden hidden sm:block">
-                    <img 
-                      src={event.cover_image_url} 
+                <div className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden hidden sm:block bg-neutral-100 dark:bg-neutral-900">
+                  {event.cover_image_url ? (
+                    <img
+                      src={event.cover_image_url}
                       alt={event.title}
                       className="w-full h-full object-cover"
                     />
-                  </div>
-                )}
+                  ) : (
+                    <img
+                      src="/logo.png"
+                      alt="No picture"
+                      className="w-full h-full object-contain p-3 opacity-90"
+                    />
+                  )}
+                </div>
               </div>
 
               {/* Meta */}
