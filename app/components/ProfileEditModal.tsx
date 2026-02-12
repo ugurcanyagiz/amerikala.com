@@ -288,8 +288,6 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
           state: state || null,
           profession: profession.trim() || null,
           avatar_url: avatarUrl || null,
-          full_name: accountIdentity.fullName || profile.full_name || null,
-          username: accountIdentity.username || profile.username || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", profile.id);
@@ -307,7 +305,9 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
       }, 1000);
     } catch (error: unknown) {
       console.error("Profile update error:", error);
-      const message = error instanceof Error ? error.message : "Profil güncellenemedi";
+      const supabaseError = error as { message?: string; details?: string; hint?: string; code?: string };
+      const detailMessage = [supabaseError?.message, supabaseError?.details, supabaseError?.hint].filter(Boolean).join(" • ");
+      const message = detailMessage || "Profil güncellenemedi";
       setStatus({ type: "error", message });
     } finally {
       setSaving(false);
