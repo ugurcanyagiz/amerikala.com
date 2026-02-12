@@ -20,8 +20,6 @@ import {
   Loader2,
   Shield,
   CheckCircle,
-  EyeOff,
-  Briefcase,
   Activity,
   History,
   RefreshCw,
@@ -107,11 +105,10 @@ export default function ProfilePage() {
     }
   };
 
-  // Get display name based on privacy setting - with safe access
+  // Get display name
   const getDisplayName = () => {
     if (!profile) return user?.email?.split('@')[0] || "Kullanıcı";
-    const showFullName = profile.show_full_name ?? true;
-    if (showFullName && profile.full_name) {
+    if (profile.full_name) {
       return profile.full_name;
     }
     return profile.username || user?.email?.split('@')[0] || "Kullanıcı";
@@ -172,9 +169,7 @@ export default function ProfilePage() {
   }
 
   // Safe access to profile fields
-  const showFullName = profile.show_full_name ?? true;
   const isVerified = profile.is_verified ?? false;
-  const profession = profile.profession || null;
   const avatarSrc = profile.avatar_url || "/logo.png";
 
   return (
@@ -224,11 +219,6 @@ export default function ProfilePage() {
                             </Badge>
                           )}
                           
-                          {!showFullName && (
-                            <span className="text-neutral-400" title="İsim gizli">
-                              <EyeOff size={14} />
-                            </span>
-                          )}
                         </div>
                         
                         <p className="text-neutral-500 dark:text-neutral-400 mb-2">
@@ -263,13 +253,6 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-neutral-600 dark:text-neutral-400">
-                      {profession && (
-                        <div className="flex items-center gap-1.5">
-                          <Briefcase size={15} className="text-neutral-400" />
-                          <span>{profession}</span>
-                        </div>
-                      )}
-
                       {(profile.city || profile.state) && (
                         <div className="flex items-center gap-1.5">
                           <MapPin size={15} className="text-neutral-400" />
@@ -360,10 +343,6 @@ export default function ProfilePage() {
                       <span>
                         {[profile.city, profile.state && US_STATES_MAP[profile.state]].filter(Boolean).join(", ") || "—"}
                       </span>
-                    </div>
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="font-medium text-neutral-700 dark:text-neutral-200">Meslek</span>
-                      <span>{profession || "—"}</span>
                     </div>
                     <div className="flex items-start justify-between gap-4">
                       <span className="font-medium text-neutral-700 dark:text-neutral-200">Takipçiler</span>
