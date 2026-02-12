@@ -83,19 +83,41 @@ export default function EventDetailPage() {
   const [commentError, setCommentError] = useState<string | null>(null);
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
 
-  const ATTENDEE_PROFILE_SELECT_FULL = "id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession";
+  const ATTENDEE_PROFILE_SELECT_FULL = "id, username, full_name, first_name, last_name, avatar_url";
+  const ATTENDEE_PROFILE_SELECT_MINIMAL = "id, username, full_name, avatar_url";
+
+  const isAbortLikeError = (error: unknown) => {
+    if (!error || typeof error !== "object") return false;
+    const message = "message" in error ? String((error as { message?: string }).message || "") : "";
+    const details = "details" in error ? String((error as { details?: string }).details || "") : "";
+    const code = "code" in error ? String((error as { code?: string }).code || "") : "";
+    const combined = `${message} ${details} ${code}`.toLowerCase();
+    return combined.includes("aborted") || combined.includes("aborterror");
+  };
 
   const fetchProfilesByIds = useCallback(async (userIds: string[]) => {
     const uniqueIds = Array.from(new Set(userIds.filter(Boolean)));
     if (uniqueIds.length === 0) return new Map<string, BasicProfile>();
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select(ATTENDEE_PROFILE_SELECT_FULL)
-      .in("id", uniqueIds);
+    const runProfileQuery = async (selectFields: string) => {
+      return supabase
+        .from("profiles")
+        .select(selectFields)
+        .in("id", uniqueIds);
+    };
+
+    let { data, error } = await runProfileQuery(ATTENDEE_PROFILE_SELECT_FULL);
 
     if (error) {
-      console.error("fetchProfilesByIds failed:", error);
+      const fallback = await runProfileQuery(ATTENDEE_PROFILE_SELECT_MINIMAL);
+      data = fallback.data;
+      error = fallback.error;
+    }
+
+    if (error) {
+      if (!isAbortLikeError(error)) {
+        console.error("fetchProfilesByIds failed:", error);
+      }
       return new Map<string, BasicProfile>();
     }
 
@@ -150,8 +172,9 @@ export default function EventDetailPage() {
       .eq("status", "going");
 
     if (error) {
-      console.error("fetchAttendees failed:", error);
-      setAttendees([]);
+      if (!isAbortLikeError(error)) {
+        console.error("fetchAttendees failed:", error);
+      }
       return;
     }
 
@@ -176,6 +199,8 @@ export default function EventDetailPage() {
 
   // Fetch event
   useEffect(() => {
+    let isActive = true;
+
     const fetchEvent = async () => {
       setLoading(true);
       try {
@@ -190,10 +215,12 @@ export default function EventDetailPage() {
         }
 
         const organizerProfileMap = await fetchProfilesByIds([eventData.organizer_id as string]);
-        setEvent({
-          ...eventData,
-          organizer: organizerProfileMap.get(eventData.organizer_id as string) || null,
-        });
+        if (isActive) {
+          setEvent({
+            ...eventData,
+            organizer: organizerProfileMap.get(eventData.organizer_id as string) || null,
+          });
+        }
 
         await fetchAttendees();
 
@@ -205,31 +232,45 @@ export default function EventDetailPage() {
           .limit(50);
 
         if (commentsError) {
-          setCommentError("Yorumlar şu an yüklenemedi.");
+          if (isActive && !isAbortLikeError(commentsError)) {
+            setCommentError("Yorumlar şu an yüklenemedi.");
+          }
         } else {
           const commentRows = (commentsData as EventComment[] | null) || [];
           const commentProfileMap = await fetchProfilesByIds(commentRows.map((comment) => comment.user_id));
-          setComments(
-            commentRows.map((comment) => ({
-              ...comment,
-              profile: commentProfileMap.get(comment.user_id) || null,
-            }))
-          );
-          setCommentError(null);
+          if (isActive) {
+            setComments(
+              commentRows.map((comment) => ({
+                ...comment,
+                profile: commentProfileMap.get(comment.user_id) || null,
+              }))
+            );
+            setCommentError(null);
+          }
         }
 
       } catch (error) {
-        console.error("Error fetching event:", error);
-        setEvent(null);
+        if (!isAbortLikeError(error)) {
+          console.error("Error fetching event:", error);
+        }
+        if (isActive) {
+          setEvent(null);
+        }
       } finally {
-        setLoading(false);
+        if (isActive) {
+          setLoading(false);
+        }
       }
     };
 
     if (eventId) {
       fetchEvent();
     }
-  }, [eventId, user, router, fetchAttendees, fetchProfilesByIds]);
+
+    return () => {
+      isActive = false;
+    };
+  }, [eventId, fetchAttendees, fetchProfilesByIds]);
 
   // Handle attendance
   const handleAttendance = async () => {
@@ -487,7 +528,9 @@ export default function EventDetailPage() {
         .single();
 
       if (error) {
-        setCommentError("Yorum paylaşılırken bir sorun oluştu.");
+        if (!isAbortLikeError(error)) {
+          setCommentError("Yorum paylaşılırken bir sorun oluştu.");
+        }
         return;
       }
 
