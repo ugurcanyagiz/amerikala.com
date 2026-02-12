@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Building2,
@@ -27,6 +28,14 @@ type UnifiedAd = {
   section: HomeCategoryKey;
   createdAt: string;
   priceLabel?: string;
+};
+
+type SearchSuggestion = {
+  id: string;
+  title: string;
+  location: string;
+  href: string;
+  section: HomeCategoryKey;
 };
 
 const CATEGORY_CONFIG: Record<
@@ -75,6 +84,9 @@ const CATEGORY_CONFIG: Record<
 };
 
 export default function Home() {
+  const router = useRouter();
+  const searchBoxRef = useRef<HTMLDivElement>(null);
+
   const [ads, setAds] = useState<UnifiedAd[]>([]);
   const [categoryCounts, setCategoryCounts] = useState<Record<HomeCategoryKey, number>>({
     events: 0,
@@ -83,6 +95,24 @@ export default function Home() {
     marketplace: 0,
   });
   const [loading, setLoading] = useState(true);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(event.target as Node)) {
+        setSearchOpen(false);
+        setActiveSuggestionIndex(-1);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const fetchHomepageData = async () => {
@@ -179,6 +209,119 @@ export default function Home() {
     fetchHomepageData();
   }, []);
 
+  useEffect(() => {
+    const normalizedQuery = searchQuery.trim();
+
+    if (normalizedQuery.length < 2) {
+      setSuggestions([]);
+      setSearching(false);
+      setActiveSuggestionIndex(-1);
+      return;
+    }
+
+    const debounce = window.setTimeout(async () => {
+      setSearching(true);
+      try {
+        const keyword = `%${normalizedQuery}%`;
+
+        const [eventsRes, listingsRes, jobsRes, marketplaceRes] = await Promise.all([
+          publicSupabase
+            .from("events")
+            .select("id, title, city, state")
+            .eq("status", "approved")
+            .ilike("title", keyword)
+            .limit(5),
+          publicSupabase
+            .from("listings")
+            .select("id, title, city, state")
+            .eq("status", "approved")
+            .or(`title.ilike.${keyword},description.ilike.${keyword}`)
+            .limit(5),
+          publicSupabase
+            .from("job_listings")
+            .select("id, title, city, state")
+            .eq("status", "approved")
+            .or(`title.ilike.${keyword},description.ilike.${keyword}`)
+            .limit(5),
+          publicSupabase
+            .from("marketplace_listings")
+            .select("id, title, city, state")
+            .eq("status", "approved")
+            .or(`title.ilike.${keyword},description.ilike.${keyword}`)
+            .limit(5),
+        ]);
+
+        if (eventsRes.error) throw eventsRes.error;
+        if (listingsRes.error) throw listingsRes.error;
+        if (jobsRes.error) throw jobsRes.error;
+        if (marketplaceRes.error) throw marketplaceRes.error;
+
+        const merged: SearchSuggestion[] = [
+          ...(eventsRes.data ?? []).map((item) => ({
+            id: `event-${item.id}`,
+            title: item.title,
+            location: `${item.city}, ${item.state}`,
+            href: `/events/${item.id}`,
+            section: "events" as const,
+          })),
+          ...(listingsRes.data ?? []).map((item) => ({
+            id: `listing-${item.id}`,
+            title: item.title,
+            location: `${item.city}, ${item.state}`,
+            href: `/emlak/ilan/${item.id}`,
+            section: "realEstate" as const,
+          })),
+          ...(jobsRes.data ?? []).map((item) => ({
+            id: `job-${item.id}`,
+            title: item.title,
+            location: `${item.city}, ${item.state}`,
+            href: `/is/ilan/${item.id}`,
+            section: "jobs" as const,
+          })),
+          ...(marketplaceRes.data ?? []).map((item) => ({
+            id: `market-${item.id}`,
+            title: item.title,
+            location: `${item.city}, ${item.state}`,
+            href: `/alisveris/ilan/${item.id}`,
+            section: "marketplace" as const,
+          })),
+        ].slice(0, 8);
+
+        setSuggestions(merged);
+        setSearchOpen(true);
+        setActiveSuggestionIndex(-1);
+      } catch (error) {
+        console.error("Search suggestions error", error);
+        setSuggestions([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 280);
+
+    return () => window.clearTimeout(debounce);
+  }, [searchQuery]);
+
+  const onSearchSubmit = () => {
+    const normalizedQuery = searchQuery.trim();
+    if (!normalizedQuery) return;
+
+    if (activeSuggestionIndex >= 0 && suggestions[activeSuggestionIndex]) {
+      router.push(suggestions[activeSuggestionIndex].href);
+      setSearchOpen(false);
+      return;
+    }
+
+    if (suggestions[0]) {
+      router.push(suggestions[0].href);
+      setSearchOpen(false);
+      return;
+    }
+
+    const q = encodeURIComponent(normalizedQuery);
+    router.push(`/feed?search=${q}`);
+    setSearchOpen(false);
+  };
+
   const featuredAds = useMemo(() => ads.slice(0, 4), [ads]);
   const latestAds = useMemo(() => ads.slice(0, 8), [ads]);
 
@@ -204,23 +347,89 @@ export default function Home() {
                     Daha canlı, daha modern ve ilan odaklı yeni anasayfa düzeni: kategoriler, öne çıkan ilanlar ve en yeni içerikler tek bakışta.
                   </p>
 
-                  <div className="mt-7 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_40px_-30px_rgba(14,116,144,0.65)]">
-                    <div className="grid gap-2 md:grid-cols-[1.15fr_1fr_auto]">
+                  <div ref={searchBoxRef} className="relative mt-7 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_40px_-30px_rgba(14,116,144,0.65)]">
+                    <div className="grid gap-2 md:grid-cols-[1fr_auto]">
                       <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
                         <Search className="h-4 w-4 text-slate-400" />
                         <input
+                          value={searchQuery}
+                          onChange={(event) => {
+                            setSearchQuery(event.target.value);
+                            setSearchOpen(true);
+                          }}
+                          onFocus={() => setSearchOpen(true)}
+                          onKeyDown={(event) => {
+                            if (!suggestions.length) {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                onSearchSubmit();
+                              }
+                              return;
+                            }
+
+                            if (event.key === "ArrowDown") {
+                              event.preventDefault();
+                              setActiveSuggestionIndex((prev) => (prev + 1) % suggestions.length);
+                            }
+
+                            if (event.key === "ArrowUp") {
+                              event.preventDefault();
+                              setActiveSuggestionIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1));
+                            }
+
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              onSearchSubmit();
+                            }
+                          }}
                           className="w-full border-none bg-transparent text-sm text-slate-700 outline-none"
                           placeholder="Ne arıyorsun? (ör: kiralık ev, iş, etkinlik)"
+                          aria-label="Site içi arama"
                         />
                       </div>
-                      <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
-                        <MapPin className="h-4 w-4 text-slate-400" />
-                        <input className="w-full border-none bg-transparent text-sm text-slate-700 outline-none" placeholder="Konum (eyalet / şehir)" />
-                      </div>
-                      <Button variant="primary" className="h-11 rounded-xl px-6">
-                        Ara
+
+                      <Button variant="primary" className="h-11 rounded-xl px-6" onClick={onSearchSubmit}>
+                        {searching ? "Aranıyor..." : "Ara"}
                       </Button>
                     </div>
+
+                    {searchOpen && searchQuery.trim().length >= 2 && (
+                      <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-[0_18px_40px_-30px_rgba(14,116,144,0.65)]">
+                        {searching ? (
+                          <p className="px-4 py-3 text-sm text-slate-500">Uygun ilanlar aranıyor...</p>
+                        ) : suggestions.length === 0 ? (
+                          <p className="px-4 py-3 text-sm text-slate-500">Sonuç bulunamadı. Farklı bir arama deneyin.</p>
+                        ) : (
+                          <ul className="max-h-80 overflow-y-auto py-1">
+                            {suggestions.map((item, index) => {
+                              const meta = CATEGORY_CONFIG[item.section];
+                              const isActive = index === activeSuggestionIndex;
+
+                              return (
+                                <li key={item.id}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      router.push(item.href);
+                                      setSearchOpen(false);
+                                    }}
+                                    className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition ${
+                                      isActive ? "bg-sky-50" : "hover:bg-sky-50/70"
+                                    }`}
+                                  >
+                                    <div className="min-w-0">
+                                      <p className="truncate text-sm font-semibold text-slate-900">{item.title}</p>
+                                      <p className="truncate text-xs text-slate-500">{item.location}</p>
+                                    </div>
+                                    <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${meta.badgeClass}`}>{meta.title}</span>
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-5 flex flex-wrap gap-3">
