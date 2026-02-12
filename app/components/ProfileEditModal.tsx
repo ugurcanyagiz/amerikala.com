@@ -15,8 +15,6 @@ import {
   FileText,
   Building,
   Briefcase,
-  Eye,
-  EyeOff,
   Lock,
   Info,
 } from "lucide-react";
@@ -94,7 +92,10 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
   const [profession, setProfession] = useState(profile.profession || "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
   const [avatarVersion, setAvatarVersion] = useState(() => Date.now());
-  const [showFullName, setShowFullName] = useState(profile.show_full_name ?? true);
+  const [accountIdentity, setAccountIdentity] = useState({
+    fullName: profile.full_name || "",
+    username: profile.username || "",
+  });
   
   // UI state
   const [saving, setSaving] = useState(false);
@@ -110,10 +111,40 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
     setProfession(profile.profession || "");
     setAvatarUrl(profile.avatar_url || "");
     setAvatarVersion(Date.now());
-    setShowFullName(profile.show_full_name ?? true);
+    setAccountIdentity({
+      fullName: profile.full_name || "",
+      username: profile.username || "",
+    });
     setStatus(null);
     setErrors({});
   }, [profile, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const loadAuthIdentity = async () => {
+      const { data } = await supabase.auth.getUser();
+      const authUser = data.user;
+      if (!authUser) return;
+
+      const fullNameFromAuth =
+        typeof authUser.user_metadata?.full_name === "string" ? authUser.user_metadata.full_name : "";
+      const firstName = typeof authUser.user_metadata?.first_name === "string" ? authUser.user_metadata.first_name : "";
+      const lastName = typeof authUser.user_metadata?.last_name === "string" ? authUser.user_metadata.last_name : "";
+      const usernameFromAuth =
+        typeof authUser.user_metadata?.username === "string" ? authUser.user_metadata.username : "";
+
+      const mergedFullName = profile.full_name || fullNameFromAuth || [firstName, lastName].filter(Boolean).join(" ").trim();
+      const mergedUsername = profile.username || usernameFromAuth;
+
+      setAccountIdentity({
+        fullName: mergedFullName,
+        username: mergedUsername,
+      });
+    };
+
+    loadAuthIdentity();
+  }, [isOpen, profile.full_name, profile.username]);
 
   const loadImage = (file: File): Promise<HTMLImageElement> =>
     new Promise((resolve, reject) => {
@@ -257,7 +288,8 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
           state: state || null,
           profession: profession.trim() || null,
           avatar_url: avatarUrl || null,
-          show_full_name: showFullName,
+          full_name: accountIdentity.fullName || profile.full_name || null,
+          username: accountIdentity.username || profile.username || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", profile.id);
@@ -353,43 +385,13 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
               <span className="text-sm font-medium text-neutral-500">İsim Bilgileri</span>
             </div>
             <p className="text-lg font-semibold text-neutral-700 dark:text-neutral-300">
-              {profile.full_name || "İsim belirtilmemiş"}
+              {accountIdentity.fullName || "İsim belirtilmemiş"}
             </p>
+            <p className="text-sm text-neutral-500 mt-1">@{accountIdentity.username || "kullanici"}</p>
             <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
               <Info size={12} />
-              İsim ve soyisim kayıt sırasında belirlenir ve değiştirilemez
+              İsim soyisim ve kullanıcı adı kayıt sırasında belirlenir, değiştirilemez.
             </p>
-          </div>
-
-          {/* Privacy Setting - Show/Hide Full Name */}
-          <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {showFullName ? (
-                  <Eye size={20} className="text-green-500" />
-                ) : (
-                  <EyeOff size={20} className="text-neutral-400" />
-                )}
-                <div>
-                  <p className="font-medium">İsim Görünürlüğü</p>
-                  <p className="text-sm text-neutral-500">
-                    {showFullName ? "Herkes tam isminizi görebilir" : "Sadece kullanıcı adınız görünür"}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowFullName(!showFullName)}
-                className={`relative w-12 h-6 rounded-full transition-colors ${
-                  showFullName ? "bg-green-500" : "bg-neutral-300 dark:bg-neutral-600"
-                }`}
-              >
-                <span
-                  className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                    showFullName ? "translate-x-7" : "translate-x-1"
-                  }`}
-                />
-              </button>
-            </div>
           </div>
 
           {/* Form Fields */}
