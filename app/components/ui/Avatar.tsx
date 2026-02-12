@@ -10,6 +10,7 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
   ({ className = "", src, alt = "Avatar", fallback, size = "md", status, ...props }, ref) => {
+    const resolvedSrc = src && src.trim().length > 0 ? src : "/logo.png";
     const sizes: Record<string, { container: string; status: string }> = {
       xs: { container: "h-6 w-6 text-[10px]", status: "h-1.5 w-1.5" },
       sm: { container: "h-8 w-8 text-xs", status: "h-2 w-2" },
@@ -46,8 +47,8 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
             ring-2 ring-[var(--color-surface)]
           `}
         >
-          {src ? (
-            <img src={src} alt={alt} className="h-full w-full object-cover" />
+          {resolvedSrc ? (
+            <img src={resolvedSrc} alt={alt} className="h-full w-full object-cover" />
           ) : (
             <span>{fallback ? getInitials(fallback) : "?"}</span>
           )}
