@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Heart, Loader2, MapPin, MessageCircle, Briefcase } from "lucide-react";
+import { ArrowLeft, Heart, Loader2, MapPin, MessageCircle, Briefcase, Users, CalendarClock, Copy, Check, BadgeCheck } from "lucide-react";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { supabase } from "@/lib/supabase/client";
 import { Avatar } from "@/app/components/ui/Avatar";
@@ -25,6 +25,13 @@ type PublicProfile = {
   is_verified?: boolean | null;
 };
 
+type ProfileStats = {
+  followers: number;
+  following: number;
+  groups: number;
+  events: number;
+};
+
 const getDisplayName = (profile: PublicProfile | null) => {
   if (!profile) return "Kullanıcı";
   return profile.full_name || [profile.first_name, profile.last_name].filter(Boolean).join(" ") || profile.username || "Kullanıcı";
@@ -40,6 +47,9 @@ export default function PublicProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [dmLoading, setDmLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [stats, setStats] = useState<ProfileStats>({ followers: 0, following: 0, groups: 0, events: 0 });
+  const [mutuals, setMutuals] = useState({ groups: 0, events: 0 });
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -62,6 +72,69 @@ export default function PublicProfilePage() {
 
     loadProfile();
   }, [id]);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      if (!id) return;
+
+      let followers = 0;
+      let following = 0;
+      const followPairs = [
+        { from: "follower_id", to: "following_id" },
+        { from: "user_id", to: "target_user_id" },
+        { from: "user_id", to: "followed_user_id" },
+      ] as const;
+
+      for (const pair of followPairs) {
+        const [followerRes, followingRes] = await Promise.all([
+          supabase.from("follows").select("*", { count: "exact", head: true }).eq(pair.to, id),
+          supabase.from("follows").select("*", { count: "exact", head: true }).eq(pair.from, id),
+        ]);
+
+        if (!followerRes.error && !followingRes.error) {
+          followers = followerRes.count || 0;
+          following = followingRes.count || 0;
+          break;
+        }
+      }
+
+      const [groupRes, eventRes] = await Promise.all([
+        supabase.from("group_members").select("*", { count: "exact", head: true }).eq("user_id", id).eq("status", "approved"),
+        supabase.from("event_attendees").select("*", { count: "exact", head: true }).eq("user_id", id),
+      ]);
+
+      setStats({
+        followers,
+        following,
+        groups: groupRes.count || 0,
+        events: eventRes.count || 0,
+      });
+    };
+
+    loadStats();
+  }, [id]);
+
+  useEffect(() => {
+    const loadMutuals = async () => {
+      if (!user || !id || user.id === id) return;
+
+      const [myGroupsRes, targetGroupsRes, myEventsRes, targetEventsRes] = await Promise.all([
+        supabase.from("group_members").select("group_id").eq("user_id", user.id).eq("status", "approved"),
+        supabase.from("group_members").select("group_id").eq("user_id", id).eq("status", "approved"),
+        supabase.from("event_attendees").select("event_id").eq("user_id", user.id),
+        supabase.from("event_attendees").select("event_id").eq("user_id", id),
+      ]);
+
+      const myGroups = new Set((myGroupsRes.data || []).map((item) => item.group_id));
+      const targetGroups = (targetGroupsRes.data || []).map((item) => item.group_id).filter((groupId) => myGroups.has(groupId));
+      const myEvents = new Set((myEventsRes.data || []).map((item) => item.event_id));
+      const targetEvents = (targetEventsRes.data || []).map((item) => item.event_id).filter((eventId) => myEvents.has(eventId));
+
+      setMutuals({ groups: targetGroups.length, events: targetEvents.length });
+    };
+
+    loadMutuals();
+  }, [id, user]);
 
   useEffect(() => {
     const checkFollowing = async () => {
@@ -174,6 +247,13 @@ export default function PublicProfilePage() {
     }
   };
 
+  const handleCopyProfile = async () => {
+    if (typeof window === "undefined") return;
+    await navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
   if (loading) {
     return (
       <div className="min-h-[calc(100vh-65px)] flex items-center justify-center">
@@ -228,6 +308,25 @@ export default function PublicProfilePage() {
               <p className="mt-5 text-neutral-700 dark:text-neutral-300 leading-relaxed">{profile.bio}</p>
             )}
 
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+              <div className="rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-3 text-center">
+                <p className="text-lg font-semibold">{stats.followers}</p>
+                <p className="text-xs text-neutral-500">Takipçi</p>
+              </div>
+              <div className="rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-3 text-center">
+                <p className="text-lg font-semibold">{stats.following}</p>
+                <p className="text-xs text-neutral-500">Takip</p>
+              </div>
+              <div className="rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-3 text-center">
+                <p className="text-lg font-semibold">{stats.groups}</p>
+                <p className="text-xs text-neutral-500">Gruplar</p>
+              </div>
+              <div className="rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-3 text-center">
+                <p className="text-lg font-semibold">{stats.events}</p>
+                <p className="text-xs text-neutral-500">Etkinlik</p>
+              </div>
+            </div>
+
             <div className="grid sm:grid-cols-2 gap-3 mt-6">
               <Button
                 variant={isFollowing ? "outline" : "primary"}
@@ -247,6 +346,24 @@ export default function PublicProfilePage() {
                 <MessageCircle size={16} />
                 Özel Mesaj Gönder
               </Button>
+              <Button variant="outline" onClick={handleCopyProfile} className="gap-2">
+                {copied ? <Check size={16} /> : <Copy size={16} />}
+                {copied ? "Kopyalandı" : "Profil Linkini Kopyala"}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  if (!user) {
+                    router.push("/login");
+                    return;
+                  }
+                  router.push("/events/create");
+                }}
+                className="gap-2"
+              >
+                <CalendarClock size={16} />
+                Etkinliğe Davet Et
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -258,6 +375,12 @@ export default function PublicProfilePage() {
           <CardContent className="text-sm text-neutral-600 dark:text-neutral-400 space-y-2">
             <p>Bu profil etkinlik katılımcı listelerinden veya topluluk sayfalarından görüntülenebilir.</p>
             <p>Mesajlaşma ve takip işlemleri gerçek kullanıcı verileri ile çalışır.</p>
+            <div className="mt-4 rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-3 bg-white/60 dark:bg-neutral-900/40 space-y-2">
+              <p className="font-medium text-neutral-700 dark:text-neutral-200 flex items-center gap-2"><BadgeCheck size={16} className="text-blue-500" /> Profesyonel Bağlantı Özeti</p>
+              <p className="flex items-center gap-2"><Users size={14} /> Ortak Grup: {mutuals.groups}</p>
+              <p className="flex items-center gap-2"><CalendarClock size={14} /> Ortak Etkinlik: {mutuals.events}</p>
+              <p className="text-xs text-neutral-500">Bu kart, topluluk içi güvenli iletişim ve networking aksiyonları için optimize edildi.</p>
+            </div>
           </CardContent>
         </Card>
       </div>

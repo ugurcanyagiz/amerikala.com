@@ -23,7 +23,21 @@ import {
   Activity,
   History,
   RefreshCw,
+  Heart,
+  MessageSquare,
+  UserPlus,
+  PartyPopper,
+  Users,
+  FileText,
 } from "lucide-react";
+
+type ActivityItem = {
+  id: string;
+  type: "like" | "comment" | "new_follower" | "event_join" | "group_join" | "post_created";
+  title: string;
+  description: string;
+  createdAt: string;
+};
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -35,6 +49,15 @@ export default function ProfilePage() {
     following: 0,
     groups: 0,
     events: 0 
+  });
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [activitySummary, setActivitySummary] = useState({
+    likes: 0,
+    comments: 0,
+    newFollowers: 0,
+    joinedEvents: 0,
+    joinedGroups: 0,
   });
 
   // Debug log
@@ -94,6 +117,152 @@ export default function ProfilePage() {
     fetchStats();
   }, [user, profile]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchActivities = async () => {
+      setActivityLoading(true);
+
+      try {
+        const { data: myPosts, error: postsError } = await supabase
+          .from("posts")
+          .select("id, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(50);
+
+        if (postsError) throw postsError;
+
+        const postIds = (myPosts || []).map((post) => post.id);
+
+        const [likesResult, commentsResult, joinedEventsResult, joinedGroupsResult] = await Promise.all([
+          postIds.length
+            ? supabase.from("likes").select("post_id, user_id, created_at").in("post_id", postIds).neq("user_id", user.id)
+            : Promise.resolve({ data: [], error: null }),
+          postIds.length
+            ? supabase.from("comments").select("id, user_id, created_at").in("post_id", postIds).neq("user_id", user.id)
+            : Promise.resolve({ data: [], error: null }),
+          supabase.from("event_attendees").select("event_id, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+          supabase
+            .from("group_members")
+            .select("group_id, joined_at")
+            .eq("user_id", user.id)
+            .eq("status", "approved")
+            .order("joined_at", { ascending: false })
+            .limit(20),
+        ]);
+
+        if (likesResult.error) throw likesResult.error;
+        if (commentsResult.error) throw commentsResult.error;
+
+        const likes = likesResult.data || [];
+        const comments = commentsResult.data || [];
+        const joinedEvents = joinedEventsResult.data || [];
+        const joinedGroups = joinedGroupsResult.data || [];
+
+        let followers: Array<{ user_id: string; created_at: string }> = [];
+        const followPairs = [
+          { from: "follower_id", to: "following_id" },
+          { from: "user_id", to: "target_user_id" },
+          { from: "user_id", to: "followed_user_id" },
+        ] as const;
+
+        for (const pair of followPairs) {
+          const { data, error } = await supabase
+            .from("follows")
+            .select(`${pair.from}, created_at`)
+            .eq(pair.to, user.id)
+            .order("created_at", { ascending: false })
+            .limit(20);
+
+          if (!error) {
+            followers = ((data || []) as Array<Record<string, string>>).map((row) => ({
+              user_id: row[pair.from],
+              created_at: row.created_at,
+            }));
+            break;
+          }
+        }
+
+        const actorIds = Array.from(new Set([
+          ...likes.map((item) => item.user_id),
+          ...comments.map((item) => item.user_id),
+          ...followers.map((item) => item.user_id),
+        ]));
+
+        const { data: actorProfiles } = actorIds.length
+          ? await supabase.from("profiles").select("id, first_name, last_name, username").in("id", actorIds)
+          : { data: [] as Array<{ id: string; first_name: string | null; last_name: string | null; username: string | null }> };
+
+        const actorMap = new Map(
+          (actorProfiles || []).map((item) => [item.id, [item.first_name, item.last_name].filter(Boolean).join(" ") || item.username || "Bir kullanıcı"])
+        );
+
+        const feed: ActivityItem[] = [
+          ...likes.map((item) => ({
+            id: `like-${item.post_id}-${item.user_id}`,
+            type: "like" as const,
+            title: "Gönderin beğenildi",
+            description: `${actorMap.get(item.user_id) || "Bir kullanıcı"} gönderini beğendi.`,
+            createdAt: item.created_at,
+          })),
+          ...comments.map((item) => ({
+            id: `comment-${item.id}`,
+            type: "comment" as const,
+            title: "Yeni yorum",
+            description: `${actorMap.get(item.user_id) || "Bir kullanıcı"} gönderine yorum yaptı.`,
+            createdAt: item.created_at,
+          })),
+          ...followers.map((item) => ({
+            id: `follower-${item.user_id}-${item.created_at}`,
+            type: "new_follower" as const,
+            title: "Yeni arkadaş / takipçi",
+            description: `${actorMap.get(item.user_id) || "Bir kullanıcı"} seni takip etti.`,
+            createdAt: item.created_at,
+          })),
+          ...joinedEvents.map((item) => ({
+            id: `event-${item.event_id}-${item.created_at}`,
+            type: "event_join" as const,
+            title: "Etkinlik katılımı",
+            description: "Bir etkinliğe katılım gösterdin.",
+            createdAt: item.created_at,
+          })),
+          ...joinedGroups.map((item) => ({
+            id: `group-${item.group_id}-${item.joined_at}`,
+            type: "group_join" as const,
+            title: "Yeni grup üyeliği",
+            description: "Toplulukta bir gruba katıldın.",
+            createdAt: item.joined_at,
+          })),
+          ...(myPosts || []).map((post) => ({
+            id: `post-${post.id}`,
+            type: "post_created" as const,
+            title: "Gönderi paylaştın",
+            description: "Feed üzerinde yeni bir paylaşım yaptın.",
+            createdAt: post.created_at,
+          })),
+        ]
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 12);
+
+        setActivities(feed);
+        setActivitySummary({
+          likes: likes.length,
+          comments: comments.length,
+          newFollowers: followers.length,
+          joinedEvents: joinedEvents.length,
+          joinedGroups: joinedGroups.length,
+        });
+      } catch (error) {
+        console.error("Error fetching activities:", error);
+      } finally {
+        setActivityLoading(false);
+      }
+    };
+
+    fetchActivities();
+  }, [user]);
+
   // Format join date
   const formatJoinDate = (dateString?: string) => {
     if (!dateString) return "—";
@@ -112,6 +281,37 @@ export default function ProfilePage() {
       return profile.full_name;
     }
     return profile.username || user?.email?.split('@')[0] || "Kullanıcı";
+  };
+
+  const getRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const minutes = Math.floor(diffMs / 60000);
+    if (minutes < 1) return "Az önce";
+    if (minutes < 60) return `${minutes} dk önce`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} sa önce`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} gün önce`;
+    return date.toLocaleDateString("tr-TR");
+  };
+
+  const getActivityIcon = (type: ActivityItem["type"]) => {
+    switch (type) {
+      case "like":
+        return <Heart size={14} className="text-pink-500" />;
+      case "comment":
+        return <MessageSquare size={14} className="text-indigo-500" />;
+      case "new_follower":
+        return <UserPlus size={14} className="text-blue-500" />;
+      case "event_join":
+        return <PartyPopper size={14} className="text-amber-500" />;
+      case "group_join":
+        return <Users size={14} className="text-emerald-500" />;
+      default:
+        return <FileText size={14} className="text-neutral-500" />;
+    }
   };
 
   // Loading state
@@ -304,23 +504,50 @@ export default function ProfilePage() {
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div className="rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-4 bg-white/60 dark:bg-neutral-900/40">
                         <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Beğeniler</p>
-                        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">—</p>
-                        <p className="text-sm text-neutral-500">Gönderi ve etkinlik etkileşimleri</p>
+                        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{activitySummary.likes}</p>
+                        <p className="text-sm text-neutral-500">Gönderi etkileşimleri</p>
                       </div>
                       <div className="rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-4 bg-white/60 dark:bg-neutral-900/40">
                         <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Bağlantılar</p>
-                        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">—</p>
+                        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{activitySummary.newFollowers}</p>
                         <p className="text-sm text-neutral-500">Yeni arkadaşlıklar ve takipler</p>
+                      </div>
+                      <div className="rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-4 bg-white/60 dark:bg-neutral-900/40">
+                        <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Yorumlar</p>
+                        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{activitySummary.comments}</p>
+                        <p className="text-sm text-neutral-500">Topluluk geri bildirimleri</p>
+                      </div>
+                      <div className="rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-4 bg-white/60 dark:bg-neutral-900/40">
+                        <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Topluluk Katılımı</p>
+                        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{activitySummary.joinedGroups + activitySummary.joinedEvents}</p>
+                        <p className="text-sm text-neutral-500">Grup + etkinlik üyeliği</p>
                       </div>
                     </div>
 
-                    <div className="text-center py-8">
-                      <Activity className="w-12 h-12 text-neutral-300 dark:text-neutral-700 mx-auto mb-3" />
-                      <h3 className="font-semibold text-lg mb-1">Aktivite geçmişi</h3>
-                      <p className="text-neutral-500 text-sm">
-                        Beğeniler, yorumlar, takipler ve etkileşimler burada listelenecek.
-                      </p>
-                    </div>
+                    {activityLoading ? (
+                      <div className="text-center py-8 text-neutral-500">Aktiviteler yükleniyor...</div>
+                    ) : activities.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Activity className="w-12 h-12 text-neutral-300 dark:text-neutral-700 mx-auto mb-3" />
+                        <h3 className="font-semibold text-lg mb-1">Aktivite geçmişi</h3>
+                        <p className="text-neutral-500 text-sm">Henüz görüntülenecek aktivite bulunmuyor.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {activities.map((item) => (
+                          <div key={item.id} className="flex items-start gap-3 rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-3 bg-white/70 dark:bg-neutral-900/40">
+                            <div className="mt-0.5 h-7 w-7 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                              {getActivityIcon(item.type)}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{item.title}</p>
+                              <p className="text-sm text-neutral-600 dark:text-neutral-400">{item.description}</p>
+                            </div>
+                            <span className="text-xs text-neutral-500">{getRelativeTime(item.createdAt)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
