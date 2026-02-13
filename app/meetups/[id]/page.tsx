@@ -290,6 +290,15 @@ export default function EventDetailPage() {
         if (eventError) {
           throw eventError;
         }
+        const rawEvent = eventData as LegacyEventRecord;
+        const organizerFromJoin = resolveProfile(rawEvent.organizer) || resolveProfile(rawEvent.creator);
+        const organizerId = (typeof rawEvent.organizer_id === "string" && rawEvent.organizer_id)
+          || (typeof rawEvent.created_by === "string" && rawEvent.created_by)
+          || "";
+
+        const organizerProfileMap = organizerFromJoin || !organizerId
+          ? new Map<string, BasicProfile>()
+          : await fetchProfilesByIds([organizerId]);
 
         if (!eventData) {
           throw new Error("Event data missing");
