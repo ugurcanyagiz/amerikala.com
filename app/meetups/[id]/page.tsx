@@ -96,7 +96,7 @@ export default function EventDetailPage() {
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
 
   const ATTENDEE_PROFILE_SELECT_FULL = "id, username, full_name, first_name, last_name, avatar_url";
-  const ATTENDEE_PROFILE_SELECT_MINIMAL = "id, username, full_name, avatar_url";
+  const ATTENDEE_PROFILE_SELECT_MINIMAL = "id, username, full_name, first_name, last_name, avatar_url";
 
   const resolveProfile = (profile?: BasicProfile | BasicProfile[] | null) => {
     if (!profile) return null;
@@ -316,20 +316,6 @@ export default function EventDetailPage() {
         if (eventError) {
           throw eventError;
         }
-        const rawEvent = eventData as LegacyEventRecord;
-        const organizerFromJoin = resolveProfile(rawEvent.organizer) || resolveProfile(rawEvent.creator);
-        const organizerId = (typeof rawEvent.organizer_id === "string" && rawEvent.organizer_id)
-          || (typeof rawEvent.created_by === "string" && rawEvent.created_by)
-          || "";
-
-        const organizerProfileMap = organizerFromJoin || !organizerId
-          ? new Map<string, BasicProfile>()
-          : await fetchProfilesByIds([organizerId]);
-
-        if (!eventData) {
-          throw new Error("Event data missing");
-        }
-
         if (!eventData) {
           throw new Error("Event data missing");
         }
@@ -780,8 +766,8 @@ export default function EventDetailPage() {
                   <div className="flex items-center gap-2">
                     <Clock size={20} className="text-red-500" />
                     <span>
-                      {event.start_time.slice(0, 5)}
-                      {event.end_time && ` - ${event.end_time.slice(0, 5)}`}
+                      {event.start_time ? event.start_time.slice(0, 5) : "Saat belirtilmedi"}
+                      {event.end_time ? ` - ${event.end_time.slice(0, 5)}` : ""}
                     </span>
                   </div>
                 </div>
@@ -1018,22 +1004,36 @@ export default function EventDetailPage() {
                 <CardTitle className="text-base">Organizatör</CardTitle>
               </CardHeader>
               <CardContent>
-                <Link 
-                  href={`/profile/${organizer?.id}`}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                >
-                  <Avatar 
-                    src={organizer?.avatar_url || "/logo.png"} 
-                    fallback={getDisplayName(organizer) || "O"} 
-                    size="lg"
-                  />
-                  <div>
-                    <p className="font-semibold">
-                      {getDisplayName(organizer) || "Organizatör"}
-                    </p>
-                    <p className="text-sm text-neutral-500">{getUsernameLabel(organizer)}</p>
+                {organizer?.id ? (
+                  <Link 
+                    href={`/profile/${organizer.id}`}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    <Avatar 
+                      src={organizer?.avatar_url || "/logo.png"} 
+                      fallback={getDisplayName(organizer) || "O"} 
+                      size="lg"
+                    />
+                    <div>
+                      <p className="font-semibold">
+                        {getDisplayName(organizer) || "Organizatör"}
+                      </p>
+                      <p className="text-sm text-neutral-500">{getUsernameLabel(organizer)}</p>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-3 p-3 rounded-lg">
+                    <Avatar 
+                      src={organizer?.avatar_url || "/logo.png"} 
+                      fallback={getDisplayName(organizer) || "O"} 
+                      size="lg"
+                    />
+                    <div>
+                      <p className="font-semibold">{getDisplayName(organizer) || "Organizatör"}</p>
+                      <p className="text-sm text-neutral-500">{getUsernameLabel(organizer)}</p>
+                    </div>
                   </div>
-                </Link>
+                )}
                 {organizer?.bio && (
                   <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-3 line-clamp-3">
                     {organizer.bio}
