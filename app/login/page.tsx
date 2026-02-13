@@ -45,10 +45,13 @@ export default function LoginPage() {
 
     if (error) {
       setStatus("error");
+      const lowerMessage = error.message.toLowerCase();
       if (error.message.includes("Invalid login")) {
         setStatusMessage("Email veya şifre hatalı");
       } else if (error.message.includes("Email not confirmed")) {
         setStatusMessage("Email adresinizi doğrulamanız gerekiyor");
+      } else if (lowerMessage.includes("aborted") || lowerMessage.includes("timeout")) {
+        setStatusMessage("Bağlantı zaman aşımına uğradı. Lütfen tekrar deneyin.");
       } else {
         setStatusMessage(`Hata: ${error.message}`);
       }
@@ -81,7 +84,12 @@ export default function LoginPage() {
 
     if (error) {
       setStatus("error");
-      setStatusMessage(`Hata: ${error.message}`);
+      const lowerMessage = error.message.toLowerCase();
+      if (lowerMessage.includes("aborted") || lowerMessage.includes("timeout")) {
+        setStatusMessage("Bağlantı zaman aşımına uğradı. Lütfen tekrar deneyin.");
+      } else {
+        setStatusMessage(`Hata: ${error.message}`);
+      }
       return;
     }
 
