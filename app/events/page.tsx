@@ -97,11 +97,13 @@ export default function EventsPage() {
 
         const selectWithFk = `
           *,
-          organizer:profiles!events_organizer_id_fkey (id, username, first_name, last_name, full_name, avatar_url)
+          organizer:profiles!events_organizer_id_fkey (id, username, first_name, last_name, full_name, avatar_url),
+          creator:profiles!events_created_by_fkey (id, username, first_name, last_name, full_name, avatar_url)
         `;
         const selectLegacy = `
           *,
-          organizer:organizer_id (id, username, first_name, last_name, full_name, avatar_url)
+          organizer:organizer_id (id, username, first_name, last_name, full_name, avatar_url),
+          creator:created_by (id, username, first_name, last_name, full_name, avatar_url)
         `;
 
         const resultWithFk = await queryBuild(selectWithFk);
@@ -385,7 +387,7 @@ function FeaturedEventCard({ event }: { event: Event }) {
   };
 
   const date = formatDate(event.event_date);
-  const organizer = event.organizer || null;
+  const organizer = event.organizer || (event as Event & { creator?: Event["organizer"] }).creator || null;
 
   return (
     <Link href={`/meetups/${event.id}`}>
@@ -466,7 +468,7 @@ function EventListCard({ event, formatTime }: { event: Event; formatTime: (time?
   };
 
   const date = formatDate(event.event_date);
-  const organizer = event.organizer || null;
+  const organizer = event.organizer || (event as Event & { creator?: Event["organizer"] }).creator || null;
 
   return (
     <Link href={`/meetups/${event.id}`}>
