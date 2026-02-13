@@ -278,7 +278,7 @@ export default function PublicProfilePage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900 py-8 px-4">
+    <div className="ak-page py-8 px-4">
       <div className="max-w-3xl mx-auto space-y-5">
         <Link href="/meetups" className="inline-flex">
           <Button variant="secondary" size="sm" className="gap-2">

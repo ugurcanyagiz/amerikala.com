@@ -76,10 +76,10 @@ export default function IsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 md:pb-0">
+    <div className="ak-page pb-20 md:pb-0">
       {/* Hero Section */}
       <section className="relative py-12 lg:py-16 bg-gradient-to-b from-blue-50 to-transparent dark:from-blue-950/20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="ak-shell">
           <div className="text-center max-w-2xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 text-sm font-medium mb-4">
               <Briefcase size={16} />
@@ -116,7 +116,7 @@ export default function IsPage() {
       </section>
 
       {/* Quick Links */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <section className="ak-shell py-8">
         <div className="grid md:grid-cols-2 gap-4">
           <Link href="/is/ariyorum" className="group">
             <Card className="h-full hover:shadow-lg transition-all border-2 border-transparent hover:border-blue-200 dark:hover:border-blue-800">
@@ -163,7 +163,7 @@ export default function IsPage() {
       </section>
 
       {/* Recent Listings */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 pb-12">
+      <section className="ak-shell pb-12">
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-blue-500" />

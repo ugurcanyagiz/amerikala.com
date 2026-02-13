@@ -485,6 +485,36 @@
       radial-gradient(ellipse at 20% 30%, var(--color-primary-subtle) 0%, transparent 50%),
       radial-gradient(ellipse at 80% 70%, var(--color-surface-sunken) 0%, transparent 50%);
   }
+
+  /* Unified page template */
+  .ak-page {
+    min-height: calc(100vh - 65px);
+    background:
+      radial-gradient(1200px 500px at 50% -80px, rgba(111, 179, 222, 0.18), transparent 65%),
+      linear-gradient(180deg, #f7fbff 0%, #f4f9ff 42%, #ffffff 100%);
+  }
+
+  .dark .ak-page {
+    background:
+      radial-gradient(1200px 500px at 50% -80px, rgba(56, 112, 150, 0.22), transparent 65%),
+      linear-gradient(180deg, #0f1724 0%, #0b1220 48%, #080d17 100%);
+  }
+
+  .ak-shell {
+    width: min(100%, 1100px);
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .ak-shell {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  .ak-shell-wide {
+    width: min(100%, 1240px);
+  }
 }
 
 /* ============================================

@@ -144,7 +144,7 @@ export default function MeetupsPage() {
         <Sidebar />
 
         <main className="flex-1">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="ak-shell lg:px-8 py-10">
             {/* Hero Section - Clean & Minimal */}
             <section className="text-center mb-16">
               <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--color-ink)] mb-4">

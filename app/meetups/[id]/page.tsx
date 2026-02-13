@@ -714,7 +714,7 @@ export default function EventDetailPage() {
   const isPast = new Date(event.event_date) < new Date(new Date().toDateString());
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="ak-page">
       {/* Cover Image */}
       <div className="relative h-64 sm:h-80 bg-gradient-to-br from-red-500 to-orange-500">
         {event.cover_image_url ? (
@@ -748,7 +748,7 @@ export default function EventDetailPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10 pb-12">
+      <div className="ak-shell lg:px-8 -mt-20 relative z-10 pb-12">
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
