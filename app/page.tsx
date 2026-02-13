@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowRight,
   Building2,
   BriefcaseBusiness,
   CalendarDays,
@@ -42,7 +41,6 @@ const CATEGORY_CONFIG: Record<
   HomeCategoryKey,
   {
     title: string;
-    subtitle: string;
     href: string;
     icon: typeof Building2;
     badgeClass: string;
@@ -52,7 +50,6 @@ const CATEGORY_CONFIG: Record<
 > = {
   events: {
     title: "Etkinlikler",
-    subtitle: "Topluluğa katıl",
     href: "/events",
     icon: CalendarDays,
     badgeClass: "bg-sky-100 text-sky-700",
@@ -61,7 +58,6 @@ const CATEGORY_CONFIG: Record<
   },
   realEstate: {
     title: "Emlak",
-    subtitle: "Yeni yaşam alanı",
     href: "/emlak",
     icon: Building2,
     badgeClass: "bg-emerald-100 text-emerald-700",
@@ -70,7 +66,6 @@ const CATEGORY_CONFIG: Record<
   },
   jobs: {
     title: "İş",
-    subtitle: "Kariyer fırsatları",
     href: "/is",
     icon: BriefcaseBusiness,
     badgeClass: "bg-violet-100 text-violet-700",
@@ -79,7 +74,6 @@ const CATEGORY_CONFIG: Record<
   },
   marketplace: {
     title: "Alışveriş",
-    subtitle: "Al - sat ilanları",
     href: "/alisveris",
     icon: ShoppingBag,
     badgeClass: "bg-amber-100 text-amber-700",
@@ -113,6 +107,7 @@ export default function Home() {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const [latestAdsCategoryFilter, setLatestAdsCategoryFilter] = useState<"all" | HomeCategoryKey>("all");
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -359,6 +354,10 @@ export default function Home() {
 
   const featuredAds = useMemo(() => ads.slice(0, 4), [ads]);
   const latestAds = useMemo(() => ads.slice(0, latestAdsTargetCount), [ads, latestAdsTargetCount]);
+  const latestFilteredAds = useMemo(
+    () => (latestAdsCategoryFilter === "all" ? latestAds : latestAds.filter((item) => item.section === latestAdsCategoryFilter)),
+    [latestAds, latestAdsCategoryFilter],
+  );
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[#f7fbff]">
@@ -373,13 +372,13 @@ export default function Home() {
                 <div>
                   <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-1.5 text-xs font-semibold text-sky-700">
                     <Sparkles className="h-3.5 w-3.5" />
-                    Amerikala Classifieds
+                    AMERIKALA
                   </span>
                   <h1 className="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-                    İlan ver, paylaş ve topluluk içinde hızlıca görünür ol.
+                    İlan ver, paylaş, haberdar ol. Tamamen ücretsiz!
                   </h1>
                   <p className="mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
-                    Daha canlı, daha modern ve ilan odaklı yeni anasayfa düzeni: kategoriler, öne çıkan ilanlar ve en yeni içerikler tek bakışta.
+                    Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
                   </p>
 
                   <div ref={searchBoxRef} className="relative mt-7 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_40px_-30px_rgba(14,116,144,0.65)]">
@@ -506,7 +505,6 @@ export default function Home() {
           <section className="mx-auto max-w-7xl px-4 py-12 sm:px-8 lg:px-12">
             <div className="mb-6 flex items-end justify-between">
               <h2 className="text-3xl font-bold text-slate-900">Kategoriler</h2>
-              <p className="text-sm text-slate-500">Mevcut içerik yapınız korunur.</p>
             </div>
             <div className="grid grid-cols-4 gap-2 sm:gap-4">
               {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
@@ -522,28 +520,35 @@ export default function Home() {
                       <Icon className="h-4 w-4 sm:h-7 sm:w-7" />
                     </span>
                     <h3 className="mt-2 text-sm font-semibold text-slate-900 sm:mt-4 sm:text-lg">{config.title}</h3>
-                    <p className="mt-1 text-[11px] leading-4 text-slate-500 sm:text-sm">{config.subtitle}</p>
-                    <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 transition group-hover:text-sky-700 sm:mt-3 sm:text-sm">
-                      Kategoriye git
-                      <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-                    </span>
                   </Link>
                 );
               })}
             </div>
           </section>
 
-          <AdsSection title="Öne Çıkan İlanlar" subtitle="Classified Ads düzenine uygun premium kartlar" items={featuredAds} loading={loading} />
+          <AdsSection title="Öne Çıkan İlanlar" items={featuredAds} loading={loading} />
 
           <section className="bg-white py-14">
             <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
               <div className="mb-7 flex items-end justify-between">
                 <div>
                   <h2 className="text-3xl font-bold text-slate-900">Son İlanlar</h2>
-                  <p className="text-slate-500">Emlak, iş, alışveriş ve etkinlik kategorilerinden en güncel liste.</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <CategoryFilterButton
+                      isActive={latestAdsCategoryFilter === "all"}
+                      onClick={() => setLatestAdsCategoryFilter("all")}
+                    >
+                      Tüm kategoriler
+                    </CategoryFilterButton>
+                    {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => (
+                      <CategoryFilterButton key={key} isActive={latestAdsCategoryFilter === key} onClick={() => setLatestAdsCategoryFilter(key)}>
+                        {CATEGORY_CONFIG[key].title}
+                      </CategoryFilterButton>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <AdsGrid items={latestAds} loading={loading} latestMobileGrid />
+              <AdsGrid items={latestFilteredAds} loading={loading} latestMobileGrid />
               <div ref={latestAdsLoadTriggerRef} className="h-2" aria-hidden="true" />
               {loadingMoreLatestAds && <p className="mt-4 text-center text-sm text-slate-500">Daha fazla ilan yükleniyor...</p>}
             </div>
@@ -561,7 +566,7 @@ function AdsSection({
   loading,
 }: {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   items: UnifiedAd[];
   loading: boolean;
 }) {
@@ -570,11 +575,33 @@ function AdsSection({
       <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
         <div className="mb-7 text-center">
           <h2 className="text-3xl font-bold text-slate-900">{title}</h2>
-          <p className="mt-1 text-slate-500">{subtitle}</p>
+          {subtitle && <p className="mt-1 text-slate-500">{subtitle}</p>}
         </div>
         <AdsGrid items={items} loading={loading} />
       </div>
     </section>
+  );
+}
+
+function CategoryFilterButton({
+  children,
+  isActive,
+  onClick,
+}: {
+  children: React.ReactNode;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+        isActive ? "border-sky-600 bg-sky-600 text-white" : "border-slate-300 bg-white text-slate-600 hover:border-sky-400 hover:text-sky-700"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
