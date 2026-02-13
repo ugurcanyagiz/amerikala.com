@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -89,8 +89,19 @@ const CATEGORY_CONFIG: Record<
 };
 
 export default function Home() {
+  const INITIAL_LATEST_ROWS = 20;
+  const LATEST_ROWS_PER_LOAD = 10;
+  const MAX_LATEST_ROWS = 50;
+  const MAX_LOAD_REPETITIONS = 5;
+  const LATEST_COLUMNS = 2;
+
+  const INITIAL_LATEST_ITEMS = INITIAL_LATEST_ROWS * LATEST_COLUMNS;
+  const LATEST_ITEMS_PER_LOAD = LATEST_ROWS_PER_LOAD * LATEST_COLUMNS;
+  const MAX_LATEST_ITEMS = MAX_LATEST_ROWS * LATEST_COLUMNS;
+
   const router = useRouter();
   const searchBoxRef = useRef<HTMLDivElement>(null);
+  const latestAdsLoadTriggerRef = useRef<HTMLDivElement>(null);
 
   const [ads, setAds] = useState<UnifiedAd[]>([]);
   const [categoryCounts, setCategoryCounts] = useState<Record<HomeCategoryKey, number>>({
@@ -100,6 +111,8 @@ export default function Home() {
     marketplace: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [loadingMoreLatestAds, setLoadingMoreLatestAds] = useState(false);
+  const [latestAdsLoadRepetition, setLatestAdsLoadRepetition] = useState(0);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
@@ -119,9 +132,16 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const fetchHomepageData = async () => {
-      setLoading(true);
+  const latestAdsTargetCount = useMemo(
+    () => Math.min(MAX_LATEST_ITEMS, INITIAL_LATEST_ITEMS + latestAdsLoadRepetition * LATEST_ITEMS_PER_LOAD),
+    [INITIAL_LATEST_ITEMS, LATEST_ITEMS_PER_LOAD, MAX_LATEST_ITEMS, latestAdsLoadRepetition],
+  );
+  const hasMoreLatestAds = latestAdsTargetCount < MAX_LATEST_ITEMS && latestAdsLoadRepetition < MAX_LOAD_REPETITIONS;
+
+  const fetchHomepageData = useCallback(
+    async (latestLimit: number) => {
+      setLoading(latestLimit === INITIAL_LATEST_ITEMS);
+      setLoadingMoreLatestAds(latestLimit > INITIAL_LATEST_ITEMS);
       try {
         const [eventsRes, realEstateRes, jobsRes, marketplaceRes] = await Promise.all([
           publicSupabase
@@ -129,25 +149,25 @@ export default function Home() {
             .select("id, title, city, state, created_at", { count: "exact" })
             .eq("status", "approved")
             .order("created_at", { ascending: false })
-            .limit(8),
+            .limit(latestLimit),
           publicSupabase
             .from("listings")
             .select("id, title, city, state, price, created_at", { count: "exact" })
             .eq("status", "approved")
             .order("created_at", { ascending: false })
-            .limit(8),
+            .limit(latestLimit),
           publicSupabase
             .from("job_listings")
             .select("id, title, city, state, salary_min, salary_max, created_at", { count: "exact" })
             .eq("status", "approved")
             .order("created_at", { ascending: false })
-            .limit(8),
+            .limit(latestLimit),
           publicSupabase
             .from("marketplace_listings")
             .select("id, title, city, state, price, created_at", { count: "exact" })
             .eq("status", "approved")
             .order("created_at", { ascending: false })
-            .limit(8),
+            .limit(latestLimit),
         ]);
 
         if (eventsRes.error) throw eventsRes.error;
@@ -201,18 +221,41 @@ export default function Home() {
           })),
         ]
           .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
-          .slice(0, 12);
+          .slice(0, latestLimit);
 
         setAds(unified);
       } catch (error) {
         console.error("Homepage fetch error", error);
       } finally {
         setLoading(false);
+        setLoadingMoreLatestAds(false);
       }
-    };
+    },
+    [INITIAL_LATEST_ITEMS],
+  );
 
-    fetchHomepageData();
-  }, []);
+  useEffect(() => {
+    fetchHomepageData(latestAdsTargetCount);
+  }, [fetchHomepageData, latestAdsTargetCount]);
+
+  useEffect(() => {
+    const node = latestAdsLoadTriggerRef.current;
+    if (!node || loading || loadingMoreLatestAds || !hasMoreLatestAds) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting) {
+          setLoadingMoreLatestAds(true);
+          setLatestAdsLoadRepetition((prev) => (prev < MAX_LOAD_REPETITIONS ? prev + 1 : prev));
+        }
+      },
+      { rootMargin: "250px 0px" },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMoreLatestAds, loading, loadingMoreLatestAds, MAX_LOAD_REPETITIONS]);
 
   useEffect(() => {
     const normalizedQuery = searchQuery.trim();
@@ -328,7 +371,7 @@ export default function Home() {
   };
 
   const featuredAds = useMemo(() => ads.slice(0, 4), [ads]);
-  const latestAds = useMemo(() => ads.slice(0, 8), [ads]);
+  const latestAds = useMemo(() => ads.slice(0, latestAdsTargetCount), [ads, latestAdsTargetCount]);
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[#f7fbff]">
@@ -478,7 +521,7 @@ export default function Home() {
               <h2 className="text-3xl font-bold text-slate-900">Kategoriler</h2>
               <p className="text-sm text-slate-500">Mevcut içerik yapınız korunur.</p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
               {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
                 const config = CATEGORY_CONFIG[key];
                 const Icon = config.icon;
@@ -486,15 +529,15 @@ export default function Home() {
                   <Link
                     key={key}
                     href={config.href}
-                    className="group rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-[0_14px_26px_-24px_rgba(15,23,42,0.7)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-30px_rgba(14,116,144,0.45)]"
+                    className="group rounded-xl border border-slate-200 bg-white px-4 py-3 text-center shadow-[0_10px_18px_-18px_rgba(15,23,42,0.7)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-30px_rgba(14,116,144,0.45)] sm:rounded-2xl sm:p-6"
                   >
-                    <span className={`mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full ${config.iconCircleClass}`}>
-                      <Icon className="h-8 w-8" />
+                    <span className={`mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full ${config.iconCircleClass} sm:h-16 sm:w-16`}>
+                      <Icon className="h-5 w-5 sm:h-8 sm:w-8" />
                     </span>
-                    <h3 className="mt-5 text-xl font-semibold text-slate-900">{config.title}</h3>
-                    <p className="mt-1 text-sm text-slate-500">{config.subtitle}</p>
-                    <p className="mt-2 text-lg font-semibold text-rose-500">{categoryCounts[key]} ilan</p>
-                    <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-slate-600 transition group-hover:text-sky-700">
+                    <h3 className="mt-3 text-base font-semibold text-slate-900 sm:mt-5 sm:text-xl">{config.title}</h3>
+                    <p className="mt-1 text-xs text-slate-500 sm:text-sm">{config.subtitle}</p>
+                    <p className="mt-1.5 text-sm font-semibold text-rose-500 sm:mt-2 sm:text-lg">{categoryCounts[key]} ilan</p>
+                    <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-slate-600 transition group-hover:text-sky-700 sm:mt-3 sm:text-sm">
                       Kategoriye git
                       <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                     </span>
@@ -514,7 +557,9 @@ export default function Home() {
                   <p className="text-slate-500">Emlak, iş, alışveriş ve etkinlik kategorilerinden en güncel liste.</p>
                 </div>
               </div>
-              <AdsGrid items={latestAds} loading={loading} />
+              <AdsGrid items={latestAds} loading={loading} latestMobileGrid />
+              <div ref={latestAdsLoadTriggerRef} className="h-2" aria-hidden="true" />
+              {loadingMoreLatestAds && <p className="mt-4 text-center text-sm text-slate-500">Daha fazla ilan yükleniyor...</p>}
             </div>
           </section>
         </main>
@@ -547,10 +592,12 @@ function AdsSection({
   );
 }
 
-function AdsGrid({ items, loading }: { items: UnifiedAd[]; loading: boolean }) {
+function AdsGrid({ items, loading, latestMobileGrid = false }: { items: UnifiedAd[]; loading: boolean; latestMobileGrid?: boolean }) {
+  const gridClassName = latestMobileGrid ? "grid grid-cols-2 gap-3 md:grid-cols-2 xl:grid-cols-4" : "grid gap-4 md:grid-cols-2 xl:grid-cols-4";
+
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className={gridClassName}>
         {Array.from({ length: 4 }).map((_, index) => (
           <div key={index} className="h-60 animate-pulse rounded-2xl border border-slate-200 bg-slate-100" />
         ))}
@@ -563,7 +610,7 @@ function AdsGrid({ items, loading }: { items: UnifiedAd[]; loading: boolean }) {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className={gridClassName}>
       {items.map((item) => {
         const meta = CATEGORY_CONFIG[item.section];
         return (
