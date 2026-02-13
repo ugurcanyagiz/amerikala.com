@@ -77,7 +77,7 @@ export default function EventDetailPage() {
   const router = useRouter();
   const params = useParams();
   const eventId = params.id as string;
-  const { user } = useAuth();
+  const { user, profile: authProfile } = useAuth();
 
   const [event, setEvent] = useState<MeetupEventDetail | null>(null);
   const [attendees, setAttendees] = useState<EventAttendee[]>([]);
@@ -145,8 +145,23 @@ export default function EventDetailPage() {
       }
     });
 
+    if (authProfile?.id && uniqueIds.includes(authProfile.id) && !profileMap.has(authProfile.id)) {
+      profileMap.set(authProfile.id, {
+        id: authProfile.id,
+        username: authProfile.username ?? null,
+        full_name: authProfile.full_name ?? null,
+        first_name: authProfile.first_name ?? null,
+        last_name: authProfile.last_name ?? null,
+        avatar_url: authProfile.avatar_url ?? null,
+        bio: authProfile.bio ?? null,
+        city: authProfile.city ?? null,
+        state: authProfile.state ?? null,
+        profession: authProfile.profession ?? null,
+      });
+    }
+
     return profileMap;
-  }, []);
+  }, [authProfile]);
 
   const normalizeAttendees = (rows: Array<Record<string, unknown>> | null) => {
     return (rows || []).map((row) => {
