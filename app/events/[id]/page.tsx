@@ -40,7 +40,9 @@ import { Badge } from "../../components/ui/Badge";
 import { Textarea } from "../../components/ui/Textarea";
 
 interface EventWithOrganizer extends Event {
-  organizer: Profile;
+  organizer?: Profile | null;
+  creator?: Profile | null;
+  created_by?: string | null;
 }
 
 export default function EventDetailPage() {
@@ -67,14 +69,30 @@ export default function EventDetailPage() {
 
       try {
         // Fetch event with organizer
-        const { data: eventData, error: eventError } = await supabase
+        const eventWithFk = await supabase
           .from("events")
           .select(`
             *,
-            organizer:organizer_id (id, username, full_name, avatar_url, bio)
+            organizer:profiles!events_organizer_id_fkey (id, username, first_name, last_name, full_name, avatar_url, bio),
+            creator:profiles!events_created_by_fkey (id, username, first_name, last_name, full_name, avatar_url, bio)
           `)
           .eq("id", eventId)
           .single();
+
+        const eventWithLegacy = eventWithFk.error
+          ? await supabase
+              .from("events")
+              .select(`
+                *,
+                organizer:organizer_id (id, username, first_name, last_name, full_name, avatar_url, bio),
+                creator:created_by (id, username, first_name, last_name, full_name, avatar_url, bio)
+              `)
+              .eq("id", eventId)
+              .single()
+          : eventWithFk;
+
+        const eventData = eventWithLegacy.data as EventWithOrganizer | null;
+        const eventError = eventWithLegacy.error;
 
         if (eventError) {
           if (eventError.code === "PGRST116") {
@@ -263,7 +281,11 @@ export default function EventDetailPage() {
     );
   }
 
-  const organizer = event.organizer;
+  const organizer = event.organizer || event.creator;
+  const organizerName = [organizer?.first_name, organizer?.last_name].filter(Boolean).join(" ").trim()
+    || organizer?.full_name
+    || organizer?.username
+    || "Anonim";
 
   return (
     <div className="min-h-screen bg-surface">
@@ -345,13 +367,13 @@ export default function EventDetailPage() {
                     <div className="flex items-center gap-3 mb-6">
                       <Avatar
                         src={organizer?.avatar_url || undefined}
-                        fallback={organizer?.full_name || organizer?.username || "?"}
+                        fallback={organizerName}
                         size="md"
                       />
                       <div>
                         <p className="font-semibold">Organize eden</p>
                         <p className="text-sm text-ink-muted">
-                          {organizer?.full_name || organizer?.username || "Anonim"}
+                          {organizerName}
                         </p>
                       </div>
                     </div>
@@ -563,12 +585,12 @@ export default function EventDetailPage() {
                     <div className="text-center mb-4">
                       <Avatar
                         src={organizer?.avatar_url || undefined}
-                        fallback={organizer?.full_name || organizer?.username || "?"}
+                        fallback={organizerName}
                         size="xl"
                         className="mx-auto mb-3"
                       />
                       <h3 className="font-bold">
-                        {organizer?.full_name || organizer?.username || "Anonim"}
+                        {organizerName}
                       </h3>
                       {organizer?.bio && (
                         <p className="text-sm text-ink-muted mt-1 line-clamp-2">
