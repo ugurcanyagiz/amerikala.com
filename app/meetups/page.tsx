@@ -37,24 +37,56 @@ export default function MeetupsPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ events: 0, groups: 0, members: 0 });
 
+  const resolveDisplayName = (profile?: {
+    username?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    full_name?: string | null;
+  } | null) => {
+    if (!profile) return "Anonim";
+    const full = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
+    return full || profile.username || profile.full_name || "Anonim";
+  };
+
+  const formatTime = (time?: string | null) => {
+    if (!time) return "Saat belirtilmedi";
+    return time.slice(0, 5);
+  };
+
   // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         // Fetch upcoming events
-        const { data: events } = await supabase
-          .from("events")
-          .select(`
+        const eventSelectWithFk = `
             *,
-            organizer:organizer_id (id, username, full_name, avatar_url)
-          `)
+            organizer:profiles!events_organizer_id_fkey (id, username, first_name, last_name, full_name, avatar_url)
+          `;
+        const eventSelectLegacy = `
+            *,
+            organizer:organizer_id (id, username, first_name, last_name, full_name, avatar_url)
+          `;
+
+        const eventResultWithFk = await supabase
+          .from("events")
+          .select(eventSelectWithFk)
           .eq("status", "approved")
           .gte("event_date", new Date().toISOString().split("T")[0])
           .order("event_date", { ascending: true })
           .limit(4);
 
-        setUpcomingEvents(events || []);
+        const eventResult = eventResultWithFk.error
+          ? await supabase
+              .from("events")
+              .select(eventSelectLegacy)
+              .eq("status", "approved")
+              .gte("event_date", new Date().toISOString().split("T")[0])
+              .order("event_date", { ascending: true })
+              .limit(4)
+          : eventResultWithFk;
+
+        setUpcomingEvents((eventResult.data as Event[] | null) || []);
 
         // Fetch popular groups
         const { data: groups } = await supabase
@@ -263,11 +295,15 @@ export default function MeetupsPage() {
                                   <div className="flex items-center gap-3 mt-1 text-xs text-[var(--color-ink-secondary)]">
                                     <span className="flex items-center gap-1">
                                       <Clock className="h-3 w-3" />
-                                      {event.start_time.slice(0, 5)}
+                                      {formatTime(event.start_time)}
                                     </span>
                                     <span className="flex items-center gap-1">
                                       {event.is_online ? <Globe className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
                                       {event.is_online ? "Online" : event.city}
+                                    </span>
+                                    <span className="flex items-center gap-1 truncate">
+                                      <Users className="h-3 w-3" />
+                                      {resolveDisplayName(event.organizer)}
                                     </span>
                                   </div>
                                 </div>

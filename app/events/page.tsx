@@ -50,51 +50,67 @@ export default function EventsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
 
+  const formatTime = (time?: string | null) => {
+    if (!time) return "Saat belirtilmedi";
+    return time.slice(0, 5);
+  };
+
   // Fetch approved events
   useEffect(() => {
     const fetchEvents = async () => {
       setLoading(true);
       try {
-        let query = supabase
-          .from("events")
-          .select(`
-            *,
-            organizer:organizer_id (id, username, full_name, avatar_url)
-          `)
-          .eq("status", "approved")
-          .gte("event_date", new Date().toISOString().split("T")[0])
-          .order("event_date", { ascending: true });
+        const queryBuild = (selectText: string) => {
+          let query = supabase
+            .from("events")
+            .select(selectText)
+            .eq("status", "approved")
+            .gte("event_date", new Date().toISOString().split("T")[0])
+            .order("event_date", { ascending: true });
 
-        // Filter by state
-        if (selectedState !== "all") {
-          query = query.eq("state", selectedState);
-        }
+          // Filter by state
+          if (selectedState !== "all") {
+            query = query.eq("state", selectedState);
+          }
 
-        // Filter by category
-        if (selectedCategory !== "all") {
-          query = query.eq("category", selectedCategory);
-        }
+          // Filter by category
+          if (selectedCategory !== "all") {
+            query = query.eq("category", selectedCategory);
+          }
 
-        // Filter by date
-        const today = new Date();
-        if (dateFilter === "today") {
-          query = query.eq("event_date", today.toISOString().split("T")[0]);
-        } else if (dateFilter === "week") {
-          const weekLater = new Date(today);
-          weekLater.setDate(weekLater.getDate() + 7);
-          query = query.lte("event_date", weekLater.toISOString().split("T")[0]);
-        } else if (dateFilter === "month") {
-          const monthLater = new Date(today);
-          monthLater.setMonth(monthLater.getMonth() + 1);
-          query = query.lte("event_date", monthLater.toISOString().split("T")[0]);
-        }
+          // Filter by date
+          const today = new Date();
+          if (dateFilter === "today") {
+            query = query.eq("event_date", today.toISOString().split("T")[0]);
+          } else if (dateFilter === "week") {
+            const weekLater = new Date(today);
+            weekLater.setDate(weekLater.getDate() + 7);
+            query = query.lte("event_date", weekLater.toISOString().split("T")[0]);
+          } else if (dateFilter === "month") {
+            const monthLater = new Date(today);
+            monthLater.setMonth(monthLater.getMonth() + 1);
+            query = query.lte("event_date", monthLater.toISOString().split("T")[0]);
+          }
 
-        const { data, error } = await query;
+          return query;
+        };
+
+        const selectWithFk = `
+          *,
+          organizer:profiles!events_organizer_id_fkey (id, username, first_name, last_name, full_name, avatar_url)
+        `;
+        const selectLegacy = `
+          *,
+          organizer:organizer_id (id, username, first_name, last_name, full_name, avatar_url)
+        `;
+
+        const resultWithFk = await queryBuild(selectWithFk);
+        const { data, error } = resultWithFk.error ? await queryBuild(selectLegacy) : resultWithFk;
 
         if (error) {
           console.error("Error fetching events:", error);
         } else {
-          setEvents(data || []);
+          setEvents(((data as unknown as Event[] | null) || []));
         }
       } catch (error) {
         console.error("Error:", error);
@@ -214,7 +230,7 @@ export default function EventsPage() {
                 ].map(filter => (
                   <button
                     key={filter.value}
-                    onClick={() => setDateFilter(filter.value as any)}
+                    onClick={() => setDateFilter(filter.value as "all" | "today" | "week" | "month")}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                       dateFilter === filter.value
                         ? "bg-red-500 text-white"
@@ -253,7 +269,7 @@ export default function EventsPage() {
                         <label className="block text-sm font-medium mb-2">Kategori</label>
                         <select
                           value={selectedCategory}
-                          onChange={(e) => setSelectedCategory(e.target.value as any)}
+                          onChange={(e) => setSelectedCategory(e.target.value as EventCategory | "all")}
                           className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-red-500"
                         >
                           {categories.map(cat => (
@@ -338,7 +354,7 @@ export default function EventsPage() {
                     </h2>
                     <div className="space-y-3">
                       {regularEvents.map(event => (
-                        <EventListCard key={event.id} event={event} />
+                        <EventListCard key={event.id} event={event} formatTime={formatTime} />
                       ))}
                     </div>
                   </div>
@@ -353,6 +369,12 @@ export default function EventsPage() {
 }
 
 // Featured Event Card Component
+function getDisplayName(profile?: { username?: string | null; first_name?: string | null; last_name?: string | null; full_name?: string | null } | null) {
+  if (!profile) return "Anonim";
+  const full = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
+  return full || profile.username || profile.full_name || "Anonim";
+}
+
 function FeaturedEventCard({ event }: { event: Event }) {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -363,7 +385,7 @@ function FeaturedEventCard({ event }: { event: Event }) {
   };
 
   const date = formatDate(event.event_date);
-  const organizer = event.organizer as any;
+  const organizer = event.organizer || null;
 
   return (
     <Link href={`/meetups/${event.id}`}>
@@ -413,7 +435,7 @@ function FeaturedEventCard({ event }: { event: Event }) {
           <div className="space-y-1.5 text-xs text-neutral-500">
             <div className="flex items-center gap-1.5">
               <Clock size={14} />
-              <span>{event.start_time.slice(0, 5)}</span>
+              <span>{event.start_time ? event.start_time.slice(0, 5) : "Saat belirtilmedi"}</span>
             </div>
             <div className="flex items-center gap-1.5">
               {event.is_online ? <Globe size={14} /> : <MapPin size={14} />}
@@ -423,7 +445,7 @@ function FeaturedEventCard({ event }: { event: Event }) {
             </div>
             <div className="flex items-center gap-1.5">
               <Users size={14} />
-              <span>{event.current_attendees} katılımcı</span>
+              <span>{event.current_attendees} katılımcı · {getDisplayName(organizer)}</span>
             </div>
           </div>
         </CardContent>
@@ -433,7 +455,7 @@ function FeaturedEventCard({ event }: { event: Event }) {
 }
 
 // Event List Card Component
-function EventListCard({ event }: { event: Event }) {
+function EventListCard({ event, formatTime }: { event: Event; formatTime: (time?: string | null) => string }) {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return {
@@ -444,7 +466,7 @@ function EventListCard({ event }: { event: Event }) {
   };
 
   const date = formatDate(event.event_date);
-  const organizer = event.organizer as any;
+  const organizer = event.organizer || null;
 
   return (
     <Link href={`/meetups/${event.id}`}>
@@ -497,7 +519,7 @@ function EventListCard({ event }: { event: Event }) {
               <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-neutral-500">
                 <div className="flex items-center gap-1">
                   <Clock size={16} />
-                  <span>{event.start_time.slice(0, 5)}</span>
+                  <span>{formatTime(event.start_time)}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   {event.is_online ? <Globe size={16} /> : <MapPin size={16} />}
@@ -505,7 +527,7 @@ function EventListCard({ event }: { event: Event }) {
                 </div>
                 <div className="flex items-center gap-1">
                   <Users size={16} />
-                  <span>{event.current_attendees} katılımcı</span>
+                  <span>{event.current_attendees} katılımcı · {getDisplayName(organizer)}</span>
                 </div>
                 {!event.is_free && (
                   <Badge variant="success" size="sm">${event.price}</Badge>
