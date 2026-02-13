@@ -61,13 +61,25 @@ type EventComment = {
   profile?: BasicProfile | BasicProfile[] | null;
 };
 
+type LegacyEventRecord = Record<string, unknown> & {
+  organizer_id?: string | null;
+  created_by?: string | null;
+  organizer?: BasicProfile | BasicProfile[] | null;
+  creator?: BasicProfile | BasicProfile[] | null;
+};
+
+type MeetupEventDetail = Omit<Event, "organizer"> & {
+  organizer?: BasicProfile | null;
+  created_by?: string | null;
+};
+
 export default function EventDetailPage() {
   const router = useRouter();
   const params = useParams();
   const eventId = params.id as string;
   const { user } = useAuth();
 
-  const [event, setEvent] = useState<Event | null>(null);
+  const [event, setEvent] = useState<MeetupEventDetail | null>(null);
   const [attendees, setAttendees] = useState<EventAttendee[]>([]);
   const [loading, setLoading] = useState(true);
   const [attending, setAttending] = useState(false);
@@ -85,6 +97,11 @@ export default function EventDetailPage() {
 
   const ATTENDEE_PROFILE_SELECT_FULL = "id, username, full_name, first_name, last_name, avatar_url";
   const ATTENDEE_PROFILE_SELECT_MINIMAL = "id, username, full_name, avatar_url";
+
+  const resolveProfile = (profile?: BasicProfile | BasicProfile[] | null) => {
+    if (!profile) return null;
+    return Array.isArray(profile) ? profile[0] || null : profile;
+  };
 
   const isAbortLikeError = (error: unknown) => {
     if (!error || typeof error !== "object") return false;
@@ -133,8 +150,7 @@ export default function EventDetailPage() {
 
   const normalizeAttendees = (rows: Array<Record<string, unknown>> | null) => {
     return (rows || []).map((row) => {
-      const profile = row.profile as Record<string, unknown> | null | undefined;
-      const resolved = profile || null;
+      const profile = resolveProfile(row.profile as BasicProfile | BasicProfile[] | null | undefined);
 
       const eventIdValue = typeof row.event_id === "string" ? row.event_id : "";
       const userIdValue = typeof row.user_id === "string" ? row.user_id : "";
@@ -146,18 +162,18 @@ export default function EventDetailPage() {
         user_id: userIdValue,
         status: statusValue as EventAttendee["status"],
         created_at: createdAtValue,
-        profile: resolved
+        profile: profile
           ? {
-              id: (resolved.id as string) || "",
-              username: (resolved.username as string | null) ?? null,
-              full_name: (resolved.full_name as string | null) ?? null,
-              first_name: (resolved.first_name as string | null) ?? null,
-              last_name: (resolved.last_name as string | null) ?? null,
-              avatar_url: (resolved.avatar_url as string | null) ?? null,
-              bio: (resolved.bio as string | null) ?? null,
-              city: (resolved.city as string | null) ?? null,
-              state: (resolved.state as string | null) ?? null,
-              profession: (resolved.profession as string | null) ?? null,
+              id: profile.id || "",
+              username: profile.username ?? null,
+              full_name: profile.full_name ?? null,
+              first_name: profile.first_name ?? null,
+              last_name: profile.last_name ?? null,
+              avatar_url: profile.avatar_url ?? null,
+              bio: profile.bio ?? null,
+              city: profile.city ?? null,
+              state: profile.state ?? null,
+              profession: profile.profession ?? null,
             }
           : null,
       } as EventAttendee;
@@ -165,11 +181,23 @@ export default function EventDetailPage() {
   };
 
   const fetchAttendees = useCallback(async () => {
-    const { data, error } = await supabase
+    const profileSelect = "id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession";
+
+    const withProfileResult = await supabase
       .from("event_attendees")
-      .select("event_id, user_id, status, created_at")
+      .select(`event_id, user_id, status, created_at, profile:user_id (${profileSelect})`)
       .eq("event_id", eventId)
       .eq("status", "going");
+
+    const fallbackResult = withProfileResult.error
+      ? await supabase
+          .from("event_attendees")
+          .select("event_id, user_id, status, created_at")
+          .eq("event_id", eventId)
+          .eq("status", "going")
+      : null;
+
+    const error = withProfileResult.error ? fallbackResult?.error ?? withProfileResult.error : null;
 
     if (error) {
       if (!isAbortLikeError(error)) {
@@ -178,17 +206,27 @@ export default function EventDetailPage() {
       return;
     }
 
-    const attendeeRows = (data as Array<Record<string, unknown>> | null) || [];
-    const profileMap = await fetchProfilesByIds(
-      attendeeRows.map((row) => (typeof row.user_id === "string" ? row.user_id : "")).filter(Boolean)
-    );
+    const attendeeRows = ((withProfileResult.error ? fallbackResult?.data : withProfileResult.data) as Array<Record<string, unknown>> | null) || [];
+    const rowsWithProfile = attendeeRows.filter((row) => resolveProfile(row.profile as BasicProfile | BasicProfile[] | null));
 
-    const list = normalizeAttendees(
-      attendeeRows.map((row) => ({
-        ...row,
-        profile: profileMap.get((row.user_id as string) || "") || null,
-      }))
-    );
+    const normalizedRows = rowsWithProfile.length === attendeeRows.length
+      ? attendeeRows
+      : (() => {
+          const profileMapPromise = fetchProfilesByIds(
+            attendeeRows.map((row) => (typeof row.user_id === "string" ? row.user_id : "")).filter(Boolean)
+          );
+          return profileMapPromise.then((profileMap) =>
+            attendeeRows.map((row) => ({
+              ...row,
+              profile:
+                resolveProfile(row.profile as BasicProfile | BasicProfile[] | null)
+                || profileMap.get((row.user_id as string) || "")
+                || null,
+            }))
+          );
+        })();
+
+    const list = normalizeAttendees(Array.isArray(normalizedRows) ? normalizedRows : await normalizedRows);
 
     setAttendees(list);
 
@@ -204,22 +242,80 @@ export default function EventDetailPage() {
     const fetchEvent = async () => {
       setLoading(true);
       try {
-        const { data: eventData, error: eventError } = await supabase
+        const eventSelectWithBothRelations = `
+            *,
+            organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession),
+            creator:created_by (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
+          `;
+        const eventSelectWithOrganizerOnly = `
+            *,
+            organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
+          `;
+
+        let eventData: LegacyEventRecord | null = null;
+        let eventError: unknown = null;
+
+        const eventWithBothRelations = await supabase
           .from("events")
-          .select("*")
+          .select(eventSelectWithBothRelations)
           .eq("id", eventId)
           .single();
+
+        if (!eventWithBothRelations.error && eventWithBothRelations.data) {
+          eventData = eventWithBothRelations.data as LegacyEventRecord;
+        } else {
+          const eventWithOrganizerOnly = await supabase
+            .from("events")
+            .select(eventSelectWithOrganizerOnly)
+            .eq("id", eventId)
+            .single();
+
+          if (!eventWithOrganizerOnly.error && eventWithOrganizerOnly.data) {
+            eventData = eventWithOrganizerOnly.data as LegacyEventRecord;
+          } else {
+            const eventWithoutRelations = await supabase
+              .from("events")
+              .select("*")
+              .eq("id", eventId)
+              .single();
+
+            if (!eventWithoutRelations.error && eventWithoutRelations.data) {
+              eventData = eventWithoutRelations.data as LegacyEventRecord;
+            } else {
+              eventError = eventWithoutRelations.error || eventWithOrganizerOnly.error || eventWithBothRelations.error;
+            }
+          }
+        }
 
         if (eventError) {
           throw eventError;
         }
 
-        const organizerProfileMap = await fetchProfilesByIds([eventData.organizer_id as string]);
-        if (isActive) {
-          setEvent({
-            ...eventData,
-            organizer: organizerProfileMap.get(eventData.organizer_id as string) || null,
-          });
+        if (!eventData) {
+          throw new Error("Event data missing");
+        }
+
+        {
+          const eventRecordForOrganizer = eventData as LegacyEventRecord;
+          const eventRow = eventData as unknown as MeetupEventDetail;
+          const organizerProfileFromJoinedData =
+            resolveProfile(eventRecordForOrganizer.organizer)
+            || resolveProfile(eventRecordForOrganizer.creator);
+          const organizerUserId =
+            (typeof eventRecordForOrganizer.organizer_id === "string" && eventRecordForOrganizer.organizer_id)
+            || (typeof eventRecordForOrganizer.created_by === "string" && eventRecordForOrganizer.created_by)
+            || "";
+
+          const organizerProfilesById = organizerProfileFromJoinedData || !organizerUserId
+            ? new Map<string, BasicProfile>()
+            : await fetchProfilesByIds([organizerUserId]);
+
+          if (isActive) {
+            setEvent({
+              ...eventRow,
+              organizer: organizerProfileFromJoinedData || organizerProfilesById.get(organizerUserId) || undefined,
+            });
+          }
         }
 
         await fetchAttendees();
@@ -383,10 +479,7 @@ export default function EventDetailPage() {
     return [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.full_name || p.username || "Anonim";
   };
 
-  const getProfileRecord = (profile?: BasicProfile | BasicProfile[] | null) => {
-    if (!profile) return null;
-    return Array.isArray(profile) ? profile[0] || null : profile;
-  };
+  const getProfileRecord = (profile?: BasicProfile | BasicProfile[] | null) => resolveProfile(profile);
 
   const getUsernameLabel = (profile?: BasicProfile | BasicProfile[] | null) => {
     const p = getProfileRecord(profile);
