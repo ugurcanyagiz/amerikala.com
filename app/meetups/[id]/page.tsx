@@ -77,7 +77,7 @@ export default function EventDetailPage() {
   const router = useRouter();
   const params = useParams();
   const eventId = params.id as string;
-  const { user } = useAuth();
+  const { user, profile: authProfile } = useAuth();
 
   const [event, setEvent] = useState<MeetupEventDetail | null>(null);
   const [attendees, setAttendees] = useState<EventAttendee[]>([]);
@@ -97,10 +97,40 @@ export default function EventDetailPage() {
 
   const ATTENDEE_PROFILE_SELECT_FULL = "id, username, full_name, first_name, last_name, avatar_url";
   const ATTENDEE_PROFILE_SELECT_MINIMAL = "id, username, full_name, first_name, last_name, avatar_url";
+  const authMetadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
 
   const resolveProfile = (profile?: BasicProfile | BasicProfile[] | null) => {
     if (!profile) return null;
     return Array.isArray(profile) ? profile[0] || null : profile;
+  };
+
+  const getAuthMetadataText = (key: string) => {
+    const value = authMetadata[key];
+    return typeof value === "string" ? value.trim() : "";
+  };
+
+  const getResolvedProfile = (profile?: BasicProfile | BasicProfile[] | null) => {
+    const p = resolveProfile(profile);
+    if (!p) return null;
+
+    if (user?.id && p.id === user.id) {
+      const metadataFirstName = getAuthMetadataText("first_name");
+      const metadataLastName = getAuthMetadataText("last_name");
+      const metadataFullName = getAuthMetadataText("full_name") || getAuthMetadataText("name");
+      const metadataUsername = getAuthMetadataText("username");
+      const metadataAvatar = getAuthMetadataText("avatar_url") || getAuthMetadataText("picture");
+
+      return {
+        ...p,
+        first_name: p.first_name || authProfile?.first_name || metadataFirstName || null,
+        last_name: p.last_name || authProfile?.last_name || metadataLastName || null,
+        full_name: p.full_name || authProfile?.full_name || metadataFullName || null,
+        username: p.username || authProfile?.username || metadataUsername || null,
+        avatar_url: p.avatar_url || authProfile?.avatar_url || metadataAvatar || null,
+      };
+    }
+
+    return p;
   };
 
   const isAbortLikeError = (error: unknown) => {
@@ -145,8 +175,23 @@ export default function EventDetailPage() {
       }
     });
 
+    if (authProfile?.id && uniqueIds.includes(authProfile.id) && !profileMap.has(authProfile.id)) {
+      profileMap.set(authProfile.id, {
+        id: authProfile.id,
+        username: authProfile.username ?? (getAuthMetadataText("username") || null),
+        full_name: authProfile.full_name ?? (getAuthMetadataText("full_name") || getAuthMetadataText("name") || null),
+        first_name: authProfile.first_name ?? (getAuthMetadataText("first_name") || null),
+        last_name: authProfile.last_name ?? (getAuthMetadataText("last_name") || null),
+        avatar_url: authProfile.avatar_url ?? (getAuthMetadataText("avatar_url") || getAuthMetadataText("picture") || null),
+        bio: authProfile.bio ?? null,
+        city: authProfile.city ?? null,
+        state: authProfile.state ?? null,
+        profession: authProfile.profession ?? null,
+      });
+    }
+
     return profileMap;
-  }, []);
+  }, [authProfile, getAuthMetadataText]);
 
   const normalizeAttendees = (rows: Array<Record<string, unknown>> | null) => {
     return (rows || []).map((row) => {
@@ -498,18 +543,28 @@ export default function EventDetailPage() {
   };
 
   const getDisplayName = (profile?: BasicProfile | BasicProfile[] | null) => {
-    if (!profile) return "Anonim";
-    const p = Array.isArray(profile) ? profile[0] : profile;
+    const p = getResolvedProfile(profile);
     if (!p) return "Anonim";
-    return [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.full_name || p.username || "Anonim";
+    const fullName = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+    return fullName || p.full_name || p.username || "Anonim";
   };
 
-  const getProfileRecord = (profile?: BasicProfile | BasicProfile[] | null) => resolveProfile(profile);
+  const getProfileRecord = (profile?: BasicProfile | BasicProfile[] | null) => getResolvedProfile(profile);
 
   const getUsernameLabel = (profile?: BasicProfile | BasicProfile[] | null) => {
     const p = getProfileRecord(profile);
-    if (!p?.username) return "@kullanici";
-    return p.username.startsWith("@") ? p.username : `@${p.username}`;
+    if (p?.username) {
+      return p.username.startsWith("@") ? p.username : `@${p.username}`;
+    }
+    if (p?.id && user?.id && p.id === user.id) {
+      const metadataUsername = getAuthMetadataText("username");
+      const emailLocalPart = user.email?.split("@")[0]?.trim();
+      const fallbackUsername = metadataUsername || emailLocalPart;
+      if (fallbackUsername) {
+        return fallbackUsername.startsWith("@") ? fallbackUsername : `@${fallbackUsername}`;
+      }
+    }
+    return "@kullanici";
   };
 
   const checkFollowing = async (targetUserId: string) => {
