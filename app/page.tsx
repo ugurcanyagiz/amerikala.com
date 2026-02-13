@@ -104,12 +104,6 @@ export default function Home() {
   const latestAdsLoadTriggerRef = useRef<HTMLDivElement>(null);
 
   const [ads, setAds] = useState<UnifiedAd[]>([]);
-  const [categoryCounts, setCategoryCounts] = useState<Record<HomeCategoryKey, number>>({
-    events: 0,
-    realEstate: 0,
-    jobs: 0,
-    marketplace: 0,
-  });
   const [loading, setLoading] = useState(true);
   const [loadingMoreLatestAds, setLoadingMoreLatestAds] = useState(false);
   const [latestAdsLoadRepetition, setLatestAdsLoadRepetition] = useState(0);
@@ -146,25 +140,25 @@ export default function Home() {
         const [eventsRes, realEstateRes, jobsRes, marketplaceRes] = await Promise.all([
           publicSupabase
             .from("events")
-            .select("id, title, city, state, created_at", { count: "exact" })
+            .select("id, title, city, state, created_at")
             .eq("status", "approved")
             .order("created_at", { ascending: false })
             .limit(latestLimit),
           publicSupabase
             .from("listings")
-            .select("id, title, city, state, price, created_at", { count: "exact" })
+            .select("id, title, city, state, price, created_at")
             .eq("status", "approved")
             .order("created_at", { ascending: false })
             .limit(latestLimit),
           publicSupabase
             .from("job_listings")
-            .select("id, title, city, state, salary_min, salary_max, created_at", { count: "exact" })
+            .select("id, title, city, state, salary_min, salary_max, created_at")
             .eq("status", "approved")
             .order("created_at", { ascending: false })
             .limit(latestLimit),
           publicSupabase
             .from("marketplace_listings")
-            .select("id, title, city, state, price, created_at", { count: "exact" })
+            .select("id, title, city, state, price, created_at")
             .eq("status", "approved")
             .order("created_at", { ascending: false })
             .limit(latestLimit),
@@ -174,13 +168,6 @@ export default function Home() {
         if (realEstateRes.error) throw realEstateRes.error;
         if (jobsRes.error) throw jobsRes.error;
         if (marketplaceRes.error) throw marketplaceRes.error;
-
-        setCategoryCounts({
-          events: eventsRes.count ?? 0,
-          realEstate: realEstateRes.count ?? 0,
-          jobs: jobsRes.count ?? 0,
-          marketplace: marketplaceRes.count ?? 0,
-        });
 
         const unified: UnifiedAd[] = [
           ...(eventsRes.data ?? []).map((item) => ({
@@ -521,7 +508,7 @@ export default function Home() {
               <h2 className="text-3xl font-bold text-slate-900">Kategoriler</h2>
               <p className="text-sm text-slate-500">Mevcut içerik yapınız korunur.</p>
             </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
+            <div className="grid grid-cols-4 gap-2 sm:gap-4">
               {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
                 const config = CATEGORY_CONFIG[key];
                 const Icon = config.icon;
@@ -529,15 +516,14 @@ export default function Home() {
                   <Link
                     key={key}
                     href={config.href}
-                    className="group rounded-xl border border-slate-200 bg-white px-4 py-3 text-center shadow-[0_10px_18px_-18px_rgba(15,23,42,0.7)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-30px_rgba(14,116,144,0.45)] sm:rounded-2xl sm:p-6"
+                    className="group rounded-lg border border-slate-200 bg-white px-2 py-3 text-center shadow-[0_10px_18px_-18px_rgba(15,23,42,0.7)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-30px_rgba(14,116,144,0.45)] sm:rounded-2xl sm:px-4 sm:py-5"
                   >
-                    <span className={`mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full ${config.iconCircleClass} sm:h-16 sm:w-16`}>
-                      <Icon className="h-5 w-5 sm:h-8 sm:w-8" />
+                    <span className={`mx-auto inline-flex h-9 w-9 items-center justify-center rounded-full ${config.iconCircleClass} sm:h-14 sm:w-14`}>
+                      <Icon className="h-4 w-4 sm:h-7 sm:w-7" />
                     </span>
-                    <h3 className="mt-3 text-base font-semibold text-slate-900 sm:mt-5 sm:text-xl">{config.title}</h3>
-                    <p className="mt-1 text-xs text-slate-500 sm:text-sm">{config.subtitle}</p>
-                    <p className="mt-1.5 text-sm font-semibold text-rose-500 sm:mt-2 sm:text-lg">{categoryCounts[key]} ilan</p>
-                    <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-slate-600 transition group-hover:text-sky-700 sm:mt-3 sm:text-sm">
+                    <h3 className="mt-2 text-sm font-semibold text-slate-900 sm:mt-4 sm:text-lg">{config.title}</h3>
+                    <p className="mt-1 text-[11px] leading-4 text-slate-500 sm:text-sm">{config.subtitle}</p>
+                    <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 transition group-hover:text-sky-700 sm:mt-3 sm:text-sm">
                       Kategoriye git
                       <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                     </span>
