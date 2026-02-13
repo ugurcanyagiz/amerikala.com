@@ -185,11 +185,19 @@ export default function EventDetailPage() {
 
     const withProfileResult = await supabase
       .from("event_attendees")
-      .select(`event_id, user_id, status, created_at, profile:user_id (${profileSelect})`)
+      .select(`event_id, user_id, status, created_at, profile:profiles!event_attendees_user_id_fkey (${profileSelect})`)
       .eq("event_id", eventId)
       .eq("status", "going");
 
-    const fallbackResult = withProfileResult.error
+    const withProfileLegacyJoinResult = withProfileResult.error
+      ? await supabase
+          .from("event_attendees")
+          .select(`event_id, user_id, status, created_at, profile:user_id (${profileSelect})`)
+          .eq("event_id", eventId)
+          .eq("status", "going")
+      : null;
+
+    const fallbackResult = withProfileResult.error && withProfileLegacyJoinResult?.error
       ? await supabase
           .from("event_attendees")
           .select("event_id, user_id, status, created_at")
@@ -197,7 +205,11 @@ export default function EventDetailPage() {
           .eq("status", "going")
       : null;
 
-    const error = withProfileResult.error ? fallbackResult?.error ?? withProfileResult.error : null;
+    const error = !withProfileResult.error
+      ? null
+      : !withProfileLegacyJoinResult?.error
+        ? null
+        : fallbackResult?.error ?? withProfileLegacyJoinResult?.error ?? withProfileResult.error;
 
     if (error) {
       if (!isAbortLikeError(error)) {
@@ -206,7 +218,7 @@ export default function EventDetailPage() {
       return;
     }
 
-    const attendeeRows = ((withProfileResult.error ? fallbackResult?.data : withProfileResult.data) as Array<Record<string, unknown>> | null) || [];
+    const attendeeRows = ((!withProfileResult.error ? withProfileResult.data : !withProfileLegacyJoinResult?.error ? withProfileLegacyJoinResult?.data : fallbackResult?.data) as Array<Record<string, unknown>> | null) || [];
     const rowsWithProfile = attendeeRows.filter((row) => resolveProfile(row.profile as BasicProfile | BasicProfile[] | null));
 
     const normalizedRows = rowsWithProfile.length === attendeeRows.length
@@ -244,12 +256,12 @@ export default function EventDetailPage() {
       try {
         const eventSelectWithBothRelations = `
             *,
-            organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession),
-            creator:created_by (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
+            organizer:profiles!events_organizer_id_fkey (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession),
+            creator:profiles!events_created_by_fkey (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
           `;
         const eventSelectWithOrganizerOnly = `
             *,
-            organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
+            organizer:profiles!events_organizer_id_fkey (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
           `;
 
         let eventData: LegacyEventRecord | null = null;
@@ -273,16 +285,30 @@ export default function EventDetailPage() {
           if (!eventWithOrganizerOnly.error && eventWithOrganizerOnly.data) {
             eventData = eventWithOrganizerOnly.data as LegacyEventRecord;
           } else {
-            const eventWithoutRelations = await supabase
+            const eventWithLegacyRelations = await supabase
               .from("events")
-              .select("*")
+              .select(`
+                *,
+                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession),
+                creator:created_by (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
+              `)
               .eq("id", eventId)
               .single();
 
-            if (!eventWithoutRelations.error && eventWithoutRelations.data) {
-              eventData = eventWithoutRelations.data as LegacyEventRecord;
+            if (!eventWithLegacyRelations.error && eventWithLegacyRelations.data) {
+              eventData = eventWithLegacyRelations.data as LegacyEventRecord;
             } else {
-              eventError = eventWithoutRelations.error || eventWithOrganizerOnly.error || eventWithBothRelations.error;
+              const eventWithoutRelations = await supabase
+                .from("events")
+                .select("*")
+                .eq("id", eventId)
+                .single();
+
+              if (!eventWithoutRelations.error && eventWithoutRelations.data) {
+                eventData = eventWithoutRelations.data as LegacyEventRecord;
+              } else {
+                eventError = eventWithoutRelations.error || eventWithLegacyRelations.error || eventWithOrganizerOnly.error || eventWithBothRelations.error;
+              }
             }
           }
         }
@@ -299,6 +325,10 @@ export default function EventDetailPage() {
         const organizerProfileMap = organizerFromJoin || !organizerId
           ? new Map<string, BasicProfile>()
           : await fetchProfilesByIds([organizerId]);
+
+        if (!eventData) {
+          throw new Error("Event data missing");
+        }
 
         if (!eventData) {
           throw new Error("Event data missing");
