@@ -373,12 +373,12 @@ export default function ProfilePage() {
   const avatarSrc = profile.avatar_url || "/logo.png";
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="ak-page">
       <div className="flex">
         <Sidebar />
 
         <main className="flex-1">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="ak-shell lg:px-8 py-6">
             {/* PROFILE */}
             <Card className="glass mb-6">
               <CardContent className="p-6 sm:p-8">

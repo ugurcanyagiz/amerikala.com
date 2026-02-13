@@ -237,7 +237,7 @@ export default function EventDetailPage() {
         <div className="flex">
           <Sidebar />
           <main className="flex-1">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="ak-shell lg:px-8 py-8">
               <Link href="/events">
                 <Button variant="ghost" className="gap-2 mb-6">
                   <ArrowLeft size={18} />
@@ -271,7 +271,7 @@ export default function EventDetailPage() {
         <Sidebar />
 
         <main className="flex-1">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="ak-shell lg:px-8 py-6">
             {/* Back Button */}
             <Link href="/events">
               <Button variant="ghost" className="gap-2 mb-4">

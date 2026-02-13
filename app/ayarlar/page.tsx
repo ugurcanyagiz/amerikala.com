@@ -77,11 +77,11 @@ export default function AyarlarPage() {
   ];
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="ak-page">
       <div className="flex">
         <Sidebar />
 
-        <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-1 ak-shell lg:px-8 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold flex items-center gap-3">
               <Settings className="h-8 w-8 text-red-500" />Ayarlar

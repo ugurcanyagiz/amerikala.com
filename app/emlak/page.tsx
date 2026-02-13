@@ -83,10 +83,10 @@ export default function EmlakPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 md:pb-0">
+    <div className="ak-page pb-20 md:pb-0">
       {/* Hero Section */}
       <section className="relative py-12 lg:py-16 bg-gradient-to-b from-emerald-50 to-transparent dark:from-emerald-950/20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="ak-shell">
           <div className="text-center max-w-2xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-sm font-medium mb-4">
               <Building2 size={16} />
@@ -128,7 +128,7 @@ export default function EmlakPage() {
       </section>
 
       {/* Category Cards */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <section className="ak-shell py-8">
         <div className="grid md:grid-cols-3 gap-4">
           <Link href="/emlak/kiralik" className="group">
             <Card className="h-full hover:shadow-lg transition-all border-2 border-transparent hover:border-blue-200 dark:hover:border-blue-800">
@@ -190,7 +190,7 @@ export default function EmlakPage() {
       </section>
 
       {/* Recent Listings */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 pb-12">
+      <section className="ak-shell pb-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">Son İlanlar</h2>
           <Link href="/emlak/kiralik">

@@ -208,7 +208,7 @@ export default function GroupDetailPage() {
   const isModerator = memberRole === "moderator" || isAdmin;
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="ak-page">
       {/* Cover Image */}
       <div className="relative h-48 sm:h-64 bg-gradient-to-br from-blue-500 to-purple-500">
         {group.cover_image_url ? (
@@ -250,7 +250,7 @@ export default function GroupDetailPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-10 pb-12">
+      <div className="ak-shell lg:px-8 -mt-16 relative z-10 pb-12">
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
