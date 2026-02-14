@@ -144,7 +144,6 @@ export default function CreateEventPage() {
           price: isFree ? null : parseFloat(price),
           cover_image_url: coverImageUrl || null,
           organizer_id: user.id,
-          created_by: user.id,
           status: "pending"
         })
         .select()

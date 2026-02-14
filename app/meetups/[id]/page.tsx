@@ -63,14 +63,11 @@ type EventComment = {
 
 type LegacyEventRecord = Record<string, unknown> & {
   organizer_id?: string | null;
-  created_by?: string | null;
   organizer?: BasicProfile | BasicProfile[] | null;
-  creator?: BasicProfile | BasicProfile[] | null;
 };
 
 type MeetupEventDetail = Omit<Event, "organizer"> & {
   organizer?: BasicProfile | null;
-  created_by?: string | null;
 };
 
 export default function EventDetailPage() {
@@ -314,12 +311,7 @@ export default function EventDetailPage() {
     const fetchEvent = async () => {
       setLoading(true);
       try {
-        const eventSelectWithBothRelations = `
-            *,
-            organizer:profiles!events_organizer_id_fkey (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession),
-            creator:profiles!events_created_by_fkey (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
-          `;
-        const eventSelectWithOrganizerOnly = `
+        const eventSelectWithOrganizer = `
             *,
             organizer:profiles!events_organizer_id_fkey (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
           `;
@@ -334,58 +326,46 @@ export default function EventDetailPage() {
             .eq("id", eventId);
 
           if (limitToOwner && user?.id) {
-            query = query.or(`organizer_id.eq.${user.id},created_by.eq.${user.id}`);
+            query = query.eq("organizer_id", user.id);
           }
 
           return query.single();
         };
 
-        let eventWithBothRelations = await runEventQuery(eventSelectWithBothRelations);
+        let eventWithOrganizer = await runEventQuery(eventSelectWithOrganizer);
 
-        if (eventWithBothRelations.error && user?.id) {
-          eventWithBothRelations = await runEventQuery(eventSelectWithBothRelations, true);
+        if (eventWithOrganizer.error && user?.id) {
+          eventWithOrganizer = await runEventQuery(eventSelectWithOrganizer, true);
         }
 
-        if (!eventWithBothRelations.error && eventWithBothRelations.data) {
-          eventData = eventWithBothRelations.data as unknown as LegacyEventRecord;
+        if (!eventWithOrganizer.error && eventWithOrganizer.data) {
+          eventData = eventWithOrganizer.data as unknown as LegacyEventRecord;
         } else {
-          let eventWithOrganizerOnly = await runEventQuery(eventSelectWithOrganizerOnly);
-
-          if (eventWithOrganizerOnly.error && user?.id) {
-            eventWithOrganizerOnly = await runEventQuery(eventSelectWithOrganizerOnly, true);
-          }
-
-          if (!eventWithOrganizerOnly.error && eventWithOrganizerOnly.data) {
-            eventData = eventWithOrganizerOnly.data as unknown as LegacyEventRecord;
-          } else {
-            let eventWithLegacyRelations = await runEventQuery(`
+          let eventWithLegacyRelations = await runEventQuery(`
                 *,
-                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession),
-                creator:created_by (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
+                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
               `);
 
-            if (eventWithLegacyRelations.error && user?.id) {
-              eventWithLegacyRelations = await runEventQuery(`
+          if (eventWithLegacyRelations.error && user?.id) {
+            eventWithLegacyRelations = await runEventQuery(`
                 *,
-                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession),
-                creator:created_by (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
+                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
               `, true);
+          }
+
+          if (!eventWithLegacyRelations.error && eventWithLegacyRelations.data) {
+            eventData = eventWithLegacyRelations.data as unknown as LegacyEventRecord;
+          } else {
+            let eventWithoutRelations = await runEventQuery("*");
+
+            if (eventWithoutRelations.error && user?.id) {
+              eventWithoutRelations = await runEventQuery("*", true);
             }
 
-            if (!eventWithLegacyRelations.error && eventWithLegacyRelations.data) {
-              eventData = eventWithLegacyRelations.data as unknown as LegacyEventRecord;
+            if (!eventWithoutRelations.error && eventWithoutRelations.data) {
+              eventData = eventWithoutRelations.data as unknown as LegacyEventRecord;
             } else {
-              let eventWithoutRelations = await runEventQuery("*");
-
-              if (eventWithoutRelations.error && user?.id) {
-                eventWithoutRelations = await runEventQuery("*", true);
-              }
-
-              if (!eventWithoutRelations.error && eventWithoutRelations.data) {
-                eventData = eventWithoutRelations.data as unknown as LegacyEventRecord;
-              } else {
-                eventError = eventWithoutRelations.error || eventWithLegacyRelations.error || eventWithOrganizerOnly.error || eventWithBothRelations.error;
-              }
+              eventError = eventWithoutRelations.error || eventWithLegacyRelations.error || eventWithOrganizer.error;
             }
           }
         }
@@ -401,11 +381,9 @@ export default function EventDetailPage() {
           const eventRecordForOrganizer = eventData as LegacyEventRecord;
           const eventRow = eventData as unknown as MeetupEventDetail;
           const organizerProfileFromJoinedData =
-            resolveProfile(eventRecordForOrganizer.organizer)
-            || resolveProfile(eventRecordForOrganizer.creator);
+            resolveProfile(eventRecordForOrganizer.organizer);
           const organizerUserId =
             (typeof eventRecordForOrganizer.organizer_id === "string" && eventRecordForOrganizer.organizer_id)
-            || (typeof eventRecordForOrganizer.created_by === "string" && eventRecordForOrganizer.created_by)
             || "";
 
           const organizerProfilesById = hasReadableIdentity(organizerProfileFromJoinedData) || !organizerUserId

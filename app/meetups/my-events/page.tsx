@@ -85,7 +85,7 @@ export default function MyEventsPage() {
         .from("events")
         .delete()
         .eq("id", eventId)
-        .or(`organizer_id.eq.${user.id},created_by.eq.${user.id}`);
+        .eq("organizer_id", user.id);
 
       if (error) throw error;
       setEvents(prev => prev.filter(e => e.id !== eventId));
