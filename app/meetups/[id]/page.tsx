@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
@@ -97,17 +97,17 @@ export default function EventDetailPage() {
 
   const ATTENDEE_PROFILE_SELECT_FULL = "id, username, full_name, first_name, last_name, avatar_url";
   const ATTENDEE_PROFILE_SELECT_MINIMAL = "id, username, full_name, first_name, last_name, avatar_url";
-  const authMetadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  const authMetadata = useMemo(() => (user?.user_metadata ?? {}) as Record<string, unknown>, [user?.user_metadata]);
 
   const resolveProfile = (profile?: BasicProfile | BasicProfile[] | null) => {
     if (!profile) return null;
     return Array.isArray(profile) ? profile[0] || null : profile;
   };
 
-  const getAuthMetadataText = (key: string) => {
+  const getAuthMetadataText = useCallback((key: string) => {
     const value = authMetadata[key];
     return typeof value === "string" ? value.trim() : "";
-  };
+  }, [authMetadata]);
 
   const getResolvedProfile = (profile?: BasicProfile | BasicProfile[] | null) => {
     const p = resolveProfile(profile);
