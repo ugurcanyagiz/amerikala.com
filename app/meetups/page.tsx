@@ -190,7 +190,7 @@ export default function MeetupsPage() {
             {/* Quick Access Cards */}
             <section className="grid sm:grid-cols-2 gap-6 mb-16">
               {/* Events Card */}
-              <Link href="/events">
+              <Link href="/meetups">
                 <Card variant="interactive" padding="md" className="h-full">
                   <CardContent className="p-0">
                     <div className="flex items-start justify-between mb-4">
@@ -244,7 +244,7 @@ export default function MeetupsPage() {
                   <h2 className="text-xl font-semibold text-[var(--color-ink)]">
                     Yaklaşan Etkinlikler
                   </h2>
-                  <Link href="/events">
+                  <Link href="/meetups">
                     <Button variant="ghost" size="sm" className="gap-1">
                       Tümü
                       <ChevronRight className="h-4 w-4" />

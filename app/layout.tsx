@@ -126,7 +126,7 @@ export default function RootLayout({
                       <ul className="space-y-3">
                         <li>
                           <a
-                            href="/events"
+                            href="/meetups"
                             className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
                           >
                             Etkinlikler

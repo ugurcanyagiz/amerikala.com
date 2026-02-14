@@ -24,7 +24,7 @@ export default function NotFound() {
             Ana Sayfa
           </Link>
           <Link
-            href="/events"
+            href="/meetups"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-surface-raised border border-border-default rounded-lg font-medium hover:bg-surface-overlay transition-colors"
           >
             <Search size={18} />

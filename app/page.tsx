@@ -50,7 +50,7 @@ const CATEGORY_CONFIG: Record<
 > = {
   events: {
     title: "Etkinlikler",
-    href: "/events",
+    href: "/meetups",
     icon: CalendarDays,
     badgeClass: "bg-sky-100 text-sky-700",
     cardClass: "from-sky-100 via-white to-cyan-50",
@@ -169,7 +169,7 @@ export default function Home() {
             id: `event-${item.id}`,
             title: item.title,
             location: `${item.city}, ${item.state}`,
-            href: `/events/${item.id}`,
+            href: `/meetups/${item.id}`,
             section: "events" as const,
             createdAt: item.created_at,
             priceLabel: "Ücretsiz / biletli",
@@ -291,7 +291,7 @@ export default function Home() {
             id: `event-${item.id}`,
             title: item.title,
             location: `${item.city}, ${item.state}`,
-            href: `/events/${item.id}`,
+            href: `/meetups/${item.id}`,
             section: "events" as const,
           })),
           ...(listingsRes.data ?? []).map((item) => ({
