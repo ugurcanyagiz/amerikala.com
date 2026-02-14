@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
@@ -97,17 +97,17 @@ export default function EventDetailPage() {
 
   const ATTENDEE_PROFILE_SELECT_FULL = "id, username, full_name, first_name, last_name, avatar_url";
   const ATTENDEE_PROFILE_SELECT_MINIMAL = "id, username, full_name, first_name, last_name, avatar_url";
-  const authMetadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  const authMetadata = useMemo(() => (user?.user_metadata ?? {}) as Record<string, unknown>, [user?.user_metadata]);
 
   const resolveProfile = (profile?: BasicProfile | BasicProfile[] | null) => {
     if (!profile) return null;
     return Array.isArray(profile) ? profile[0] || null : profile;
   };
 
-  const getAuthMetadataText = (key: string) => {
+  const getAuthMetadataText = useCallback((key: string) => {
     const value = authMetadata[key];
     return typeof value === "string" ? value.trim() : "";
-  };
+  }, [authMetadata]);
 
   const getResolvedProfile = (profile?: BasicProfile | BasicProfile[] | null) => {
     const p = resolveProfile(profile);
@@ -312,45 +312,62 @@ export default function EventDetailPage() {
         let eventData: LegacyEventRecord | null = null;
         let eventError: unknown = null;
 
-        const eventWithBothRelations = await supabase
-          .from("events")
-          .select(eventSelectWithBothRelations)
-          .eq("id", eventId)
-          .single();
+        const runEventQuery = async (selectQuery: string, limitToOwner = false) => {
+          let query = supabase
+            .from("events")
+            .select(selectQuery)
+            .eq("id", eventId);
+
+          if (limitToOwner && user?.id) {
+            query = query.or(`organizer_id.eq.${user.id},created_by.eq.${user.id}`);
+          }
+
+          return query.single();
+        };
+
+        let eventWithBothRelations = await runEventQuery(eventSelectWithBothRelations);
+
+        if (eventWithBothRelations.error && user?.id) {
+          eventWithBothRelations = await runEventQuery(eventSelectWithBothRelations, true);
+        }
 
         if (!eventWithBothRelations.error && eventWithBothRelations.data) {
-          eventData = eventWithBothRelations.data as LegacyEventRecord;
+          eventData = eventWithBothRelations.data as unknown as LegacyEventRecord;
         } else {
-          const eventWithOrganizerOnly = await supabase
-            .from("events")
-            .select(eventSelectWithOrganizerOnly)
-            .eq("id", eventId)
-            .single();
+          let eventWithOrganizerOnly = await runEventQuery(eventSelectWithOrganizerOnly);
+
+          if (eventWithOrganizerOnly.error && user?.id) {
+            eventWithOrganizerOnly = await runEventQuery(eventSelectWithOrganizerOnly, true);
+          }
 
           if (!eventWithOrganizerOnly.error && eventWithOrganizerOnly.data) {
-            eventData = eventWithOrganizerOnly.data as LegacyEventRecord;
+            eventData = eventWithOrganizerOnly.data as unknown as LegacyEventRecord;
           } else {
-            const eventWithLegacyRelations = await supabase
-              .from("events")
-              .select(`
+            let eventWithLegacyRelations = await runEventQuery(`
                 *,
                 organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession),
                 creator:created_by (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
-              `)
-              .eq("id", eventId)
-              .single();
+              `);
+
+            if (eventWithLegacyRelations.error && user?.id) {
+              eventWithLegacyRelations = await runEventQuery(`
+                *,
+                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession),
+                creator:created_by (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
+              `, true);
+            }
 
             if (!eventWithLegacyRelations.error && eventWithLegacyRelations.data) {
-              eventData = eventWithLegacyRelations.data as LegacyEventRecord;
+              eventData = eventWithLegacyRelations.data as unknown as LegacyEventRecord;
             } else {
-              const eventWithoutRelations = await supabase
-                .from("events")
-                .select("*")
-                .eq("id", eventId)
-                .single();
+              let eventWithoutRelations = await runEventQuery("*");
+
+              if (eventWithoutRelations.error && user?.id) {
+                eventWithoutRelations = await runEventQuery("*", true);
+              }
 
               if (!eventWithoutRelations.error && eventWithoutRelations.data) {
-                eventData = eventWithoutRelations.data as LegacyEventRecord;
+                eventData = eventWithoutRelations.data as unknown as LegacyEventRecord;
               } else {
                 eventError = eventWithoutRelations.error || eventWithLegacyRelations.error || eventWithOrganizerOnly.error || eventWithBothRelations.error;
               }
