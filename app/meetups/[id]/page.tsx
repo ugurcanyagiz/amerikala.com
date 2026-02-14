@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
@@ -63,14 +63,11 @@ type EventComment = {
 
 type LegacyEventRecord = Record<string, unknown> & {
   organizer_id?: string | null;
-  created_by?: string | null;
   organizer?: BasicProfile | BasicProfile[] | null;
-  creator?: BasicProfile | BasicProfile[] | null;
 };
 
 type MeetupEventDetail = Omit<Event, "organizer"> & {
   organizer?: BasicProfile | null;
-  created_by?: string | null;
 };
 
 export default function EventDetailPage() {
@@ -97,17 +94,32 @@ export default function EventDetailPage() {
 
   const ATTENDEE_PROFILE_SELECT_FULL = "id, username, full_name, first_name, last_name, avatar_url";
   const ATTENDEE_PROFILE_SELECT_MINIMAL = "id, username, full_name, first_name, last_name, avatar_url";
-  const authMetadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  const authMetadata = useMemo(() => (user?.user_metadata ?? {}) as Record<string, unknown>, [user?.user_metadata]);
 
   const resolveProfile = (profile?: BasicProfile | BasicProfile[] | null) => {
     if (!profile) return null;
     return Array.isArray(profile) ? profile[0] || null : profile;
   };
 
-  const getAuthMetadataText = (key: string) => {
+  const hasReadableIdentity = (profile?: BasicProfile | BasicProfile[] | null) => {
+    const p = resolveProfile(profile);
+    if (!p) return false;
+
+    const hasId = typeof p.id === "string" && p.id.trim().length > 0;
+    const hasName = Boolean(
+      p.username?.trim()
+      || p.full_name?.trim()
+      || p.first_name?.trim()
+      || p.last_name?.trim()
+    );
+
+    return hasId || hasName;
+  };
+
+  const getAuthMetadataText = useCallback((key: string) => {
     const value = authMetadata[key];
     return typeof value === "string" ? value.trim() : "";
-  };
+  }, [authMetadata]);
 
   const getResolvedProfile = (profile?: BasicProfile | BasicProfile[] | null) => {
     const p = resolveProfile(profile);
@@ -264,7 +276,7 @@ export default function EventDetailPage() {
     }
 
     const attendeeRows = ((!withProfileResult.error ? withProfileResult.data : !withProfileLegacyJoinResult?.error ? withProfileLegacyJoinResult?.data : fallbackResult?.data) as Array<Record<string, unknown>> | null) || [];
-    const rowsWithProfile = attendeeRows.filter((row) => resolveProfile(row.profile as BasicProfile | BasicProfile[] | null));
+    const rowsWithProfile = attendeeRows.filter((row) => hasReadableIdentity(row.profile as BasicProfile | BasicProfile[] | null));
 
     const normalizedRows = rowsWithProfile.length === attendeeRows.length
       ? attendeeRows
@@ -299,12 +311,7 @@ export default function EventDetailPage() {
     const fetchEvent = async () => {
       setLoading(true);
       try {
-        const eventSelectWithBothRelations = `
-            *,
-            organizer:profiles!events_organizer_id_fkey (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession),
-            creator:profiles!events_created_by_fkey (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
-          `;
-        const eventSelectWithOrganizerOnly = `
+        const eventSelectWithOrganizer = `
             *,
             organizer:profiles!events_organizer_id_fkey (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
           `;
@@ -312,48 +319,53 @@ export default function EventDetailPage() {
         let eventData: LegacyEventRecord | null = null;
         let eventError: unknown = null;
 
-        const eventWithBothRelations = await supabase
-          .from("events")
-          .select(eventSelectWithBothRelations)
-          .eq("id", eventId)
-          .single();
-
-        if (!eventWithBothRelations.error && eventWithBothRelations.data) {
-          eventData = eventWithBothRelations.data as LegacyEventRecord;
-        } else {
-          const eventWithOrganizerOnly = await supabase
+        const runEventQuery = async (selectQuery: string, limitToOwner = false) => {
+          let query = supabase
             .from("events")
-            .select(eventSelectWithOrganizerOnly)
-            .eq("id", eventId)
-            .single();
+            .select(selectQuery)
+            .eq("id", eventId);
 
-          if (!eventWithOrganizerOnly.error && eventWithOrganizerOnly.data) {
-            eventData = eventWithOrganizerOnly.data as LegacyEventRecord;
-          } else {
-            const eventWithLegacyRelations = await supabase
-              .from("events")
-              .select(`
+          if (limitToOwner && user?.id) {
+            query = query.eq("organizer_id", user.id);
+          }
+
+          return query.single();
+        };
+
+        let eventWithOrganizer = await runEventQuery(eventSelectWithOrganizer);
+
+        if (eventWithOrganizer.error && user?.id) {
+          eventWithOrganizer = await runEventQuery(eventSelectWithOrganizer, true);
+        }
+
+        if (!eventWithOrganizer.error && eventWithOrganizer.data) {
+          eventData = eventWithOrganizer.data as unknown as LegacyEventRecord;
+        } else {
+          let eventWithLegacyRelations = await runEventQuery(`
                 *,
-                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession),
-                creator:created_by (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
-              `)
-              .eq("id", eventId)
-              .single();
+                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
+              `);
 
-            if (!eventWithLegacyRelations.error && eventWithLegacyRelations.data) {
-              eventData = eventWithLegacyRelations.data as LegacyEventRecord;
+          if (eventWithLegacyRelations.error && user?.id) {
+            eventWithLegacyRelations = await runEventQuery(`
+                *,
+                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
+              `, true);
+          }
+
+          if (!eventWithLegacyRelations.error && eventWithLegacyRelations.data) {
+            eventData = eventWithLegacyRelations.data as unknown as LegacyEventRecord;
+          } else {
+            let eventWithoutRelations = await runEventQuery("*");
+
+            if (eventWithoutRelations.error && user?.id) {
+              eventWithoutRelations = await runEventQuery("*", true);
+            }
+
+            if (!eventWithoutRelations.error && eventWithoutRelations.data) {
+              eventData = eventWithoutRelations.data as unknown as LegacyEventRecord;
             } else {
-              const eventWithoutRelations = await supabase
-                .from("events")
-                .select("*")
-                .eq("id", eventId)
-                .single();
-
-              if (!eventWithoutRelations.error && eventWithoutRelations.data) {
-                eventData = eventWithoutRelations.data as LegacyEventRecord;
-              } else {
-                eventError = eventWithoutRelations.error || eventWithLegacyRelations.error || eventWithOrganizerOnly.error || eventWithBothRelations.error;
-              }
+              eventError = eventWithoutRelations.error || eventWithLegacyRelations.error || eventWithOrganizer.error;
             }
           }
         }
@@ -369,21 +381,24 @@ export default function EventDetailPage() {
           const eventRecordForOrganizer = eventData as LegacyEventRecord;
           const eventRow = eventData as unknown as MeetupEventDetail;
           const organizerProfileFromJoinedData =
-            resolveProfile(eventRecordForOrganizer.organizer)
-            || resolveProfile(eventRecordForOrganizer.creator);
+            resolveProfile(eventRecordForOrganizer.organizer);
           const organizerUserId =
             (typeof eventRecordForOrganizer.organizer_id === "string" && eventRecordForOrganizer.organizer_id)
-            || (typeof eventRecordForOrganizer.created_by === "string" && eventRecordForOrganizer.created_by)
             || "";
 
-          const organizerProfilesById = organizerProfileFromJoinedData || !organizerUserId
+          const organizerProfilesById = hasReadableIdentity(organizerProfileFromJoinedData) || !organizerUserId
             ? new Map<string, BasicProfile>()
             : await fetchProfilesByIds([organizerUserId]);
 
           if (isActive) {
             setEvent({
               ...eventRow,
-              organizer: organizerProfileFromJoinedData || organizerProfilesById.get(organizerUserId) || undefined,
+              organizer:
+                (hasReadableIdentity(organizerProfileFromJoinedData)
+                  ? organizerProfileFromJoinedData
+                  : null)
+                || organizerProfilesById.get(organizerUserId)
+                || undefined,
             });
           }
         }

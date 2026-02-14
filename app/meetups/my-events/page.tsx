@@ -76,6 +76,7 @@ export default function MyEventsPage() {
 
   // Delete event
   const handleDeleteEvent = async (eventId: string) => {
+    if (!user) return;
     if (!confirm("Bu etkinliği silmek istediğinizden emin misiniz?")) return;
 
     setDeletingEvent(eventId);
@@ -83,7 +84,8 @@ export default function MyEventsPage() {
       const { error } = await supabase
         .from("events")
         .delete()
-        .eq("id", eventId);
+        .eq("id", eventId)
+        .eq("organizer_id", user.id);
 
       if (error) throw error;
       setEvents(prev => prev.filter(e => e.id !== eventId));
