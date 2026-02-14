@@ -104,6 +104,21 @@ export default function EventDetailPage() {
     return Array.isArray(profile) ? profile[0] || null : profile;
   };
 
+  const hasReadableIdentity = (profile?: BasicProfile | BasicProfile[] | null) => {
+    const p = resolveProfile(profile);
+    if (!p) return false;
+
+    const hasId = typeof p.id === "string" && p.id.trim().length > 0;
+    const hasName = Boolean(
+      p.username?.trim()
+      || p.full_name?.trim()
+      || p.first_name?.trim()
+      || p.last_name?.trim()
+    );
+
+    return hasId || hasName;
+  };
+
   const getAuthMetadataText = useCallback((key: string) => {
     const value = authMetadata[key];
     return typeof value === "string" ? value.trim() : "";
@@ -264,7 +279,7 @@ export default function EventDetailPage() {
     }
 
     const attendeeRows = ((!withProfileResult.error ? withProfileResult.data : !withProfileLegacyJoinResult?.error ? withProfileLegacyJoinResult?.data : fallbackResult?.data) as Array<Record<string, unknown>> | null) || [];
-    const rowsWithProfile = attendeeRows.filter((row) => resolveProfile(row.profile as BasicProfile | BasicProfile[] | null));
+    const rowsWithProfile = attendeeRows.filter((row) => hasReadableIdentity(row.profile as BasicProfile | BasicProfile[] | null));
 
     const normalizedRows = rowsWithProfile.length === attendeeRows.length
       ? attendeeRows
@@ -393,14 +408,19 @@ export default function EventDetailPage() {
             || (typeof eventRecordForOrganizer.created_by === "string" && eventRecordForOrganizer.created_by)
             || "";
 
-          const organizerProfilesById = organizerProfileFromJoinedData || !organizerUserId
+          const organizerProfilesById = hasReadableIdentity(organizerProfileFromJoinedData) || !organizerUserId
             ? new Map<string, BasicProfile>()
             : await fetchProfilesByIds([organizerUserId]);
 
           if (isActive) {
             setEvent({
               ...eventRow,
-              organizer: organizerProfileFromJoinedData || organizerProfilesById.get(organizerUserId) || undefined,
+              organizer:
+                (hasReadableIdentity(organizerProfileFromJoinedData)
+                  ? organizerProfileFromJoinedData
+                  : null)
+                || organizerProfilesById.get(organizerUserId)
+                || undefined,
             });
           }
         }
