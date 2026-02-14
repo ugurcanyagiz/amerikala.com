@@ -257,7 +257,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           content: eventTitle || undefined,
           createdAt: attendee.created_at,
           isRead: readIds.has(id),
-          actionUrl: `/events/${attendee.event_id}`,
+          actionUrl: `/meetups/${attendee.event_id}`,
           actionLabel: "Etkinliği Gör",
         };
       });

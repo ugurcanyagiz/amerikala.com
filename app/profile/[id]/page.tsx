@@ -357,7 +357,7 @@ export default function PublicProfilePage() {
                     router.push("/login");
                     return;
                   }
-                  router.push("/events/create");
+                  router.push("/meetups/create");
                 }}
                 className="gap-2"
               >
