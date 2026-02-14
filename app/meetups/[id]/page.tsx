@@ -312,42 +312,59 @@ export default function EventDetailPage() {
         let eventData: LegacyEventRecord | null = null;
         let eventError: unknown = null;
 
-        const eventWithBothRelations = await supabase
-          .from("events")
-          .select(eventSelectWithBothRelations)
-          .eq("id", eventId)
-          .single();
+        const runEventQuery = async (selectQuery: string, limitToOwner = false) => {
+          let query = supabase
+            .from("events")
+            .select(selectQuery)
+            .eq("id", eventId);
+
+          if (limitToOwner && user?.id) {
+            query = query.or(`organizer_id.eq.${user.id},created_by.eq.${user.id}`);
+          }
+
+          return query.single();
+        };
+
+        let eventWithBothRelations = await runEventQuery(eventSelectWithBothRelations);
+
+        if (eventWithBothRelations.error && user?.id) {
+          eventWithBothRelations = await runEventQuery(eventSelectWithBothRelations, true);
+        }
 
         if (!eventWithBothRelations.error && eventWithBothRelations.data) {
           eventData = eventWithBothRelations.data as LegacyEventRecord;
         } else {
-          const eventWithOrganizerOnly = await supabase
-            .from("events")
-            .select(eventSelectWithOrganizerOnly)
-            .eq("id", eventId)
-            .single();
+          let eventWithOrganizerOnly = await runEventQuery(eventSelectWithOrganizerOnly);
+
+          if (eventWithOrganizerOnly.error && user?.id) {
+            eventWithOrganizerOnly = await runEventQuery(eventSelectWithOrganizerOnly, true);
+          }
 
           if (!eventWithOrganizerOnly.error && eventWithOrganizerOnly.data) {
             eventData = eventWithOrganizerOnly.data as LegacyEventRecord;
           } else {
-            const eventWithLegacyRelations = await supabase
-              .from("events")
-              .select(`
+            let eventWithLegacyRelations = await runEventQuery(`
                 *,
                 organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession),
                 creator:created_by (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
-              `)
-              .eq("id", eventId)
-              .single();
+              `);
+
+            if (eventWithLegacyRelations.error && user?.id) {
+              eventWithLegacyRelations = await runEventQuery(`
+                *,
+                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession),
+                creator:created_by (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
+              `, true);
+            }
 
             if (!eventWithLegacyRelations.error && eventWithLegacyRelations.data) {
               eventData = eventWithLegacyRelations.data as LegacyEventRecord;
             } else {
-              const eventWithoutRelations = await supabase
-                .from("events")
-                .select("*")
-                .eq("id", eventId)
-                .single();
+              let eventWithoutRelations = await runEventQuery("*");
+
+              if (eventWithoutRelations.error && user?.id) {
+                eventWithoutRelations = await runEventQuery("*", true);
+              }
 
               if (!eventWithoutRelations.error && eventWithoutRelations.data) {
                 eventData = eventWithoutRelations.data as LegacyEventRecord;
