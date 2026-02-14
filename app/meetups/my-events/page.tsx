@@ -59,7 +59,7 @@ export default function MyEventsPage() {
         const { data, error } = await supabase
           .from("events")
           .select("*")
-          .eq("organizer_id", user.id)
+          .or(`organizer_id.eq.${user.id},created_by.eq.${user.id}`)
           .order("created_at", { ascending: false });
 
         if (error) throw error;
