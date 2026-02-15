@@ -239,28 +239,30 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         };
       });
 
-      const attendeeNotifications: AppNotification[] = eventAttendees.map((attendee) => {
-        const actor = profilesById.get(attendee.user_id);
-        const id = `event_attendees:${attendee.event_id}:${attendee.user_id}`;
-        const eventTitle = eventTitleById.get(attendee.event_id);
+      const attendeeNotifications: AppNotification[] = eventAttendees
+        .filter((attendee) => attendee.status !== "not_going")
+        .map((attendee) => {
+          const actor = profilesById.get(attendee.user_id);
+          const id = `event_attendees:${attendee.event_id}:${attendee.user_id}`;
+          const eventTitle = eventTitleById.get(attendee.event_id);
 
-        return {
-          id,
-          source: "event_attendees",
-          type: "events",
-          user: {
-            id: attendee.user_id,
-            name: getDisplayName(actor),
-            avatar: actor?.avatar_url || null,
-          },
-          message: "etkinliğinize katılım gösterdi",
-          content: eventTitle || undefined,
-          createdAt: attendee.created_at,
-          isRead: readIds.has(id),
-          actionUrl: `/meetups/${attendee.event_id}`,
-          actionLabel: "Etkinliği Gör",
-        };
-      });
+          return {
+            id,
+            source: "event_attendees",
+            type: "events",
+            user: {
+              id: attendee.user_id,
+              name: getDisplayName(actor),
+              avatar: actor?.avatar_url || null,
+            },
+            message: "etkinliğinize katılım gösterdi",
+            content: eventTitle || undefined,
+            createdAt: attendee.created_at,
+            isRead: readIds.has(id),
+            actionUrl: `/meetups/${attendee.event_id}`,
+            actionLabel: "Etkinliği Gör",
+          };
+        });
 
       const merged = [...likeNotifications, ...commentNotifications, ...attendeeNotifications]
         .filter((notification) => !dismissedIds.has(notification.id))
