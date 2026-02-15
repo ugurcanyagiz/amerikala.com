@@ -34,6 +34,8 @@ import {
   ExternalLink,
   UserPlus,
   UserMinus,
+  UserCheck,
+  UserX,
   Copy,
   Twitter,
   Facebook,
@@ -92,6 +94,9 @@ export default function EventDetailPage() {
   const [commentLoading, setCommentLoading] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
+  const [pendingAttendees, setPendingAttendees] = useState<EventAttendee[]>([]);
+  const [myAttendanceStatus, setMyAttendanceStatus] = useState<EventAttendee["status"] | null>(null);
+  const [approvalLoadingUserId, setApprovalLoadingUserId] = useState<string | null>(null);
 
   const ATTENDEE_PROFILE_SELECT_FULL = "id, username, full_name, first_name, last_name, avatar_url";
   const ATTENDEE_PROFILE_SELECT_MINIMAL = "id, username, full_name, first_name, last_name, avatar_url";
@@ -279,17 +284,19 @@ export default function EventDetailPage() {
     }
 
     const attendeeRows = ((!withProfileResult.error ? withProfileResult.data : !withProfileLegacyJoinResult?.error ? withProfileLegacyJoinResult?.data : fallbackResult?.data) as Array<Record<string, unknown>> | null) || [];
-    const activeAttendeeRows = attendeeRows.filter((row) => row.status !== "not_going");
-    const rowsWithProfile = activeAttendeeRows.filter((row) => hasReadableIdentity(row.profile as BasicProfile | BasicProfile[] | null));
+    const pendingRows = attendeeRows.filter((row) => row.status === "pending");
+    const approvedRows = attendeeRows.filter((row) => row.status === "going");
+    const relevantRows = [...approvedRows, ...pendingRows];
+    const rowsWithProfile = relevantRows.filter((row) => hasReadableIdentity(row.profile as BasicProfile | BasicProfile[] | null));
 
-    const normalizedRows = rowsWithProfile.length === activeAttendeeRows.length
-      ? activeAttendeeRows
+    const normalizedRows = rowsWithProfile.length === relevantRows.length
+      ? relevantRows
       : (() => {
           const profileMapPromise = fetchProfilesByIds(
-            activeAttendeeRows.map((row) => (typeof row.user_id === "string" ? row.user_id : "")).filter(Boolean)
+            relevantRows.map((row) => (typeof row.user_id === "string" ? row.user_id : "")).filter(Boolean)
           );
           return profileMapPromise.then((profileMap) =>
-            activeAttendeeRows.map((row) => ({
+            relevantRows.map((row) => ({
               ...row,
               profile:
                 resolveProfile(row.profile as BasicProfile | BasicProfile[] | null)
@@ -299,21 +306,27 @@ export default function EventDetailPage() {
           );
         })();
 
-    const list = normalizeAttendees(Array.isArray(normalizedRows) ? normalizedRows : await normalizedRows);
+    const normalizedList = normalizeAttendees(Array.isArray(normalizedRows) ? normalizedRows : await normalizedRows);
+    const approvedList = normalizedList.filter((item) => item.status === "going");
+    const pendingList = normalizedList.filter((item) => item.status === "pending");
 
-    setAttendees(list);
+    setAttendees(approvedList);
+    setPendingAttendees(pendingList);
 
     if (user) {
-      setAttending(list.some((item) => item.user_id === user.id));
+      const myRecord = normalizedList.find((item) => item.user_id === user.id) || null;
+      setMyAttendanceStatus(myRecord?.status || null);
+      setAttending(myRecord?.status === "going");
     } else {
       setAttending(false);
+      setMyAttendanceStatus(null);
     }
 
     setEvent((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
-        current_attendees: list.length,
+        current_attendees: approvedList.length,
       };
     });
   }, [eventId, user, fetchProfilesByIds]);
@@ -508,7 +521,7 @@ export default function EventDetailPage() {
           .insert({
             event_id: eventId,
             user_id: user.id,
-            status: "going",
+            status: "pending",
           });
 
         if (insertError) {
@@ -523,7 +536,7 @@ export default function EventDetailPage() {
 
           const { error: updateError } = await supabase
             .from("event_attendees")
-            .update({ status: "going" })
+            .update({ status: "pending" })
             .eq("event_id", eventId)
             .eq("user_id", user.id);
 
@@ -537,6 +550,32 @@ export default function EventDetailPage() {
       setAttendanceError("Katılım işlemi tamamlanamadı. Lütfen tekrar deneyin.");
     } finally {
       setAttendanceLoading(false);
+    }
+  };
+
+  const handleApprovalDecision = async (targetUserId: string, nextStatus: EventAttendee["status"]) => {
+    if (!user || !event || event.organizer_id !== user.id || !targetUserId) return;
+
+    setApprovalLoadingUserId(targetUserId);
+    setAttendanceError(null);
+
+    try {
+      const { error } = await supabase
+        .from("event_attendees")
+        .update({ status: nextStatus })
+        .eq("event_id", eventId)
+        .eq("user_id", targetUserId);
+
+      if (error) {
+        throw error;
+      }
+
+      await fetchAttendees();
+    } catch (error) {
+      console.error("Error approving attendee:", error);
+      setAttendanceError("Katılım isteği güncellenemedi. Lütfen RLS politikalarını kontrol edin.");
+    } finally {
+      setApprovalLoadingUserId(null);
     }
   };
 
@@ -690,7 +729,7 @@ export default function EventDetailPage() {
     try {
       const { data: attendanceRecord, error: attendanceCheckError } = await supabase
         .from("event_attendees")
-        .select("event_id")
+        .select("event_id, status")
         .eq("event_id", eventId)
         .eq("user_id", user.id)
         .maybeSingle();
@@ -699,7 +738,7 @@ export default function EventDetailPage() {
         throw attendanceCheckError;
       }
 
-      if (!attendanceRecord) {
+      if (!attendanceRecord || attendanceRecord.status !== "going") {
         setAttending(false);
         setCommentError("Yorum yazabilmek için önce etkinliğe katılman gerekiyor.");
         return;
@@ -784,6 +823,8 @@ export default function EventDetailPage() {
   }
 
   const organizer = (event.organizer as BasicProfile | null | undefined) || null;
+  const isOrganizer = Boolean(user && event.organizer_id === user.id);
+  const isRequestPending = myAttendanceStatus === "pending";
   const isFull = event.max_attendees && event.current_attendees >= event.max_attendees;
   const isPast = new Date(event.event_date) < new Date(new Date().toDateString());
 
@@ -891,6 +932,13 @@ export default function EventDetailPage() {
                 <div className="flex flex-wrap gap-3">
                   {isPast ? (
                     <Badge variant="default" size="lg">Etkinlik Sona Erdi</Badge>
+                  ) : isOrganizer ? (
+                    <Badge variant="primary" size="lg">Bu etkinliğin organizatörüsün</Badge>
+                  ) : isRequestPending ? (
+                    <Button variant="outline" size="lg" disabled className="gap-2">
+                      <Loader2 size={18} className="animate-spin" />
+                      Katılım isteğin onay bekliyor
+                    </Button>
                   ) : isFull && !attending ? (
                     <Badge variant="warning" size="lg">Kontenjan Dolu</Badge>
                   ) : (
@@ -911,7 +959,7 @@ export default function EventDetailPage() {
                       ) : (
                         <>
                           <UserPlus size={18} />
-                          Katıl
+                          Katılım İsteği Gönder
                         </>
                       )}
                     </Button>
@@ -940,6 +988,82 @@ export default function EventDetailPage() {
                 </p>
               </CardContent>
             </Card>
+
+            {isOrganizer && (
+              <Card className="glass">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <UserCheck size={20} />
+                      Katılım İstekleri
+                    </span>
+                    <Badge variant="warning">{pendingAttendees.length}</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {pendingAttendees.length === 0 ? (
+                    <p className="text-neutral-500 text-sm">Şu anda bekleyen katılım isteği yok.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {pendingAttendees.map((request) => {
+                        const profile = getProfileRecord(request.profile as BasicProfile | BasicProfile[] | null);
+                        const disabled = approvalLoadingUserId === request.user_id;
+                        return (
+                          <div
+                            key={`pending-${request.user_id}`}
+                            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200/80 dark:border-neutral-700/60 p-3"
+                          >
+                            <button
+                              onClick={() => {
+                                if (profile) {
+                                  setSelectedAttendee(profile);
+                                  if (user && user.id !== profile.id) {
+                                    checkFollowing(profile.id);
+                                  }
+                                }
+                              }}
+                              className="flex items-center gap-3 text-left"
+                            >
+                              <Avatar
+                                src={profile?.avatar_url || "/logo.png"}
+                                fallback={getDisplayName(profile)}
+                                size="sm"
+                              />
+                              <div>
+                                <p className="text-sm font-semibold">{getDisplayName(profile)}</p>
+                                <p className="text-xs text-neutral-500">{getUsernameLabel(profile)}</p>
+                              </div>
+                            </button>
+
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                className="gap-2"
+                                disabled={disabled}
+                                onClick={() => handleApprovalDecision(request.user_id, "going")}
+                              >
+                                {disabled ? <Loader2 size={14} className="animate-spin" /> : <UserCheck size={14} />}
+                                Onayla
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                                disabled={disabled}
+                                onClick={() => handleApprovalDecision(request.user_id, "rejected")}
+                              >
+                                <UserX size={14} />
+                                Reddet
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Attendees */}
             <Card className="glass">
