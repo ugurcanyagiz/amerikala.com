@@ -108,6 +108,13 @@ export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [latestAdsCategoryFilter, setLatestAdsCategoryFilter] = useState<"all" | HomeCategoryKey>("all");
+  const [activeCategoryPreview, setActiveCategoryPreview] = useState<HomeCategoryKey>("events");
+  const [categoryPreviewItems, setCategoryPreviewItems] = useState<Record<HomeCategoryKey, UnifiedAd[]>>({
+    events: [],
+    realEstate: [],
+    jobs: [],
+    marketplace: [],
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -205,7 +212,47 @@ export default function Home() {
           .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
           .slice(0, latestLimit);
 
+        const previewItems: Record<HomeCategoryKey, UnifiedAd[]> = {
+          events: (eventsRes.data ?? []).slice(0, 9).map((item) => ({
+            id: `event-${item.id}`,
+            title: item.title,
+            location: `${item.city}, ${item.state}`,
+            href: `/meetups/${item.id}`,
+            section: "events",
+            createdAt: item.created_at,
+            priceLabel: "Ücretsiz / biletli",
+          })),
+          realEstate: (realEstateRes.data ?? []).slice(0, 9).map((item) => ({
+            id: `listing-${item.id}`,
+            title: item.title,
+            location: `${item.city}, ${item.state}`,
+            href: `/emlak/ilan/${item.id}`,
+            section: "realEstate",
+            createdAt: item.created_at,
+            priceLabel: formatCurrency(item.price),
+          })),
+          jobs: (jobsRes.data ?? []).slice(0, 9).map((item) => ({
+            id: `job-${item.id}`,
+            title: item.title,
+            location: `${item.city}, ${item.state}`,
+            href: `/is/ilan/${item.id}`,
+            section: "jobs",
+            createdAt: item.created_at,
+            priceLabel: formatSalaryRange(item.salary_min, item.salary_max),
+          })),
+          marketplace: (marketplaceRes.data ?? []).slice(0, 9).map((item) => ({
+            id: `market-${item.id}`,
+            title: item.title,
+            location: `${item.city}, ${item.state}`,
+            href: `/alisveris/ilan/${item.id}`,
+            section: "marketplace",
+            createdAt: item.created_at,
+            priceLabel: formatCurrency(item.price),
+          })),
+        };
+
         setAds(unified);
+        setCategoryPreviewItems(previewItems);
       } catch (error) {
         console.error("Homepage fetch error", error);
       } finally {
@@ -506,23 +553,65 @@ export default function Home() {
             <div className="mb-6 flex items-end justify-between">
               <h2 className="text-3xl font-bold text-slate-900">Kategoriler</h2>
             </div>
-            <div className="grid grid-cols-4 gap-2 sm:gap-4">
-              {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
-                const config = CATEGORY_CONFIG[key];
-                const Icon = config.icon;
-                return (
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_22px_45px_-40px_rgba(15,23,42,0.85)] sm:p-6">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+                {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
+                  const config = CATEGORY_CONFIG[key];
+                  const Icon = config.icon;
+                  const isActive = activeCategoryPreview === key;
+
+                  return (
+                    <Link
+                      key={key}
+                      href={config.href}
+                      onMouseEnter={() => setActiveCategoryPreview(key)}
+                      onFocus={() => setActiveCategoryPreview(key)}
+                      className={`group rounded-2xl border px-3 py-4 text-center transition-all sm:px-4 sm:py-5 ${
+                        isActive
+                          ? "border-sky-200 bg-sky-50 shadow-[0_22px_36px_-30px_rgba(14,116,144,0.7)]"
+                          : "border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-30px_rgba(14,116,144,0.45)]"
+                      }`}
+                    >
+                      <span className={`mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full ${config.iconCircleClass} sm:h-14 sm:w-14`}>
+                        <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
+                      </span>
+                      <h3 className="mt-3 text-sm font-semibold text-slate-900 sm:text-lg">{config.title}</h3>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-base font-semibold text-slate-900">{CATEGORY_CONFIG[activeCategoryPreview].title} - Son Gönderiler</h3>
                   <Link
-                    key={key}
-                    href={config.href}
-                    className="group rounded-lg border border-slate-200 bg-white px-2 py-3 text-center shadow-[0_10px_18px_-18px_rgba(15,23,42,0.7)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-30px_rgba(14,116,144,0.45)] sm:rounded-2xl sm:px-4 sm:py-5"
+                    href={CATEGORY_CONFIG[activeCategoryPreview].href}
+                    className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-sm font-semibold text-sky-700 transition hover:border-sky-300 hover:text-sky-800"
                   >
-                    <span className={`mx-auto inline-flex h-9 w-9 items-center justify-center rounded-full ${config.iconCircleClass} sm:h-14 sm:w-14`}>
-                      <Icon className="h-4 w-4 sm:h-7 sm:w-7" />
-                    </span>
-                    <h3 className="mt-2 text-sm font-semibold text-slate-900 sm:mt-4 sm:text-lg">{config.title}</h3>
+                    Tümünü Gör
                   </Link>
-                );
-              })}
+                </div>
+
+                {categoryPreviewItems[activeCategoryPreview].length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
+                    Bu kategori için henüz gönderi bulunmuyor.
+                  </p>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {categoryPreviewItems[activeCategoryPreview].map((item) => (
+                      <Link
+                        key={`preview-${item.id}`}
+                        href={item.href}
+                        className="rounded-xl border border-slate-200 bg-white p-3 transition hover:border-sky-200 hover:shadow-sm"
+                      >
+                        <h4 className="line-clamp-2 text-sm font-semibold text-slate-900">{item.title}</h4>
+                        <p className="mt-2 text-xs text-slate-500">{item.location}</p>
+                        <p className="mt-1 text-xs font-medium text-slate-600">{item.priceLabel ?? "Detaylı bilgi"}</p>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </section>
 
