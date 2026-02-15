@@ -116,12 +116,12 @@ export default function EventDetailPage() {
         if (user) {
           const { data: attendeeData } = await supabase
             .from("event_attendees")
-            .select("event_id")
+            .select("event_id, status")
             .eq("event_id", eventId)
             .eq("user_id", user.id)
             .maybeSingle();
 
-          setIsAttending(Boolean(attendeeData));
+          setIsAttending(Boolean(attendeeData && attendeeData.status !== "not_going"));
         }
 
         // Fetch similar events (same category, different event)
@@ -183,6 +183,7 @@ export default function EventDetailPage() {
           .insert({
             event_id: eventId,
             user_id: user.id,
+            status: "going",
           });
 
         if (insertError) {
@@ -201,6 +202,7 @@ export default function EventDetailPage() {
             .insert({
               event_id: eventId,
               user_id: user.id,
+              status: "going",
             });
 
           if (retryInsertError) {
@@ -212,21 +214,22 @@ export default function EventDetailPage() {
       const [{ data: attendeeData }, { count: attendeeCount, error: attendeeCountError }] = await Promise.all([
         supabase
           .from("event_attendees")
-          .select("event_id")
+          .select("event_id, status")
           .eq("event_id", eventId)
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase
           .from("event_attendees")
           .select("*", { count: "exact", head: true })
-          .eq("event_id", eventId),
+          .eq("event_id", eventId)
+          .neq("status", "not_going"),
       ]);
 
       if (attendeeCountError) {
         throw attendeeCountError;
       }
 
-      setIsAttending(Boolean(attendeeData));
+      setIsAttending(Boolean(attendeeData && attendeeData.status !== "not_going"));
 
       if (event) {
         setEvent({
