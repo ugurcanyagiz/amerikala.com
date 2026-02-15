@@ -498,26 +498,31 @@ export default function EventDetailPage() {
 
         await fetchAttendees();
       } else {
-        const { error: upsertError } = await supabase
+        const { error: insertError } = await supabase
           .from("event_attendees")
-          .upsert({
+          .insert({
             event_id: eventId,
             user_id: user.id,
             status: "going",
-          }, {
-            onConflict: "event_id,user_id",
           });
 
-        if (upsertError) {
-          const { error: insertError } = await supabase
-            .from("event_attendees")
-            .insert({
-              event_id: eventId,
-              user_id: user.id,
-              status: "going",
-            });
+        if (insertError) {
+          const isDuplicateError =
+            insertError.code === "23505" ||
+            insertError.code === "409" ||
+            insertError.message?.toLowerCase().includes("duplicate");
 
-          if (insertError) throw insertError;
+          if (!isDuplicateError) {
+            throw insertError;
+          }
+
+          const { error: updateError } = await supabase
+            .from("event_attendees")
+            .update({ status: "going" })
+            .eq("event_id", eventId)
+            .eq("user_id", user.id);
+
+          if (updateError) throw updateError;
         }
 
         await fetchAttendees();
