@@ -243,15 +243,13 @@ export default function EventDetailPage() {
     const withProfileResult = await supabase
       .from("event_attendees")
       .select(`event_id, user_id, status, created_at, profile:profiles!event_attendees_user_id_fkey (${profileSelect})`)
-      .eq("event_id", eventId)
-      .eq("status", "going");
+      .eq("event_id", eventId);
 
     const withProfileLegacyJoinResult = withProfileResult.error
       ? await supabase
           .from("event_attendees")
           .select(`event_id, user_id, status, created_at, profile:user_id (${profileSelect})`)
           .eq("event_id", eventId)
-          .eq("status", "going")
       : null;
 
     const fallbackResult = withProfileResult.error && withProfileLegacyJoinResult?.error
@@ -259,7 +257,6 @@ export default function EventDetailPage() {
           .from("event_attendees")
           .select("event_id, user_id, status, created_at")
           .eq("event_id", eventId)
-          .eq("status", "going")
       : null;
 
     const error = !withProfileResult.error
@@ -301,6 +298,8 @@ export default function EventDetailPage() {
 
     if (user) {
       setAttending(list.some((item) => item.user_id === user.id));
+    } else {
+      setAttending(false);
     }
   }, [eventId, user, fetchProfilesByIds]);
 
@@ -484,70 +483,33 @@ export default function EventDetailPage() {
 
         await fetchAttendees();
       } else {
-        // Add attendance (upsert first, then fallback insert/update for schema-policy tolerance)
-        const { error: upsertError } = await supabase
+        const { error: insertError } = await supabase
           .from("event_attendees")
-          .upsert(
-            {
-              event_id: eventId,
-              user_id: user.id,
-              status: "going",
-            },
-            {
-              onConflict: "event_id,user_id",
-              ignoreDuplicates: false,
-            }
-          );
+          .insert({
+            event_id: eventId,
+            user_id: user.id,
+          });
 
-        if (upsertError) {
-          const { error: insertError } = await supabase
+        if (insertError) {
+          const { error: existingDeleteError } = await supabase
+            .from("event_attendees")
+            .delete()
+            .eq("event_id", eventId)
+            .eq("user_id", user.id);
+
+          if (existingDeleteError) throw existingDeleteError;
+
+          const { error: retryInsertError } = await supabase
             .from("event_attendees")
             .insert({
               event_id: eventId,
               user_id: user.id,
-              status: "going",
             });
 
-          if (insertError) {
-            const { error: updateError } = await supabase
-              .from("event_attendees")
-              .update({ status: "going" })
-              .eq("event_id", eventId)
-              .eq("user_id", user.id);
-
-            if (updateError) throw updateError;
-          }
+          if (retryInsertError) throw retryInsertError;
         }
 
-        const { data: insertedAttendee, error: attendeeFetchError } = await supabase
-          .from("event_attendees")
-          .select("event_id, user_id, status, created_at")
-          .eq("event_id", eventId)
-          .eq("user_id", user.id)
-          .single();
-
-        if (attendeeFetchError) {
-          await fetchAttendees();
-          return;
-        }
-
-        const insertedProfileMap = await fetchProfilesByIds([user.id]);
-        const normalizedAttendee = normalizeAttendees([
-          {
-            ...(insertedAttendee as unknown as Record<string, unknown>),
-            profile: insertedProfileMap.get(user.id) || null,
-          },
-        ])[0];
-
-        if (normalizedAttendee) {
-          setAttending(true);
-          setAttendees((prev) => {
-            const filtered = prev.filter((item) => item.user_id !== user.id);
-            return [...filtered, normalizedAttendee];
-          });
-        } else {
-          await fetchAttendees();
-        }
+        await fetchAttendees();
       }
     } catch (error) {
       console.error("Error updating attendance:", error);
@@ -705,6 +667,23 @@ export default function EventDetailPage() {
     if (!user || !commentInput.trim() || !attending) return;
     setCommentLoading(true);
     try {
+      const { data: attendanceRecord, error: attendanceCheckError } = await supabase
+        .from("event_attendees")
+        .select("event_id")
+        .eq("event_id", eventId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (attendanceCheckError) {
+        throw attendanceCheckError;
+      }
+
+      if (!attendanceRecord) {
+        setAttending(false);
+        setCommentError("Yorum yazabilmek için önce etkinliğe katılman gerekiyor.");
+        return;
+      }
+
       const { data, error } = await supabase
         .from("event_comments")
         .insert({
@@ -734,6 +713,10 @@ export default function EventDetailPage() {
       }
       setCommentInput("");
       setCommentError(null);
+    } catch (error) {
+      if (!isAbortLikeError(error)) {
+        setCommentError("Yorum paylaşılırken bir sorun oluştu.");
+      }
     } finally {
       setCommentLoading(false);
     }

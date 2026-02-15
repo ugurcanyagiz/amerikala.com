@@ -57,6 +57,7 @@ export default function EventDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isAttending, setIsAttending] = useState(false);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [similarEvents, setSimilarEvents] = useState<Event[]>([]);
@@ -114,14 +115,12 @@ export default function EventDetailPage() {
         if (user) {
           const { data: attendeeData } = await supabase
             .from("event_attendees")
-            .select("status")
+            .select("event_id")
             .eq("event_id", eventId)
             .eq("user_id", user.id)
-            .single();
+            .maybeSingle();
 
-          if (attendeeData) {
-            setIsAttending(attendeeData.status === "going");
-          }
+          setIsAttending(Boolean(attendeeData));
         }
 
         // Fetch similar events (same category, different event)
@@ -154,53 +153,84 @@ export default function EventDetailPage() {
   // Handle attendance
   const handleJoin = async () => {
     if (!user) {
-      router.push("/login");
+      router.push(`/login?redirect=/events/${eventId}`);
       return;
     }
 
     setAttendanceLoading(true);
+    setAttendanceError(null);
+
     try {
       if (isAttending) {
-        // Remove attendance
-        await supabase
+        const { error: deleteError } = await supabase
           .from("event_attendees")
           .delete()
           .eq("event_id", eventId)
           .eq("user_id", user.id);
 
-        // Decrement attendee count
-        await supabase
-          .from("events")
-          .update({ current_attendees: (event?.current_attendees || 1) - 1 })
-          .eq("id", eventId);
-
-        setIsAttending(false);
-        if (event) {
-          setEvent({ ...event, current_attendees: event.current_attendees - 1 });
+        if (deleteError) {
+          throw deleteError;
         }
       } else {
-        // Add attendance
-        await supabase
+        const { error: insertError } = await supabase
           .from("event_attendees")
           .insert({
             event_id: eventId,
             user_id: user.id,
-            status: "going"
           });
 
-        // Increment attendee count
-        await supabase
-          .from("events")
-          .update({ current_attendees: (event?.current_attendees || 0) + 1 })
-          .eq("id", eventId);
+        if (insertError) {
+          const { error: existingDeleteError } = await supabase
+            .from("event_attendees")
+            .delete()
+            .eq("event_id", eventId)
+            .eq("user_id", user.id);
 
-        setIsAttending(true);
-        if (event) {
-          setEvent({ ...event, current_attendees: event.current_attendees + 1 });
+          if (existingDeleteError) {
+            throw existingDeleteError;
+          }
+
+          const { error: retryInsertError } = await supabase
+            .from("event_attendees")
+            .insert({
+              event_id: eventId,
+              user_id: user.id,
+            });
+
+          if (retryInsertError) {
+            throw retryInsertError;
+          }
         }
+      }
+
+      const [{ data: attendeeData }, { count: attendeeCount, error: attendeeCountError }] = await Promise.all([
+        supabase
+          .from("event_attendees")
+          .select("event_id")
+          .eq("event_id", eventId)
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("event_attendees")
+          .select("*", { count: "exact", head: true })
+          .eq("event_id", eventId),
+      ]);
+
+      if (attendeeCountError) {
+        throw attendeeCountError;
+      }
+
+      setIsAttending(Boolean(attendeeData));
+
+      if (event) {
+        setEvent({
+          ...event,
+          current_attendees: attendeeCount || 0,
+        });
       }
     } catch (err) {
       console.error("Error updating attendance:", err);
+      setAttendanceError("Katılım işlemi tamamlanamadı. Lütfen tekrar deneyin.");
     } finally {
       setAttendanceLoading(false);
     }
@@ -576,6 +606,10 @@ export default function EventDetailPage() {
                         <p className="text-xs text-center text-ink-muted">
                           Katılımdan vazgeçmek için tekrar tıkla
                         </p>
+                      )}
+
+                      {attendanceError && (
+                        <p className="text-sm text-center text-red-500">{attendanceError}</p>
                       )}
                     </div>
                   </CardContent>
