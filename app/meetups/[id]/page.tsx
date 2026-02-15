@@ -274,16 +274,17 @@ export default function EventDetailPage() {
     }
 
     const attendeeRows = ((!withProfileResult.error ? withProfileResult.data : !withProfileLegacyJoinResult?.error ? withProfileLegacyJoinResult?.data : fallbackResult?.data) as Array<Record<string, unknown>> | null) || [];
-    const rowsWithProfile = attendeeRows.filter((row) => hasReadableIdentity(row.profile as BasicProfile | BasicProfile[] | null));
+    const activeAttendeeRows = attendeeRows.filter((row) => row.status !== "not_going");
+    const rowsWithProfile = activeAttendeeRows.filter((row) => hasReadableIdentity(row.profile as BasicProfile | BasicProfile[] | null));
 
-    const normalizedRows = rowsWithProfile.length === attendeeRows.length
-      ? attendeeRows
+    const normalizedRows = rowsWithProfile.length === activeAttendeeRows.length
+      ? activeAttendeeRows
       : (() => {
           const profileMapPromise = fetchProfilesByIds(
-            attendeeRows.map((row) => (typeof row.user_id === "string" ? row.user_id : "")).filter(Boolean)
+            activeAttendeeRows.map((row) => (typeof row.user_id === "string" ? row.user_id : "")).filter(Boolean)
           );
           return profileMapPromise.then((profileMap) =>
-            attendeeRows.map((row) => ({
+            activeAttendeeRows.map((row) => ({
               ...row,
               profile:
                 resolveProfile(row.profile as BasicProfile | BasicProfile[] | null)
@@ -302,6 +303,14 @@ export default function EventDetailPage() {
     } else {
       setAttending(false);
     }
+
+    setEvent((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        current_attendees: list.length,
+      };
+    });
   }, [eventId, user, fetchProfilesByIds]);
 
   // Fetch event
@@ -489,30 +498,26 @@ export default function EventDetailPage() {
 
         await fetchAttendees();
       } else {
-        const { error: insertError } = await supabase
+        const { error: upsertError } = await supabase
           .from("event_attendees")
-          .insert({
+          .upsert({
             event_id: eventId,
             user_id: user.id,
+            status: "going",
+          }, {
+            onConflict: "event_id,user_id",
           });
 
-        if (insertError) {
-          const { error: existingDeleteError } = await supabase
-            .from("event_attendees")
-            .delete()
-            .eq("event_id", eventId)
-            .eq("user_id", user.id);
-
-          if (existingDeleteError) throw existingDeleteError;
-
-          const { error: retryInsertError } = await supabase
+        if (upsertError) {
+          const { error: insertError } = await supabase
             .from("event_attendees")
             .insert({
               event_id: eventId,
               user_id: user.id,
+              status: "going",
             });
 
-          if (retryInsertError) throw retryInsertError;
+          if (insertError) throw insertError;
         }
 
         await fetchAttendees();
