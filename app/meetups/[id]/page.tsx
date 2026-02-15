@@ -213,7 +213,12 @@ export default function EventDetailPage() {
       const eventIdValue = typeof row.event_id === "string" ? row.event_id : "";
       const userIdValue = typeof row.user_id === "string" ? row.user_id : "";
       const statusValue = typeof row.status === "string" ? row.status : "going";
-      const createdAtValue = typeof row.created_at === "string" ? row.created_at : new Date().toISOString();
+      const createdAtValue =
+        typeof row.created_at === "string"
+          ? row.created_at
+          : typeof row.joined_at === "string"
+            ? row.joined_at
+            : new Date().toISOString();
 
       return {
         event_id: eventIdValue,
@@ -243,20 +248,20 @@ export default function EventDetailPage() {
 
     const withProfileResult = await supabase
       .from("event_attendees")
-      .select(`event_id, user_id, status, created_at, profile:profiles!event_attendees_user_id_fkey (${profileSelect})`)
+      .select(`*, profile:profiles!event_attendees_user_id_fkey (${profileSelect})`)
       .eq("event_id", eventId);
 
     const withProfileLegacyJoinResult = withProfileResult.error
       ? await supabase
           .from("event_attendees")
-          .select(`event_id, user_id, status, created_at, profile:user_id (${profileSelect})`)
+          .select(`*, profile:user_id (${profileSelect})`)
           .eq("event_id", eventId)
       : null;
 
     const fallbackResult = withProfileResult.error && withProfileLegacyJoinResult?.error
       ? await supabase
           .from("event_attendees")
-          .select("event_id, user_id, status, created_at")
+          .select("*")
           .eq("event_id", eventId)
       : null;
 
