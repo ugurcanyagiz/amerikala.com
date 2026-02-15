@@ -244,15 +244,13 @@ export default function EventDetailPage() {
     const withProfileResult = await supabase
       .from("event_attendees")
       .select(`event_id, user_id, status, created_at, profile:profiles!event_attendees_user_id_fkey (${profileSelect})`)
-      .eq("event_id", eventId)
-      .eq("status", "going");
+      .eq("event_id", eventId);
 
     const withProfileLegacyJoinResult = withProfileResult.error
       ? await supabase
           .from("event_attendees")
           .select(`event_id, user_id, status, created_at, profile:user_id (${profileSelect})`)
           .eq("event_id", eventId)
-          .eq("status", "going")
       : null;
 
     const fallbackResult = withProfileResult.error && withProfileLegacyJoinResult?.error
@@ -260,7 +258,6 @@ export default function EventDetailPage() {
           .from("event_attendees")
           .select("event_id, user_id, status, created_at")
           .eq("event_id", eventId)
-          .eq("status", "going")
       : null;
 
     const error = !withProfileResult.error
@@ -302,6 +299,8 @@ export default function EventDetailPage() {
 
     if (user) {
       setAttending(list.some((item) => item.user_id === user.id));
+    } else {
+      setAttending(false);
     }
   }, [eventId, user, fetchProfilesByIds]);
 
@@ -490,39 +489,30 @@ export default function EventDetailPage() {
 
         await fetchAttendees();
       } else {
-        // Add attendance (upsert first, then fallback insert/update for schema-policy tolerance)
-        const { error: upsertError } = await supabase
+        const { error: insertError } = await supabase
           .from("event_attendees")
-          .upsert(
-            {
-              event_id: eventId,
-              user_id: user.id,
-              status: "going",
-            },
-            {
-              onConflict: "event_id,user_id",
-              ignoreDuplicates: false,
-            }
-          );
+          .insert({
+            event_id: eventId,
+            user_id: user.id,
+          });
 
-        if (upsertError) {
-          const { error: insertError } = await supabase
+        if (insertError) {
+          const { error: existingDeleteError } = await supabase
+            .from("event_attendees")
+            .delete()
+            .eq("event_id", eventId)
+            .eq("user_id", user.id);
+
+          if (existingDeleteError) throw existingDeleteError;
+
+          const { error: retryInsertError } = await supabase
             .from("event_attendees")
             .insert({
               event_id: eventId,
               user_id: user.id,
-              status: "going",
             });
 
-          if (insertError) {
-            const { error: updateError } = await supabase
-              .from("event_attendees")
-              .update({ status: "going" })
-              .eq("event_id", eventId)
-              .eq("user_id", user.id);
-
-            if (updateError) throw updateError;
-          }
+          if (retryInsertError) throw retryInsertError;
         }
 
         await fetchAttendees();
@@ -685,7 +675,7 @@ export default function EventDetailPage() {
     try {
       const { data: attendanceRecord, error: attendanceCheckError } = await supabase
         .from("event_attendees")
-        .select("status")
+        .select("event_id")
         .eq("event_id", eventId)
         .eq("user_id", user.id)
         .maybeSingle();
@@ -694,7 +684,7 @@ export default function EventDetailPage() {
         throw attendanceCheckError;
       }
 
-      if (!attendanceRecord || attendanceRecord.status !== "going") {
+      if (!attendanceRecord) {
         setAttending(false);
         setCommentError("Yorum yazabilmek için önce etkinliğe katılman gerekiyor.");
         return;

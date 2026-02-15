@@ -116,14 +116,12 @@ export default function EventDetailPage() {
         if (user) {
           const { data: attendeeData } = await supabase
             .from("event_attendees")
-            .select("status")
+            .select("event_id")
             .eq("event_id", eventId)
             .eq("user_id", user.id)
-            .single();
+            .maybeSingle();
 
-          if (attendeeData) {
-            setIsAttending(attendeeData.status === "going");
-          }
+          setIsAttending(Boolean(attendeeData));
         }
 
         // Fetch similar events (same category, different event)
@@ -177,50 +175,36 @@ export default function EventDetailPage() {
           .eq("user_id", user.id);
 
         if (deleteError) {
-          const { error: updateError } = await supabase
+          throw deleteError;
+        }
+      } else {
+        const { error: insertError } = await supabase
+          .from("event_attendees")
+          .insert({
+            event_id: eventId,
+            user_id: user.id,
+          });
+
+        if (insertError) {
+          const { error: existingDeleteError } = await supabase
             .from("event_attendees")
-            .update({ status: "not_going" })
+            .delete()
             .eq("event_id", eventId)
             .eq("user_id", user.id);
 
-          if (updateError) {
-            throw updateError;
+          if (existingDeleteError) {
+            throw existingDeleteError;
           }
-        }
-      } else {
-        const { error: upsertError } = await supabase
-          .from("event_attendees")
-          .upsert(
-            {
-              event_id: eventId,
-              user_id: user.id,
-              status: "going",
-            },
-            {
-              onConflict: "event_id,user_id",
-              ignoreDuplicates: false,
-            }
-          );
 
-        if (upsertError) {
-          const { error: insertError } = await supabase
+          const { error: retryInsertError } = await supabase
             .from("event_attendees")
             .insert({
               event_id: eventId,
               user_id: user.id,
-              status: "going",
             });
 
-          if (insertError) {
-            const { error: updateError } = await supabase
-              .from("event_attendees")
-              .update({ status: "going" })
-              .eq("event_id", eventId)
-              .eq("user_id", user.id);
-
-            if (updateError) {
-              throw updateError;
-            }
+          if (retryInsertError) {
+            throw retryInsertError;
           }
         }
       }
@@ -228,22 +212,21 @@ export default function EventDetailPage() {
       const [{ data: attendeeData }, { count: attendeeCount, error: attendeeCountError }] = await Promise.all([
         supabase
           .from("event_attendees")
-          .select("status")
+          .select("event_id")
           .eq("event_id", eventId)
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase
           .from("event_attendees")
           .select("*", { count: "exact", head: true })
-          .eq("event_id", eventId)
-          .eq("status", "going"),
+          .eq("event_id", eventId),
       ]);
 
       if (attendeeCountError) {
         throw attendeeCountError;
       }
 
-      setIsAttending(attendeeData?.status === "going");
+      setIsAttending(Boolean(attendeeData));
 
       if (event) {
         setEvent({
