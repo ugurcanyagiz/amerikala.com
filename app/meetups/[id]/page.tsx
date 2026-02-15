@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import { ensureProfileExists } from "@/lib/supabase/ensureProfile";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { 
   Event,
@@ -464,6 +465,11 @@ export default function EventDetailPage() {
     setAttendanceError(null);
 
     try {
+      const { error: profileError } = await ensureProfileExists(user);
+      if (profileError) {
+        throw profileError;
+      }
+
       if (attending) {
         // Remove attendance (fallback to status update if hard delete fails due policies)
         const { error } = await supabase

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import { ensureProfileExists } from "@/lib/supabase/ensureProfile";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   Event,
@@ -163,6 +164,11 @@ export default function EventDetailPage() {
     setAttendanceError(null);
 
     try {
+      const { error: profileError } = await ensureProfileExists(user);
+      if (profileError) {
+        throw profileError;
+      }
+
       if (isAttending) {
         const { error: deleteError } = await supabase
           .from("event_attendees")
