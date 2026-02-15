@@ -519,35 +519,7 @@ export default function EventDetailPage() {
           }
         }
 
-        const { data: insertedAttendee, error: attendeeFetchError } = await supabase
-          .from("event_attendees")
-          .select("event_id, user_id, status, created_at")
-          .eq("event_id", eventId)
-          .eq("user_id", user.id)
-          .single();
-
-        if (attendeeFetchError) {
-          await fetchAttendees();
-          return;
-        }
-
-        const insertedProfileMap = await fetchProfilesByIds([user.id]);
-        const normalizedAttendee = normalizeAttendees([
-          {
-            ...(insertedAttendee as unknown as Record<string, unknown>),
-            profile: insertedProfileMap.get(user.id) || null,
-          },
-        ])[0];
-
-        if (normalizedAttendee) {
-          setAttending(true);
-          setAttendees((prev) => {
-            const filtered = prev.filter((item) => item.user_id !== user.id);
-            return [...filtered, normalizedAttendee];
-          });
-        } else {
-          await fetchAttendees();
-        }
+        await fetchAttendees();
       }
     } catch (error) {
       console.error("Error updating attendance:", error);
@@ -705,6 +677,23 @@ export default function EventDetailPage() {
     if (!user || !commentInput.trim() || !attending) return;
     setCommentLoading(true);
     try {
+      const { data: attendanceRecord, error: attendanceCheckError } = await supabase
+        .from("event_attendees")
+        .select("status")
+        .eq("event_id", eventId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (attendanceCheckError) {
+        throw attendanceCheckError;
+      }
+
+      if (!attendanceRecord || attendanceRecord.status !== "going") {
+        setAttending(false);
+        setCommentError("Yorum yazabilmek için önce etkinliğe katılman gerekiyor.");
+        return;
+      }
+
       const { data, error } = await supabase
         .from("event_comments")
         .insert({
@@ -734,6 +723,10 @@ export default function EventDetailPage() {
       }
       setCommentInput("");
       setCommentError(null);
+    } catch (error) {
+      if (!isAbortLikeError(error)) {
+        setCommentError("Yorum paylaşılırken bir sorun oluştu.");
+      }
     } finally {
       setCommentLoading(false);
     }
