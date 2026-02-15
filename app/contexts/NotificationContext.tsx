@@ -240,7 +240,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       });
 
       const attendeeNotifications: AppNotification[] = eventAttendees
-        .filter((attendee) => attendee.status !== "not_going")
+        .filter((attendee) => attendee.status === "going")
         .map((attendee) => {
           const actor = profilesById.get(attendee.user_id);
           const id = `event_attendees:${attendee.event_id}:${attendee.user_id}`;
