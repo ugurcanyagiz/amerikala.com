@@ -190,7 +190,7 @@ export default function IsIlanVerPage() {
         contact_phone: formData.contact_phone || null,
         website_url: formData.website_url || null,
         user_id: user.id,
-        status: "approved",
+        status: "pending",
       });
 
       if (error) throw error;
