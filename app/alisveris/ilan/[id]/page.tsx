@@ -17,6 +17,7 @@ import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent } from "@/app/components/ui/Card";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
+import UserProfileCardModal, { UserProfileCardData } from "@/app/components/UserProfileCardModal";
 import {
   ArrowLeft,
   MapPin,
@@ -30,8 +31,6 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageCircle,
-  Tag,
-  Calendar,
 } from "lucide-react";
 
 export default function MarketplaceDetailPage() {
@@ -44,6 +43,7 @@ export default function MarketplaceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [selectedProfile, setSelectedProfile] = useState<UserProfileCardData | null>(null);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -70,9 +70,10 @@ export default function MarketplaceDetailPage() {
           .from("marketplace_listings")
           .update({ view_count: (data.view_count || 0) + 1 })
           .eq("id", listingId);
-      } catch (err: any) {
+      } catch (err) {
         console.error("Error fetching listing:", err);
-        setError(err.message);
+        const message = err instanceof Error ? err.message : "İlan yüklenirken bir hata oluştu";
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -122,7 +123,12 @@ export default function MarketplaceDetailPage() {
     );
   }
 
-  const owner = listing.user as any;
+  const owner = listing.user as {
+    id?: string;
+    username?: string | null;
+    full_name?: string | null;
+    avatar_url?: string | null;
+  };
   const images = listing.images || [];
 
   return (
@@ -254,9 +260,33 @@ export default function MarketplaceDetailPage() {
                         src={owner?.avatar_url}
                         fallback={owner?.full_name || owner?.username || "U"}
                         size="lg"
+                        className={owner?.id ? "cursor-pointer" : undefined}
+                        onClick={() => {
+                          if (!owner?.id) return;
+                          setSelectedProfile({
+                            id: owner.id,
+                            username: owner.username,
+                            full_name: owner.full_name,
+                            avatar_url: owner.avatar_url,
+                          });
+                        }}
                       />
                       <div>
-                        <h3 className="font-bold">{owner?.full_name || owner?.username || "Kullanıcı"}</h3>
+                        <button
+                          type="button"
+                          className="font-bold hover:underline"
+                          onClick={() => {
+                            if (!owner?.id) return;
+                            setSelectedProfile({
+                              id: owner.id,
+                              username: owner.username,
+                              full_name: owner.full_name,
+                              avatar_url: owner.avatar_url,
+                            });
+                          }}
+                        >
+                          {owner?.full_name || owner?.username || "Kullanıcı"}
+                        </button>
                         <p className="text-sm text-neutral-500">Satıcı</p>
                       </div>
                     </div>
@@ -313,6 +343,12 @@ export default function MarketplaceDetailPage() {
                 </Card>
               </div>
             </div>
+
+            <UserProfileCardModal
+              profile={selectedProfile}
+              open={!!selectedProfile}
+              onClose={() => setSelectedProfile(null)}
+            />
           </div>
         </main>
       </div>

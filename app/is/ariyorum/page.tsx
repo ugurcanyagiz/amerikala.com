@@ -10,7 +10,6 @@ import {
   JobCategory,
   JobType,
   JOB_CATEGORY_LABELS,
-  JOB_CATEGORY_ICONS,
   JOB_TYPE_LABELS,
   US_STATES,
   US_STATES_MAP
@@ -23,6 +22,7 @@ import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import { Avatar } from "../../components/ui/Avatar";
+import UserProfileCardModal, { UserProfileCardData } from "../../components/UserProfileCardModal";
 import {
   Search,
   MapPin,
@@ -35,7 +35,12 @@ import {
   AlertCircle,
   X,
   Mail,
-  Phone
+  Phone,
+  MessageCircle,
+  ExternalLink,
+  UserCheck,
+  UserPlus,
+  UserX
 } from "lucide-react";
 
 export default function IsAriyorumPage() {
@@ -175,9 +180,10 @@ export default function IsAriyorumPage() {
         setShowCreateModal(false);
         setCreateSuccess(false);
       }, 2000);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error creating listing:", error);
-      setCreateError(error.message || "Bir hata oluştu");
+      const errorMessage = error instanceof Error ? error.message : "Bir hata oluştu";
+      setCreateError(errorMessage);
     } finally {
       setCreating(false);
     }
@@ -454,82 +460,412 @@ export default function IsAriyorumPage() {
 }
 
 function SeekerCard({ listing }: { listing: JobListing }) {
-  const user = listing.user;
+  const router = useRouter();
+  const { user } = useAuth();
+  const listingUser = listing.user;
+
+  const [relationshipStatus, setRelationshipStatus] = useState<
+    "guest" | "self" | "none" | "pending_sent" | "pending_received" | "following"
+  >("guest");
+  const [followLoading, setFollowLoading] = useState(false);
+  const [dmLoading, setDmLoading] = useState(false);
+  const [showProfileCard, setShowProfileCard] = useState(false);
+
+  useEffect(() => {
+    const checkRelationship = async () => {
+      if (!listingUser?.id) {
+        setRelationshipStatus("none");
+        return;
+      }
+
+      if (!user) {
+        setRelationshipStatus("guest");
+        return;
+      }
+
+      if (user.id === listingUser.id) {
+        setRelationshipStatus("self");
+        return;
+      }
+
+      const pairs = [
+        { from: "follower_id", to: "following_id" },
+        { from: "user_id", to: "target_user_id" },
+        { from: "user_id", to: "followed_user_id" },
+      ];
+
+      for (const pair of pairs) {
+        const { data, error } = await supabase
+          .from("follows")
+          .select("*")
+          .eq(pair.from, user.id)
+          .eq(pair.to, listingUser.id)
+          .limit(1);
+
+        if (!error) {
+          if ((data?.length || 0) > 0) {
+            setRelationshipStatus("following");
+            return;
+          }
+          break;
+        }
+      }
+
+      const { data: outgoing, error: outgoingError } = await supabase
+        .from("friend_requests")
+        .select("status")
+        .eq("requester_id", user.id)
+        .eq("receiver_id", listingUser.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (!outgoingError && outgoing?.status === "pending") {
+        setRelationshipStatus("pending_sent");
+        return;
+      }
+
+      const { data: incoming, error: incomingError } = await supabase
+        .from("friend_requests")
+        .select("status")
+        .eq("requester_id", listingUser.id)
+        .eq("receiver_id", user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (!incomingError && incoming?.status === "pending") {
+        setRelationshipStatus("pending_received");
+        return;
+      }
+
+      setRelationshipStatus("none");
+    };
+
+    checkRelationship();
+  }, [listingUser?.id, user]);
+
+  const upsertFollow = async (targetUserId: string) => {
+    if (!user) return false;
+    const pairs = [
+      { from: "follower_id", to: "following_id" },
+      { from: "user_id", to: "target_user_id" },
+      { from: "user_id", to: "followed_user_id" },
+    ];
+
+    for (const pair of pairs) {
+      const { error } = await supabase
+        .from("follows")
+        .insert({ [pair.from]: user.id, [pair.to]: targetUserId });
+
+      if (!error) return true;
+    }
+    return false;
+  };
+
+  const deleteFollow = async (targetUserId: string) => {
+    if (!user) return false;
+    const pairs = [
+      { from: "follower_id", to: "following_id" },
+      { from: "user_id", to: "target_user_id" },
+      { from: "user_id", to: "followed_user_id" },
+    ];
+
+    for (const pair of pairs) {
+      const { error } = await supabase
+        .from("follows")
+        .delete()
+        .eq(pair.from, user.id)
+        .eq(pair.to, targetUserId);
+
+      if (!error) return true;
+    }
+    return false;
+  };
+
+  const handleToggleFollow = async () => {
+    if (!listingUser?.id) return;
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    if (user.id === listingUser.id) return;
+
+    setFollowLoading(true);
+    try {
+      if (relationshipStatus === "following") {
+        const removed = await deleteFollow(listingUser.id);
+        if (removed) setRelationshipStatus("none");
+        return;
+      }
+
+      if (relationshipStatus === "pending_sent") {
+        const { error } = await supabase
+          .from("friend_requests")
+          .delete()
+          .eq("requester_id", user.id)
+          .eq("receiver_id", listingUser.id)
+          .eq("status", "pending");
+
+        if (!error) setRelationshipStatus("none");
+        return;
+      }
+
+      if (relationshipStatus === "pending_received") {
+        const { error } = await supabase
+          .from("friend_requests")
+          .update({ status: "accepted", responded_at: new Date().toISOString() })
+          .eq("requester_id", listingUser.id)
+          .eq("receiver_id", user.id)
+          .eq("status", "pending");
+
+        if (!error) {
+          await upsertFollow(listingUser.id);
+          setRelationshipStatus("following");
+        }
+        return;
+      }
+
+      const { error: requestError } = await supabase
+        .from("friend_requests")
+        .upsert(
+          { requester_id: user.id, receiver_id: listingUser.id, status: "pending" },
+          { onConflict: "requester_id,receiver_id" }
+        );
+
+      if (!requestError) {
+        setRelationshipStatus("pending_sent");
+        return;
+      }
+
+      const followed = await upsertFollow(listingUser.id);
+      if (followed) setRelationshipStatus("following");
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!listingUser?.id) return;
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    if (user.id === listingUser.id) return;
+
+    setDmLoading(true);
+    try {
+      const { data: rpcConversationId } = await supabase
+        .rpc("create_direct_conversation", { target_user_id: listingUser.id });
+
+      if (rpcConversationId) {
+        router.push(`/messages?conversation=${rpcConversationId}`);
+        return;
+      }
+
+      const { data: myRows } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", user.id);
+
+      const myConversationIds = ((myRows as Array<{ conversation_id: string }> | null) || [])
+        .map((row) => row.conversation_id);
+
+      if (myConversationIds.length > 0) {
+        const { data: targetRows } = await supabase
+          .from("conversation_participants")
+          .select("conversation_id")
+          .eq("user_id", listingUser.id)
+          .in("conversation_id", myConversationIds);
+
+        const existingConversationId =
+          (targetRows as Array<{ conversation_id: string }> | null)?.[0]?.conversation_id;
+
+        if (existingConversationId) {
+          router.push(`/messages?conversation=${existingConversationId}`);
+          return;
+        }
+      }
+
+      let conversationId = "";
+      for (const payload of [{ is_group: false, created_by: user.id }, { is_group: false }, {}]) {
+        const { data, error } = await supabase
+          .from("conversations")
+          .insert(payload)
+          .select("id")
+          .single();
+
+        if (!error && data?.id) {
+          conversationId = data.id as string;
+          break;
+        }
+      }
+
+      if (!conversationId) {
+        router.push("/messages");
+        return;
+      }
+
+      await supabase.from("conversation_participants").insert([
+        { conversation_id: conversationId, user_id: user.id },
+        { conversation_id: conversationId, user_id: listingUser.id },
+      ]);
+
+      router.push(`/messages?conversation=${conversationId}`);
+    } finally {
+      setDmLoading(false);
+    }
+  };
+
+  const getFollowButtonLabel = () => {
+    if (relationshipStatus === "following") return "Takiptesin";
+    if (relationshipStatus === "pending_sent") return "İstek Gönderildi";
+    if (relationshipStatus === "pending_received") return "İsteği Kabul Et";
+    return "Arkadaşlık İsteği Gönder";
+  };
+
+  const getFollowIcon = () => {
+    if (relationshipStatus === "following") return <UserCheck size={15} />;
+    if (relationshipStatus === "pending_sent") return <UserX size={15} />;
+    return <UserPlus size={15} />;
+  };
+
+  const modalProfile: UserProfileCardData | null = listingUser?.id
+    ? {
+        id: listingUser.id,
+        username: listingUser.username,
+        full_name: listingUser.full_name,
+        avatar_url: listingUser.avatar_url,
+      }
+    : null;
 
   return (
-    <Card variant="elevated" className="hover:shadow-[var(--shadow-md)] transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-start gap-5">
-          <Avatar
-            src={user?.avatar_url || undefined}
-            fallback={user?.full_name || user?.username || "?"}
-            size="lg"
-          />
+    <>
+      <Card variant="elevated" className="hover:shadow-[var(--shadow-md)] transition-shadow">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-5">
+            <Avatar
+              src={listingUser?.avatar_url || undefined}
+              fallback={listingUser?.full_name || listingUser?.username || "?"}
+              size="lg"
+              className={listingUser?.id ? "cursor-pointer" : undefined}
+              onClick={() => {
+                if (!listingUser?.id) return;
+                setShowProfileCard(true);
+              }}
+            />
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-[var(--color-ink)]">{listing.title}</h3>
-                <p className="text-sm text-[var(--color-ink-secondary)]">
-                  {user?.full_name || user?.username}
-                </p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-[var(--color-ink)]">{listing.title}</h3>
+                  <button
+                    type="button"
+                    className="text-sm text-[var(--color-ink-secondary)] hover:underline"
+                    onClick={() => {
+                      if (!listingUser?.id) return;
+                      setShowProfileCard(true);
+                    }}
+                  >
+                    {listingUser?.full_name || listingUser?.username}
+                  </button>
+                </div>
+                <Badge variant="primary" size="sm">{JOB_CATEGORY_LABELS[listing.category]}</Badge>
               </div>
-              <Badge variant="primary" size="sm">{JOB_CATEGORY_LABELS[listing.category]}</Badge>
-            </div>
 
-            <p className="text-[var(--color-ink-secondary)] mt-3 line-clamp-2">
-              {listing.description}
-            </p>
+              <p className="text-[var(--color-ink-secondary)] mt-3 line-clamp-2">
+                {listing.description}
+              </p>
 
-            <div className="flex flex-wrap gap-4 mt-4 text-sm text-[var(--color-ink-secondary)]">
-              <span className="flex items-center gap-1.5">
-                <MapPin size={15} />
-                {listing.city}, {US_STATES_MAP[listing.state] || listing.state}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Clock size={15} />
-                {JOB_TYPE_LABELS[listing.job_type]}
-              </span>
-              {listing.is_remote && (
-                <Badge variant="info" size="sm">Uzaktan OK</Badge>
-              )}
-            </div>
-
-            {listing.skills && listing.skills.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                {listing.skills.slice(0, 5).map((skill, idx) => (
-                  <Badge key={idx} variant="outline" size="sm">{skill}</Badge>
-                ))}
-                {listing.skills.length > 5 && (
-                  <Badge variant="outline" size="sm">+{listing.skills.length - 5}</Badge>
+              <div className="flex flex-wrap gap-4 mt-4 text-sm text-[var(--color-ink-secondary)]">
+                <span className="flex items-center gap-1.5">
+                  <MapPin size={15} />
+                  {listing.city}, {US_STATES_MAP[listing.state] || listing.state}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock size={15} />
+                  {JOB_TYPE_LABELS[listing.job_type]}
+                </span>
+                {listing.is_remote && (
+                  <Badge variant="info" size="sm">Uzaktan OK</Badge>
                 )}
               </div>
-            )}
 
-            <div className="flex items-center gap-3 mt-5 pt-4 border-t border-[var(--color-border-light)]">
-              {listing.contact_email && (
-                <a href={`mailto:${listing.contact_email}`}>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Mail size={15} />
-                    E-posta
-                  </Button>
-                </a>
+              {listing.skills && listing.skills.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {listing.skills.slice(0, 5).map((skill, idx) => (
+                    <Badge key={idx} variant="outline" size="sm">{skill}</Badge>
+                  ))}
+                  {listing.skills.length > 5 && (
+                    <Badge variant="outline" size="sm">+{listing.skills.length - 5}</Badge>
+                  )}
+                </div>
               )}
-              {listing.contact_phone && (
-                <a href={`tel:${listing.contact_phone}`}>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Phone size={15} />
-                    Ara
+
+              <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-[var(--color-border-light)]">
+                {listing.contact_email && (
+                  <a href={`mailto:${listing.contact_email}`}>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Mail size={15} />
+                      E-posta
+                    </Button>
+                  </a>
+                )}
+                {listing.contact_phone && (
+                  <a href={`tel:${listing.contact_phone}`}>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Phone size={15} />
+                      Ara
+                    </Button>
+                  </a>
+                )}
+
+                <Button
+                  variant={relationshipStatus === "following" ? "outline" : "primary"}
+                  size="sm"
+                  className="gap-2"
+                  onClick={handleToggleFollow}
+                  disabled={followLoading || relationshipStatus === "self"}
+                >
+                  {getFollowIcon()}
+                  {getFollowButtonLabel()}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={handleSendMessage}
+                  disabled={dmLoading || user?.id === listingUser?.id}
+                >
+                  <MessageCircle size={15} />
+                  Özel Mesaj
+                </Button>
+
+                <Link href={listingUser?.id ? `/profile/${listingUser.id}` : "#"}>
+                  <Button variant="outline" size="sm" className="gap-2" disabled={!listingUser?.id}>
+                    <ExternalLink size={15} />
+                    Profili Görüntüle
                   </Button>
-                </a>
-              )}
-              <Button variant="primary" size="sm">
-                Profili Görüntüle
-              </Button>
+                </Link>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => router.push(user ? "/groups/create" : "/login")}
+                >
+                  Birlikte Grup Oluştur
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <UserProfileCardModal
+        profile={modalProfile}
+        open={showProfileCard}
+        onClose={() => setShowProfileCard(false)}
+      />
+    </>
   );
 }

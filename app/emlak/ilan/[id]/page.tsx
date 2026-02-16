@@ -23,6 +23,7 @@ import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent } from "@/app/components/ui/Card";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
+import UserProfileCardModal, { UserProfileCardData } from "@/app/components/UserProfileCardModal";
 import {
   ArrowLeft,
   MapPin,
@@ -101,6 +102,7 @@ export default function ListingDetailPage() {
   const [dmText, setDmText] = useState("");
   const [dmSending, setDmSending] = useState(false);
   const [dmFeedback, setDmFeedback] = useState<string | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<UserProfileCardData | null>(null);
 
   const enrichCommentsWithProfiles = useCallback(async (rows: ListingCommentDbRow[]): Promise<ListingComment[]> => {
     if (rows.length === 0) return [];
@@ -773,12 +775,34 @@ export default function ListingDetailPage() {
                                 src={comment.profile?.avatar_url || undefined}
                                 fallback={comment.profile?.full_name || comment.profile?.username || "U"}
                                 size="sm"
+                                className={comment.profile?.id ? "cursor-pointer" : undefined}
+                                onClick={() => {
+                                  if (!comment.profile?.id) return;
+                                  setSelectedProfile({
+                                    id: comment.profile.id,
+                                    username: comment.profile.username,
+                                    full_name: comment.profile.full_name,
+                                    avatar_url: comment.profile.avatar_url,
+                                  });
+                                }}
                               />
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center justify-between gap-3">
-                                  <p className="font-medium text-sm truncate">
+                                  <button
+                                    type="button"
+                                    className="font-medium text-sm truncate text-left hover:underline"
+                                    onClick={() => {
+                                      if (!comment.profile?.id) return;
+                                      setSelectedProfile({
+                                        id: comment.profile.id,
+                                        username: comment.profile.username,
+                                        full_name: comment.profile.full_name,
+                                        avatar_url: comment.profile.avatar_url,
+                                      });
+                                    }}
+                                  >
                                     {comment.profile?.full_name || comment.profile?.username || "Kullanıcı"}
-                                  </p>
+                                  </button>
                                   <p className="text-xs text-neutral-500">{formatDate(comment.created_at)}</p>
                                 </div>
                                 <p className="text-sm text-neutral-700 dark:text-neutral-300 mt-1 whitespace-pre-wrap">{comment.content}</p>
@@ -802,9 +826,33 @@ export default function ListingDetailPage() {
                         src={owner?.avatar_url || undefined}
                         fallback={owner?.full_name || owner?.username || "U"}
                         size="lg"
+                        className={owner?.id ? "cursor-pointer" : undefined}
+                        onClick={() => {
+                          if (!owner?.id) return;
+                          setSelectedProfile({
+                            id: owner.id,
+                            username: owner.username,
+                            full_name: owner.full_name,
+                            avatar_url: owner.avatar_url,
+                          });
+                        }}
                       />
                       <div>
-                        <h3 className="font-bold">{owner?.full_name || owner?.username || "Kullanıcı"}</h3>
+                        <button
+                          type="button"
+                          className="font-bold hover:underline"
+                          onClick={() => {
+                            if (!owner?.id) return;
+                            setSelectedProfile({
+                              id: owner.id,
+                              username: owner.username,
+                              full_name: owner.full_name,
+                              avatar_url: owner.avatar_url,
+                            });
+                          }}
+                        >
+                          {owner?.full_name || owner?.username || "Kullanıcı"}
+                        </button>
                         <p className="text-sm text-neutral-500">
                           {owner?.created_at && `Üye: ${formatDate(owner.created_at)}`}
                         </p>
@@ -888,6 +936,12 @@ export default function ListingDetailPage() {
                 </Card>
               </div>
             </div>
+
+            <UserProfileCardModal
+              profile={selectedProfile}
+              open={!!selectedProfile}
+              onClose={() => setSelectedProfile(null)}
+            />
           </div>
         </main>
       </div>
