@@ -129,8 +129,43 @@ with check (
 
 
 -- -----------------------------------------------------------------------------
--- 5) CORE /messages TABLES RLS (required for real-time direct messaging)
+-- 5) CORE /messages TABLES (create if missing) + RLS
 -- -----------------------------------------------------------------------------
+create table if not exists public.conversations (
+  id uuid primary key default gen_random_uuid(),
+  title text,
+  name text,
+  is_group boolean not null default false,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.conversation_participants (
+  conversation_id uuid not null references public.conversations(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (conversation_id, user_id)
+);
+
+create table if not exists public.messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references public.conversations(id) on delete cascade,
+  sender_id uuid not null references public.profiles(id) on delete cascade,
+  content text not null,
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+
+create index if not exists idx_conversation_participants_user
+  on public.conversation_participants (user_id, conversation_id);
+
+create index if not exists idx_messages_conversation_created
+  on public.messages (conversation_id, created_at desc);
+
+create index if not exists idx_messages_sender_created
+  on public.messages (sender_id, created_at desc);
+
 alter table public.conversations enable row level security;
 alter table public.conversation_participants enable row level security;
 alter table public.messages enable row level security;
