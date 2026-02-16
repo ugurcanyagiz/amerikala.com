@@ -28,7 +28,7 @@ import { Badge } from "../components/ui/Badge";
 import { Input } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
 import { useAuth } from "../contexts/AuthContext";
-import { getMessagePreviews, MessagePreview } from "@/lib/messages";
+import { getMessagePreviews, markConversationMessagesAsRead, MessagePreview } from "@/lib/messages";
 import { supabase } from "@/lib/supabase/client";
 
 type InboxFilter = "all" | "unread" | "groups";
@@ -300,12 +300,7 @@ export default function MessagesPage() {
         )
       );
 
-      await supabase
-        .from("messages")
-        .update({ read_at: new Date().toISOString() })
-        .eq("conversation_id", conversationId)
-        .neq("sender_id", user.id)
-        .is("read_at", null);
+      await markConversationMessagesAsRead(conversationId, user.id);
     },
     [user]
   );
@@ -409,6 +404,7 @@ export default function MessagesPage() {
   const handleSelectConversation = (conversationId: string) => {
     setSelectedConversationId(conversationId);
     setIsActionsOpen(false);
+    void markConversationAsRead(conversationId);
   };
 
   const handleSendMessage = async (event?: FormEvent) => {
