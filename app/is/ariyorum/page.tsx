@@ -35,9 +35,11 @@ import {
   X,
   Mail,
   Phone,
-  Heart,
   MessageCircle,
-  ExternalLink
+  ExternalLink,
+  UserCheck,
+  UserPlus,
+  UserX
 } from "lucide-react";
 
 export default function IsAriyorumPage() {
@@ -461,14 +463,26 @@ function SeekerCard({ listing }: { listing: JobListing }) {
   const { user } = useAuth();
   const listingUser = listing.user;
 
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [relationshipStatus, setRelationshipStatus] = useState<
+    "guest" | "self" | "none" | "pending_sent" | "pending_received" | "following"
+  >("guest");
   const [followLoading, setFollowLoading] = useState(false);
   const [dmLoading, setDmLoading] = useState(false);
 
   useEffect(() => {
-    const checkFollowing = async () => {
-      if (!user || !listingUser?.id || user.id === listingUser.id) {
-        setIsFollowing(false);
+    const checkRelationship = async () => {
+      if (!listingUser?.id) {
+        setRelationshipStatus("none");
+        return;
+      }
+
+      if (!user) {
+        setRelationshipStatus("guest");
+        return;
+      }
+
+      if (user.id === listingUser.id) {
+        setRelationshipStatus("self");
         return;
       }
 
@@ -487,16 +501,83 @@ function SeekerCard({ listing }: { listing: JobListing }) {
           .limit(1);
 
         if (!error) {
-          setIsFollowing((data?.length || 0) > 0);
-          return;
+          if ((data?.length || 0) > 0) {
+            setRelationshipStatus("following");
+            return;
+          }
+          break;
         }
       }
 
-      setIsFollowing(false);
+      const { data: outgoing, error: outgoingError } = await supabase
+        .from("friend_requests")
+        .select("status")
+        .eq("requester_id", user.id)
+        .eq("receiver_id", listingUser.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (!outgoingError && outgoing?.status === "pending") {
+        setRelationshipStatus("pending_sent");
+        return;
+      }
+
+      const { data: incoming, error: incomingError } = await supabase
+        .from("friend_requests")
+        .select("status")
+        .eq("requester_id", listingUser.id)
+        .eq("receiver_id", user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (!incomingError && incoming?.status === "pending") {
+        setRelationshipStatus("pending_received");
+        return;
+      }
+
+      setRelationshipStatus("none");
     };
 
-    checkFollowing();
+    checkRelationship();
   }, [listingUser?.id, user]);
+
+  const upsertFollow = async (targetUserId: string) => {
+    if (!user) return false;
+    const pairs = [
+      { from: "follower_id", to: "following_id" },
+      { from: "user_id", to: "target_user_id" },
+      { from: "user_id", to: "followed_user_id" },
+    ];
+
+    for (const pair of pairs) {
+      const { error } = await supabase
+        .from("follows")
+        .insert({ [pair.from]: user.id, [pair.to]: targetUserId });
+
+      if (!error) return true;
+    }
+    return false;
+  };
+
+  const deleteFollow = async (targetUserId: string) => {
+    if (!user) return false;
+    const pairs = [
+      { from: "follower_id", to: "following_id" },
+      { from: "user_id", to: "target_user_id" },
+      { from: "user_id", to: "followed_user_id" },
+    ];
+
+    for (const pair of pairs) {
+      const { error } = await supabase
+        .from("follows")
+        .delete()
+        .eq(pair.from, user.id)
+        .eq(pair.to, targetUserId);
+
+      if (!error) return true;
+    }
+    return false;
+  };
 
   const handleToggleFollow = async () => {
     if (!listingUser?.id) return;
@@ -508,37 +589,53 @@ function SeekerCard({ listing }: { listing: JobListing }) {
 
     setFollowLoading(true);
     try {
-      const pairs = [
-        { from: "follower_id", to: "following_id" },
-        { from: "user_id", to: "target_user_id" },
-        { from: "user_id", to: "followed_user_id" },
-      ];
-
-      if (isFollowing) {
-        for (const pair of pairs) {
-          const { error } = await supabase
-            .from("follows")
-            .delete()
-            .eq(pair.from, user.id)
-            .eq(pair.to, listingUser.id);
-
-          if (!error) {
-            setIsFollowing(false);
-            return;
-          }
-        }
-      } else {
-        for (const pair of pairs) {
-          const { error } = await supabase
-            .from("follows")
-            .insert({ [pair.from]: user.id, [pair.to]: listingUser.id });
-
-          if (!error) {
-            setIsFollowing(true);
-            return;
-          }
-        }
+      if (relationshipStatus === "following") {
+        const removed = await deleteFollow(listingUser.id);
+        if (removed) setRelationshipStatus("none");
+        return;
       }
+
+      if (relationshipStatus === "pending_sent") {
+        const { error } = await supabase
+          .from("friend_requests")
+          .delete()
+          .eq("requester_id", user.id)
+          .eq("receiver_id", listingUser.id)
+          .eq("status", "pending");
+
+        if (!error) setRelationshipStatus("none");
+        return;
+      }
+
+      if (relationshipStatus === "pending_received") {
+        const { error } = await supabase
+          .from("friend_requests")
+          .update({ status: "accepted", responded_at: new Date().toISOString() })
+          .eq("requester_id", listingUser.id)
+          .eq("receiver_id", user.id)
+          .eq("status", "pending");
+
+        if (!error) {
+          await upsertFollow(listingUser.id);
+          setRelationshipStatus("following");
+        }
+        return;
+      }
+
+      const { error: requestError } = await supabase
+        .from("friend_requests")
+        .upsert(
+          { requester_id: user.id, receiver_id: listingUser.id, status: "pending" },
+          { onConflict: "requester_id,receiver_id" }
+        );
+
+      if (!requestError) {
+        setRelationshipStatus("pending_sent");
+        return;
+      }
+
+      const followed = await upsertFollow(listingUser.id);
+      if (followed) setRelationshipStatus("following");
     } finally {
       setFollowLoading(false);
     }
@@ -554,6 +651,14 @@ function SeekerCard({ listing }: { listing: JobListing }) {
 
     setDmLoading(true);
     try {
+      const { data: rpcConversationId } = await supabase
+        .rpc("create_direct_conversation", { target_user_id: listingUser.id });
+
+      if (rpcConversationId) {
+        router.push(`/messages?conversation=${rpcConversationId}`);
+        return;
+      }
+
       const { data: myRows } = await supabase
         .from("conversation_participants")
         .select("conversation_id")
@@ -606,6 +711,19 @@ function SeekerCard({ listing }: { listing: JobListing }) {
     } finally {
       setDmLoading(false);
     }
+  };
+
+  const getFollowButtonLabel = () => {
+    if (relationshipStatus === "following") return "Takiptesin";
+    if (relationshipStatus === "pending_sent") return "İstek Gönderildi";
+    if (relationshipStatus === "pending_received") return "İsteği Kabul Et";
+    return "Arkadaşlık İsteği Gönder";
+  };
+
+  const getFollowIcon = () => {
+    if (relationshipStatus === "following") return <UserCheck size={15} />;
+    if (relationshipStatus === "pending_sent") return <UserX size={15} />;
+    return <UserPlus size={15} />;
   };
 
   return (
@@ -677,14 +795,14 @@ function SeekerCard({ listing }: { listing: JobListing }) {
               )}
 
               <Button
-                variant={isFollowing ? "outline" : "primary"}
+                variant={relationshipStatus === "following" ? "outline" : "primary"}
                 size="sm"
                 className="gap-2"
                 onClick={handleToggleFollow}
-                disabled={followLoading || user?.id === listingUser?.id}
+                disabled={followLoading || relationshipStatus === "self"}
               >
-                <Heart size={15} />
-                {isFollowing ? "Takiptesin" : "Arkadaş Ekle"}
+                {getFollowIcon()}
+                {getFollowButtonLabel()}
               </Button>
 
               <Button
