@@ -21,7 +21,6 @@ import {
   MapPin,
   Globe,
   Lock,
-  Unlock,
   Image as ImageIcon,
   Loader2,
   CheckCircle2,
@@ -43,6 +42,7 @@ export default function CreateGroupPage() {
   const [isNationwide, setIsNationwide] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const [requiresApproval, setRequiresApproval] = useState(false);
+  const [applicationQuestion, setApplicationQuestion] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState("");
 
@@ -109,7 +109,9 @@ export default function CreateGroupPage() {
           avatar_url: avatarUrl || null,
           cover_image_url: coverImageUrl || null,
           is_private: isPrivate,
-          requires_approval: requiresApproval,
+          requires_approval: isPrivate ? true : requiresApproval,
+          application_question: applicationQuestion.trim() || null,
+          visibility: isPrivate ? "private" : "public",
           created_by: user.id,
           status: "pending"
         })
@@ -140,11 +142,11 @@ export default function CreateGroupPage() {
         router.push("/groups/my-groups");
       }, 2000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating group:", error);
       setStatus({
         type: "error",
-        message: error.message || "Grup oluşturulurken bir hata oluştu"
+        message: error instanceof Error ? error.message : "Grup oluşturulurken bir hata oluştu"
       });
     } finally {
       setSaving(false);
@@ -331,7 +333,11 @@ export default function CreateGroupPage() {
                   type="checkbox"
                   id="isPrivate"
                   checked={isPrivate}
-                  onChange={(e) => setIsPrivate(e.target.checked)}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIsPrivate(checked);
+                    if (checked) setRequiresApproval(true);
+                  }}
                   className="h-5 w-5 mt-0.5 rounded border-neutral-300 text-blue-500 focus:ring-blue-500"
                 />
                 <label htmlFor="isPrivate" className="cursor-pointer">
@@ -352,7 +358,8 @@ export default function CreateGroupPage() {
                   id="requiresApproval"
                   checked={requiresApproval}
                   onChange={(e) => setRequiresApproval(e.target.checked)}
-                  className="h-5 w-5 mt-0.5 rounded border-neutral-300 text-blue-500 focus:ring-blue-500"
+                  disabled={isPrivate}
+                  className="h-5 w-5 mt-0.5 rounded border-neutral-300 text-blue-500 focus:ring-blue-500 disabled:opacity-50"
                 />
                 <label htmlFor="requiresApproval" className="cursor-pointer">
                   <div className="flex items-center gap-2 font-medium">
@@ -360,10 +367,30 @@ export default function CreateGroupPage() {
                     Üyelik Onayı Gerekli
                   </div>
                   <p className="text-sm text-neutral-500 mt-1">
-                    Yeni üyeler gruba katılmadan önce yönetici onayı gerekir.
+                    Yeni üyeler gruba katılmadan önce yönetici onayı gerekir. Özel gruplarda bu ayar zorunlu olur.
                   </p>
                 </label>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Membership Question */}
+          <Card className="glass mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Başvuru Sorusu (Opsiyonel)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Örn: Bu gruba neden katılmak istiyorsunuz?"
+                value={applicationQuestion}
+                onChange={(e) => setApplicationQuestion(e.target.value)}
+                rows={3}
+                maxLength={240}
+              />
+              <p className="text-xs text-neutral-500 mt-1 text-right">{applicationQuestion.length}/240</p>
+              <p className="text-xs text-neutral-500 mt-2">
+                Üyelik onayı aktif olduğunda, katılmak isteyenlere bu soru gösterilir.
+              </p>
             </CardContent>
           </Card>
 
