@@ -59,7 +59,7 @@ export default function CreateEventPage() {
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const COVER_BUCKET = "event-covers";
+  const COVER_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_EVENT_COVERS_BUCKET?.trim() || "event-covers";
   const MAX_COVER_IMAGE_MB = 8;
 
   useEffect(() => {
@@ -152,6 +152,16 @@ export default function CreateEventPage() {
   };
 
   const uploadCoverImage = async (file: File, organizerId: string) => {
+    const { error: bucketCheckError } = await supabase.storage
+      .from(COVER_BUCKET)
+      .list("", { limit: 1 });
+
+    if (bucketCheckError?.message?.toLowerCase().includes("bucket not found")) {
+      throw new Error(
+        `Supabase Storage bucket bulunamadı: '${COVER_BUCKET}'. SQL Editor'da docs/supabase/event-cover-storage.sql dosyasını çalıştırın veya NEXT_PUBLIC_SUPABASE_EVENT_COVERS_BUCKET değerini mevcut bucket adına ayarlayın.`
+      );
+    }
+
     const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const sanitizedExtension = extension.replace(/[^a-z0-9]/g, "") || "jpg";
     const filePath = `${organizerId}/${Date.now()}-${crypto.randomUUID()}.${sanitizedExtension}`;
@@ -234,7 +244,10 @@ export default function CreateEventPage() {
       }, 2000);
 
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Etkinlik oluşturulurken bir hata oluştu";
+      const rawMessage = error instanceof Error ? error.message : "Etkinlik oluşturulurken bir hata oluştu";
+      const message = rawMessage.toLowerCase().includes("bucket not found")
+        ? `Kapak görseli yükleme bucket'ı bulunamadı ('${COVER_BUCKET}'). Lütfen docs/supabase/event-cover-storage.sql dosyasını çalıştırın veya NEXT_PUBLIC_SUPABASE_EVENT_COVERS_BUCKET ayarını kontrol edin.`
+        : rawMessage;
       console.error("Error creating event:", error);
       setStatus({
         type: "error",

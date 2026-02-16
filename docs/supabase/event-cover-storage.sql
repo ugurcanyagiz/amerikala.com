@@ -1,5 +1,9 @@
 -- Meetup cover image upload setup (Supabase Storage)
 -- Run in SQL editor as project owner.
+-- IMPORTANT:
+-- If your project uses a different bucket name, set
+-- NEXT_PUBLIC_SUPABASE_EVENT_COVERS_BUCKET in your .env file
+-- and use that same name in this script.
 
 begin;
 
