@@ -46,7 +46,6 @@ const LABELS: Record<string, string> = {
   "sidebar.realEstate": "Emlak",
   "sidebar.forRent": "Kiralık",
   "sidebar.forSale": "Satılık",
-  "sidebar.roommate": "Ev Arkadaşı",
   "sidebar.postListing": "İlan Ver",
   "sidebar.myListings": "İlanlarım",
   "sidebar.jobs": "İş İlanları",
@@ -82,7 +81,6 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { href: "/emlak/kiralik", labelKey: "sidebar.forRent" },
       { href: "/emlak/satilik", labelKey: "sidebar.forSale" },
-      { href: "/emlak/ev-arkadasi", labelKey: "sidebar.roommate" },
       { href: "/emlak/ilan-ver", labelKey: "sidebar.postListing", icon: Plus },
       { href: "/emlak/ilanlarim", labelKey: "sidebar.myListings", icon: List },
     ],

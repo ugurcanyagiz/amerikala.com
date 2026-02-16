@@ -58,7 +58,6 @@ const NAV_ITEMS = [
     children: [
       { href: "/emlak/kiralik", label: "Kiralık", icon: Building2, description: "Kiralık ilanlar" },
       { href: "/emlak/satilik", label: "Satılık", icon: Building2, description: "Satılık ilanlar" },
-      { href: "/emlak/ev-arkadasi", label: "Ev Arkadaşı", icon: Users, description: "Oda arkadaşı bul" },
       { href: "/emlak/ilan-ver", label: "İlan Ver", icon: Plus, accent: true },
       { href: "/emlak/ilanlarim", label: "İlanlarım", icon: List },
     ],

@@ -14,7 +14,6 @@ import {
 } from "@/lib/types";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
-import { Badge } from "../components/ui/Badge";
 import { 
   Plus, 
   MapPin,
@@ -25,7 +24,6 @@ import {
   Loader2,
   Home,
   Building2,
-  Users,
   Heart,
   Eye,
   ArrowRight,
@@ -35,7 +33,7 @@ export default function EmlakPage() {
   const { user } = useAuth();
   const [recentListings, setRecentListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ rent: 0, sale: 0, roommate: 0 });
+  const [stats, setStats] = useState({ rent: 0, sale: 0 });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,7 +66,7 @@ export default function EmlakPage() {
           .eq("status", "approved")
           .eq("listing_type", "roommate");
 
-        setStats({ rent: rentCount || 0, sale: saleCount || 0, roommate: roommateCount || 0 });
+        setStats({ rent: (rentCount || 0) + (roommateCount || 0), sale: saleCount || 0 });
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -96,7 +94,7 @@ export default function EmlakPage() {
               Kiralık & Satılık İlanlar
             </h1>
             <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-              Amerika'daki Türk topluluğundan güvenilir emlak ilanları.
+              Amerika&apos;daki Türk topluluğundan güvenilir emlak ilanları.
             </p>
 
             <Link href={user ? "/emlak/ilan-ver" : "/login?redirect=/emlak/ilan-ver"}>
@@ -117,11 +115,6 @@ export default function EmlakPage() {
                 <div className="text-2xl font-bold">{stats.sale}</div>
                 <div className="text-sm text-neutral-500">Satılık</div>
               </Link>
-              <div className="w-px h-8 bg-neutral-200 dark:bg-neutral-800" />
-              <Link href="/emlak/ev-arkadasi" className="text-center hover:opacity-80 transition">
-                <div className="text-2xl font-bold">{stats.roommate}</div>
-                <div className="text-sm text-neutral-500">Ev Arkadaşı</div>
-              </Link>
             </div>
           </div>
         </div>
@@ -129,7 +122,7 @@ export default function EmlakPage() {
 
       {/* Category Cards */}
       <section className="ak-shell py-8">
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 gap-4">
           <Link href="/emlak/kiralik" className="group">
             <Card className="h-full hover:shadow-lg transition-all border-2 border-transparent hover:border-blue-200 dark:hover:border-blue-800">
               <CardContent className="p-6">
@@ -163,25 +156,6 @@ export default function EmlakPage() {
                     <p className="text-sm text-neutral-500">{stats.sale} aktif ilan</p>
                   </div>
                   <ArrowRight className="h-5 w-5 text-neutral-300 group-hover:text-green-600 group-hover:translate-x-1 transition-all" />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/emlak/ev-arkadasi" className="group">
-            <Card className="h-full hover:shadow-lg transition-all border-2 border-transparent hover:border-purple-200 dark:hover:border-purple-800">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                    <Users className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold mb-1 group-hover:text-purple-600 transition-colors">
-                      Ev Arkadaşı
-                    </h3>
-                    <p className="text-sm text-neutral-500">{stats.roommate} aktif ilan</p>
-                  </div>
-                  <ArrowRight className="h-5 w-5 text-neutral-300 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
                 </div>
               </CardContent>
             </Card>
