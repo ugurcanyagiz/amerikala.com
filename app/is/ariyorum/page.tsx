@@ -10,7 +10,6 @@ import {
   JobCategory,
   JobType,
   JOB_CATEGORY_LABELS,
-  JOB_CATEGORY_ICONS,
   JOB_TYPE_LABELS,
   US_STATES,
   US_STATES_MAP
@@ -35,7 +34,10 @@ import {
   AlertCircle,
   X,
   Mail,
-  Phone
+  Phone,
+  Heart,
+  MessageCircle,
+  ExternalLink
 } from "lucide-react";
 
 export default function IsAriyorumPage() {
@@ -175,9 +177,10 @@ export default function IsAriyorumPage() {
         setShowCreateModal(false);
         setCreateSuccess(false);
       }, 2000);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error creating listing:", error);
-      setCreateError(error.message || "Bir hata oluştu");
+      const errorMessage = error instanceof Error ? error.message : "Bir hata oluştu";
+      setCreateError(errorMessage);
     } finally {
       setCreating(false);
     }
@@ -454,15 +457,164 @@ export default function IsAriyorumPage() {
 }
 
 function SeekerCard({ listing }: { listing: JobListing }) {
-  const user = listing.user;
+  const router = useRouter();
+  const { user } = useAuth();
+  const listingUser = listing.user;
+
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [dmLoading, setDmLoading] = useState(false);
+
+  useEffect(() => {
+    const checkFollowing = async () => {
+      if (!user || !listingUser?.id || user.id === listingUser.id) {
+        setIsFollowing(false);
+        return;
+      }
+
+      const pairs = [
+        { from: "follower_id", to: "following_id" },
+        { from: "user_id", to: "target_user_id" },
+        { from: "user_id", to: "followed_user_id" },
+      ];
+
+      for (const pair of pairs) {
+        const { data, error } = await supabase
+          .from("follows")
+          .select("*")
+          .eq(pair.from, user.id)
+          .eq(pair.to, listingUser.id)
+          .limit(1);
+
+        if (!error) {
+          setIsFollowing((data?.length || 0) > 0);
+          return;
+        }
+      }
+
+      setIsFollowing(false);
+    };
+
+    checkFollowing();
+  }, [listingUser?.id, user]);
+
+  const handleToggleFollow = async () => {
+    if (!listingUser?.id) return;
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    if (user.id === listingUser.id) return;
+
+    setFollowLoading(true);
+    try {
+      const pairs = [
+        { from: "follower_id", to: "following_id" },
+        { from: "user_id", to: "target_user_id" },
+        { from: "user_id", to: "followed_user_id" },
+      ];
+
+      if (isFollowing) {
+        for (const pair of pairs) {
+          const { error } = await supabase
+            .from("follows")
+            .delete()
+            .eq(pair.from, user.id)
+            .eq(pair.to, listingUser.id);
+
+          if (!error) {
+            setIsFollowing(false);
+            return;
+          }
+        }
+      } else {
+        for (const pair of pairs) {
+          const { error } = await supabase
+            .from("follows")
+            .insert({ [pair.from]: user.id, [pair.to]: listingUser.id });
+
+          if (!error) {
+            setIsFollowing(true);
+            return;
+          }
+        }
+      }
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!listingUser?.id) return;
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    if (user.id === listingUser.id) return;
+
+    setDmLoading(true);
+    try {
+      const { data: myRows } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", user.id);
+
+      const myConversationIds = ((myRows as Array<{ conversation_id: string }> | null) || [])
+        .map((row) => row.conversation_id);
+
+      if (myConversationIds.length > 0) {
+        const { data: targetRows } = await supabase
+          .from("conversation_participants")
+          .select("conversation_id")
+          .eq("user_id", listingUser.id)
+          .in("conversation_id", myConversationIds);
+
+        const existingConversationId =
+          (targetRows as Array<{ conversation_id: string }> | null)?.[0]?.conversation_id;
+
+        if (existingConversationId) {
+          router.push(`/messages?conversation=${existingConversationId}`);
+          return;
+        }
+      }
+
+      let conversationId = "";
+      for (const payload of [{ is_group: false, created_by: user.id }, { is_group: false }, {}]) {
+        const { data, error } = await supabase
+          .from("conversations")
+          .insert(payload)
+          .select("id")
+          .single();
+
+        if (!error && data?.id) {
+          conversationId = data.id as string;
+          break;
+        }
+      }
+
+      if (!conversationId) {
+        router.push("/messages");
+        return;
+      }
+
+      await supabase.from("conversation_participants").insert([
+        { conversation_id: conversationId, user_id: user.id },
+        { conversation_id: conversationId, user_id: listingUser.id },
+      ]);
+
+      router.push(`/messages?conversation=${conversationId}`);
+    } finally {
+      setDmLoading(false);
+    }
+  };
 
   return (
     <Card variant="elevated" className="hover:shadow-[var(--shadow-md)] transition-shadow">
       <CardContent className="p-6">
         <div className="flex items-start gap-5">
           <Avatar
-            src={user?.avatar_url || undefined}
-            fallback={user?.full_name || user?.username || "?"}
+            src={listingUser?.avatar_url || undefined}
+            fallback={listingUser?.full_name || listingUser?.username || "?"}
             size="lg"
           />
 
@@ -471,7 +623,7 @@ function SeekerCard({ listing }: { listing: JobListing }) {
               <div>
                 <h3 className="text-lg font-semibold text-[var(--color-ink)]">{listing.title}</h3>
                 <p className="text-sm text-[var(--color-ink-secondary)]">
-                  {user?.full_name || user?.username}
+                  {listingUser?.full_name || listingUser?.username}
                 </p>
               </div>
               <Badge variant="primary" size="sm">{JOB_CATEGORY_LABELS[listing.category]}</Badge>
@@ -506,7 +658,7 @@ function SeekerCard({ listing }: { listing: JobListing }) {
               </div>
             )}
 
-            <div className="flex items-center gap-3 mt-5 pt-4 border-t border-[var(--color-border-light)]">
+            <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-[var(--color-border-light)]">
               {listing.contact_email && (
                 <a href={`mailto:${listing.contact_email}`}>
                   <Button variant="outline" size="sm" className="gap-2">
@@ -523,8 +675,43 @@ function SeekerCard({ listing }: { listing: JobListing }) {
                   </Button>
                 </a>
               )}
-              <Button variant="primary" size="sm">
-                Profili Görüntüle
+
+              <Button
+                variant={isFollowing ? "outline" : "primary"}
+                size="sm"
+                className="gap-2"
+                onClick={handleToggleFollow}
+                disabled={followLoading || user?.id === listingUser?.id}
+              >
+                <Heart size={15} />
+                {isFollowing ? "Takiptesin" : "Arkadaş Ekle"}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={handleSendMessage}
+                disabled={dmLoading || user?.id === listingUser?.id}
+              >
+                <MessageCircle size={15} />
+                Özel Mesaj
+              </Button>
+
+              <Link href={listingUser?.id ? `/profile/${listingUser.id}` : "#"}>
+                <Button variant="outline" size="sm" className="gap-2" disabled={!listingUser?.id}>
+                  <ExternalLink size={15} />
+                  Profili Görüntüle
+                </Button>
+              </Link>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => router.push(user ? "/groups/create" : "/login")}
+              >
+                Birlikte Grup Oluştur
               </Button>
             </div>
           </div>
