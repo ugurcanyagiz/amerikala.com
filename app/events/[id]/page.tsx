@@ -49,7 +49,7 @@ type EventWithOrganizer = Omit<Event, "organizer"> & {
 export default function EventDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const eventId = params.id as string;
 
   // State
@@ -57,6 +57,7 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAttending, setIsAttending] = useState(false);
+  const [myAttendanceStatus, setMyAttendanceStatus] = useState<"pending" | "going" | "interested" | "not_going" | "rejected" | null>(null);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
   const [liked, setLiked] = useState(false);
@@ -116,12 +117,14 @@ export default function EventDetailPage() {
         if (user) {
           const { data: attendeeData } = await supabase
             .from("event_attendees")
-            .select("event_id")
+            .select("event_id, status")
             .eq("event_id", eventId)
             .eq("user_id", user.id)
             .maybeSingle();
 
-          setIsAttending(Boolean(attendeeData));
+          const status = (attendeeData?.status as "pending" | "going" | "interested" | "not_going" | "rejected" | undefined) || null;
+          setMyAttendanceStatus(status);
+          setIsAttending(status === "going");
         }
 
         // Fetch similar events (same category, different event)
@@ -167,15 +170,15 @@ export default function EventDetailPage() {
         throw profileError;
       }
 
-      if (isAttending) {
-        const { error: deleteError } = await supabase
+      if (isAttending || myAttendanceStatus === "pending") {
+        const { error: updateError } = await supabase
           .from("event_attendees")
-          .delete()
+          .update({ status: "not_going" })
           .eq("event_id", eventId)
           .eq("user_id", user.id);
 
-        if (deleteError) {
-          throw deleteError;
+        if (updateError) {
+          throw updateError;
         }
       } else {
         const { error: insertError } = await supabase
@@ -183,28 +186,27 @@ export default function EventDetailPage() {
           .insert({
             event_id: eventId,
             user_id: user.id,
+            status: "pending",
           });
 
         if (insertError) {
-          const { error: existingDeleteError } = await supabase
+          const isDuplicateError =
+            insertError.code === "23505" ||
+            insertError.code === "409" ||
+            insertError.message?.toLowerCase().includes("duplicate");
+
+          if (!isDuplicateError) {
+            throw insertError;
+          }
+
+          const { error: retryUpdateError } = await supabase
             .from("event_attendees")
-            .delete()
+            .update({ status: "pending" })
             .eq("event_id", eventId)
             .eq("user_id", user.id);
 
-          if (existingDeleteError) {
-            throw existingDeleteError;
-          }
-
-          const { error: retryInsertError } = await supabase
-            .from("event_attendees")
-            .insert({
-              event_id: eventId,
-              user_id: user.id,
-            });
-
-          if (retryInsertError) {
-            throw retryInsertError;
+          if (retryUpdateError) {
+            throw retryUpdateError;
           }
         }
       }
@@ -212,21 +214,24 @@ export default function EventDetailPage() {
       const [{ data: attendeeData }, { count: attendeeCount, error: attendeeCountError }] = await Promise.all([
         supabase
           .from("event_attendees")
-          .select("event_id")
+          .select("event_id, status")
           .eq("event_id", eventId)
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase
           .from("event_attendees")
           .select("*", { count: "exact", head: true })
-          .eq("event_id", eventId),
+          .eq("event_id", eventId)
+          .eq("status", "going"),
       ]);
 
       if (attendeeCountError) {
         throw attendeeCountError;
       }
 
-      setIsAttending(Boolean(attendeeData));
+      const status = (attendeeData?.status as "pending" | "going" | "interested" | "not_going" | "rejected" | undefined) || null;
+      setMyAttendanceStatus(status);
+      setIsAttending(status === "going");
 
       if (event) {
         setEvent({
@@ -236,7 +241,7 @@ export default function EventDetailPage() {
       }
     } catch (err) {
       console.error("Error updating attendance:", err);
-      setAttendanceError("Katılım işlemi tamamlanamadı. Lütfen tekrar deneyin.");
+      setAttendanceError("Katılım işlemi tamamlanamadı. Lütfen tekrar deneyin veya yöneticinle iletişime geç.");
     } finally {
       setAttendanceLoading(false);
     }
@@ -323,6 +328,8 @@ export default function EventDetailPage() {
   }
 
   const organizer = event.organizer || event.creator;
+  const isOrganizer = Boolean(user?.id && event.organizer_id === user.id);
+  const isPendingRequest = myAttendanceStatus === "pending";
   const organizerName = [organizer?.first_name, organizer?.last_name].filter(Boolean).join(" ").trim()
     || organizer?.full_name
     || organizer?.username
@@ -584,33 +591,41 @@ export default function EventDetailPage() {
                       </div>
 
                       <Button
-                        variant={isAttending ? "outline" : "primary"}
+                        variant={isAttending || isPendingRequest ? "outline" : "primary"}
                         className="w-full mt-4"
                         size="lg"
                         onClick={handleJoin}
                         loading={attendanceLoading}
                         disabled={
                           attendanceLoading ||
+                          isOrganizer ||
                           (event.max_attendees !== null &&
                            event.current_attendees >= event.max_attendees &&
-                           !isAttending)
+                           !isAttending &&
+                           !isPendingRequest)
                         }
                       >
-                        {isAttending ? (
+                        {isOrganizer ? (
+                          "Bu etkinliğin organizatörüsün"
+                        ) : isAttending ? (
                           <>
                             <CheckCircle2 size={20} className="mr-2" />
                             Katılıyorsun
                           </>
+                        ) : isPendingRequest ? (
+                          "Katılım isteğin onay bekliyor"
                         ) : event.max_attendees !== null && event.current_attendees >= event.max_attendees ? (
                           "Kontenjan Doldu"
                         ) : (
-                          "Etkinliğe Katıl"
+                          "Katılım İsteği Gönder"
                         )}
                       </Button>
 
-                      {isAttending && (
+                      {(isAttending || isPendingRequest) && !isOrganizer && (
                         <p className="text-xs text-center text-ink-muted">
-                          Katılımdan vazgeçmek için tekrar tıkla
+                          {isPendingRequest
+                            ? "İsteğini geri çekmek için tekrar tıkla"
+                            : "Katılımdan vazgeçmek için tekrar tıkla"}
                         </p>
                       )}
 
