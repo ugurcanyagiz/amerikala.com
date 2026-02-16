@@ -624,17 +624,24 @@ export default function Home() {
                       <Link
                         key={`preview-${item.id}`}
                         href={item.href}
-                        className="overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-sky-200 hover:shadow-sm"
+                        className={`relative overflow-hidden rounded-xl border border-slate-200 transition hover:border-sky-200 hover:shadow-sm ${
+                          item.imageUrl ? "bg-slate-900" : "bg-white"
+                        }`}
                       >
                         {item.imageUrl && (
-                          <div className="h-28 w-full bg-slate-100">
-                            <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
-                          </div>
+                          <>
+                            <div
+                              className="absolute inset-0 bg-cover bg-center"
+                              style={{ backgroundImage: `url(${item.imageUrl})` }}
+                              aria-hidden="true"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/55 to-slate-900/20" aria-hidden="true" />
+                          </>
                         )}
-                        <div className="p-3">
-                          <h4 className="line-clamp-2 text-sm font-semibold text-slate-900">{item.title}</h4>
-                          <p className="mt-2 text-xs text-slate-500">{item.location}</p>
-                          <p className="mt-1 text-xs font-medium text-slate-600">{item.priceLabel ?? "Detaylı bilgi"}</p>
+                        <div className={`relative z-10 flex h-28 flex-col justify-end p-3 ${item.imageUrl ? "text-white" : "text-slate-900"}`}>
+                          <h4 className="line-clamp-2 text-sm font-semibold">{item.title}</h4>
+                          <p className={`mt-1 text-xs ${item.imageUrl ? "text-white/85" : "text-slate-500"}`}>{item.location}</p>
+                          <p className={`mt-1 text-xs font-medium ${item.imageUrl ? "text-white" : "text-slate-600"}`}>{item.priceLabel ?? "Detaylı bilgi"}</p>
                         </div>
                       </Link>
                     ))}
