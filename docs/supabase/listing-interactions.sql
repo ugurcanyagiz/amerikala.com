@@ -251,3 +251,57 @@ with check (
   sender_id = auth.uid()
   and public.is_conversation_member(messages.conversation_id, auth.uid())
 );
+
+-- RPC fallback: create direct conversation + participants in one call.
+create or replace function public.create_direct_conversation(target_user_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  current_user_id uuid := auth.uid();
+  existing_conversation uuid;
+  new_conversation uuid;
+begin
+  if current_user_id is null then
+    raise exception 'Authentication required';
+  end if;
+
+  if target_user_id is null then
+    raise exception 'target_user_id is required';
+  end if;
+
+  if target_user_id = current_user_id then
+    raise exception 'Cannot create direct conversation with self';
+  end if;
+
+  select cp1.conversation_id
+  into existing_conversation
+  from public.conversation_participants cp1
+  join public.conversation_participants cp2
+    on cp1.conversation_id = cp2.conversation_id
+  where cp1.user_id = current_user_id
+    and cp2.user_id = target_user_id
+  limit 1;
+
+  if existing_conversation is not null then
+    return existing_conversation;
+  end if;
+
+  insert into public.conversations (is_group, created_by)
+  values (false, current_user_id)
+  returning id into new_conversation;
+
+  insert into public.conversation_participants (conversation_id, user_id)
+  values
+    (new_conversation, current_user_id),
+    (new_conversation, target_user_id)
+  on conflict (conversation_id, user_id) do nothing;
+
+  return new_conversation;
+end;
+$$;
+
+revoke all on function public.create_direct_conversation(uuid) from public;
+grant execute on function public.create_direct_conversation(uuid) to authenticated;

@@ -161,8 +161,17 @@ export default function ListingDetailPage() {
       }
     }
 
+    // Fallback to RPC for installations where RLS blocks direct inserts.
+    const { data: rpcData, error: rpcError } = await supabase.rpc("create_direct_conversation", {
+      target_user_id: listing?.user_id,
+    });
+
+    if (!rpcError && rpcData) {
+      return rpcData as string;
+    }
+
     throw new Error("Mesaj odası oluşturulamadı. Supabase conversations tablosu için insert izni gerekebilir.");
-  }, [user?.id]);
+  }, [user?.id, listing?.user_id]);
 
   // Fetch listing
   useEffect(() => {
