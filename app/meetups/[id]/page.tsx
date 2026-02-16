@@ -250,64 +250,35 @@ export default function EventDetailPage() {
   };
 
   const fetchAttendees = useCallback(async () => {
-    const profileSelect = "id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession";
-
-    const withProfileResult = await supabase
+    const attendeeResult = await supabase
       .from("event_attendees")
-      .select(`*, profile:profiles!event_attendees_user_id_fkey (${profileSelect})`)
+      .select("event_id, user_id, status, created_at")
       .eq("event_id", eventId);
 
-    const withProfileLegacyJoinResult = withProfileResult.error
-      ? await supabase
-          .from("event_attendees")
-          .select(`*, profile:user_id (${profileSelect})`)
-          .eq("event_id", eventId)
-      : null;
-
-    const fallbackResult = withProfileResult.error && withProfileLegacyJoinResult?.error
-      ? await supabase
-          .from("event_attendees")
-          .select("*")
-          .eq("event_id", eventId)
-      : null;
-
-    const error = !withProfileResult.error
-      ? null
-      : !withProfileLegacyJoinResult?.error
-        ? null
-        : fallbackResult?.error ?? withProfileLegacyJoinResult?.error ?? withProfileResult.error;
-
-    if (error) {
-      if (!isAbortLikeError(error)) {
-        console.error("fetchAttendees failed:", error);
+    if (attendeeResult.error) {
+      if (!isAbortLikeError(attendeeResult.error)) {
+        console.error("fetchAttendees failed:", attendeeResult.error);
       }
       return { approvedList: [] as EventAttendee[], pendingList: [] as EventAttendee[], myStatus: null as EventAttendee["status"] | null };
     }
 
-    const attendeeRows = ((!withProfileResult.error ? withProfileResult.data : !withProfileLegacyJoinResult?.error ? withProfileLegacyJoinResult?.data : fallbackResult?.data) as Array<Record<string, unknown>> | null) || [];
+    const attendeeRows = (attendeeResult.data as Array<Record<string, unknown>> | null) || [];
     const pendingRows = attendeeRows.filter((row) => row.status === "pending");
     const approvedRows = attendeeRows.filter((row) => row.status === "going");
     const relevantRows = [...approvedRows, ...pendingRows];
-    const rowsWithProfile = relevantRows.filter((row) => hasReadableIdentity(row.profile as BasicProfile | BasicProfile[] | null));
 
-    const normalizedRows = rowsWithProfile.length === relevantRows.length
-      ? relevantRows
-      : (() => {
-          const profileMapPromise = fetchProfilesByIds(
-            relevantRows.map((row) => (typeof row.user_id === "string" ? row.user_id : "")).filter(Boolean)
-          );
-          return profileMapPromise.then((profileMap) =>
-            relevantRows.map((row) => ({
-              ...row,
-              profile:
-                resolveProfile(row.profile as BasicProfile | BasicProfile[] | null)
-                || profileMap.get((row.user_id as string) || "")
-                || null,
-            }))
-          );
-        })();
+    const profileMap = await fetchProfilesByIds(
+      relevantRows
+        .map((row) => (typeof row.user_id === "string" ? row.user_id : ""))
+        .filter(Boolean)
+    );
 
-    const normalizedList = normalizeAttendees(Array.isArray(normalizedRows) ? normalizedRows : await normalizedRows);
+    const rowsWithProfiles = relevantRows.map((row) => ({
+      ...row,
+      profile: profileMap.get((row.user_id as string) || "") || null,
+    }));
+
+    const normalizedList = normalizeAttendees(rowsWithProfiles);
     const approvedList = normalizedList.filter((item) => item.status === "going");
     const pendingList = normalizedList.filter((item) => item.status === "pending");
 
