@@ -134,6 +134,7 @@ function getInitials(name: string) {
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, profile, signOut } = useAuth();
+  const [isExpanded, setIsExpanded] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   const t = (key: string) => LABELS[key] || key;
@@ -192,27 +193,50 @@ export default function Sidebar() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   const toggleGroup = (key: string) => {
+    if (!isExpanded) {
+      setIsExpanded(true);
+      setOpenGroups((prev) => ({ ...prev, [key]: true }));
+      return;
+    }
+
     setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const hasAuthenticatedUser = Boolean(user);
   const displayName = getDisplayName(profile, user);
   const avatarUrl = getAvatarUrl(profile, user);
   const username = getUsernameLabel(profile, user);
 
   return (
-    <aside className="sticky top-16 hidden h-[calc(100vh-64px)] w-64 flex-col border-r border-slate-200 bg-white md:flex">
-      <div className="border-b border-slate-200 px-6 py-8 text-center">
-        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-xl font-semibold text-slate-500">
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
-          ) : (
-            <span>{getInitials(displayName)}</span>
-          )}
-        </div>
-        <p className="text-xl font-semibold text-slate-900">{displayName}</p>
-        <p className="mt-1 text-sm text-slate-500">{username}</p>
+    <aside
+      className={`sticky top-16 hidden h-[calc(100vh-64px)] flex-col border-r border-slate-200 bg-white transition-all duration-200 md:flex ${
+        isExpanded ? "w-64" : "w-16"
+      }`}
+    >
+      <div className="flex items-center justify-end border-b border-slate-200 p-2">
+        <button
+          onClick={() => setIsExpanded((prev) => !prev)}
+          className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          title={isExpanded ? "Daralt" : "Genişlet"}
+        >
+          <ChevronRight className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+        </button>
       </div>
+
+      {hasAuthenticatedUser && isExpanded && (
+        <div className="border-b border-slate-200 px-6 py-8 text-center">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-xl font-semibold text-slate-500">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+            ) : (
+              <span>{getInitials(displayName)}</span>
+            )}
+          </div>
+          <p className="text-xl font-semibold text-slate-900">{displayName}</p>
+          <p className="mt-1 text-sm text-slate-500">{username}</p>
+        </div>
+      )}
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 scrollbar-hide">
         <ul className="space-y-1">
@@ -231,11 +255,12 @@ export default function Sidebar() {
                       active
                         ? "bg-slate-100 font-medium text-slate-900"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                    }`}
+                    } ${!isExpanded ? "justify-center" : ""}`}
+                    title={!isExpanded ? label : undefined}
                   >
                     <Icon className="h-4 w-4" />
-                    <span className="flex-1 truncate">{label}</span>
-                    <ChevronRight className="h-4 w-4 text-slate-400" />
+                    {isExpanded && <span className="flex-1 truncate">{label}</span>}
+                    {isExpanded && <ChevronRight className="h-4 w-4 text-slate-400" />}
                   </Link>
                 </li>
               );
@@ -246,10 +271,13 @@ export default function Sidebar() {
                 <li key={item.labelKey}>
                   <button
                     onClick={item.onClick}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600"
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600 ${
+                      !isExpanded ? "justify-center" : ""
+                    }`}
+                    title={!isExpanded ? label : undefined}
                   >
                     <Icon className="h-4 w-4" />
-                    <span className="flex-1 text-left">{label}</span>
+                    {isExpanded && <span className="flex-1 text-left">{label}</span>}
                   </button>
                 </li>
               );
@@ -266,16 +294,19 @@ export default function Sidebar() {
                     hasActiveChild
                       ? "bg-slate-100 font-medium text-slate-900"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                  }`}
+                  } ${!isExpanded ? "justify-center" : ""}`}
+                  title={!isExpanded ? label : undefined}
                 >
                   <Icon className="h-4 w-4" />
-                  <span className="flex-1 text-left">{label}</span>
-                  <ChevronDown
-                    className={`h-4 w-4 text-slate-400 transition-transform ${groupExpanded ? "rotate-180" : ""}`}
-                  />
+                  {isExpanded && <span className="flex-1 text-left">{label}</span>}
+                  {isExpanded && (
+                    <ChevronDown
+                      className={`h-4 w-4 text-slate-400 transition-transform ${groupExpanded ? "rotate-180" : ""}`}
+                    />
+                  )}
                 </button>
 
-                {groupExpanded && (
+                {isExpanded && groupExpanded && (
                   <ul className="mt-1 space-y-1 border-l border-slate-200 pl-4 ml-5">
                     {item.children.map((child) => {
                       const active = isActive(child.href);
