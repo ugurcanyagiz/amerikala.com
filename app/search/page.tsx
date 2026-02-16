@@ -17,6 +17,19 @@ const TYPE_LABELS: Record<SiteSearchResult["type"], string> = {
   post: "Feed",
 };
 
+type SearchFilter = "all" | SiteSearchResult["type"];
+
+const FILTER_OPTIONS: { value: SearchFilter; label: string }[] = [
+  { value: "all", label: "Tümü" },
+  { value: "event", label: "Etkinlik" },
+  { value: "realEstate", label: "Emlak" },
+  { value: "job", label: "İş" },
+  { value: "marketplace", label: "Alışveriş" },
+  { value: "group", label: "Grup" },
+  { value: "profile", label: "Profil" },
+  { value: "post", label: "Feed" },
+];
+
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -25,6 +38,7 @@ export default function SearchPage() {
   const [query, setQuery] = useState(initial);
   const [results, setResults] = useState<SiteSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<SearchFilter>("all");
 
   useEffect(() => {
     setQuery(initial);
@@ -53,14 +67,19 @@ export default function SearchPage() {
     return () => window.clearTimeout(timer);
   }, [query]);
 
+  const filteredResults = useMemo(() => {
+    if (activeFilter === "all") return results;
+    return results.filter((item) => item.type === activeFilter);
+  }, [activeFilter, results]);
+
   const groupedResults = useMemo(() => {
-    return results.reduce<Record<string, SiteSearchResult[]>>((acc, item) => {
+    return filteredResults.reduce<Record<string, SiteSearchResult[]>>((acc, item) => {
       const key = TYPE_LABELS[item.type];
       if (!acc[key]) acc[key] = [];
       acc[key].push(item);
       return acc;
     }, {});
-  }, [results]);
+  }, [filteredResults]);
 
   return (
     <div className="ak-page">
@@ -68,8 +87,7 @@ export default function SearchPage() {
         <Sidebar />
         <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Sitede Ara</h1>
-            <p className="mt-1 text-sm text-slate-500">İlanlar, etkinlikler, gruplar, profiller ve feed gönderileri arasında arama yapın.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Arama Yap</h1>
 
             <div className="mt-5 flex gap-2">
               <div className="relative flex-1">
@@ -95,6 +113,23 @@ export default function SearchPage() {
                 Ara
               </button>
             </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {FILTER_OPTIONS.map((filter) => (
+                <button
+                  key={filter.value}
+                  type="button"
+                  onClick={() => setActiveFilter(filter.value)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                    activeFilter === filter.value
+                      ? "bg-sky-600 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="mt-6 space-y-5">
@@ -107,9 +142,9 @@ export default function SearchPage() {
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
                 En az 2 karakter girin.
               </div>
-            ) : results.length === 0 ? (
+            ) : filteredResults.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
-                Sonuç bulunamadı.
+                Seçili filtrede sonuç bulunamadı.
               </div>
             ) : (
               Object.entries(groupedResults).map(([group, items]) => (
