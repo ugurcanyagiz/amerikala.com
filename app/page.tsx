@@ -26,6 +26,7 @@ type UnifiedAd = {
   href: string;
   section: HomeCategoryKey;
   createdAt: string;
+  popularity: number;
   priceLabel?: string;
 };
 
@@ -142,26 +143,30 @@ export default function Home() {
         const [eventsRes, realEstateRes, jobsRes, marketplaceRes] = await Promise.all([
           publicSupabase
             .from("events")
-            .select("id, title, city, state, created_at")
+            .select("id, title, city, state, current_attendees, created_at")
             .eq("status", "approved")
+            .order("current_attendees", { ascending: false })
             .order("created_at", { ascending: false })
             .limit(latestLimit),
           publicSupabase
             .from("listings")
-            .select("id, title, city, state, price, created_at")
+            .select("id, title, city, state, price, view_count, created_at")
             .eq("status", "approved")
+            .order("view_count", { ascending: false })
             .order("created_at", { ascending: false })
             .limit(latestLimit),
           publicSupabase
             .from("job_listings")
-            .select("id, title, city, state, salary_min, salary_max, created_at")
+            .select("id, title, city, state, salary_min, salary_max, view_count, created_at")
             .eq("status", "approved")
+            .order("view_count", { ascending: false })
             .order("created_at", { ascending: false })
             .limit(latestLimit),
           publicSupabase
             .from("marketplace_listings")
-            .select("id, title, city, state, price, created_at")
+            .select("id, title, city, state, price, view_count, created_at")
             .eq("status", "approved")
+            .order("view_count", { ascending: false })
             .order("created_at", { ascending: false })
             .limit(latestLimit),
         ]);
@@ -179,6 +184,7 @@ export default function Home() {
             href: `/meetups/${item.id}`,
             section: "events" as const,
             createdAt: item.created_at,
+            popularity: item.current_attendees ?? 0,
             priceLabel: "Ücretsiz / biletli",
           })),
           ...(realEstateRes.data ?? []).map((item) => ({
@@ -188,6 +194,7 @@ export default function Home() {
             href: `/emlak/ilan/${item.id}`,
             section: "realEstate" as const,
             createdAt: item.created_at,
+            popularity: item.view_count ?? 0,
             priceLabel: formatCurrency(item.price),
           })),
           ...(jobsRes.data ?? []).map((item) => ({
@@ -197,6 +204,7 @@ export default function Home() {
             href: `/is/ilan/${item.id}`,
             section: "jobs" as const,
             createdAt: item.created_at,
+            popularity: item.view_count ?? 0,
             priceLabel: formatSalaryRange(item.salary_min, item.salary_max),
           })),
           ...(marketplaceRes.data ?? []).map((item) => ({
@@ -206,10 +214,11 @@ export default function Home() {
             href: `/alisveris/ilan/${item.id}`,
             section: "marketplace" as const,
             createdAt: item.created_at,
+            popularity: item.view_count ?? 0,
             priceLabel: formatCurrency(item.price),
           })),
         ]
-          .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+          .sort((a, b) => b.popularity - a.popularity || +new Date(b.createdAt) - +new Date(a.createdAt))
           .slice(0, latestLimit);
 
         const previewItems: Record<HomeCategoryKey, UnifiedAd[]> = {
@@ -218,37 +227,45 @@ export default function Home() {
             title: item.title,
             location: `${item.city}, ${item.state}`,
             href: `/meetups/${item.id}`,
-            section: "events",
+            section: "events" as const,
             createdAt: item.created_at,
+            popularity: item.current_attendees ?? 0,
             priceLabel: "Ücretsiz / biletli",
-          })),
+          }))
+            .sort((a, b) => b.popularity - a.popularity || +new Date(b.createdAt) - +new Date(a.createdAt)),
           realEstate: (realEstateRes.data ?? []).slice(0, 9).map((item) => ({
             id: `listing-${item.id}`,
             title: item.title,
             location: `${item.city}, ${item.state}`,
             href: `/emlak/ilan/${item.id}`,
-            section: "realEstate",
+            section: "realEstate" as const,
             createdAt: item.created_at,
+            popularity: item.view_count ?? 0,
             priceLabel: formatCurrency(item.price),
-          })),
+          }))
+            .sort((a, b) => b.popularity - a.popularity || +new Date(b.createdAt) - +new Date(a.createdAt)),
           jobs: (jobsRes.data ?? []).slice(0, 9).map((item) => ({
             id: `job-${item.id}`,
             title: item.title,
             location: `${item.city}, ${item.state}`,
             href: `/is/ilan/${item.id}`,
-            section: "jobs",
+            section: "jobs" as const,
             createdAt: item.created_at,
+            popularity: item.view_count ?? 0,
             priceLabel: formatSalaryRange(item.salary_min, item.salary_max),
-          })),
+          }))
+            .sort((a, b) => b.popularity - a.popularity || +new Date(b.createdAt) - +new Date(a.createdAt)),
           marketplace: (marketplaceRes.data ?? []).slice(0, 9).map((item) => ({
             id: `market-${item.id}`,
             title: item.title,
             location: `${item.city}, ${item.state}`,
             href: `/alisveris/ilan/${item.id}`,
-            section: "marketplace",
+            section: "marketplace" as const,
             createdAt: item.created_at,
+            popularity: item.view_count ?? 0,
             priceLabel: formatCurrency(item.price),
-          })),
+          }))
+            .sort((a, b) => b.popularity - a.popularity || +new Date(b.createdAt) - +new Date(a.createdAt)),
         };
 
         setAds(unified);
@@ -561,9 +578,10 @@ export default function Home() {
                   const isActive = activeCategoryPreview === key;
 
                   return (
-                    <Link
+                    <button
+                      type="button"
                       key={key}
-                      href={config.href}
+                      onClick={() => setActiveCategoryPreview(key)}
                       onMouseEnter={() => setActiveCategoryPreview(key)}
                       onFocus={() => setActiveCategoryPreview(key)}
                       className={`group rounded-2xl border px-3 py-4 text-center transition-all sm:px-4 sm:py-5 ${
@@ -576,19 +594,19 @@ export default function Home() {
                         <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
                       </span>
                       <h3 className="mt-3 text-sm font-semibold text-slate-900 sm:text-lg">{config.title}</h3>
-                    </Link>
+                    </button>
                   );
                 })}
               </div>
 
               <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-base font-semibold text-slate-900">{CATEGORY_CONFIG[activeCategoryPreview].title} - Son Gönderiler</h3>
+                  <h3 className="text-base font-semibold text-slate-900">{CATEGORY_CONFIG[activeCategoryPreview].title} - Popüler Gönderiler</h3>
                   <Link
                     href={CATEGORY_CONFIG[activeCategoryPreview].href}
                     className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-sm font-semibold text-sky-700 transition hover:border-sky-300 hover:text-sky-800"
                   >
-                    Tümünü Gör
+                    Tümü
                   </Link>
                 </div>
 
