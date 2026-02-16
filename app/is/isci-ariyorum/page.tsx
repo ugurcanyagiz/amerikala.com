@@ -196,9 +196,10 @@ export default function IsciAriyorumPage() {
         setShowCreateModal(false);
         setCreateSuccess(false);
       }, 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating listing:", error);
-      setCreateError(error.message || "Bir hata oluştu");
+      const errorMessage = error instanceof Error ? error.message : "Bir hata oluştu";
+      setCreateError(errorMessage);
     } finally {
       setCreating(false);
     }
@@ -316,7 +317,7 @@ export default function IsciAriyorumPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredListings.map((listing) => (
                   <JobCard key={listing.id} listing={listing} formatSalary={formatSalary} />
                 ))}
@@ -535,81 +536,64 @@ export default function IsciAriyorumPage() {
 
 function JobCard({ listing, formatSalary }: { listing: JobListing; formatSalary: (min: number | null, max: number | null, type: string | null) => string }) {
   return (
-    <Card variant="elevated" className="hover:shadow-[var(--shadow-md)] transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-start gap-5">
-          <div className="h-14 w-14 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center flex-shrink-0">
-            <span className="text-2xl">{JOB_CATEGORY_ICONS[listing.category]}</span>
+    <Link href={`/is/ilan/${listing.id}`}>
+      <Card variant="elevated" className="h-full hover:shadow-[var(--shadow-md)] transition-shadow cursor-pointer group">
+        <CardContent className="p-5 h-full flex flex-col">
+          <div className="flex items-start justify-between gap-3">
+            <div className="h-12 w-12 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center flex-shrink-0">
+              <span className="text-xl">{JOB_CATEGORY_ICONS[listing.category]}</span>
+            </div>
+            <Badge variant="primary" size="sm">{JOB_CATEGORY_LABELS[listing.category]}</Badge>
           </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-[var(--color-ink)]">{listing.title}</h3>
-                {listing.company_name && (
-                  <p className="text-[var(--color-ink-secondary)]">{listing.company_name}</p>
-                )}
-              </div>
-              <Badge variant="primary" size="sm">{JOB_CATEGORY_LABELS[listing.category]}</Badge>
-            </div>
-
-            <p className="text-[var(--color-ink-secondary)] mt-3 line-clamp-2">
-              {listing.description}
-            </p>
-
-            <div className="flex flex-wrap gap-4 mt-4 text-sm text-[var(--color-ink-secondary)]">
-              <span className="flex items-center gap-1.5">
-                <MapPin size={15} />
-                {listing.city}, {US_STATES_MAP[listing.state] || listing.state}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <DollarSign size={15} />
-                {formatSalary(listing.salary_min, listing.salary_max, listing.salary_type)}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Clock size={15} />
-                {JOB_TYPE_LABELS[listing.job_type]}
-              </span>
-              {listing.is_remote && (
-                <Badge variant="info" size="sm">Uzaktan OK</Badge>
-              )}
-            </div>
-
-            {listing.skills && listing.skills.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                {listing.skills.slice(0, 5).map((skill, idx) => (
-                  <Badge key={idx} variant="outline" size="sm">{skill}</Badge>
-                ))}
-                {listing.skills.length > 5 && (
-                  <Badge variant="outline" size="sm">+{listing.skills.length - 5}</Badge>
-                )}
-              </div>
+          <div className="mt-4 min-w-0">
+            <h3 className="text-lg font-semibold text-[var(--color-ink)] line-clamp-1 group-hover:text-[var(--color-primary)] transition-colors">
+              {listing.title}
+            </h3>
+            {listing.company_name && (
+              <p className="text-sm text-[var(--color-ink-secondary)] mt-1 line-clamp-1">{listing.company_name}</p>
             )}
+          </div>
 
-            <div className="flex items-center gap-3 mt-5 pt-4 border-t border-[var(--color-border-light)]">
-              {listing.contact_email && (
-                <a href={`mailto:${listing.contact_email}`}>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Mail size={15} />
-                    E-posta
-                  </Button>
-                </a>
-              )}
-              {listing.website_url && (
-                <a href={listing.website_url} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Globe size={15} />
-                    Web Sitesi
-                  </Button>
-                </a>
-              )}
-              <Button variant="primary" size="sm">
-                Başvur
-              </Button>
+          <p className="text-sm text-[var(--color-ink-secondary)] mt-3 line-clamp-2">
+            {listing.description}
+          </p>
+
+          <div className="space-y-2.5 mt-4 text-sm text-[var(--color-ink-secondary)]">
+            <div className="flex items-center gap-1.5">
+              <MapPin size={14} />
+              <span className="line-clamp-1">{listing.city}, {US_STATES_MAP[listing.state] || listing.state}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <DollarSign size={14} />
+              <span className="line-clamp-1">{formatSalary(listing.salary_min, listing.salary_max, listing.salary_type)}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock size={14} />
+              {JOB_TYPE_LABELS[listing.job_type]}
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+
+          {listing.skills && listing.skills.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {listing.skills.slice(0, 3).map((skill, idx) => (
+                <Badge key={idx} variant="outline" size="sm">{skill}</Badge>
+              ))}
+              {listing.skills.length > 3 && (
+                <Badge variant="outline" size="sm">+{listing.skills.length - 3}</Badge>
+              )}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-2 mt-auto pt-4 border-t border-[var(--color-border-light)]">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" size="sm">{JOB_TYPE_LABELS[listing.job_type]}</Badge>
+              {listing.is_remote && <Badge variant="info" size="sm">Uzaktan OK</Badge>}
+            </div>
+            <span className="text-sm font-medium text-[var(--color-primary)]">İlana Git</span>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
