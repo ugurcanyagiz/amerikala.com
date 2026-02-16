@@ -714,9 +714,44 @@ export default function EventDetailPage() {
   };
 
   const handleCommentSubmit = async () => {
-    if (!user || !commentInput.trim() || !attending) return;
+    const isOrganizer = Boolean(user && event && event.organizer_id === user.id);
+    if (!user || !commentInput.trim() || (!attending && !isOrganizer)) return;
     setCommentLoading(true);
     try {
+      if (isOrganizer) {
+        const { data, error } = await supabase
+          .from("event_comments")
+          .insert({
+            event_id: eventId,
+            user_id: user.id,
+            content: commentInput.trim(),
+          })
+          .select("id, event_id, user_id, content, created_at")
+          .single();
+
+        if (error) {
+          if (!isAbortLikeError(error)) {
+            setCommentError("Yorum paylaşılırken bir sorun oluştu.");
+          }
+          return;
+        }
+
+        if (data) {
+          const commentProfileMap = await fetchProfilesByIds([user.id]);
+          setComments((prev) => [
+            {
+              ...(data as EventComment),
+              profile: commentProfileMap.get(user.id) || null,
+            },
+            ...prev,
+          ]);
+        }
+
+        setCommentInput("");
+        setCommentError(null);
+        return;
+      }
+
       const { data: attendanceRecord, error: attendanceCheckError } = await supabase
         .from("event_attendees")
         .select("event_id, status")
@@ -1133,7 +1168,7 @@ export default function EventDetailPage() {
                       <Button
                         size="sm"
                         onClick={handleCommentSubmit}
-                        disabled={!attending || commentLoading || !commentInput.trim()}
+                        disabled={(!attending && !isOrganizer) || commentLoading || !commentInput.trim()}
                       >
                         {commentLoading ? "Paylaşılıyor..." : "Yorum Paylaş"}
                       </Button>
