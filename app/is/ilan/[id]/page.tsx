@@ -19,6 +19,7 @@ import { Card, CardContent } from "@/app/components/ui/Card";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
 import { Textarea } from "@/app/components/ui/Textarea";
+import UserProfileCardModal, { UserProfileCardData } from "@/app/components/UserProfileCardModal";
 import {
   ArrowLeft,
   MapPin,
@@ -74,6 +75,7 @@ export default function JobListingDetailPage() {
   const [reportDetails, setReportDetails] = useState("");
   const [reportSending, setReportSending] = useState(false);
   const [reportFeedback, setReportFeedback] = useState<string | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<UserProfileCardData | null>(null);
 
   const createConversationRecord = useCallback(async (targetUserId: string) => {
     const payloads = [
@@ -460,9 +462,33 @@ export default function JobListingDetailPage() {
                         src={owner?.avatar_url ?? undefined}
                         fallback={owner?.full_name || owner?.username || "U"}
                         size="lg"
+                        className={owner?.id ? "cursor-pointer" : undefined}
+                        onClick={() => {
+                          if (!owner?.id) return;
+                          setSelectedProfile({
+                            id: owner.id,
+                            username: owner.username,
+                            full_name: owner.full_name,
+                            avatar_url: owner.avatar_url,
+                          });
+                        }}
                       />
                       <div>
-                        <h3 className="font-bold">{owner?.full_name || owner?.username || "Kullanıcı"}</h3>
+                        <button
+                          type="button"
+                          className="font-bold hover:underline"
+                          onClick={() => {
+                            if (!owner?.id) return;
+                            setSelectedProfile({
+                              id: owner.id,
+                              username: owner.username,
+                              full_name: owner.full_name,
+                              avatar_url: owner.avatar_url,
+                            });
+                          }}
+                        >
+                          {owner?.full_name || owner?.username || "Kullanıcı"}
+                        </button>
                         <p className="text-sm text-neutral-500">
                           {listing.listing_type === "hiring" ? "İşveren" : "İş Arayan"}
                         </p>
@@ -555,6 +581,12 @@ export default function JobListingDetailPage() {
                 </Card>
               </div>
             </div>
+
+            <UserProfileCardModal
+              profile={selectedProfile}
+              open={!!selectedProfile}
+              onClose={() => setSelectedProfile(null)}
+            />
           </div>
         </main>
       </div>
