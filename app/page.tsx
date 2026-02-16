@@ -28,6 +28,7 @@ type UnifiedAd = {
   createdAt: string;
   popularity: number;
   priceLabel?: string;
+  imageUrl?: string | null;
 };
 
 type SearchSuggestion = {
@@ -143,14 +144,14 @@ export default function Home() {
         const [eventsRes, realEstateRes, jobsRes, marketplaceRes] = await Promise.all([
           publicSupabase
             .from("events")
-            .select("id, title, city, state, current_attendees, created_at")
+            .select("id, title, city, state, current_attendees, created_at, cover_image_url")
             .eq("status", "approved")
             .order("current_attendees", { ascending: false })
             .order("created_at", { ascending: false })
             .limit(latestLimit),
           publicSupabase
             .from("listings")
-            .select("id, title, city, state, price, view_count, created_at")
+            .select("id, title, city, state, price, view_count, created_at, images")
             .eq("status", "approved")
             .order("view_count", { ascending: false })
             .order("created_at", { ascending: false })
@@ -164,7 +165,7 @@ export default function Home() {
             .limit(latestLimit),
           publicSupabase
             .from("marketplace_listings")
-            .select("id, title, city, state, price, view_count, created_at")
+            .select("id, title, city, state, price, view_count, created_at, images")
             .eq("status", "approved")
             .order("view_count", { ascending: false })
             .order("created_at", { ascending: false })
@@ -186,6 +187,7 @@ export default function Home() {
             createdAt: item.created_at,
             popularity: item.current_attendees ?? 0,
             priceLabel: "Ücretsiz / biletli",
+            imageUrl: item.cover_image_url,
           })),
           ...(realEstateRes.data ?? []).map((item) => ({
             id: `listing-${item.id}`,
@@ -196,6 +198,7 @@ export default function Home() {
             createdAt: item.created_at,
             popularity: item.view_count ?? 0,
             priceLabel: formatCurrency(item.price),
+            imageUrl: item.images?.[0] ?? null,
           })),
           ...(jobsRes.data ?? []).map((item) => ({
             id: `job-${item.id}`,
@@ -216,6 +219,7 @@ export default function Home() {
             createdAt: item.created_at,
             popularity: item.view_count ?? 0,
             priceLabel: formatCurrency(item.price),
+            imageUrl: item.images?.[0] ?? null,
           })),
         ]
           .sort((a, b) => b.popularity - a.popularity || +new Date(b.createdAt) - +new Date(a.createdAt))
@@ -231,6 +235,7 @@ export default function Home() {
             createdAt: item.created_at,
             popularity: item.current_attendees ?? 0,
             priceLabel: "Ücretsiz / biletli",
+            imageUrl: item.cover_image_url,
           }))
             .sort((a, b) => b.popularity - a.popularity || +new Date(b.createdAt) - +new Date(a.createdAt)),
           realEstate: (realEstateRes.data ?? []).slice(0, 9).map((item) => ({
@@ -242,6 +247,7 @@ export default function Home() {
             createdAt: item.created_at,
             popularity: item.view_count ?? 0,
             priceLabel: formatCurrency(item.price),
+            imageUrl: item.images?.[0] ?? null,
           }))
             .sort((a, b) => b.popularity - a.popularity || +new Date(b.createdAt) - +new Date(a.createdAt)),
           jobs: (jobsRes.data ?? []).slice(0, 9).map((item) => ({
@@ -264,6 +270,7 @@ export default function Home() {
             createdAt: item.created_at,
             popularity: item.view_count ?? 0,
             priceLabel: formatCurrency(item.price),
+            imageUrl: item.images?.[0] ?? null,
           }))
             .sort((a, b) => b.popularity - a.popularity || +new Date(b.createdAt) - +new Date(a.createdAt)),
         };
@@ -531,7 +538,7 @@ export default function Home() {
                   </div>
 
                   <div className="mt-5 flex flex-wrap gap-3">
-                    <Link href="/register">
+                    <Link href="/login">
                       <Button
                         variant="primary"
                         size="lg"
@@ -540,7 +547,7 @@ export default function Home() {
                         Hemen İlan Ver
                       </Button>
                     </Link>
-                    <Link href="/feed">
+                    <Link href="#son-ilanlar">
                       <Button
                         variant="outline"
                         size="lg"
@@ -567,9 +574,6 @@ export default function Home() {
           </section>
 
           <section className="mx-auto max-w-7xl px-4 py-12 sm:px-8 lg:px-12">
-            <div className="mb-6 flex items-end justify-between">
-              <h2 className="text-3xl font-bold text-slate-900">Kategoriler</h2>
-            </div>
             <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_22px_45px_-40px_rgba(15,23,42,0.85)] sm:p-6">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
@@ -620,11 +624,18 @@ export default function Home() {
                       <Link
                         key={`preview-${item.id}`}
                         href={item.href}
-                        className="rounded-xl border border-slate-200 bg-white p-3 transition hover:border-sky-200 hover:shadow-sm"
+                        className="overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-sky-200 hover:shadow-sm"
                       >
-                        <h4 className="line-clamp-2 text-sm font-semibold text-slate-900">{item.title}</h4>
-                        <p className="mt-2 text-xs text-slate-500">{item.location}</p>
-                        <p className="mt-1 text-xs font-medium text-slate-600">{item.priceLabel ?? "Detaylı bilgi"}</p>
+                        {item.imageUrl && (
+                          <div className="h-28 w-full bg-slate-100">
+                            <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
+                          </div>
+                        )}
+                        <div className="p-3">
+                          <h4 className="line-clamp-2 text-sm font-semibold text-slate-900">{item.title}</h4>
+                          <p className="mt-2 text-xs text-slate-500">{item.location}</p>
+                          <p className="mt-1 text-xs font-medium text-slate-600">{item.priceLabel ?? "Detaylı bilgi"}</p>
+                        </div>
                       </Link>
                     ))}
                   </div>
@@ -635,7 +646,7 @@ export default function Home() {
 
           <AdsSection title="Öne Çıkan İlanlar" items={featuredAds} loading={loading} />
 
-          <section className="bg-white py-14">
+          <section id="son-ilanlar" className="bg-white py-14 scroll-mt-24">
             <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
               <div className="mb-7 flex items-end justify-between">
                 <div>
@@ -739,9 +750,15 @@ function AdsGrid({ items, loading, latestMobileGrid = false }: { items: UnifiedA
             href={item.href}
             className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md"
           >
-            <div className={`h-28 bg-gradient-to-r ${meta.cardClass} p-4`}>
-              <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${meta.badgeClass}`}>{meta.title}</span>
-            </div>
+            {item.imageUrl ? (
+              <div className="h-28 bg-slate-100">
+                <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
+              </div>
+            ) : (
+              <div className={`h-28 bg-gradient-to-r ${meta.cardClass} p-4`}>
+                <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${meta.badgeClass}`}>{meta.title}</span>
+              </div>
+            )}
             <div className="space-y-3 p-4">
               <h3 className="line-clamp-2 min-h-[3rem] text-lg font-semibold text-slate-900">{item.title}</h3>
               <p className="flex items-center gap-1 text-sm text-slate-500">
