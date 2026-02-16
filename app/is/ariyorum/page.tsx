@@ -22,6 +22,7 @@ import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import { Avatar } from "../../components/ui/Avatar";
+import UserProfileCardModal, { UserProfileCardData } from "../../components/UserProfileCardModal";
 import {
   Search,
   MapPin,
@@ -468,6 +469,7 @@ function SeekerCard({ listing }: { listing: JobListing }) {
   >("guest");
   const [followLoading, setFollowLoading] = useState(false);
   const [dmLoading, setDmLoading] = useState(false);
+  const [showProfileCard, setShowProfileCard] = useState(false);
 
   useEffect(() => {
     const checkRelationship = async () => {
@@ -726,115 +728,144 @@ function SeekerCard({ listing }: { listing: JobListing }) {
     return <UserPlus size={15} />;
   };
 
+  const modalProfile: UserProfileCardData | null = listingUser?.id
+    ? {
+        id: listingUser.id,
+        username: listingUser.username,
+        full_name: listingUser.full_name,
+        avatar_url: listingUser.avatar_url,
+      }
+    : null;
+
   return (
-    <Card variant="elevated" className="hover:shadow-[var(--shadow-md)] transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-start gap-5">
-          <Avatar
-            src={listingUser?.avatar_url || undefined}
-            fallback={listingUser?.full_name || listingUser?.username || "?"}
-            size="lg"
-          />
+    <>
+      <Card variant="elevated" className="hover:shadow-[var(--shadow-md)] transition-shadow">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-5">
+            <Avatar
+              src={listingUser?.avatar_url || undefined}
+              fallback={listingUser?.full_name || listingUser?.username || "?"}
+              size="lg"
+              className={listingUser?.id ? "cursor-pointer" : undefined}
+              onClick={() => {
+                if (!listingUser?.id) return;
+                setShowProfileCard(true);
+              }}
+            />
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-[var(--color-ink)]">{listing.title}</h3>
-                <p className="text-sm text-[var(--color-ink-secondary)]">
-                  {listingUser?.full_name || listingUser?.username}
-                </p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-[var(--color-ink)]">{listing.title}</h3>
+                  <button
+                    type="button"
+                    className="text-sm text-[var(--color-ink-secondary)] hover:underline"
+                    onClick={() => {
+                      if (!listingUser?.id) return;
+                      setShowProfileCard(true);
+                    }}
+                  >
+                    {listingUser?.full_name || listingUser?.username}
+                  </button>
+                </div>
+                <Badge variant="primary" size="sm">{JOB_CATEGORY_LABELS[listing.category]}</Badge>
               </div>
-              <Badge variant="primary" size="sm">{JOB_CATEGORY_LABELS[listing.category]}</Badge>
-            </div>
 
-            <p className="text-[var(--color-ink-secondary)] mt-3 line-clamp-2">
-              {listing.description}
-            </p>
+              <p className="text-[var(--color-ink-secondary)] mt-3 line-clamp-2">
+                {listing.description}
+              </p>
 
-            <div className="flex flex-wrap gap-4 mt-4 text-sm text-[var(--color-ink-secondary)]">
-              <span className="flex items-center gap-1.5">
-                <MapPin size={15} />
-                {listing.city}, {US_STATES_MAP[listing.state] || listing.state}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Clock size={15} />
-                {JOB_TYPE_LABELS[listing.job_type]}
-              </span>
-              {listing.is_remote && (
-                <Badge variant="info" size="sm">Uzaktan OK</Badge>
-              )}
-            </div>
-
-            {listing.skills && listing.skills.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                {listing.skills.slice(0, 5).map((skill, idx) => (
-                  <Badge key={idx} variant="outline" size="sm">{skill}</Badge>
-                ))}
-                {listing.skills.length > 5 && (
-                  <Badge variant="outline" size="sm">+{listing.skills.length - 5}</Badge>
+              <div className="flex flex-wrap gap-4 mt-4 text-sm text-[var(--color-ink-secondary)]">
+                <span className="flex items-center gap-1.5">
+                  <MapPin size={15} />
+                  {listing.city}, {US_STATES_MAP[listing.state] || listing.state}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock size={15} />
+                  {JOB_TYPE_LABELS[listing.job_type]}
+                </span>
+                {listing.is_remote && (
+                  <Badge variant="info" size="sm">Uzaktan OK</Badge>
                 )}
               </div>
-            )}
 
-            <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-[var(--color-border-light)]">
-              {listing.contact_email && (
-                <a href={`mailto:${listing.contact_email}`}>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Mail size={15} />
-                    E-posta
-                  </Button>
-                </a>
-              )}
-              {listing.contact_phone && (
-                <a href={`tel:${listing.contact_phone}`}>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Phone size={15} />
-                    Ara
-                  </Button>
-                </a>
+              {listing.skills && listing.skills.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {listing.skills.slice(0, 5).map((skill, idx) => (
+                    <Badge key={idx} variant="outline" size="sm">{skill}</Badge>
+                  ))}
+                  {listing.skills.length > 5 && (
+                    <Badge variant="outline" size="sm">+{listing.skills.length - 5}</Badge>
+                  )}
+                </div>
               )}
 
-              <Button
-                variant={relationshipStatus === "following" ? "outline" : "primary"}
-                size="sm"
-                className="gap-2"
-                onClick={handleToggleFollow}
-                disabled={followLoading || relationshipStatus === "self"}
-              >
-                {getFollowIcon()}
-                {getFollowButtonLabel()}
-              </Button>
+              <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-[var(--color-border-light)]">
+                {listing.contact_email && (
+                  <a href={`mailto:${listing.contact_email}`}>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Mail size={15} />
+                      E-posta
+                    </Button>
+                  </a>
+                )}
+                {listing.contact_phone && (
+                  <a href={`tel:${listing.contact_phone}`}>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Phone size={15} />
+                      Ara
+                    </Button>
+                  </a>
+                )}
 
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={handleSendMessage}
-                disabled={dmLoading || user?.id === listingUser?.id}
-              >
-                <MessageCircle size={15} />
-                Özel Mesaj
-              </Button>
-
-              <Link href={listingUser?.id ? `/profile/${listingUser.id}` : "#"}>
-                <Button variant="outline" size="sm" className="gap-2" disabled={!listingUser?.id}>
-                  <ExternalLink size={15} />
-                  Profili Görüntüle
+                <Button
+                  variant={relationshipStatus === "following" ? "outline" : "primary"}
+                  size="sm"
+                  className="gap-2"
+                  onClick={handleToggleFollow}
+                  disabled={followLoading || relationshipStatus === "self"}
+                >
+                  {getFollowIcon()}
+                  {getFollowButtonLabel()}
                 </Button>
-              </Link>
 
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => router.push(user ? "/groups/create" : "/login")}
-              >
-                Birlikte Grup Oluştur
-              </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={handleSendMessage}
+                  disabled={dmLoading || user?.id === listingUser?.id}
+                >
+                  <MessageCircle size={15} />
+                  Özel Mesaj
+                </Button>
+
+                <Link href={listingUser?.id ? `/profile/${listingUser.id}` : "#"}>
+                  <Button variant="outline" size="sm" className="gap-2" disabled={!listingUser?.id}>
+                    <ExternalLink size={15} />
+                    Profili Görüntüle
+                  </Button>
+                </Link>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => router.push(user ? "/groups/create" : "/login")}
+                >
+                  Birlikte Grup Oluştur
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <UserProfileCardModal
+        profile={modalProfile}
+        open={showProfileCard}
+        onClose={() => setShowProfileCard(false)}
+      />
+    </>
   );
 }
