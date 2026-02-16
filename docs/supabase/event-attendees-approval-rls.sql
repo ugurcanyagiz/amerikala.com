@@ -109,3 +109,65 @@ create policy "Organizers can manage attendee requests"
   );
 
 commit;
+
+-- =========================================================
+-- PHASE 3: Event comment access for approved attendees
+-- =========================================================
+begin;
+
+alter table if exists public.event_comments enable row level security;
+
+drop policy if exists "Attendees can view event comments" on public.event_comments;
+drop policy if exists "Attendees can write event comments" on public.event_comments;
+drop policy if exists "Users can delete own event comments" on public.event_comments;
+
+create policy "Attendees can view event comments"
+  on public.event_comments
+  for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.events e
+      where e.id = event_comments.event_id
+        and e.organizer_id = auth.uid()
+    )
+    or exists (
+      select 1
+      from public.event_attendees ea
+      where ea.event_id = event_comments.event_id
+        and ea.user_id = auth.uid()
+        and ea.status = 'going'::public.attendance_status
+    )
+  );
+
+create policy "Attendees can write event comments"
+  on public.event_comments
+  for insert
+  to authenticated
+  with check (
+    auth.uid() = user_id
+    and (
+      exists (
+        select 1
+        from public.events e
+        where e.id = event_comments.event_id
+          and e.organizer_id = auth.uid()
+      )
+      or exists (
+        select 1
+        from public.event_attendees ea
+        where ea.event_id = event_comments.event_id
+          and ea.user_id = auth.uid()
+          and ea.status = 'going'::public.attendance_status
+      )
+    )
+  );
+
+create policy "Users can delete own event comments"
+  on public.event_comments
+  for delete
+  to authenticated
+  using (auth.uid() = user_id);
+
+commit;
