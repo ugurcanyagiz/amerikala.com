@@ -21,6 +21,7 @@ import { Avatar } from "@/app/components/ui/Avatar";
 import {
   ArrowLeft,
   CalendarDays,
+  Check,
   Copy,
   Globe,
   Loader2,
@@ -28,13 +29,18 @@ import {
   MapPin,
   Megaphone,
   MessageSquare,
+  Save,
   Send,
+  Settings,
   Shield,
+  UserCog,
   UserPlus,
+  UserX,
   Users,
+  X,
 } from "lucide-react";
 
-type Tab = "feed" | "events" | "members" | "about";
+type Tab = "feed" | "events" | "members" | "about" | "management";
 
 type GroupProfile = {
   id: string;
@@ -71,8 +77,25 @@ type GroupEvent = {
   current_attendees: number;
 };
 
+type GroupMemberRow = Omit<GroupMember, "profile"> & {
+  profile: GroupProfile[] | GroupProfile | null;
+};
 
-const toSingleProfile = (profile: GroupPostRow["profile"]): GroupProfile | null => {
+type JoinRequest = {
+  id: string;
+  user_id: string;
+  group_id: string;
+  answer: string | null;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  user: GroupProfile | null;
+};
+
+type JoinRequestRow = Omit<JoinRequest, "user"> & {
+  user: GroupProfile[] | GroupProfile | null;
+};
+
+const toSingleProfile = (profile: GroupProfile[] | GroupProfile | null): GroupProfile | null => {
   if (!profile) return null;
   return Array.isArray(profile) ? profile[0] ?? null : profile;
 };
@@ -83,6 +106,16 @@ const normalizeGroupPost = (row: GroupPostRow): GroupPost => ({
   created_at: row.created_at,
   user_id: row.user_id,
   profile: toSingleProfile(row.profile),
+});
+
+const normalizeGroupMember = (row: GroupMemberRow): GroupMember => ({
+  ...row,
+  profile: (toSingleProfile(row.profile) ?? undefined) as GroupMember["profile"],
+});
+
+const normalizeJoinRequest = (row: JoinRequestRow): JoinRequest => ({
+  ...row,
+  user: toSingleProfile(row.user),
 });
 
 export default function GroupDetailPage() {
@@ -96,14 +129,18 @@ export default function GroupDetailPage() {
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [posts, setPosts] = useState<GroupPost[]>([]);
   const [events, setEvents] = useState<GroupEvent[]>([]);
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>("feed");
 
   const [membershipLoading, setMembershipLoading] = useState(false);
   const [membershipStatus, setMembershipStatus] = useState<"approved" | "pending" | "none">("none");
-  const [memberRole, setMemberRole] = useState<string | null>(null);
+  const [memberRole, setMemberRole] = useState<"admin" | "moderator" | "member" | null>(null);
 
   const [newPost, setNewPost] = useState("");
   const [publishingPost, setPublishingPost] = useState(false);
+
+  const [savingGroup, setSavingGroup] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const [eventForm, setEventForm] = useState({
     title: "",
@@ -116,7 +153,18 @@ export default function GroupDetailPage() {
   });
   const [creatingEvent, setCreatingEvent] = useState(false);
 
+  const [groupForm, setGroupForm] = useState({
+    name: "",
+    description: "",
+    city: "",
+    state: "",
+    is_private: false,
+    requires_approval: false,
+    application_question: "",
+  });
+
   const isApprovedMember = membershipStatus === "approved";
+  const isAdmin = memberRole === "admin";
   const isModerator = memberRole === "admin" || memberRole === "moderator";
 
   const fetchGroup = useCallback(async () => {
@@ -126,23 +174,32 @@ export default function GroupDetailPage() {
     try {
       const { data: groupData, error: groupError } = await supabase
         .from("groups")
-        .select(`*, creator:created_by (id, username, full_name, avatar_url)`)
+        .select("*, creator:created_by (id, username, full_name, avatar_url)")
         .eq("slug", slug)
         .single();
 
       if (groupError) throw groupError;
       setGroup(groupData);
+      setGroupForm({
+        name: groupData.name,
+        description: groupData.description,
+        city: groupData.city || "",
+        state: groupData.state || "",
+        is_private: groupData.is_private,
+        requires_approval: groupData.requires_approval,
+        application_question: groupData.application_question || "",
+      });
 
       const [{ data: memberRows }, { data: postRows }, { data: eventRows }] = await Promise.all([
         supabase
           .from("group_members")
-          .select(`*, profile:user_id(id,username,full_name,avatar_url)`)
+          .select("*, profile:user_id(id,username,full_name,avatar_url)")
           .eq("group_id", groupData.id)
           .eq("status", "approved")
           .order("joined_at", { ascending: true }),
         supabase
           .from("posts")
-          .select(`id, content, created_at, user_id, profile:user_id (id, username, full_name, avatar_url)`)
+          .select("id, content, created_at, user_id, profile:user_id (id, username, full_name, avatar_url)")
           .eq("group_id", groupData.id)
           .order("created_at", { ascending: false })
           .limit(50),
@@ -154,9 +211,9 @@ export default function GroupDetailPage() {
           .limit(20),
       ]);
 
-      setMembers((memberRows || []) as GroupMember[]);
-      const normalizedPosts = ((postRows || []) as GroupPostRow[]).map(normalizeGroupPost);
-      setPosts(normalizedPosts);
+      const normalizedMembers = ((memberRows || []) as GroupMemberRow[]).map(normalizeGroupMember);
+      setMembers(normalizedMembers);
+      setPosts(((postRows || []) as GroupPostRow[]).map(normalizeGroupPost));
       setEvents((eventRows || []) as GroupEvent[]);
 
       if (user) {
@@ -169,17 +226,33 @@ export default function GroupDetailPage() {
 
         if (membership?.status === "approved") {
           setMembershipStatus("approved");
-          setMemberRole(membership.role || "member");
+          const role = membership.role as "admin" | "moderator" | "member";
+          setMemberRole(role || "member");
+
+          if (role === "admin" || role === "moderator") {
+            const { data: requestRows } = await supabase
+              .from("group_join_requests")
+              .select("id, user_id, group_id, answer, status, created_at, user:user_id(id,username,full_name,avatar_url)")
+              .eq("group_id", groupData.id)
+              .eq("status", "pending")
+              .order("created_at", { ascending: true });
+
+            setJoinRequests(((requestRows || []) as JoinRequestRow[]).map(normalizeJoinRequest));
+          } else {
+            setJoinRequests([]);
+          }
         } else if (membership?.status === "pending") {
           setMembershipStatus("pending");
           setMemberRole(null);
+          setJoinRequests([]);
         } else {
           setMembershipStatus("none");
           setMemberRole(null);
+          setJoinRequests([]);
         }
       }
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error("fetch group error", error);
       router.push("/groups");
     } finally {
       setLoading(false);
@@ -241,8 +314,8 @@ export default function GroupDetailPage() {
       }
 
       await fetchGroup();
-    } catch (e) {
-      console.error("join group error", e);
+    } catch (error) {
+      console.error("join group error", error);
     } finally {
       setMembershipLoading(false);
     }
@@ -257,15 +330,14 @@ export default function GroupDetailPage() {
       const { data, error } = await supabase
         .from("posts")
         .insert({ user_id: user.id, content: newPost.trim(), group_id: group.id })
-        .select(`id, content, created_at, user_id, profile:user_id(id,username,full_name,avatar_url)`)
+        .select("id, content, created_at, user_id, profile:user_id(id,username,full_name,avatar_url)")
         .single();
 
       if (error) throw error;
-      const normalizedPost = normalizeGroupPost(data as GroupPostRow);
-      setPosts((prev) => [normalizedPost, ...prev]);
+      setPosts((prev) => [normalizeGroupPost(data as GroupPostRow), ...prev]);
       setNewPost("");
-    } catch (e) {
-      console.error("create group post error", e);
+    } catch (error) {
+      console.error("create group post error", error);
     } finally {
       setPublishingPost(false);
     }
@@ -294,10 +366,133 @@ export default function GroupDetailPage() {
       if (error) throw error;
       setEventForm({ title: "", description: "", event_date: "", start_time: "", location_name: "", city: "", state: "" });
       await fetchGroup();
-    } catch (e) {
-      console.error("create group event error", e);
+    } catch (error) {
+      console.error("create group event error", error);
     } finally {
       setCreatingEvent(false);
+    }
+  };
+
+  const handleSaveGroupSettings = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!group || !isModerator) return;
+
+    setSavingGroup(true);
+    try {
+      const { error } = await supabase
+        .from("groups")
+        .update({
+          name: groupForm.name.trim(),
+          description: groupForm.description.trim(),
+          city: groupForm.city.trim() || null,
+          state: groupForm.state.trim() || null,
+          is_private: groupForm.is_private,
+          requires_approval: groupForm.is_private ? true : groupForm.requires_approval,
+          application_question: groupForm.application_question.trim() || null,
+          visibility: groupForm.is_private ? "private" : "public",
+        })
+        .eq("id", group.id);
+
+      if (error) throw error;
+      await fetchGroup();
+    } catch (error) {
+      console.error("save group settings error", error);
+    } finally {
+      setSavingGroup(false);
+    }
+  };
+
+  const handleRequestDecision = async (request: JoinRequest, decision: "approved" | "rejected") => {
+    if (!group || !user || !isModerator) return;
+
+    setActionLoading(`request-${request.id}-${decision}`);
+    try {
+      const now = new Date().toISOString();
+
+      const { error: updateRequestError } = await supabase
+        .from("group_join_requests")
+        .update({
+          status: decision,
+          reviewed_by: user.id,
+          reviewed_at: now,
+          rejection_reason: decision === "rejected" ? "Başvuru reddedildi" : null,
+        })
+        .eq("id", request.id)
+        .eq("group_id", group.id);
+
+      if (updateRequestError) throw updateRequestError;
+
+      if (decision === "approved") {
+        const { error: upsertMemberError } = await supabase.from("group_members").upsert(
+          {
+            group_id: group.id,
+            user_id: request.user_id,
+            role: "member",
+            status: "approved",
+          },
+          { onConflict: "group_id,user_id" },
+        );
+        if (upsertMemberError) throw upsertMemberError;
+      } else {
+        await supabase
+          .from("group_members")
+          .delete()
+          .eq("group_id", group.id)
+          .eq("user_id", request.user_id)
+          .eq("status", "pending");
+      }
+
+      await fetchGroup();
+    } catch (error) {
+      console.error("request decision error", error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRoleChange = async (targetUserId: string, role: "member" | "moderator") => {
+    if (!group || !isAdmin) return;
+    if (targetUserId === group.created_by) return;
+
+    setActionLoading(`role-${targetUserId}`);
+    try {
+      const { error } = await supabase
+        .from("group_members")
+        .update({ role })
+        .eq("group_id", group.id)
+        .eq("user_id", targetUserId)
+        .eq("status", "approved");
+
+      if (error) throw error;
+      await fetchGroup();
+    } catch (error) {
+      console.error("role change error", error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRemoveMember = async (targetUserId: string) => {
+    if (!group || !isModerator) return;
+    if (targetUserId === group.created_by) return;
+
+    const confirmRemove = window.confirm("Bu üyeyi gruptan çıkarmak istediğinize emin misiniz?");
+    if (!confirmRemove) return;
+
+    setActionLoading(`remove-${targetUserId}`);
+    try {
+      const { error } = await supabase
+        .from("group_members")
+        .delete()
+        .eq("group_id", group.id)
+        .eq("user_id", targetUserId);
+
+      if (error) throw error;
+      await fetchGroup();
+    } catch (error) {
+      console.error("remove member error", error);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -314,6 +509,7 @@ export default function GroupDetailPage() {
   }
 
   const creator = group.creator as { username?: string | null; full_name?: string | null; avatar_url?: string | null } | undefined;
+  const tabs: Tab[] = isModerator ? ["feed", "events", "members", "about", "management"] : ["feed", "events", "members", "about"];
 
   return (
     <div className="ak-page">
@@ -342,6 +538,7 @@ export default function GroupDetailPage() {
                       {group.is_nationwide ? "ABD Geneli" : `${group.city}, ${US_STATES_MAP[group.state || ""] || group.state}`}
                     </span>
                     {group.is_private && <Badge variant="default" size="sm" className="gap-1"><Lock size={12} /> Özel</Badge>}
+                    {isModerator && <Badge variant="warning" size="sm" className="gap-1"><Shield size={12} /> Yönetim Yetkisi</Badge>}
                   </div>
                 </div>
               </div>
@@ -364,7 +561,7 @@ export default function GroupDetailPage() {
         </Card>
 
         <div className="flex flex-wrap gap-2 mb-6">
-          {(["feed", "events", "members", "about"] as Tab[]).map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -374,6 +571,7 @@ export default function GroupDetailPage() {
               {tab === "events" && "Etkinlikler"}
               {tab === "members" && `Üyeler (${members.length})`}
               {tab === "about" && "Hakkında"}
+              {tab === "management" && "Yönetim"}
             </button>
           ))}
         </div>
@@ -478,14 +676,47 @@ export default function GroupDetailPage() {
                 <Card className="glass">
                   <CardContent className="p-4 space-y-3">
                     {members.map((member) => {
-                      const profile = member.profile as { username?: string | null; full_name?: string | null; avatar_url?: string | null } | undefined;
+                      const profile = member.profile as GroupProfile | undefined;
+                      const isOwner = member.user_id === group.created_by;
+                      const roleLoading = actionLoading === `role-${member.user_id}`;
+                      const removeLoading = actionLoading === `remove-${member.user_id}`;
+
                       return (
-                        <div key={member.user_id} className="flex items-center gap-3 rounded-lg p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
-                          <Avatar src={profile?.avatar_url ?? undefined} fallback={profile?.full_name || profile?.username || "U"} size="md" />
-                          <div className="min-w-0">
-                            <p className="font-medium">{profile?.full_name || profile?.username || "Üye"}</p>
-                            <p className="text-sm text-neutral-500">@{profile?.username} · {MEMBER_ROLE_LABELS[member.role]}</p>
+                        <div key={member.user_id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg p-3 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                          <div className="flex items-center gap-3">
+                            <Avatar src={profile?.avatar_url ?? undefined} fallback={profile?.full_name || profile?.username || "U"} size="md" />
+                            <div className="min-w-0">
+                              <p className="font-medium">{profile?.full_name || profile?.username || "Üye"}</p>
+                              <p className="text-sm text-neutral-500">@{profile?.username} · {MEMBER_ROLE_LABELS[member.role]}</p>
+                            </div>
                           </div>
+
+                          {isModerator && !isOwner && (
+                            <div className="flex items-center gap-2">
+                              {isAdmin && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={roleLoading}
+                                  onClick={() => handleRoleChange(member.user_id, member.role === "moderator" ? "member" : "moderator")}
+                                  className="gap-1"
+                                >
+                                  {roleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCog size={14} />}
+                                  {member.role === "moderator" ? "Moderatörü Al" : "Moderatör Yap"}
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={removeLoading}
+                                onClick={() => handleRemoveMember(member.user_id)}
+                                className="gap-1 text-red-600"
+                              >
+                                {removeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX size={14} />}
+                                Gruptan Çıkar
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -507,6 +738,140 @@ export default function GroupDetailPage() {
                   </CardContent>
                 </Card>
               )}
+
+              {activeTab === "management" && isModerator && (
+                <div className="space-y-6">
+                  <Card className="glass">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2"><Settings size={16} /> Grup Ayarları</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <form onSubmit={handleSaveGroupSettings} className="space-y-3">
+                        <input
+                          value={groupForm.name}
+                          onChange={(e) => setGroupForm((prev) => ({ ...prev, name: e.target.value }))}
+                          className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2"
+                          placeholder="Grup adı"
+                          required
+                        />
+                        <textarea
+                          value={groupForm.description}
+                          onChange={(e) => setGroupForm((prev) => ({ ...prev, description: e.target.value }))}
+                          className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2"
+                          rows={4}
+                          placeholder="Grup açıklaması"
+                          required
+                        />
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          <input
+                            value={groupForm.city}
+                            onChange={(e) => setGroupForm((prev) => ({ ...prev, city: e.target.value }))}
+                            className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2"
+                            placeholder="Şehir"
+                          />
+                          <input
+                            value={groupForm.state}
+                            onChange={(e) => setGroupForm((prev) => ({ ...prev, state: e.target.value }))}
+                            className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2"
+                            placeholder="Eyalet"
+                          />
+                        </div>
+
+                        <div className="space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-700 p-3">
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={groupForm.is_private}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setGroupForm((prev) => ({
+                                  ...prev,
+                                  is_private: checked,
+                                  requires_approval: checked ? true : prev.requires_approval,
+                                }));
+                              }}
+                            />
+                            Özel grup
+                          </label>
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={groupForm.requires_approval}
+                              disabled={groupForm.is_private}
+                              onChange={(e) => setGroupForm((prev) => ({ ...prev, requires_approval: e.target.checked }))}
+                            />
+                            Üyelik onayı gerekli
+                          </label>
+                        </div>
+
+                        <textarea
+                          value={groupForm.application_question}
+                          onChange={(e) => setGroupForm((prev) => ({ ...prev, application_question: e.target.value }))}
+                          className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2"
+                          rows={2}
+                          placeholder="Opsiyonel başvuru sorusu"
+                        />
+
+                        <Button type="submit" disabled={savingGroup} className="gap-2">
+                          {savingGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save size={15} />} Değişiklikleri Kaydet
+                        </Button>
+                      </form>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="glass">
+                    <CardHeader>
+                      <CardTitle className="text-base">Üyelik Başvuruları ({joinRequests.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {joinRequests.length === 0 ? (
+                        <p className="text-sm text-neutral-500">Bekleyen başvuru yok.</p>
+                      ) : (
+                        joinRequests.map((request) => {
+                          const approveLoading = actionLoading === `request-${request.id}-approved`;
+                          const rejectLoading = actionLoading === `request-${request.id}-rejected`;
+                          return (
+                            <div key={request.id} className="rounded-lg border border-neutral-200 dark:border-neutral-700 p-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <Avatar src={request.user?.avatar_url ?? undefined} fallback={request.user?.full_name || request.user?.username || "U"} size="sm" />
+                                  <div>
+                                    <p className="text-sm font-medium">{request.user?.full_name || request.user?.username || "Kullanıcı"}</p>
+                                    <p className="text-xs text-neutral-500">@{request.user?.username}</p>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-neutral-500">{new Date(request.created_at).toLocaleString("tr-TR")}</p>
+                              </div>
+                              {request.answer && (
+                                <p className="text-sm mt-2 rounded bg-neutral-100 dark:bg-neutral-800 p-2">“{request.answer}”</p>
+                              )}
+                              <div className="flex gap-2 mt-3">
+                                <Button
+                                  size="sm"
+                                  className="gap-1"
+                                  disabled={approveLoading || rejectLoading}
+                                  onClick={() => handleRequestDecision(request, "approved")}
+                                >
+                                  {approveLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check size={14} />} Onayla
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="gap-1 text-red-600"
+                                  disabled={approveLoading || rejectLoading}
+                                  onClick={() => handleRequestDecision(request, "rejected")}
+                                >
+                                  {rejectLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X size={14} />} Reddet
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
 
             <div className="space-y-6">
@@ -527,6 +892,7 @@ export default function GroupDetailPage() {
                   <p className="flex items-center justify-between"><span className="text-neutral-500">Mesaj</span><span>{posts.length}</span></p>
                   <p className="flex items-center justify-between"><span className="text-neutral-500">Etkinlik</span><span>{events.length}</span></p>
                   <p className="flex items-center justify-between"><span className="text-neutral-500">Üyeler</span><span>{members.length}</span></p>
+                  <p className="flex items-center justify-between"><span className="text-neutral-500">Bekleyen Başvuru</span><span>{joinRequests.length}</span></p>
                   <p className="flex items-center justify-between"><span className="text-neutral-500">Gizlilik</span><span>{group.is_private ? "Private" : "Public"}</span></p>
                   <p className="flex items-center justify-between"><span className="text-neutral-500">Moderasyon</span><span className="inline-flex items-center gap-1"><Shield size={14} /> {group.requires_approval ? "Onaylı" : "Açık"}</span></p>
                 </CardContent>
