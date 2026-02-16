@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
@@ -26,12 +26,12 @@ import {
   Check,
   AlertCircle,
   Loader2,
-  Plus,
   X,
   Phone,
   Mail,
   Sparkles,
 } from "lucide-react";
+import { uploadImageToStorage } from "@/lib/supabase/imageUpload";
 
 interface FormData {
   title: string;
@@ -68,7 +68,9 @@ export default function AlisverisIlanVerPage() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [newImageUrl, setNewImageUrl] = useState("");
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -84,20 +86,58 @@ export default function AlisverisIlanVerPage() {
     }
   }, [user?.email]);
 
-  const handleChange = (field: keyof FormData, value: any) => {
+  const handleChange = (field: keyof FormData, value: FormData[keyof FormData]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
-  const addImage = () => {
-    if (newImageUrl && !formData.images.includes(newImageUrl)) {
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, newImageUrl],
-      }));
-      setNewImageUrl("");
+  const MAX_IMAGES = 12;
+  const MAX_SIZE_MB = 8;
+
+  const addImageFiles = async (files: FileList | null) => {
+    if (!files?.length || !user) return;
+
+    if (formData.images.length >= MAX_IMAGES) {
+      alert(`En fazla ${MAX_IMAGES} fotoğraf yükleyebilirsiniz.`);
+      return;
+    }
+
+    setUploadingImages(true);
+    try {
+      const availableSlots = MAX_IMAGES - formData.images.length;
+      const selectedFiles = Array.from(files).slice(0, availableSlots);
+      const uploadedUrls: string[] = [];
+
+      for (const file of selectedFiles) {
+        if (!file.type.startsWith("image/")) continue;
+        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+          alert(`${file.name} dosyası ${MAX_SIZE_MB}MB sınırını aşıyor.`);
+          continue;
+        }
+
+        const url = await uploadImageToStorage({
+          file,
+          folder: `listings/marketplace/${user.id}`,
+        });
+        uploadedUrls.push(url);
+      }
+
+      if (uploadedUrls.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          images: [...prev.images, ...uploadedUrls],
+        }));
+      }
+    } catch (error) {
+      console.error("Image upload error:", error);
+      alert("Fotoğraflar yüklenirken bir hata oluştu.");
+    } finally {
+      setUploadingImages(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -343,17 +383,46 @@ export default function AlisverisIlanVerPage() {
                 {/* Images */}
                 <div>
                   <label className="block text-sm font-medium mb-2">Fotoğraflar</label>
-                  <div className="flex gap-2 mb-4">
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(true);
+                    }}
+                    onDragLeave={() => setIsDragOver(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(false);
+                      addImageFiles(e.dataTransfer.files);
+                    }}
+                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors mb-4 ${
+                      isDragOver
+                        ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                        : "border-neutral-200 dark:border-neutral-700"
+                    }`}
+                  >
                     <input
-                      type="url"
-                      value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
-                      placeholder="Fotoğraf URL'si yapıştırın"
-                      className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => addImageFiles(e.target.files)}
                     />
-                    <Button type="button" variant="outline" onClick={addImage} disabled={!newImageUrl}>
-                      <Plus size={18} />
+                    <ImageIcon className="w-10 h-10 text-neutral-400 mx-auto mb-2" />
+                    <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-3">
+                      Fotoğrafları sürükleyip bırakın veya cihazınızdan seçin
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImages}
+                    >
+                      {uploadingImages ? "Yükleniyor..." : "Bilgisayardan Fotoğraf Seç"}
                     </Button>
+                    <p className="text-xs text-neutral-500 mt-2">
+                      Maksimum {MAX_IMAGES} fotoğraf • Her dosya en fazla {MAX_SIZE_MB}MB
+                    </p>
                   </div>
 
                   {formData.images.length > 0 ? (

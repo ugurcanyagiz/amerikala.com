@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
@@ -21,7 +21,6 @@ import {
   MapPin,
   Globe,
   Lock,
-  Unlock,
   Image as ImageIcon,
   Loader2,
   CheckCircle2,
@@ -29,6 +28,7 @@ import {
   Info,
   Shield
 } from "lucide-react";
+import { uploadImageToStorage } from "@/lib/supabase/imageUpload";
 
 export default function CreateGroupPage() {
   const router = useRouter();
@@ -43,11 +43,18 @@ export default function CreateGroupPage() {
   const [isNationwide, setIsNationwide] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const [requiresApproval, setRequiresApproval] = useState(false);
+  const [applicationQuestion, setApplicationQuestion] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState("");
 
   // UI state
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [avatarDragOver, setAvatarDragOver] = useState(false);
+  const [coverDragOver, setCoverDragOver] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -64,6 +71,66 @@ export default function CreateGroupPage() {
       setState(profile.state);
     }
   }, [profile]);
+
+  const MAX_SIZE_MB = 8;
+
+  const uploadSingleImage = async (
+    file: File,
+    folder: "avatar" | "cover"
+  ): Promise<string> => {
+    if (!user) {
+      throw new Error("Kullanıcı bulunamadı");
+    }
+
+    if (!file.type.startsWith("image/")) {
+      throw new Error("Lütfen geçerli bir görsel dosyası seçin.");
+    }
+
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      throw new Error(`Dosya boyutu ${MAX_SIZE_MB}MB sınırını aşıyor.`);
+    }
+
+    return uploadImageToStorage({
+      file,
+      folder: `groups/${folder}/${user.id}`,
+    });
+  };
+
+  const handleAvatarFile = async (file: File | null) => {
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    try {
+      const url = await uploadSingleImage(file, "avatar");
+      setAvatarUrl(url);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Avatar yüklenemedi";
+      setStatus({ type: "error", message });
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleCoverFile = async (file: File | null) => {
+    if (!file) return;
+
+    setUploadingCover(true);
+    try {
+      const url = await uploadSingleImage(file, "cover");
+      setCoverImageUrl(url);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Kapak görseli yüklenemedi";
+      setStatus({ type: "error", message });
+    } finally {
+      setUploadingCover(false);
+      if (coverInputRef.current) {
+        coverInputRef.current.value = "";
+      }
+    }
+  };
 
   // Validate form
   const validateForm = (): boolean => {
@@ -109,7 +176,9 @@ export default function CreateGroupPage() {
           avatar_url: avatarUrl || null,
           cover_image_url: coverImageUrl || null,
           is_private: isPrivate,
-          requires_approval: requiresApproval,
+          requires_approval: isPrivate ? true : requiresApproval,
+          application_question: applicationQuestion.trim() || null,
+          visibility: isPrivate ? "private" : "public",
           created_by: user.id,
           status: "pending"
         })
@@ -140,11 +209,11 @@ export default function CreateGroupPage() {
         router.push("/groups/my-groups");
       }, 2000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating group:", error);
       setStatus({
         type: "error",
-        message: error.message || "Grup oluşturulurken bir hata oluştu"
+        message: error instanceof Error ? error.message : "Grup oluşturulurken bir hata oluştu"
       });
     } finally {
       setSaving(false);
@@ -331,7 +400,11 @@ export default function CreateGroupPage() {
                   type="checkbox"
                   id="isPrivate"
                   checked={isPrivate}
-                  onChange={(e) => setIsPrivate(e.target.checked)}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIsPrivate(checked);
+                    if (checked) setRequiresApproval(true);
+                  }}
                   className="h-5 w-5 mt-0.5 rounded border-neutral-300 text-blue-500 focus:ring-blue-500"
                 />
                 <label htmlFor="isPrivate" className="cursor-pointer">
@@ -352,7 +425,8 @@ export default function CreateGroupPage() {
                   id="requiresApproval"
                   checked={requiresApproval}
                   onChange={(e) => setRequiresApproval(e.target.checked)}
-                  className="h-5 w-5 mt-0.5 rounded border-neutral-300 text-blue-500 focus:ring-blue-500"
+                  disabled={isPrivate}
+                  className="h-5 w-5 mt-0.5 rounded border-neutral-300 text-blue-500 focus:ring-blue-500 disabled:opacity-50"
                 />
                 <label htmlFor="requiresApproval" className="cursor-pointer">
                   <div className="flex items-center gap-2 font-medium">
@@ -360,10 +434,30 @@ export default function CreateGroupPage() {
                     Üyelik Onayı Gerekli
                   </div>
                   <p className="text-sm text-neutral-500 mt-1">
-                    Yeni üyeler gruba katılmadan önce yönetici onayı gerekir.
+                    Yeni üyeler gruba katılmadan önce yönetici onayı gerekir. Özel gruplarda bu ayar zorunlu olur.
                   </p>
                 </label>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Membership Question */}
+          <Card className="glass mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Başvuru Sorusu (Opsiyonel)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Örn: Bu gruba neden katılmak istiyorsunuz?"
+                value={applicationQuestion}
+                onChange={(e) => setApplicationQuestion(e.target.value)}
+                rows={3}
+                maxLength={240}
+              />
+              <p className="text-xs text-neutral-500 mt-1 text-right">{applicationQuestion.length}/240</p>
+              <p className="text-xs text-neutral-500 mt-2">
+                Üyelik onayı aktif olduğunda, katılmak isteyenlere bu soru gösterilir.
+              </p>
             </CardContent>
           </Card>
 
@@ -378,30 +472,78 @@ export default function CreateGroupPage() {
             <CardContent className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1.5">
-                  Avatar URL <span className="text-neutral-400">(Opsiyonel)</span>
+                  Avatar <span className="text-neutral-400">(Opsiyonel)</span>
                 </label>
-                <Input
-                  placeholder="https://example.com/avatar.jpg"
-                  value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                />
-                <p className="text-xs text-neutral-500 mt-1">
-                  Kare format önerilir (örn: 200x200)
-                </p>
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setAvatarDragOver(true);
+                  }}
+                  onDragLeave={() => setAvatarDragOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setAvatarDragOver(false);
+                    handleAvatarFile(e.dataTransfer.files?.[0] || null);
+                  }}
+                  className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                    avatarDragOver
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-neutral-200 dark:border-neutral-700"
+                  }`}
+                >
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleAvatarFile(e.target.files?.[0] || null)}
+                  />
+                  <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-2">
+                    Avatar görselini sürükleyin veya seçin
+                  </p>
+                  <Button type="button" variant="outline" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar}>
+                    {uploadingAvatar ? "Yükleniyor..." : "Avatar Seç"}
+                  </Button>
+                  <p className="text-xs text-neutral-500 mt-2">Kare format önerilir (örn: 200x200)</p>
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-1.5">
-                  Kapak Görseli URL <span className="text-neutral-400">(Opsiyonel)</span>
+                  Kapak Görseli <span className="text-neutral-400">(Opsiyonel)</span>
                 </label>
-                <Input
-                  placeholder="https://example.com/cover.jpg"
-                  value={coverImageUrl}
-                  onChange={(e) => setCoverImageUrl(e.target.value)}
-                />
-                <p className="text-xs text-neutral-500 mt-1">
-                  Geniş format önerilir (örn: 1200x400)
-                </p>
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setCoverDragOver(true);
+                  }}
+                  onDragLeave={() => setCoverDragOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setCoverDragOver(false);
+                    handleCoverFile(e.dataTransfer.files?.[0] || null);
+                  }}
+                  className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                    coverDragOver
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-neutral-200 dark:border-neutral-700"
+                  }`}
+                >
+                  <input
+                    ref={coverInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleCoverFile(e.target.files?.[0] || null)}
+                  />
+                  <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-2">
+                    Kapak görselini sürükleyin veya seçin
+                  </p>
+                  <Button type="button" variant="outline" onClick={() => coverInputRef.current?.click()} disabled={uploadingCover}>
+                    {uploadingCover ? "Yükleniyor..." : "Kapak Görseli Seç"}
+                  </Button>
+                  <p className="text-xs text-neutral-500 mt-2">Geniş format önerilir (örn: 1200x400)</p>
+                </div>
               </div>
 
               {/* Preview */}
@@ -465,7 +607,7 @@ export default function CreateGroupPage() {
             <Button 
               type="submit" 
               variant="primary"
-              disabled={saving}
+              disabled={saving || uploadingAvatar || uploadingCover}
               className="min-w-[150px]"
             >
               {saving ? (

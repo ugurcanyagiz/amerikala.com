@@ -17,7 +17,6 @@ import {
 import Sidebar from "../components/Sidebar";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
-import { Avatar } from "../components/ui/Avatar";
 import { Badge } from "../components/ui/Badge";
 import { 
   Plus, 
@@ -131,10 +130,10 @@ export default function GroupsPage() {
               <div>
                 <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
                   <Users className="text-blue-500" />
-                  Gruplar
+                  Community Grupları
                 </h1>
                 <p className="text-neutral-600 dark:text-neutral-400">
-                  {filteredGroups.length} aktif grup ile tanış ve topluluğa katıl
+                  {filteredGroups.length} aktif grup · canlı feed, etkinlik ve moderasyonlu üyelik sistemi
                 </p>
               </div>
               
@@ -320,8 +319,6 @@ export default function GroupsPage() {
 
 // Group Card Component (Grid View)
 function GroupCard({ group }: { group: Group }) {
-  const creator = group.creator as any;
-
   return (
     <Link href={`/groups/${group.slug}`}>
       <Card className="glass overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full group">
@@ -407,8 +404,7 @@ function GroupCard({ group }: { group: Group }) {
 
 // Group List Card Component
 function GroupListCard({ group }: { group: Group }) {
-  const creator = group.creator as any;
-
+  const creator = group.creator as { full_name?: string | null; username?: string | null } | undefined;
   return (
     <Link href={`/groups/${group.slug}`}>
       <Card className="glass hover:shadow-lg transition-all duration-300 group">
