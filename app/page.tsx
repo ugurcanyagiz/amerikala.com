@@ -16,6 +16,7 @@ import {
 import Sidebar from "./components/Sidebar";
 import { Button } from "./components/ui/Button";
 import { publicSupabase } from "@/lib/supabase/publicClient";
+import { searchSiteContent } from "@/lib/siteSearch";
 
 type HomeCategoryKey = "events" | "realEstate" | "jobs" | "marketplace";
 
@@ -37,6 +38,16 @@ type SearchSuggestion = {
   location: string;
   href: string;
   section: HomeCategoryKey;
+};
+
+const SEARCH_TYPE_TO_SECTION: Record<string, HomeCategoryKey> = {
+  event: "events",
+  realEstate: "realEstate",
+  job: "jobs",
+  marketplace: "marketplace",
+  group: "events",
+  profile: "events",
+  post: "events",
 };
 
 const CATEGORY_CONFIG: Record<
@@ -323,70 +334,13 @@ export default function Home() {
     const debounce = window.setTimeout(async () => {
       setSearching(true);
       try {
-        const keyword = `%${normalizedQuery}%`;
-
-        const [eventsRes, listingsRes, jobsRes, marketplaceRes] = await Promise.all([
-          publicSupabase
-            .from("events")
-            .select("id, title, city, state")
-            .eq("status", "approved")
-            .ilike("title", keyword)
-            .limit(5),
-          publicSupabase
-            .from("listings")
-            .select("id, title, city, state")
-            .eq("status", "approved")
-            .or(`title.ilike.${keyword},description.ilike.${keyword}`)
-            .limit(5),
-          publicSupabase
-            .from("job_listings")
-            .select("id, title, city, state")
-            .eq("status", "approved")
-            .or(`title.ilike.${keyword},description.ilike.${keyword}`)
-            .limit(5),
-          publicSupabase
-            .from("marketplace_listings")
-            .select("id, title, city, state")
-            .eq("status", "approved")
-            .or(`title.ilike.${keyword},description.ilike.${keyword}`)
-            .limit(5),
-        ]);
-
-        if (eventsRes.error) throw eventsRes.error;
-        if (listingsRes.error) throw listingsRes.error;
-        if (jobsRes.error) throw jobsRes.error;
-        if (marketplaceRes.error) throw marketplaceRes.error;
-
-        const merged: SearchSuggestion[] = [
-          ...(eventsRes.data ?? []).map((item) => ({
-            id: `event-${item.id}`,
-            title: item.title,
-            location: `${item.city}, ${item.state}`,
-            href: `/meetups/${item.id}`,
-            section: "events" as const,
-          })),
-          ...(listingsRes.data ?? []).map((item) => ({
-            id: `listing-${item.id}`,
-            title: item.title,
-            location: `${item.city}, ${item.state}`,
-            href: `/emlak/ilan/${item.id}`,
-            section: "realEstate" as const,
-          })),
-          ...(jobsRes.data ?? []).map((item) => ({
-            id: `job-${item.id}`,
-            title: item.title,
-            location: `${item.city}, ${item.state}`,
-            href: `/is/ilan/${item.id}`,
-            section: "jobs" as const,
-          })),
-          ...(marketplaceRes.data ?? []).map((item) => ({
-            id: `market-${item.id}`,
-            title: item.title,
-            location: `${item.city}, ${item.state}`,
-            href: `/alisveris/ilan/${item.id}`,
-            section: "marketplace" as const,
-          })),
-        ].slice(0, 8);
+        const merged: SearchSuggestion[] = (await searchSiteContent(normalizedQuery, 6)).map((item) => ({
+          id: item.id,
+          title: item.title,
+          location: item.subtitle,
+          href: item.href,
+          section: SEARCH_TYPE_TO_SECTION[item.type] || "events",
+        })).slice(0, 8);
 
         setSuggestions(merged);
         setSearchOpen(true);
@@ -419,7 +373,7 @@ export default function Home() {
     }
 
     const q = encodeURIComponent(normalizedQuery);
-    router.push(`/feed?search=${q}`);
+    router.push(`/search?q=${q}`);
     setSearchOpen(false);
   };
 

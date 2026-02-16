@@ -8,7 +8,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { getTimeAgo, useNotifications } from "../contexts/NotificationContext";
 import { Avatar } from "./ui/Avatar";
 import { Button } from "./ui/Button";
-import { getMessagePreviews, type MessagePreview } from "@/lib/messages";
+import { getMessagePreviews, markConversationMessagesAsRead, type MessagePreview } from "@/lib/messages";
 import { supabase } from "@/lib/supabase/client";
 import {
   Home,
@@ -641,7 +641,11 @@ export default function Navbar() {
             {/* Right Section */}
             <div className="flex items-center gap-2">
               {/* Search Button */}
-              <button className="p-2.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-sky-50 transition-colors">
+              <button
+                onClick={() => router.push("/search")}
+                className="p-2.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-sky-50 transition-colors"
+                aria-label="Sitede ara"
+              >
                 <Search size={20} />
               </button>
 
@@ -780,8 +784,15 @@ export default function Navbar() {
                             messagePreviews.slice(0, 8).map((conversation) => (
                               <button
                                 key={conversation.conversationId}
-                                onClick={() => {
+                                onClick={async () => {
                                   setMessagesOpen(false);
+                                  if (user && conversation.unreadCount > 0) {
+                                    try {
+                                      await markConversationMessagesAsRead(conversation.conversationId, user.id);
+                                    } catch (error) {
+                                      console.error("Mesajlar okundu işaretlenemedi:", error);
+                                    }
+                                  }
                                   router.push(`/messages?conversation=${conversation.conversationId}`);
                                 }}
                                 className="w-full px-4 py-3 flex items-start gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/70 transition-colors text-left border-b last:border-b-0 border-neutral-100 dark:border-neutral-800"
