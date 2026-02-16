@@ -149,8 +149,8 @@ export default function IsIlanlarimPage() {
               <div className="mb-6 p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 flex items-center gap-3">
                 <CheckCircle className="text-green-500" size={24} />
                 <div>
-                  <p className="font-medium text-green-700 dark:text-green-400">İlanınız başarıyla oluşturuldu!</p>
-                  <p className="text-sm text-green-600 dark:text-green-500">İlanınız artık yayında.</p>
+                  <p className="font-medium text-green-700 dark:text-green-400">İlanınız başarıyla oluşturuldu ve admin onayına gönderildi!</p>
+                  <p className="text-sm text-green-600 dark:text-green-500">Onaylandıktan sonra yayına alınacaktır.</p>
                 </div>
               </div>
             )}
