@@ -55,6 +55,25 @@ type GroupPostRow = {
   created_at: string;
   user_id: string;
   profile: GroupProfile[] | GroupProfile | null;
+  comments?: GroupPostCommentRow[] | null;
+};
+
+type GroupPostCommentRow = {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  profile: GroupProfile[] | GroupProfile | null;
+};
+
+type GroupPostComment = {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  profile: GroupProfile | null;
 };
 
 type GroupPost = {
@@ -63,6 +82,7 @@ type GroupPost = {
   created_at: string;
   user_id: string;
   profile?: GroupProfile | null;
+  comments: GroupPostComment[];
 };
 
 type GroupEvent = {
@@ -100,12 +120,22 @@ const toSingleProfile = (profile: GroupProfile[] | GroupProfile | null): GroupPr
   return Array.isArray(profile) ? profile[0] ?? null : profile;
 };
 
+const normalizeGroupComment = (row: GroupPostCommentRow): GroupPostComment => ({
+  id: row.id,
+  post_id: row.post_id,
+  user_id: row.user_id,
+  content: row.content,
+  created_at: row.created_at,
+  profile: toSingleProfile(row.profile),
+});
+
 const normalizeGroupPost = (row: GroupPostRow): GroupPost => ({
   id: row.id,
   content: row.content,
   created_at: row.created_at,
   user_id: row.user_id,
   profile: toSingleProfile(row.profile),
+  comments: (row.comments || []).map(normalizeGroupComment),
 });
 
 const normalizeGroupMember = (row: GroupMemberRow): GroupMember => ({
@@ -138,6 +168,9 @@ export default function GroupDetailPage() {
 
   const [newPost, setNewPost] = useState("");
   const [publishingPost, setPublishingPost] = useState(false);
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [commentingPostId, setCommentingPostId] = useState<string | null>(null);
+  const [feedError, setFeedError] = useState<string | null>(null);
 
   const [savingGroup, setSavingGroup] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -199,7 +232,7 @@ export default function GroupDetailPage() {
           .order("joined_at", { ascending: true }),
         supabase
           .from("posts")
-          .select("id, content, created_at, user_id, profile:user_id (id, username, full_name, avatar_url)")
+          .select("id, content, created_at, user_id, profile:user_id (id, username, full_name, avatar_url), comments(id, post_id, user_id, content, created_at, profile:user_id(id, username, full_name, avatar_url))")
           .eq("group_id", groupData.id)
           .order("created_at", { ascending: false })
           .limit(50),
@@ -325,12 +358,13 @@ export default function GroupDetailPage() {
     e.preventDefault();
     if (!group || !user || !newPost.trim()) return;
     setPublishingPost(true);
+    setFeedError(null);
 
     try {
       const { data, error } = await supabase
         .from("posts")
         .insert({ user_id: user.id, content: newPost.trim(), group_id: group.id })
-        .select("id, content, created_at, user_id, profile:user_id(id,username,full_name,avatar_url)")
+        .select("id, content, created_at, user_id, profile:user_id(id,username,full_name,avatar_url), comments(id, post_id, user_id, content, created_at, profile:user_id(id,username,full_name,avatar_url))")
         .single();
 
       if (error) throw error;
@@ -338,8 +372,52 @@ export default function GroupDetailPage() {
       setNewPost("");
     } catch (error) {
       console.error("create group post error", error);
+      const message = error instanceof Error ? error.message : "Gönderi kaydedilemedi";
+      setFeedError(`Gönderi kaydedilemedi. ${message}`);
     } finally {
       setPublishingPost(false);
+    }
+  };
+
+
+  const handleAddComment = async (postId: string) => {
+    if (!user) {
+      router.push(`/login?redirect=/groups/${slug}`);
+      return;
+    }
+
+    const draft = (commentDrafts[postId] || "").trim();
+    if (!draft) return;
+
+    setCommentingPostId(postId);
+    setFeedError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from("comments")
+        .insert({
+          post_id: postId,
+          user_id: user.id,
+          content: draft,
+        })
+        .select("id, post_id, user_id, content, created_at, profile:user_id(id, username, full_name, avatar_url)")
+        .single();
+
+      if (error) throw error;
+
+      const normalizedComment = normalizeGroupComment(data as GroupPostCommentRow);
+      setPosts((prev) => prev.map((post) => (
+        post.id === postId
+          ? { ...post, comments: [...post.comments, normalizedComment] }
+          : post
+      )));
+      setCommentDrafts((prev) => ({ ...prev, [postId]: "" }));
+    } catch (error) {
+      console.error("add group comment error", error);
+      const message = error instanceof Error ? error.message : "Yorum kaydedilemedi";
+      setFeedError(`Yorum kaydedilemedi. ${message}`);
+    } finally {
+      setCommentingPostId(null);
     }
   };
 
@@ -605,6 +683,9 @@ export default function GroupDetailPage() {
                             Paylaş
                           </Button>
                         </form>
+                        {feedError && (
+                          <p className="text-sm text-red-600 mt-3">{feedError}</p>
+                        )}
                       </CardContent>
                     </Card>
                   )}
@@ -622,7 +703,45 @@ export default function GroupDetailPage() {
                               <p className="text-xs text-neutral-500">{new Date(post.created_at).toLocaleString("tr-TR")}</p>
                             </div>
                           </div>
-                          <p className="text-sm whitespace-pre-wrap">{post.content}</p>
+                          <p className="text-sm whitespace-pre-wrap mb-4">{post.content}</p>
+
+                          <div className="space-y-2 border-t border-neutral-200 dark:border-neutral-700 pt-3">
+                            <p className="text-xs text-neutral-500">Yorumlar ({post.comments.length})</p>
+                            {post.comments.length === 0 ? (
+                              <p className="text-sm text-neutral-500">Henüz yorum yok.</p>
+                            ) : (
+                              post.comments.map((comment) => (
+                                <div key={comment.id} className="rounded-lg bg-neutral-100 dark:bg-neutral-800 p-2">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Avatar src={comment.profile?.avatar_url ?? undefined} fallback={comment.profile?.full_name || comment.profile?.username || "U"} size="xs" />
+                                    <p className="text-xs font-medium">{comment.profile?.full_name || comment.profile?.username || "Üye"}</p>
+                                    <p className="text-[11px] text-neutral-500">{new Date(comment.created_at).toLocaleString("tr-TR")}</p>
+                                  </div>
+                                  <p className="text-sm">{comment.content}</p>
+                                </div>
+                              ))
+                            )}
+
+                            {isApprovedMember && (
+                              <form
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  handleAddComment(post.id);
+                                }}
+                                className="flex gap-2"
+                              >
+                                <input
+                                  value={commentDrafts[post.id] || ""}
+                                  onChange={(e) => setCommentDrafts((prev) => ({ ...prev, [post.id]: e.target.value }))}
+                                  className="flex-1 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm"
+                                  placeholder="Yorum yaz..."
+                                />
+                                <Button type="submit" size="sm" disabled={commentingPostId === post.id || !(commentDrafts[post.id] || "").trim()}>
+                                  {commentingPostId === post.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "Yorum"}
+                                </Button>
+                              </form>
+                            )}
+                          </div>
                         </CardContent>
                       </Card>
                     ))
