@@ -198,6 +198,7 @@ export interface Group {
   cover_image_url: string | null;
   is_private: boolean;
   requires_approval: boolean;
+  application_question: string | null;
   member_count: number;
   status: GroupStatus;
   rejection_reason: string | null;
@@ -219,6 +220,26 @@ export interface GroupMember {
   joined_at: string;
   // Joined data
   profile?: Profile;
+}
+
+export interface GroupJoinRequest {
+  id: string;
+  group_id: string;
+  user_id: string;
+  answer: string | null;
+  status: "pending" | "approved" | "rejected";
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+  updated_at: string;
+  user?: Profile;
+}
+
+export interface GroupPost extends Post {
+  group_id: string;
+  profiles?: Profile;
+  likes?: Like[];
 }
 
 // Group category labels
