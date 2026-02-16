@@ -126,3 +126,94 @@ with check (
       and l.user_id = listing_messages.receiver_id
   )
 );
+
+
+-- -----------------------------------------------------------------------------
+-- 5) CORE /messages TABLES RLS (required for real-time direct messaging)
+-- -----------------------------------------------------------------------------
+alter table public.conversations enable row level security;
+alter table public.conversation_participants enable row level security;
+alter table public.messages enable row level security;
+
+-- conversations
+drop policy if exists "conversations_select_participant" on public.conversations;
+create policy "conversations_select_participant"
+on public.conversations
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.conversation_participants cp
+    where cp.conversation_id = conversations.id
+      and cp.user_id = auth.uid()
+  )
+);
+
+drop policy if exists "conversations_insert_authenticated" on public.conversations;
+create policy "conversations_insert_authenticated"
+on public.conversations
+for insert
+to authenticated
+with check (true);
+
+-- conversation_participants
+drop policy if exists "conversation_participants_select_own_conversations" on public.conversation_participants;
+create policy "conversation_participants_select_own_conversations"
+on public.conversation_participants
+for select
+to authenticated
+using (
+  user_id = auth.uid()
+  or exists (
+    select 1
+    from public.conversation_participants cp2
+    where cp2.conversation_id = conversation_participants.conversation_id
+      and cp2.user_id = auth.uid()
+  )
+);
+
+drop policy if exists "conversation_participants_insert_participant" on public.conversation_participants;
+create policy "conversation_participants_insert_participant"
+on public.conversation_participants
+for insert
+to authenticated
+with check (
+  user_id = auth.uid()
+  or exists (
+    select 1
+    from public.conversation_participants cp2
+    where cp2.conversation_id = conversation_participants.conversation_id
+      and cp2.user_id = auth.uid()
+  )
+);
+
+-- messages
+drop policy if exists "messages_select_participants" on public.messages;
+create policy "messages_select_participants"
+on public.messages
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.conversation_participants cp
+    where cp.conversation_id = messages.conversation_id
+      and cp.user_id = auth.uid()
+  )
+);
+
+drop policy if exists "messages_insert_sender_participant" on public.messages;
+create policy "messages_insert_sender_participant"
+on public.messages
+for insert
+to authenticated
+with check (
+  sender_id = auth.uid()
+  and exists (
+    select 1
+    from public.conversation_participants cp
+    where cp.conversation_id = messages.conversation_id
+      and cp.user_id = auth.uid()
+  )
+);

@@ -151,7 +151,6 @@ export default function ListingDetailPage() {
     const payloads = [
       { is_group: false, created_by: user?.id },
       { is_group: false },
-      { created_by: user?.id },
       {},
     ];
 
@@ -162,7 +161,7 @@ export default function ListingDetailPage() {
       }
     }
 
-    throw new Error("Mesaj odası oluşturulamadı. Conversations tablosu veya RLS izinleri engelliyor olabilir.");
+    throw new Error("Mesaj odası oluşturulamadı. Supabase conversations tablosu için insert izni gerekebilir.");
   }, [user?.id]);
 
   // Fetch listing
@@ -345,77 +344,58 @@ export default function ListingDetailPage() {
     setDmFeedback(null);
 
     try {
-      let conversationId = "";
+      const { data: myRows, error: myRowsError } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", user.id);
 
-      try {
-        const { data: myRows, error: myRowsError } = await supabase
+      if (myRowsError) throw myRowsError;
+
+      const myIds = ((myRows as Array<{ conversation_id: string }> | null) || []).map((row) => row.conversation_id);
+
+      let conversationId = "";
+      if (myIds.length > 0) {
+        const { data: otherRows, error: otherRowsError } = await supabase
           .from("conversation_participants")
           .select("conversation_id")
-          .eq("user_id", user.id);
+          .eq("user_id", listing.user_id)
+          .in("conversation_id", myIds);
 
-        if (myRowsError) throw myRowsError;
+        if (otherRowsError) throw otherRowsError;
 
-        const myIds = ((myRows as Array<{ conversation_id: string }> | null) || []).map((row) => row.conversation_id);
-
-        if (myIds.length > 0) {
-          const { data: otherRows, error: otherRowsError } = await supabase
-            .from("conversation_participants")
-            .select("conversation_id")
-            .eq("user_id", listing.user_id)
-            .in("conversation_id", myIds);
-
-          if (otherRowsError) throw otherRowsError;
-
-          conversationId = (otherRows as Array<{ conversation_id: string }> | null)?.[0]?.conversation_id || "";
-        }
-
-        if (!conversationId) {
-          conversationId = await createConversationRecord();
-        }
-
-        const participantRows = [user.id, listing.user_id].map((id) => ({
-          conversation_id: conversationId,
-          user_id: id,
-        }));
-
-        const { error: participantError } = await supabase
-          .from("conversation_participants")
-          .upsert(participantRows, { onConflict: "conversation_id,user_id", ignoreDuplicates: true });
-
-        if (participantError) throw participantError;
-
-        const { error: messageError } = await supabase.from("messages").insert({
-          conversation_id: conversationId,
-          sender_id: user.id,
-          content,
-        });
-
-        if (messageError) throw messageError;
-
-        setDmText("");
-        setDmFeedback("Mesaj gönderildi. Sohbet sayfasına yönlendiriliyorsunuz...");
-        setTimeout(() => {
-          router.push(`/messages?conversation=${conversationId}`);
-        }, 400);
-        return;
-      } catch (conversationFlowError) {
-        console.error("Conversation flow failed, trying listing_messages fallback:", conversationFlowError);
+        conversationId = (otherRows as Array<{ conversation_id: string }> | null)?.[0]?.conversation_id || "";
       }
 
-      const { error: listingMessageError } = await supabase.from("listing_messages").insert({
-        listing_id: listing.id,
+      const isNewConversation = !conversationId;
+      if (!conversationId) {
+        conversationId = await createConversationRecord();
+      }
+
+      if (isNewConversation) {
+        const { error: participantError } = await supabase.from("conversation_participants").insert([
+          { conversation_id: conversationId, user_id: user.id },
+          { conversation_id: conversationId, user_id: listing.user_id },
+        ]);
+
+        if (participantError) throw participantError;
+      }
+
+      const { error: messageError } = await supabase.from("messages").insert({
+        conversation_id: conversationId,
         sender_id: user.id,
-        receiver_id: listing.user_id,
-        message: content,
+        content,
       });
 
-      if (listingMessageError) throw listingMessageError;
+      if (messageError) throw messageError;
 
       setDmText("");
-      setDmFeedback("Mesaj gönderildi. İlan mesajlarına kaydedildi.");
+      setDmFeedback("Mesaj gönderildi. Sohbet sayfasına yönlendiriliyorsunuz...");
+      setTimeout(() => {
+        router.push(`/messages?conversation=${conversationId}`);
+      }, 300);
     } catch (messageSendError: unknown) {
       console.error("Error sending listing owner message:", messageSendError);
-      setDmFeedback(toErrorMessage(messageSendError, "Mesaj gönderilemedi."));
+      setDmFeedback(toErrorMessage(messageSendError, "Mesaj gönderilemedi. Yöneticiye conversations/messages RLS izinlerini kontrol ettirin."));
     } finally {
       setDmSending(false);
     }
