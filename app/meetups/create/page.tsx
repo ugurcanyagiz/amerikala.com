@@ -51,12 +51,30 @@ export default function CreateEventPage() {
   const [maxAttendees, setMaxAttendees] = useState("");
   const [isFree, setIsFree] = useState(true);
   const [price, setPrice] = useState("");
-  const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
 
   // UI state
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const COVER_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_EVENT_COVERS_BUCKET?.trim() || "event-covers";
+  const MAX_COVER_IMAGE_MB = 8;
+
+  useEffect(() => {
+    if (!coverImageFile) {
+      setCoverImagePreview(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(coverImageFile);
+    setCoverImagePreview(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [coverImageFile]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -108,8 +126,66 @@ export default function CreateEventPage() {
       newErrors.maxAttendees = "En az 1 katılımcı olmalı";
     }
 
+    if (coverImageFile) {
+      if (!coverImageFile.type.startsWith("image/")) {
+        newErrors.coverImage = "Kapak görseli bir resim dosyası olmalı";
+      }
+
+      if (coverImageFile.size > MAX_COVER_IMAGE_MB * 1024 * 1024) {
+        newErrors.coverImage = `Kapak görseli en fazla ${MAX_COVER_IMAGE_MB}MB olabilir`;
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleCoverImageChange = (file: File | null) => {
+    setCoverImageFile(file);
+
+    setErrors((prev) => {
+      if (!prev.coverImage) return prev;
+      const { ...rest } = prev;
+      delete rest.coverImage;
+      return rest;
+    });
+  };
+
+  const uploadCoverImage = async (file: File, organizerId: string) => {
+    const { error: bucketCheckError } = await supabase.storage
+      .from(COVER_BUCKET)
+      .list("", { limit: 1 });
+
+    if (bucketCheckError?.message?.toLowerCase().includes("bucket not found")) {
+      throw new Error(
+        `Supabase Storage bucket bulunamadı: '${COVER_BUCKET}'. SQL Editor'da docs/supabase/event-cover-storage.sql dosyasını çalıştırın veya NEXT_PUBLIC_SUPABASE_EVENT_COVERS_BUCKET değerini mevcut bucket adına ayarlayın.`
+      );
+    }
+
+    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const sanitizedExtension = extension.replace(/[^a-z0-9]/g, "") || "jpg";
+    const filePath = `${organizerId}/${Date.now()}-${crypto.randomUUID()}.${sanitizedExtension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(COVER_BUCKET)
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from(COVER_BUCKET)
+      .getPublicUrl(filePath);
+
+    if (!publicUrlData?.publicUrl) {
+      throw new Error("Kapak görseli URL'i oluşturulamadı");
+    }
+
+    return publicUrlData.publicUrl;
   };
 
   // Handle submit
@@ -123,7 +199,13 @@ export default function CreateEventPage() {
     setStatus(null);
 
     try {
-      const { data, error } = await supabase
+      let uploadedCoverImageUrl: string | null = null;
+
+      if (coverImageFile) {
+        uploadedCoverImageUrl = await uploadCoverImage(coverImageFile, user.id);
+      }
+
+      const { error } = await supabase
         .from("events")
         .insert({
           title: title.trim(),
@@ -142,7 +224,7 @@ export default function CreateEventPage() {
           max_attendees: maxAttendees ? parseInt(maxAttendees) : null,
           is_free: isFree,
           price: isFree ? null : parseFloat(price),
-          cover_image_url: coverImageUrl || null,
+          cover_image_url: uploadedCoverImageUrl,
           organizer_id: user.id,
           status: "pending"
         })
@@ -161,11 +243,15 @@ export default function CreateEventPage() {
         router.push("/meetups/my-events");
       }, 2000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const rawMessage = error instanceof Error ? error.message : "Etkinlik oluşturulurken bir hata oluştu";
+      const message = rawMessage.toLowerCase().includes("bucket not found")
+        ? `Kapak görseli yükleme bucket'ı bulunamadı ('${COVER_BUCKET}'). Lütfen docs/supabase/event-cover-storage.sql dosyasını çalıştırın veya NEXT_PUBLIC_SUPABASE_EVENT_COVERS_BUCKET ayarını kontrol edin.`
+        : rawMessage;
       console.error("Error creating event:", error);
       setStatus({
         type: "error",
-        message: error.message || "Etkinlik oluşturulurken bir hata oluştu"
+        message
       });
     } finally {
       setSaving(false);
@@ -504,27 +590,26 @@ export default function CreateEventPage() {
             <CardContent>
               <div>
                 <label className="block text-sm font-medium mb-1.5">
-                  Görsel URL <span className="text-neutral-400">(Opsiyonel)</span>
+                  Görsel Yükle <span className="text-neutral-400">(Opsiyonel)</span>
                 </label>
-                <Input
-                  placeholder="https://example.com/image.jpg"
-                  value={coverImageUrl}
-                  onChange={(e) => setCoverImageUrl(e.target.value)}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleCoverImageChange(e.target.files?.[0] || null)}
+                  className="block w-full text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-red-500 file:px-4 file:py-2 file:text-white hover:file:bg-red-600 file:cursor-pointer cursor-pointer"
                 />
+                {errors.coverImage && <p className="text-red-500 text-sm mt-1">{errors.coverImage}</p>}
                 <p className="text-xs text-neutral-500 mt-1">
-                  Görsel URL&apos;si girin veya boş bırakarak varsayılan görseli kullanın
+                  Bilgisayarından veya telefonundan bir görsel seçebilirsin. Maksimum {MAX_COVER_IMAGE_MB}MB.
                 </p>
               </div>
 
-              {coverImageUrl && (
+              {coverImagePreview && (
                 <div className="mt-4 rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-700">
                   <img 
-                    src={coverImageUrl} 
+                    src={coverImagePreview} 
                     alt="Preview" 
                     className="w-full h-48 object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
                   />
                 </div>
               )}
