@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
@@ -64,16 +64,22 @@ type ListingComment = {
   } | null;
 };
 
-type ListingCommentRow = Omit<ListingComment, "profile"> & {
-  profile?: ListingComment["profile"] | ListingComment["profile"][];
+type ListingCommentDbRow = {
+  id: string;
+  listing_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
 };
 
-const normalizeListingComment = (row: ListingCommentRow): ListingComment => {
-  const profile = Array.isArray(row.profile) ? row.profile[0] || null : row.profile || null;
-  return {
-    ...row,
-    profile,
-  };
+type CommentProfile = NonNullable<ListingComment["profile"]>;
+
+const toErrorMessage = (error: unknown, fallback: string) => {
+  if (!error || typeof error !== "object") return fallback;
+
+  const maybeError = error as { message?: string; details?: string; hint?: string };
+  const parts = [maybeError.message, maybeError.details, maybeError.hint].filter(Boolean);
+  return parts.length > 0 ? parts.join(" — ") : fallback;
 };
 
 export default function ListingDetailPage() {
@@ -96,6 +102,69 @@ export default function ListingDetailPage() {
   const [dmSending, setDmSending] = useState(false);
   const [dmFeedback, setDmFeedback] = useState<string | null>(null);
 
+  const enrichCommentsWithProfiles = useCallback(async (rows: ListingCommentDbRow[]): Promise<ListingComment[]> => {
+    if (rows.length === 0) return [];
+
+    const userIds = [...new Set(rows.map((row) => row.user_id))];
+    const { data: profilesData, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, username, full_name, avatar_url")
+      .in("id", userIds);
+
+    if (profilesError) {
+      console.error("Error fetching comment profiles:", profilesError);
+    }
+
+    const profileMap = new Map<string, CommentProfile>();
+    (profilesData || []).forEach((profile) => {
+      profileMap.set(profile.id as string, {
+        id: profile.id as string,
+        username: (profile.username as string | null) || null,
+        full_name: (profile.full_name as string | null) || null,
+        avatar_url: (profile.avatar_url as string | null) || null,
+      });
+    });
+
+    return rows.map((row) => ({
+      ...row,
+      profile: profileMap.get(row.user_id) || null,
+    }));
+  }, []);
+
+  const fetchListingComments = useCallback(async (targetListingId: string) => {
+    const { data, error: commentsFetchError } = await supabase
+      .from("listing_comments")
+      .select("id, listing_id, user_id, content, created_at")
+      .eq("listing_id", targetListingId)
+      .order("created_at", { ascending: false });
+
+    if (commentsFetchError) {
+      throw commentsFetchError;
+    }
+
+    const commentRows = (data as ListingCommentDbRow[] | null) || [];
+    const commentsWithProfiles = await enrichCommentsWithProfiles(commentRows);
+    setComments(commentsWithProfiles);
+  }, [enrichCommentsWithProfiles]);
+
+  const createConversationRecord = useCallback(async () => {
+    const payloads = [
+      { is_group: false, created_by: user?.id },
+      { is_group: false },
+      { created_by: user?.id },
+      {},
+    ];
+
+    for (const payload of payloads) {
+      const { data, error: conversationError } = await supabase.from("conversations").insert(payload).select("id").single();
+      if (!conversationError && data?.id) {
+        return data.id as string;
+      }
+    }
+
+    throw new Error("Mesaj odası oluşturulamadı. Conversations tablosu veya RLS izinleri engelliyor olabilir.");
+  }, [user?.id]);
+
   // Fetch listing
   useEffect(() => {
     const fetchListing = async () => {
@@ -104,7 +173,7 @@ export default function ListingDetailPage() {
       setLoading(true);
       setCommentsError(null);
       try {
-        const [listingResult, commentsResult, favoritesResult] = await Promise.all([
+        const [listingResult, favoritesResult] = await Promise.all([
           supabase
             .from("listings")
             .select(`
@@ -113,18 +182,6 @@ export default function ListingDetailPage() {
             `)
             .eq("id", listingId)
             .single(),
-          supabase
-            .from("listing_comments")
-            .select(`
-              id,
-              listing_id,
-              user_id,
-              content,
-              created_at,
-              profile:user_id (id, username, full_name, avatar_url)
-            `)
-            .eq("listing_id", listingId)
-            .order("created_at", { ascending: false }),
           supabase
             .from("listing_favorites")
             .select("listing_id", { count: "exact", head: true })
@@ -137,12 +194,11 @@ export default function ListingDetailPage() {
         setListing(listingResult.data);
         setFavoriteCount(favoritesResult.count || 0);
 
-        if (commentsResult.error) {
-          setCommentsError("Yorumlar yüklenirken bir sorun oluştu.");
-          console.error("Error fetching listing comments:", commentsResult.error);
-        } else {
-          const normalizedComments = ((commentsResult.data as ListingCommentRow[] | null) || []).map(normalizeListingComment);
-          setComments(normalizedComments);
+        try {
+          await fetchListingComments(listingId);
+        } catch (commentsFetchError) {
+          setCommentsError(toErrorMessage(commentsFetchError, "Yorumlar yüklenirken bir sorun oluştu."));
+          console.error("Error fetching listing comments:", commentsFetchError);
         }
 
         // Increment view count
@@ -175,7 +231,7 @@ export default function ListingDetailPage() {
     };
 
     fetchListing();
-  }, [listingId, user]);
+  }, [listingId, user, fetchListingComments]);
 
   // Toggle favorite
   const toggleFavorite = async () => {
@@ -250,24 +306,25 @@ export default function ListingDetailPage() {
           user_id: user.id,
           content,
         })
-        .select(`
-          id,
-          listing_id,
-          user_id,
-          content,
-          created_at,
-          profile:user_id (id, username, full_name, avatar_url)
-        `)
+        .select("id, listing_id, user_id, content, created_at")
         .single();
 
       if (insertError) throw insertError;
 
-      setComments((prev) => [normalizeListingComment(data as ListingCommentRow), ...prev]);
+      const insertedRow = data as ListingCommentDbRow;
+      const enriched = await enrichCommentsWithProfiles([insertedRow]);
+
+      setComments((prev) => [...enriched, ...prev]);
       setCommentText("");
       setCommentsError(null);
     } catch (commentError) {
       console.error("Error adding comment:", commentError);
-      setCommentsError("Yorum gönderilemedi. Lütfen tekrar deneyin.");
+      setCommentsError(toErrorMessage(commentError, "Yorum gönderilemedi. Lütfen tekrar deneyin."));
+      try {
+        await fetchListingComments(listingId);
+      } catch {
+        // no-op: keep existing comment list when refresh fails
+      }
     } finally {
       setCommentSending(false);
     }
@@ -288,62 +345,77 @@ export default function ListingDetailPage() {
     setDmFeedback(null);
 
     try {
-      const { data: myRows } = await supabase.from("conversation_participants").select("conversation_id").eq("user_id", user.id);
-      const myIds = ((myRows as Array<{ conversation_id: string }> | null) || []).map((row) => row.conversation_id);
-
       let conversationId = "";
-      if (myIds.length > 0) {
-        const { data: otherRows } = await supabase
+
+      try {
+        const { data: myRows, error: myRowsError } = await supabase
           .from("conversation_participants")
           .select("conversation_id")
-          .eq("user_id", listing.user_id)
-          .in("conversation_id", myIds);
+          .eq("user_id", user.id);
 
-        conversationId = (otherRows as Array<{ conversation_id: string }> | null)?.[0]?.conversation_id || "";
-      }
+        if (myRowsError) throw myRowsError;
 
-      if (!conversationId) {
-        for (const payload of [{ is_group: false, created_by: user.id }, { is_group: false }, {}]) {
-          const { data, error: conversationError } = await supabase.from("conversations").insert(payload).select("id").single();
-          if (!conversationError && data?.id) {
-            conversationId = data.id as string;
-            break;
-          }
+        const myIds = ((myRows as Array<{ conversation_id: string }> | null) || []).map((row) => row.conversation_id);
+
+        if (myIds.length > 0) {
+          const { data: otherRows, error: otherRowsError } = await supabase
+            .from("conversation_participants")
+            .select("conversation_id")
+            .eq("user_id", listing.user_id)
+            .in("conversation_id", myIds);
+
+          if (otherRowsError) throw otherRowsError;
+
+          conversationId = (otherRows as Array<{ conversation_id: string }> | null)?.[0]?.conversation_id || "";
         }
+
+        if (!conversationId) {
+          conversationId = await createConversationRecord();
+        }
+
+        const participantRows = [user.id, listing.user_id].map((id) => ({
+          conversation_id: conversationId,
+          user_id: id,
+        }));
+
+        const { error: participantError } = await supabase
+          .from("conversation_participants")
+          .upsert(participantRows, { onConflict: "conversation_id,user_id", ignoreDuplicates: true });
+
+        if (participantError) throw participantError;
+
+        const { error: messageError } = await supabase.from("messages").insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          content,
+        });
+
+        if (messageError) throw messageError;
+
+        setDmText("");
+        setDmFeedback("Mesaj gönderildi. Sohbet sayfasına yönlendiriliyorsunuz...");
+        setTimeout(() => {
+          router.push(`/messages?conversation=${conversationId}`);
+        }, 400);
+        return;
+      } catch (conversationFlowError) {
+        console.error("Conversation flow failed, trying listing_messages fallback:", conversationFlowError);
       }
 
-      if (!conversationId) throw new Error("Mesaj odası oluşturulamadı.");
-
-      const { data: participantRows } = await supabase
-        .from("conversation_participants")
-        .select("user_id")
-        .eq("conversation_id", conversationId);
-
-      const participantIds = new Set((participantRows as Array<{ user_id: string }> | null)?.map((p) => p.user_id) || []);
-      const rowsToInsert = [user.id, listing.user_id]
-        .filter((id) => !participantIds.has(id))
-        .map((id) => ({ conversation_id: conversationId, user_id: id }));
-
-      if (rowsToInsert.length > 0) {
-        await supabase.from("conversation_participants").insert(rowsToInsert);
-      }
-
-      const { error: messageError } = await supabase.from("messages").insert({
-        conversation_id: conversationId,
+      const { error: listingMessageError } = await supabase.from("listing_messages").insert({
+        listing_id: listing.id,
         sender_id: user.id,
-        content,
+        receiver_id: listing.user_id,
+        message: content,
       });
 
-      if (messageError) throw messageError;
+      if (listingMessageError) throw listingMessageError;
 
       setDmText("");
-      setDmFeedback("Mesaj gönderildi. Sohbet sayfasına yönlendiriliyorsunuz...");
-      setTimeout(() => {
-        router.push(`/messages?conversation=${conversationId}`);
-      }, 400);
+      setDmFeedback("Mesaj gönderildi. İlan mesajlarına kaydedildi.");
     } catch (messageSendError: unknown) {
       console.error("Error sending listing owner message:", messageSendError);
-      setDmFeedback(messageSendError instanceof Error ? messageSendError.message : "Mesaj gönderilemedi.");
+      setDmFeedback(toErrorMessage(messageSendError, "Mesaj gönderilemedi."));
     } finally {
       setDmSending(false);
     }
