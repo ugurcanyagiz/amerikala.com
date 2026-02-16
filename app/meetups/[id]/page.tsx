@@ -94,6 +94,7 @@ export default function EventDetailPage() {
   const [commentLoading, setCommentLoading] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
+  const [attendanceNotice, setAttendanceNotice] = useState<string | null>(null);
   const [pendingAttendees, setPendingAttendees] = useState<EventAttendee[]>([]);
   const [myAttendanceStatus, setMyAttendanceStatus] = useState<EventAttendee["status"] | null>(null);
   const [approvalLoadingUserId, setApprovalLoadingUserId] = useState<string | null>(null);
@@ -249,64 +250,35 @@ export default function EventDetailPage() {
   };
 
   const fetchAttendees = useCallback(async () => {
-    const profileSelect = "id, username, full_name, first_name, last_name, avatar_url, bio, city, state, profession";
-
-    const withProfileResult = await supabase
+    const attendeeResult = await supabase
       .from("event_attendees")
-      .select(`*, profile:profiles!event_attendees_user_id_fkey (${profileSelect})`)
+      .select("event_id, user_id, status, created_at")
       .eq("event_id", eventId);
 
-    const withProfileLegacyJoinResult = withProfileResult.error
-      ? await supabase
-          .from("event_attendees")
-          .select(`*, profile:user_id (${profileSelect})`)
-          .eq("event_id", eventId)
-      : null;
-
-    const fallbackResult = withProfileResult.error && withProfileLegacyJoinResult?.error
-      ? await supabase
-          .from("event_attendees")
-          .select("*")
-          .eq("event_id", eventId)
-      : null;
-
-    const error = !withProfileResult.error
-      ? null
-      : !withProfileLegacyJoinResult?.error
-        ? null
-        : fallbackResult?.error ?? withProfileLegacyJoinResult?.error ?? withProfileResult.error;
-
-    if (error) {
-      if (!isAbortLikeError(error)) {
-        console.error("fetchAttendees failed:", error);
+    if (attendeeResult.error) {
+      if (!isAbortLikeError(attendeeResult.error)) {
+        console.error("fetchAttendees failed:", attendeeResult.error);
       }
-      return;
+      return { approvedList: [] as EventAttendee[], pendingList: [] as EventAttendee[], myStatus: null as EventAttendee["status"] | null };
     }
 
-    const attendeeRows = ((!withProfileResult.error ? withProfileResult.data : !withProfileLegacyJoinResult?.error ? withProfileLegacyJoinResult?.data : fallbackResult?.data) as Array<Record<string, unknown>> | null) || [];
+    const attendeeRows = (attendeeResult.data as Array<Record<string, unknown>> | null) || [];
     const pendingRows = attendeeRows.filter((row) => row.status === "pending");
     const approvedRows = attendeeRows.filter((row) => row.status === "going");
     const relevantRows = [...approvedRows, ...pendingRows];
-    const rowsWithProfile = relevantRows.filter((row) => hasReadableIdentity(row.profile as BasicProfile | BasicProfile[] | null));
 
-    const normalizedRows = rowsWithProfile.length === relevantRows.length
-      ? relevantRows
-      : (() => {
-          const profileMapPromise = fetchProfilesByIds(
-            relevantRows.map((row) => (typeof row.user_id === "string" ? row.user_id : "")).filter(Boolean)
-          );
-          return profileMapPromise.then((profileMap) =>
-            relevantRows.map((row) => ({
-              ...row,
-              profile:
-                resolveProfile(row.profile as BasicProfile | BasicProfile[] | null)
-                || profileMap.get((row.user_id as string) || "")
-                || null,
-            }))
-          );
-        })();
+    const profileMap = await fetchProfilesByIds(
+      relevantRows
+        .map((row) => (typeof row.user_id === "string" ? row.user_id : ""))
+        .filter(Boolean)
+    );
 
-    const normalizedList = normalizeAttendees(Array.isArray(normalizedRows) ? normalizedRows : await normalizedRows);
+    const rowsWithProfiles = relevantRows.map((row) => ({
+      ...row,
+      profile: profileMap.get((row.user_id as string) || "") || null,
+    }));
+
+    const normalizedList = normalizeAttendees(rowsWithProfiles);
     const approvedList = normalizedList.filter((item) => item.status === "going");
     const pendingList = normalizedList.filter((item) => item.status === "pending");
 
@@ -329,6 +301,12 @@ export default function EventDetailPage() {
         current_attendees: approvedList.length,
       };
     });
+
+    return {
+      approvedList,
+      pendingList,
+      myStatus: user ? normalizedList.find((item) => item.user_id === user.id)?.status || null : null,
+    };
   }, [eventId, user, fetchProfilesByIds]);
 
   // Fetch event
@@ -430,31 +408,39 @@ export default function EventDetailPage() {
           }
         }
 
-        await fetchAttendees();
+        const attendeeState = await fetchAttendees();
+        const canLoadComments = Boolean(
+          user?.id && (eventData.organizer_id === user.id || attendeeState?.myStatus === "going")
+        );
 
-        const { data: commentsData, error: commentsError } = await supabase
-          .from("event_comments")
-          .select("id, event_id, user_id, content, created_at")
-          .eq("event_id", eventId)
-          .order("created_at", { ascending: false })
-          .limit(50);
+        if (canLoadComments) {
+          const { data: commentsData, error: commentsError } = await supabase
+            .from("event_comments")
+            .select("id, event_id, user_id, content, created_at")
+            .eq("event_id", eventId)
+            .order("created_at", { ascending: false })
+            .limit(50);
 
-        if (commentsError) {
-          if (isActive && !isAbortLikeError(commentsError)) {
-            setCommentError("Yorumlar şu an yüklenemedi.");
+          if (commentsError) {
+            if (isActive && !isAbortLikeError(commentsError)) {
+              setCommentError("Yorumlar şu an yüklenemedi.");
+            }
+          } else {
+            const commentRows = (commentsData as EventComment[] | null) || [];
+            const commentProfileMap = await fetchProfilesByIds(commentRows.map((comment) => comment.user_id));
+            if (isActive) {
+              setComments(
+                commentRows.map((comment) => ({
+                  ...comment,
+                  profile: commentProfileMap.get(comment.user_id) || null,
+                }))
+              );
+              setCommentError(null);
+            }
           }
-        } else {
-          const commentRows = (commentsData as EventComment[] | null) || [];
-          const commentProfileMap = await fetchProfilesByIds(commentRows.map((comment) => comment.user_id));
-          if (isActive) {
-            setComments(
-              commentRows.map((comment) => ({
-                ...comment,
-                profile: commentProfileMap.get(comment.user_id) || null,
-              }))
-            );
-            setCommentError(null);
-          }
+        } else if (isActive) {
+          setComments([]);
+          setCommentError(null);
         }
 
       } catch (error) {
@@ -489,6 +475,7 @@ export default function EventDetailPage() {
 
     setAttendanceLoading(true);
     setAttendanceError(null);
+    setAttendanceNotice(null);
 
     try {
       const { error: profileError } = await ensureProfileExists(user);
@@ -515,6 +502,7 @@ export default function EventDetailPage() {
         }
 
         await fetchAttendees();
+        setAttendanceNotice("Katılım isteğin kaldırıldı.");
       } else {
         const { error: insertError } = await supabase
           .from("event_attendees")
@@ -544,6 +532,7 @@ export default function EventDetailPage() {
         }
 
         await fetchAttendees();
+        setAttendanceNotice("Katılma isteğiniz iletildi. Organizatör onayı bekleniyor.");
       }
     } catch (error) {
       console.error("Error updating attendance:", error);
@@ -571,6 +560,7 @@ export default function EventDetailPage() {
       }
 
       await fetchAttendees();
+      setAttendanceNotice(nextStatus === "going" ? "Katılım isteği onaylandı." : "Katılım isteği reddedildi.");
     } catch (error) {
       console.error("Error approving attendee:", error);
       setAttendanceError("Katılım isteği güncellenemedi. Lütfen RLS politikalarını kontrol edin.");
@@ -724,9 +714,44 @@ export default function EventDetailPage() {
   };
 
   const handleCommentSubmit = async () => {
-    if (!user || !commentInput.trim() || !attending) return;
+    const isOrganizer = Boolean(user && event && event.organizer_id === user.id);
+    if (!user || !commentInput.trim() || (!attending && !isOrganizer)) return;
     setCommentLoading(true);
     try {
+      if (isOrganizer) {
+        const { data, error } = await supabase
+          .from("event_comments")
+          .insert({
+            event_id: eventId,
+            user_id: user.id,
+            content: commentInput.trim(),
+          })
+          .select("id, event_id, user_id, content, created_at")
+          .single();
+
+        if (error) {
+          if (!isAbortLikeError(error)) {
+            setCommentError("Yorum paylaşılırken bir sorun oluştu.");
+          }
+          return;
+        }
+
+        if (data) {
+          const commentProfileMap = await fetchProfilesByIds([user.id]);
+          setComments((prev) => [
+            {
+              ...(data as EventComment),
+              profile: commentProfileMap.get(user.id) || null,
+            },
+            ...prev,
+          ]);
+        }
+
+        setCommentInput("");
+        setCommentError(null);
+        return;
+      }
+
       const { data: attendanceRecord, error: attendanceCheckError } = await supabase
         .from("event_attendees")
         .select("event_id, status")
@@ -824,6 +849,7 @@ export default function EventDetailPage() {
 
   const organizer = (event.organizer as BasicProfile | null | undefined) || null;
   const isOrganizer = Boolean(user && event.organizer_id === user.id);
+  const canOpenComments = attending || isOrganizer;
   const isRequestPending = myAttendanceStatus === "pending";
   const isFull = event.max_attendees && event.current_attendees >= event.max_attendees;
   const isPast = new Date(event.event_date) < new Date(new Date().toDateString());
@@ -973,6 +999,9 @@ export default function EventDetailPage() {
                 </div>
                 {attendanceError && (
                   <p className="mt-3 text-sm text-red-500">{attendanceError}</p>
+                )}
+                {attendanceNotice && (
+                  <p className="mt-3 text-sm text-emerald-600 dark:text-emerald-400">{attendanceNotice}</p>
                 )}
               </CardContent>
             </Card>
@@ -1126,7 +1155,7 @@ export default function EventDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {attending ? (
+                {canOpenComments ? (
                   <div className="space-y-2">
                     <textarea
                       value={commentInput}
@@ -1139,7 +1168,7 @@ export default function EventDetailPage() {
                       <Button
                         size="sm"
                         onClick={handleCommentSubmit}
-                        disabled={commentLoading || !commentInput.trim()}
+                        disabled={(!attending && !isOrganizer) || commentLoading || !commentInput.trim()}
                       >
                         {commentLoading ? "Paylaşılıyor..." : "Yorum Paylaş"}
                       </Button>
@@ -1147,7 +1176,7 @@ export default function EventDetailPage() {
                   </div>
                 ) : (
                   <p className="text-sm text-neutral-500">
-                    Yorum yazabilmek için önce etkinliğe katılman gerekiyor.
+                    Etkinlik aktivitesi, katılımcı olduğunda otomatik açılır.
                   </p>
                 )}
 
@@ -1195,7 +1224,7 @@ export default function EventDetailPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-6 lg:sticky lg:top-24 self-start">
             {/* Organizer */}
             <Card className="glass">
               <CardHeader>
