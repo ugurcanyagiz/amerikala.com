@@ -72,7 +72,7 @@ export default function KiralikPage() {
             user:user_id (id, username, full_name, avatar_url)
           `)
           .eq("status", "approved")
-          .eq("listing_type", "rent")
+          .in("listing_type", ["rent", "roommate"])
           .order("created_at", { ascending: false });
 
         // Filters
@@ -163,7 +163,7 @@ export default function KiralikPage() {
                 <div>
                   <h1 className="text-2xl font-bold flex items-center gap-2">
                     <Home className="text-blue-500" />
-                    Kiralık İlanlar
+                    Kiralık & Ev Arkadaşı İlanları
                   </h1>
                   <p className="text-neutral-500 text-sm">
                     {filteredListings.length} ilan bulundu
