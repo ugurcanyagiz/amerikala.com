@@ -240,11 +240,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       });
 
       const attendeeNotifications: AppNotification[] = eventAttendees
-        .filter((attendee) => attendee.status === "going")
+        .filter((attendee) => attendee.status === "pending" || attendee.status === "going")
         .map((attendee) => {
           const actor = profilesById.get(attendee.user_id);
-          const id = `event_attendees:${attendee.event_id}:${attendee.user_id}`;
+          const id = `event_attendees:${attendee.event_id}:${attendee.user_id}:${attendee.status}`;
           const eventTitle = eventTitleById.get(attendee.event_id);
+          const isApprovalRequest = attendee.status === "pending";
 
           return {
             id,
@@ -255,12 +256,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               name: getDisplayName(actor),
               avatar: actor?.avatar_url || null,
             },
-            message: "etkinliğinize katılım gösterdi",
+            message: isApprovalRequest ? "etkinliğinize katılım isteği gönderdi" : "etkinliğinize katılım gösterdi",
             content: eventTitle || undefined,
             createdAt: attendee.created_at,
             isRead: readIds.has(id),
             actionUrl: `/meetups/${attendee.event_id}`,
-            actionLabel: "Etkinliği Gör",
+            actionLabel: isApprovalRequest ? "İsteği İncele" : "Etkinliği Gör",
           };
         });
 
