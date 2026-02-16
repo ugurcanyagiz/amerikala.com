@@ -168,7 +168,30 @@ create index if not exists idx_messages_sender_created
 
 alter table public.conversations enable row level security;
 alter table public.conversation_participants enable row level security;
+
+-- Cleanup old recursive policies (from previous versions)
+drop policy if exists "conversation_participants_select_own_conversations" on public.conversation_participants;
+drop policy if exists "conversation_participants_insert_participant" on public.conversation_participants;
 alter table public.messages enable row level security;
+
+-- Helper: avoid recursive policy checks on conversation_participants
+create or replace function public.is_conversation_member(_conversation_id uuid, _user_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1
+    from public.conversation_participants cp
+    where cp.conversation_id = _conversation_id
+      and cp.user_id = _user_id
+  );
+$$;
+
+revoke all on function public.is_conversation_member(uuid, uuid) from public;
+grant execute on function public.is_conversation_member(uuid, uuid) to authenticated;
 
 -- conversations
 drop policy if exists "conversations_select_participant" on public.conversations;
@@ -176,14 +199,7 @@ create policy "conversations_select_participant"
 on public.conversations
 for select
 to authenticated
-using (
-  exists (
-    select 1
-    from public.conversation_participants cp
-    where cp.conversation_id = conversations.id
-      and cp.user_id = auth.uid()
-  )
-);
+using (public.is_conversation_member(conversations.id, auth.uid()));
 
 drop policy if exists "conversations_insert_authenticated" on public.conversations;
 create policy "conversations_insert_authenticated"
@@ -193,23 +209,18 @@ to authenticated
 with check (true);
 
 -- conversation_participants
-drop policy if exists "conversation_participants_select_own_conversations" on public.conversation_participants;
-create policy "conversation_participants_select_own_conversations"
+drop policy if exists "conversation_participants_select_own" on public.conversation_participants;
+create policy "conversation_participants_select_own"
 on public.conversation_participants
 for select
 to authenticated
 using (
   user_id = auth.uid()
-  or exists (
-    select 1
-    from public.conversation_participants cp2
-    where cp2.conversation_id = conversation_participants.conversation_id
-      and cp2.user_id = auth.uid()
-  )
+  or public.is_conversation_member(conversation_id, auth.uid())
 );
 
-drop policy if exists "conversation_participants_insert_participant" on public.conversation_participants;
-create policy "conversation_participants_insert_participant"
+drop policy if exists "conversation_participants_insert_self" on public.conversation_participants;
+create policy "conversation_participants_insert_self"
 on public.conversation_participants
 for insert
 to authenticated
@@ -217,9 +228,9 @@ with check (
   user_id = auth.uid()
   or exists (
     select 1
-    from public.conversation_participants cp2
-    where cp2.conversation_id = conversation_participants.conversation_id
-      and cp2.user_id = auth.uid()
+    from public.conversations c
+    where c.id = conversation_participants.conversation_id
+      and c.created_by = auth.uid()
   )
 );
 
@@ -229,14 +240,7 @@ create policy "messages_select_participants"
 on public.messages
 for select
 to authenticated
-using (
-  exists (
-    select 1
-    from public.conversation_participants cp
-    where cp.conversation_id = messages.conversation_id
-      and cp.user_id = auth.uid()
-  )
-);
+using (public.is_conversation_member(messages.conversation_id, auth.uid()));
 
 drop policy if exists "messages_insert_sender_participant" on public.messages;
 create policy "messages_insert_sender_participant"
@@ -245,10 +249,5 @@ for insert
 to authenticated
 with check (
   sender_id = auth.uid()
-  and exists (
-    select 1
-    from public.conversation_participants cp
-    where cp.conversation_id = messages.conversation_id
-      and cp.user_id = auth.uid()
-  )
+  and public.is_conversation_member(messages.conversation_id, auth.uid())
 );
