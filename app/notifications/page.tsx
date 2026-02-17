@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Bell,
   Heart,
@@ -147,6 +147,27 @@ function NotificationItem({
   onRead: () => void;
   onDelete: () => void;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (notification.isRead || !cardRef.current) return;
+
+    const node = cardRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting) {
+          onRead();
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.7 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [notification.isRead, onRead]);
+
   const getIcon = () => {
     switch (notification.type) {
       case "likes":
@@ -161,7 +182,7 @@ function NotificationItem({
   };
 
   return (
-    <Card className={`glass transition-smooth ${!notification.isRead ? "border-l-4 border-l-red-500 bg-red-50/50 dark:bg-red-950/10" : ""}`}>
+    <Card ref={cardRef} className={`glass transition-smooth ${!notification.isRead ? "border-l-4 border-l-red-500 bg-red-50/50 dark:bg-red-950/10" : ""}`}>
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           <div className="relative">
@@ -194,7 +215,7 @@ function NotificationItem({
 
         {notification.actionUrl && (
           <div className="mt-3 ml-14">
-            <Link href={notification.actionUrl}>
+            <Link href={notification.actionUrl} onClick={onRead}>
               <Button variant="outline" size="sm">
                 {notification.actionLabel || "Görüntüle"}
               </Button>
