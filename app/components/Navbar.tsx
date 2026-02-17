@@ -659,15 +659,16 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center flex-shrink-0">
+            <Link href="/" className="flex items-center gap-2 flex-shrink-0" aria-label="Amerikala ana sayfa">
               <Image
                 src="/logo.png"
-                alt="Amerikala"
-                width={140}
+                alt="Amerikala logosu"
+                width={36}
                 height={36}
                 priority
-                className="h-9 w-auto"
+                className="h-9 w-9"
               />
+              <span className="text-lg font-semibold tracking-tight text-slate-900">amerikala</span>
             </Link>
 
             {/* Desktop Navigation */}
