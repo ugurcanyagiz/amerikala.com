@@ -145,8 +145,12 @@ function getUsernameLabel(
   return "@user";
 }
 
-function formatMessageTime(dateString: string) {
+function formatMessageTime(dateString: string | null | undefined) {
+  if (!dateString) return "Bilinmiyor";
+
   const createdAt = new Date(dateString);
+  if (Number.isNaN(createdAt.getTime())) return "Bilinmiyor";
+
   const now = new Date();
   const diffMs = now.getTime() - createdAt.getTime();
   const minutes = Math.floor(diffMs / 60000);
