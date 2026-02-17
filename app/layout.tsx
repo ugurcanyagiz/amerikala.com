@@ -4,10 +4,8 @@ import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css";
 import Navbar from "./components/Navbar";
-import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
-import FloatingLanguageSwitcher from "./components/FloatingLanguageSwitcher";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -82,10 +80,7 @@ export default function RootLayout({
         className={`${inter.variable} ${jakarta.variable} font-sans min-h-screen antialiased`}
       >
         <AuthProvider>
-          <LanguageProvider>
-            <NotificationProvider>
-              {/* Floating Language Switcher */}
-              <FloatingLanguageSwitcher />
+          <NotificationProvider>
 
               {/* Main Layout */}
               <div className="relative min-h-screen flex flex-col bg-[var(--color-surface)]">
@@ -220,8 +215,7 @@ export default function RootLayout({
                 </div>
               </footer>
               </div>
-            </NotificationProvider>
-          </LanguageProvider>
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>
