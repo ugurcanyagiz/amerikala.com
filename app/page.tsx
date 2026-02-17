@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -393,7 +392,7 @@ export default function Home() {
           <section className="relative overflow-hidden border-b border-sky-100">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#d8ecff_0%,#f7fbff_45%,#ffffff_100%)]" />
             <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-8 lg:px-12 lg:py-16">
-              <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+              <div className="grid items-center gap-10">
                 <div>
                   <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-1.5 text-xs font-semibold text-sky-700">
                     <Sparkles className="h-3.5 w-3.5" />
@@ -511,17 +510,6 @@ export default function Home() {
                       </Button>
                     </Link>
                   </div>
-                </div>
-
-                <div className="flex items-center justify-center">
-                  <Image
-                    src="/amerikala.png"
-                    alt="Amerikala classified hero"
-                    width={760}
-                    height={520}
-                    priority
-                    className="h-auto w-full max-w-[760px] object-contain"
-                  />
                 </div>
               </div>
             </div>
