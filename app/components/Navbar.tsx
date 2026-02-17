@@ -653,6 +653,31 @@ export default function Navbar() {
     return () => window.clearTimeout(timer);
   }, [searchOpen, searchQuery]);
 
+  useEffect(() => {
+    const normalizedQuery = searchQuery.trim();
+
+    if (!searchOpen || normalizedQuery.length < 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const results = await searchSiteContent(normalizedQuery, 4);
+        setSearchResults(results.slice(0, 8));
+      } catch (error) {
+        console.error("Navbar arama hatası:", error);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [searchOpen, searchQuery]);
+
   const handleSignOut = async () => {
     setUserMenuOpen(false);
     await signOut();
@@ -668,15 +693,16 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center flex-shrink-0">
+            <Link href="/" className="flex items-center gap-2 flex-shrink-0" aria-label="Amerikala ana sayfa">
               <Image
                 src="/logo.png"
-                alt="Amerikala"
-                width={140}
+                alt="Amerikala logosu"
+                width={36}
                 height={36}
                 priority
-                className="h-9 w-auto"
+                className="h-9 w-9"
               />
+              <span className="text-lg font-semibold tracking-tight text-slate-900">amerikala</span>
             </Link>
 
             {/* Desktop Navigation */}
