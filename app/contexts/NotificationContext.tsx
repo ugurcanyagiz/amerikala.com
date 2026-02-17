@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "./AuthContext";
 
@@ -58,6 +58,7 @@ const getDisplayName = (profile?: { first_name?: string | null; last_name?: stri
 
 const getTimeAgo = (dateString: string) => {
   const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "Az önce";
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
 
@@ -81,6 +82,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const readIdsRef = useRef(readIds);
+  const dismissedIdsRef = useRef(dismissedIds);
+
+  useEffect(() => {
+    readIdsRef.current = readIds;
+  }, [readIds]);
+
+  useEffect(() => {
+    dismissedIdsRef.current = dismissedIds;
+  }, [dismissedIds]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -215,7 +226,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           message: "gönderinizi beğendi",
           content: postContentById.get(like.post_id) || undefined,
           createdAt: like.created_at,
-          isRead: readIds.has(id),
+          isRead: readIdsRef.current.has(id),
           actionUrl: "/feed",
           actionLabel: "Gönderiyi Gör",
         };
@@ -237,7 +248,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           message: "gönderinize yorum yaptı",
           content: comment.content,
           createdAt: comment.created_at,
-          isRead: readIds.has(id),
+          isRead: readIdsRef.current.has(id),
           actionUrl: "/feed",
           actionLabel: "Yorumu Gör",
         };
@@ -247,7 +258,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         .filter((attendee) => attendee.status === "pending" || attendee.status === "going")
         .map((attendee) => {
           const actor = profilesById.get(attendee.user_id);
-          const id = `event_attendees:${attendee.event_id}:${attendee.user_id}:${attendee.status}`;
+          const id = `event_attendees:${attendee.event_id}:${attendee.user_id}`;
           const eventTitle = eventTitleById.get(attendee.event_id);
           const isApprovalRequest = attendee.status === "pending";
 
@@ -263,14 +274,24 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             message: isApprovalRequest ? "etkinliğinize katılım isteği gönderdi" : "etkinliğinize katılım gösterdi",
             content: eventTitle || undefined,
             createdAt: attendee.created_at,
-            isRead: readIds.has(id),
+            isRead: readIdsRef.current.has(id),
             actionUrl: `/meetups/${attendee.event_id}`,
             actionLabel: isApprovalRequest ? "İsteği İncele" : "Etkinliği Gör",
           };
         });
 
-      const merged = [...likeNotifications, ...commentNotifications, ...attendeeNotifications]
-        .filter((notification) => !dismissedIds.has(notification.id))
+      const dedupedById = new Map<string, AppNotification>();
+
+      [...likeNotifications, ...commentNotifications, ...attendeeNotifications].forEach((notification) => {
+        const existing = dedupedById.get(notification.id);
+
+        if (!existing || new Date(notification.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
+          dedupedById.set(notification.id, notification);
+        }
+      });
+
+      const merged = Array.from(dedupedById.values())
+        .filter((notification) => !dismissedIdsRef.current.has(notification.id))
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       setNotifications(merged);
@@ -280,7 +301,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [authLoading, dismissedIds, readIds, user]);
+  }, [authLoading, user]);
 
   useEffect(() => {
     if (authLoading) return;
