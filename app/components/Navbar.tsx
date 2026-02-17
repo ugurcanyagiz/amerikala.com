@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { getTimeAgo, useNotifications } from "../contexts/NotificationContext";
 import { Avatar } from "./ui/Avatar";
@@ -511,10 +511,11 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 // Main Navbar Component
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, profile, signOut, loading, isAdmin } = useAuth();
   const displayName = getDisplayName(profile, user);
   const usernameLabel = getUsernameLabel(profile, user);
-  const { notifications, unreadCount, markAsRead, markAllAsRead, loading: notificationLoading } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, refreshNotifications, loading: notificationLoading } = useNotifications();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -543,6 +544,26 @@ export default function Navbar() {
       ]
     : NAV_ITEMS;
 
+  const refreshMessagePreviews = useCallback(async () => {
+    if (!user) {
+      setMessagePreviews([]);
+      return;
+    }
+
+    setMessagesLoading(true);
+    setMessagesError(null);
+
+    try {
+      const previews = await getMessagePreviews(user.id);
+      setMessagePreviews(previews);
+    } catch (error) {
+      console.error("Mesaj önizlemeleri alınamadı:", error);
+      setMessagesError("Mesajlar yüklenemedi.");
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, [user]);
+
   // Close menu/panels on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -568,27 +589,7 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const loadMessagePreviews = async () => {
-      if (!user) {
-        setMessagePreviews([]);
-        return;
-      }
-
-      setMessagesLoading(true);
-      setMessagesError(null);
-
-      try {
-        const previews = await getMessagePreviews(user.id);
-        setMessagePreviews(previews);
-      } catch (error) {
-        console.error("Mesaj önizlemeleri alınamadı:", error);
-        setMessagesError("Mesajlar yüklenemedi.");
-      } finally {
-        setMessagesLoading(false);
-      }
-    };
-
-    loadMessagePreviews();
+    refreshMessagePreviews();
 
     if (!user) {
       return;
@@ -603,21 +604,54 @@ export default function Navbar() {
           schema: "public",
           table: "messages",
         },
-        async () => {
-          try {
-            const previews = await getMessagePreviews(user.id);
-            setMessagePreviews(previews);
-          } catch (error) {
-            console.error("Realtime mesaj güncelleme hatası:", error);
-          }
+        () => {
+          void refreshMessagePreviews();
         }
       )
       .subscribe();
 
+    const handleFocus = () => {
+      void refreshMessagePreviews();
+      void refreshNotifications();
+    };
+
+    window.addEventListener("focus", handleFocus);
+
     return () => {
+      window.removeEventListener("focus", handleFocus);
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [refreshMessagePreviews, refreshNotifications, user]);
+
+  useEffect(() => {
+    void refreshMessagePreviews();
+    void refreshNotifications();
+  }, [pathname, refreshMessagePreviews, refreshNotifications]);
+
+  useEffect(() => {
+    const normalizedQuery = searchQuery.trim();
+
+    if (!searchOpen || normalizedQuery.length < 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const results = await searchSiteContent(normalizedQuery, 4);
+        setSearchResults(results.slice(0, 8));
+      } catch (error) {
+        console.error("Navbar arama hatası:", error);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [searchOpen, searchQuery]);
 
   useEffect(() => {
     const normalizedQuery = searchQuery.trim();
@@ -765,8 +799,12 @@ export default function Navbar() {
                   <div ref={notificationPanelRef} className="relative hidden sm:block">
                     <button
                       onClick={() => {
-                        setNotificationPanelOpen(!notificationPanelOpen);
+                        const nextState = !notificationPanelOpen;
+                        setNotificationPanelOpen(nextState);
                         setUserMenuOpen(false);
+                        if (nextState) {
+                          void refreshNotifications();
+                        }
                       }}
                       className="flex p-2.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-sky-50 transition-colors relative"
                       aria-label="Bildirim panelini aç"
@@ -789,7 +827,10 @@ export default function Navbar() {
                           </div>
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={markAllAsRead}
+                              onClick={() => {
+                              markAllAsRead();
+                              void refreshNotifications();
+                            }}
                               className="text-xs font-medium text-slate-500 hover:text-slate-900"
                             >
                               Tümünü okundu yap
@@ -819,6 +860,7 @@ export default function Navbar() {
                                 href={notification.actionUrl || "/notifications"}
                                 onClick={() => {
                                   markAsRead(notification.id);
+                                  void refreshNotifications();
                                   setNotificationPanelOpen(false);
                                 }}
                                 className={`flex items-start gap-3 px-4 py-3 border-b border-sky-100 hover:bg-sky-50 transition-colors ${
@@ -853,7 +895,13 @@ export default function Navbar() {
                   {/* Messages */}
                   <div ref={messagesRef} className="relative hidden sm:block">
                     <button
-                      onClick={() => setMessagesOpen((prev) => !prev)}
+                      onClick={() => {
+                      const nextState = !messagesOpen;
+                      setMessagesOpen(nextState);
+                      if (nextState) {
+                        void refreshMessagePreviews();
+                      }
+                    }}
                       className="flex p-2.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-sky-50 transition-colors relative"
                       aria-label="Mesajlar"
                     >
@@ -895,10 +943,20 @@ export default function Navbar() {
                                 onClick={async () => {
                                   setMessagesOpen(false);
                                   if (user && conversation.unreadCount > 0) {
+                                    setMessagePreviews((prev) =>
+                                      prev.map((item) =>
+                                        item.conversationId === conversation.conversationId
+                                          ? { ...item, unreadCount: 0 }
+                                          : item
+                                      )
+                                    );
+
                                     try {
                                       await markConversationMessagesAsRead(conversation.conversationId, user.id);
                                     } catch (error) {
                                       console.error("Mesajlar okundu işaretlenemedi:", error);
+                                    } finally {
+                                      void refreshMessagePreviews();
                                     }
                                   }
                                   router.push(`/messages?conversation=${conversation.conversationId}`);
