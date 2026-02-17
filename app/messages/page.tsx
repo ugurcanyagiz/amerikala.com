@@ -102,8 +102,15 @@ const resolveProfile = (profile: ParticipantRow["profiles"]) => {
   return Array.isArray(profile) ? profile[0] || null : profile;
 };
 
-const formatRelativeLabel = (iso: string) => {
-  const created = new Date(iso);
+const parseDate = (value: string | null | undefined) => {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const formatRelativeLabel = (iso: string | null | undefined) => {
+  const created = parseDate(iso);
+  if (!created) return "Bilinmiyor";
   const now = new Date();
   const diffMs = now.getTime() - created.getTime();
   const diffMinutes = Math.floor(diffMs / 60000);
@@ -120,11 +127,15 @@ const formatRelativeLabel = (iso: string) => {
   return created.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
 };
 
-const formatClock = (iso: string) =>
-  new Date(iso).toLocaleTimeString("tr-TR", {
+const formatClock = (iso: string | null | undefined) => {
+  const created = parseDate(iso);
+  if (!created) return "--:--";
+
+  return created.toLocaleTimeString("tr-TR", {
     hour: "2-digit",
     minute: "2-digit",
   });
+};
 
 export default function MessagesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -171,7 +182,7 @@ export default function MessagesPage() {
       const matchesSearch =
         q.length === 0 ||
         conversation.title.toLowerCase().includes(q) ||
-        conversation.lastMessage.toLowerCase().includes(q) ||
+        (conversation.lastMessage || "").toLowerCase().includes(q) ||
         conversation.participantNames.some((name) => name.toLowerCase().includes(q));
 
       if (!matchesSearch) return false;
