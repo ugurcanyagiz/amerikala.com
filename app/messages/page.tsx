@@ -102,8 +102,15 @@ const resolveProfile = (profile: ParticipantRow["profiles"]) => {
   return Array.isArray(profile) ? profile[0] || null : profile;
 };
 
-const formatRelativeLabel = (iso: string) => {
-  const created = new Date(iso);
+const parseDate = (value: string | null | undefined) => {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const formatRelativeLabel = (iso: string | null | undefined) => {
+  const created = parseDate(iso);
+  if (!created) return "Bilinmiyor";
   const now = new Date();
   const diffMs = now.getTime() - created.getTime();
   const diffMinutes = Math.floor(diffMs / 60000);
@@ -120,11 +127,31 @@ const formatRelativeLabel = (iso: string) => {
   return created.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
 };
 
-const formatClock = (iso: string) =>
-  new Date(iso).toLocaleTimeString("tr-TR", {
+const formatClock = (iso: string | null | undefined) => {
+  const created = parseDate(iso);
+  if (!created) return "--:--";
+
+  return created.toLocaleTimeString("tr-TR", {
     hour: "2-digit",
     minute: "2-digit",
   });
+};
+
+const withTimeout = async <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} zaman aşımına uğradı (${ms}ms).`));
+    }, ms);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+};
 
 export default function MessagesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -171,7 +198,7 @@ export default function MessagesPage() {
       const matchesSearch =
         q.length === 0 ||
         conversation.title.toLowerCase().includes(q) ||
-        conversation.lastMessage.toLowerCase().includes(q) ||
+        (conversation.lastMessage || "").toLowerCase().includes(q) ||
         conversation.participantNames.some((name) => name.toLowerCase().includes(q));
 
       if (!matchesSearch) return false;
@@ -209,7 +236,7 @@ export default function MessagesPage() {
     setIsLoadingConversations(true);
 
     try {
-      const previews = await getMessagePreviews(user.id);
+      const previews = await withTimeout(getMessagePreviews(user.id), 10000, "Konuşma listesi");
       const ids = previews.map((item) => item.conversationId);
 
       if (ids.length === 0) {
@@ -218,13 +245,20 @@ export default function MessagesPage() {
         return;
       }
 
-      const [{ data: participantsData }, { data: metaData }] = await Promise.all([
-        supabase
-          .from("conversation_participants")
-          .select("conversation_id, user_id, profiles!conversation_participants_user_id_fkey(id, username, first_name, last_name, avatar_url)")
-          .in("conversation_id", ids),
-        supabase.from("conversations").select("id, title, name, is_group").in("id", ids),
-      ]);
+      const [{ data: participantsData, error: participantsError }, { data: metaData, error: metaError }] = await withTimeout(
+        Promise.all([
+          supabase
+            .from("conversation_participants")
+            .select("conversation_id, user_id, profiles!conversation_participants_user_id_fkey(id, username, first_name, last_name, avatar_url)")
+            .in("conversation_id", ids),
+          supabase.from("conversations").select("id, title, name, is_group").in("id", ids),
+        ]),
+        10000,
+        "Konuşma detayları"
+      );
+
+      if (participantsError) throw participantsError;
+      if (metaError) throw metaError;
 
       const participants = (participantsData as ParticipantRow[] | null) || [];
       const metaById = new Map<string, ConversationMeta>();
@@ -324,24 +358,38 @@ export default function MessagesPage() {
 
       setIsLoadingMessages(true);
       try {
-        const { data, error } = await supabase
-          .from("messages")
-          .select("id, conversation_id, sender_id, content, created_at, read_at")
-          .eq("conversation_id", conversationId)
-          .order("created_at", { ascending: true });
+        const { data, error } = await withTimeout(
+          supabase
+            .from("messages")
+            .select("id, conversation_id, sender_id, content, created_at, read_at")
+            .eq("conversation_id", conversationId)
+            .order("created_at", { ascending: true }),
+          10000,
+          "Mesaj listesi"
+        );
 
         if (error) throw error;
 
         const rows = ((data as MessageRow[] | null) || []).filter((item) => item.content);
         const senderIds = [...new Set(rows.map((item) => item.sender_id))];
 
-        const { data: senderProfiles } = await supabase
-          .from("profiles")
-          .select("id, username, first_name, last_name, avatar_url")
-          .in("id", senderIds);
+        let senderProfiles: ProfileRow[] | null = [];
+        if (senderIds.length > 0) {
+          const { data: profileRows, error: profileError } = await withTimeout(
+            supabase
+              .from("profiles")
+              .select("id, username, first_name, last_name, avatar_url")
+              .in("id", senderIds),
+            10000,
+            "Gönderen profilleri"
+          );
+
+          if (profileError) throw profileError;
+          senderProfiles = (profileRows as ProfileRow[] | null) || [];
+        }
 
         const profileMap = new Map<string, ProfileRow>();
-        ((senderProfiles as ProfileRow[] | null) || []).forEach((profile) => {
+        (senderProfiles || []).forEach((profile) => {
           profileMap.set(profile.id, profile);
         });
 
@@ -360,10 +408,10 @@ export default function MessagesPage() {
         });
 
         setMessages(nextMessages);
-        await markConversationAsRead(conversationId);
+        void markConversationAsRead(conversationId);
       } catch (error) {
         console.error("Mesajlar alınamadı:", error);
-        setStatusNote("Mesajlar yüklenirken hata oluştu.");
+        setStatusNote("Mesajlar yüklenirken hata oluştu. Lütfen tekrar deneyin.");
       } finally {
         setIsLoadingMessages(false);
       }
