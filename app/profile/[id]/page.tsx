@@ -73,16 +73,29 @@ export default function PublicProfilePage() {
     const loadProfile = async () => {
       if (!id) return;
       setLoading(true);
-      const { data, error } = await supabase
+
+      const { data: byIdData, error: byIdError } = await supabase
         .from("profiles")
         .select("id, username, full_name, first_name, last_name, bio, avatar_url, city, state, profession, is_verified")
         .eq("id", id)
         .single();
 
-      if (error) {
-        setProfile(null);
+      if (!byIdError && byIdData) {
+        setProfile(byIdData as PublicProfile);
+        setLoading(false);
+        return;
+      }
+
+      const { data: byUsernameData, error: byUsernameError } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, first_name, last_name, bio, avatar_url, city, state, profession, is_verified")
+        .eq("username", id)
+        .single();
+
+      if (!byUsernameError && byUsernameData) {
+        setProfile(byUsernameData as PublicProfile);
       } else {
-        setProfile(data as PublicProfile);
+        setProfile(null);
       }
 
       setLoading(false);
