@@ -137,6 +137,22 @@ const formatClock = (iso: string | null | undefined) => {
   });
 };
 
+const withTimeout = async <T,>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> => {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} zaman aşımına uğradı (${ms}ms).`));
+    }, ms);
+  });
+
+  try {
+    return await Promise.race<T>([Promise.resolve(promise), timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+};
+
 export default function MessagesPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -164,6 +180,9 @@ export default function MessagesPage() {
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const isConversationsLoadingRef = useRef(false);
+  const selectedConversationRef = useRef<ConversationItem | null>(null);
+  const conversationIdSetRef = useRef<Set<string>>(new Set());
 
   const selectedConversation = conversations.find((item) => item.id === selectedConversationId) ?? null;
 
@@ -175,6 +194,14 @@ export default function MessagesPage() {
       setSelectedConversationId(requestedConversation);
     }
   }, [conversations, searchParams]);
+
+  useEffect(() => {
+    selectedConversationRef.current = selectedConversation;
+  }, [selectedConversation]);
+
+  useEffect(() => {
+    conversationIdSetRef.current = new Set(conversations.map((conversation) => conversation.id));
+  }, [conversations]);
 
   const filteredConversations = useMemo(() => {
     return conversations.filter((conversation) => {
@@ -217,10 +244,13 @@ export default function MessagesPage() {
       return;
     }
 
+    if (isConversationsLoadingRef.current) return;
+
+    isConversationsLoadingRef.current = true;
     setIsLoadingConversations(true);
 
     try {
-      const previews = await getMessagePreviews(user.id);
+      const previews = await withTimeout(getMessagePreviews(user.id), 10000, "Konuşma listesi");
       const ids = previews.map((item) => item.conversationId);
 
       if (ids.length === 0) {
@@ -229,13 +259,20 @@ export default function MessagesPage() {
         return;
       }
 
-      const [{ data: participantsData }, { data: metaData }] = await Promise.all([
-        supabase
-          .from("conversation_participants")
-          .select("conversation_id, user_id, profiles!conversation_participants_user_id_fkey(id, username, first_name, last_name, avatar_url)")
-          .in("conversation_id", ids),
-        supabase.from("conversations").select("id, title, name, is_group").in("id", ids),
-      ]);
+      const [{ data: participantsData, error: participantsError }, { data: metaData, error: metaError }] = await withTimeout(
+        Promise.all([
+          supabase
+            .from("conversation_participants")
+            .select("conversation_id, user_id, profiles!conversation_participants_user_id_fkey(id, username, first_name, last_name, avatar_url)")
+            .in("conversation_id", ids),
+          supabase.from("conversations").select("id, title, name, is_group").in("id", ids),
+        ]),
+        10000,
+        "Konuşma detayları"
+      );
+
+      if (participantsError) throw participantsError;
+      if (metaError) throw metaError;
 
       const participants = (participantsData as ParticipantRow[] | null) || [];
       const metaById = new Map<string, ConversationMeta>();
@@ -301,6 +338,7 @@ export default function MessagesPage() {
       console.error("Konuşmalar alınamadı:", error);
       setStatusNote("Konuşmalar yüklenirken hata oluştu.");
     } finally {
+      isConversationsLoadingRef.current = false;
       setIsLoadingConversations(false);
     }
   }, [user]);
@@ -335,24 +373,38 @@ export default function MessagesPage() {
 
       setIsLoadingMessages(true);
       try {
-        const { data, error } = await supabase
-          .from("messages")
-          .select("id, conversation_id, sender_id, content, created_at, read_at")
-          .eq("conversation_id", conversationId)
-          .order("created_at", { ascending: true });
+        const { data, error } = await withTimeout(
+          supabase
+            .from("messages")
+            .select("id, conversation_id, sender_id, content, created_at, read_at")
+            .eq("conversation_id", conversationId)
+            .order("created_at", { ascending: true }),
+          10000,
+          "Mesaj listesi"
+        );
 
         if (error) throw error;
 
         const rows = ((data as MessageRow[] | null) || []).filter((item) => item.content);
         const senderIds = [...new Set(rows.map((item) => item.sender_id))];
 
-        const { data: senderProfiles } = await supabase
-          .from("profiles")
-          .select("id, username, first_name, last_name, avatar_url")
-          .in("id", senderIds);
+        let senderProfiles: ProfileRow[] | null = [];
+        if (senderIds.length > 0) {
+          const { data: profileRows, error: profileError } = await withTimeout(
+            supabase
+              .from("profiles")
+              .select("id, username, first_name, last_name, avatar_url")
+              .in("id", senderIds),
+            10000,
+            "Gönderen profilleri"
+          );
+
+          if (profileError) throw profileError;
+          senderProfiles = (profileRows as ProfileRow[] | null) || [];
+        }
 
         const profileMap = new Map<string, ProfileRow>();
-        ((senderProfiles as ProfileRow[] | null) || []).forEach((profile) => {
+        (senderProfiles || []).forEach((profile) => {
           profileMap.set(profile.id, profile);
         });
 
@@ -371,10 +423,10 @@ export default function MessagesPage() {
         });
 
         setMessages(nextMessages);
-        await markConversationAsRead(conversationId);
+        void markConversationAsRead(conversationId);
       } catch (error) {
         console.error("Mesajlar alınamadı:", error);
-        setStatusNote("Mesajlar yüklenirken hata oluştu.");
+        setStatusNote("Mesajlar yüklenirken hata oluştu. Lütfen tekrar deneyin.");
       } finally {
         setIsLoadingMessages(false);
       }
@@ -399,7 +451,7 @@ export default function MessagesPage() {
   const isConversationRelevant = useCallback(
     async (conversationId: string) => {
       if (!user) return false;
-      if (conversations.some((conversation) => conversation.id === conversationId)) return true;
+      if (conversationIdSetRef.current.has(conversationId)) return true;
 
       const { data, error } = await supabase
         .from("conversation_participants")
@@ -415,7 +467,7 @@ export default function MessagesPage() {
 
       return !!data;
     },
-    [conversations, user]
+    [user]
   );
 
   useEffect(() => {
@@ -447,8 +499,8 @@ export default function MessagesPage() {
                   {
                     id: row.id,
                     senderId: row.sender_id,
-                    senderName: isMine ? "Siz" : selectedConversation?.title || "Kullanıcı",
-                    senderAvatar: isMine ? null : selectedConversation?.avatarUrl || null,
+                    senderName: isMine ? "Siz" : selectedConversationRef.current?.title || "Kullanıcı",
+                    senderAvatar: isMine ? null : selectedConversationRef.current?.avatarUrl || null,
                     text: row.content,
                     timestamp: formatClock(row.created_at),
                     createdAtRaw: row.created_at,
@@ -471,7 +523,7 @@ export default function MessagesPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, selectedConversationId, loadConversations, markConversationAsRead, selectedConversation, isConversationRelevant]);
+  }, [user, selectedConversationId, loadConversations, markConversationAsRead, isConversationRelevant]);
 
   const handleSelectConversation = (conversationId: string) => {
     setSelectedConversationId(conversationId);
