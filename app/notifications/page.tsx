@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bell,
   Heart,
@@ -24,7 +24,7 @@ import { AppNotification, getTimeAgo, useNotifications } from "../contexts/Notif
 type NotificationType = "all" | "likes" | "comments" | "events";
 
 export default function NotificationsPage() {
-  const { notifications, unreadCount, markAllAsRead, markAsRead, deleteNotification, loading } = useNotifications();
+  const { notifications, unreadCount, markAllAsRead, markAsRead, deleteNotification, refreshNotifications, loading, error } = useNotifications();
 
   const types = [
     { value: "all", label: "Tümü", icon: Bell },
@@ -37,6 +37,15 @@ export default function NotificationsPage() {
 
   const filteredNotifications =
     selectedType === "all" ? notifications : notifications.filter((n) => n.type === selectedType);
+
+  const handleMarkAsRead = useCallback((id: string) => {
+    markAsRead(id);
+  }, [markAsRead]);
+
+  const handleDeleteNotification = useCallback((id: string) => {
+    deleteNotification(id);
+  }, [deleteNotification]);
+
 
   return (
     <div className="ak-page">
@@ -57,9 +66,22 @@ export default function NotificationsPage() {
             </div>
 
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={markAllAsRead} className="gap-2" disabled={notifications.length === 0}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  markAllAsRead();
+                  void refreshNotifications();
+                }}
+                className="gap-2"
+                disabled={notifications.length === 0}
+              >
                 <CheckCheck size={16} />
                 Tümünü Okundu İşaretle
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => void refreshNotifications()} className="gap-2">
+                <Loader2 size={14} className={loading ? "animate-spin" : ""} />
+                Yenile
               </Button>
               <Link href="/ayarlar">
                 <Button variant="ghost" size="icon">
@@ -106,6 +128,14 @@ export default function NotificationsPage() {
           </div>
 
           <div className="space-y-3">
+            {error && (
+              <Card className="border border-red-200 bg-red-50/70">
+                <CardContent className="p-4 flex items-center justify-between gap-3">
+                  <p className="text-sm text-red-700">{error}</p>
+                  <Button variant="outline" size="sm" onClick={() => void refreshNotifications()}>Tekrar Dene</Button>
+                </CardContent>
+              </Card>
+            )}
             {loading ? (
               <Card className="glass">
                 <CardContent className="p-12 text-center">
@@ -126,8 +156,8 @@ export default function NotificationsPage() {
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
-                  onRead={() => markAsRead(notification.id)}
-                  onDelete={() => deleteNotification(notification.id)}
+                  onRead={() => handleMarkAsRead(notification.id)}
+                  onDelete={() => handleDeleteNotification(notification.id)}
                 />
               ))
             )}
@@ -152,8 +182,12 @@ function NotificationItem({
   useEffect(() => {
     if (notification.isRead || !cardRef.current) return;
 
+    if (typeof window === "undefined" || typeof window.IntersectionObserver === "undefined") {
+      return;
+    }
+
     const node = cardRef.current;
-    const observer = new IntersectionObserver(
+    const observer = new window.IntersectionObserver(
       (entries) => {
         const [entry] = entries;
         if (entry?.isIntersecting) {
@@ -166,7 +200,7 @@ function NotificationItem({
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [notification.isRead, onRead]);
+  }, [notification.id, notification.isRead, onRead]);
 
   const getIcon = () => {
     switch (notification.type) {

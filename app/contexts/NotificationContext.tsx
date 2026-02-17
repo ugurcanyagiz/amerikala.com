@@ -27,6 +27,7 @@ interface NotificationContextType {
   notifications: AppNotification[];
   unreadCount: number;
   loading: boolean;
+  error: string | null;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   deleteNotification: (id: string) => void;
@@ -37,6 +38,7 @@ const NotificationContext = createContext<NotificationContextType>({
   notifications: [],
   unreadCount: 0,
   loading: false,
+  error: null,
   markAsRead: () => {},
   markAllAsRead: () => {},
   deleteNotification: () => {},
@@ -76,6 +78,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
@@ -123,6 +126,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
 
     setLoading(true);
+    setError(null);
 
     try {
       const { data: myPosts, error: postsError } = await supabase
@@ -272,14 +276,21 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setNotifications(merged);
     } catch (error) {
       console.error("Bildirimler alınamadı:", error);
+      setError("Bildirimler yüklenemedi.");
     } finally {
       setLoading(false);
     }
   }, [authLoading, dismissedIds, readIds, user]);
 
   useEffect(() => {
-    refreshNotifications();
-  }, [refreshNotifications]);
+    if (authLoading) return;
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+
+    void refreshNotifications();
+  }, [authLoading, refreshNotifications, user]);
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -287,13 +298,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const channel = supabase
       .channel(`notifications-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "likes" }, () => {
-        refreshNotifications();
+        void refreshNotifications();
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, () => {
-        refreshNotifications();
+        void refreshNotifications();
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "event_attendees" }, () => {
-        refreshNotifications();
+        void refreshNotifications();
       })
       .subscribe();
 
@@ -325,8 +336,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const unreadCount = useMemo(() => notifications.filter((notification) => !notification.isRead).length, [notifications]);
 
   const value = useMemo(
-    () => ({ notifications, unreadCount, loading, markAsRead, markAllAsRead, deleteNotification, refreshNotifications }),
-    [deleteNotification, loading, markAllAsRead, markAsRead, notifications, refreshNotifications, unreadCount]
+    () => ({ notifications, unreadCount, loading, error, markAsRead, markAllAsRead, deleteNotification, refreshNotifications }),
+    [deleteNotification, error, loading, markAllAsRead, markAsRead, notifications, refreshNotifications, unreadCount]
   );
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
