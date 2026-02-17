@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
   MoreVertical,
@@ -14,6 +14,7 @@ import {
   Image as ImageIcon,
   Users,
   UserPlus,
+  User,
   MessageSquarePlus,
   CheckCheck,
   Loader2,
@@ -28,7 +29,7 @@ import { Badge } from "../components/ui/Badge";
 import { Input } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
 import { useAuth } from "../contexts/AuthContext";
-import { getMessagePreviews, MessagePreview } from "@/lib/messages";
+import { getMessagePreviews, markConversationMessagesAsRead, MessagePreview } from "@/lib/messages";
 import { supabase } from "@/lib/supabase/client";
 
 type InboxFilter = "all" | "unread" | "groups";
@@ -67,6 +68,7 @@ type ConversationItem = {
   unread: number;
   updatedAtRaw: string;
   onlineCount: number;
+  directUserId?: string;
 };
 
 type MessageRow = {
@@ -126,6 +128,7 @@ const formatClock = (iso: string) =>
 
 export default function MessagesPage() {
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
@@ -145,6 +148,11 @@ export default function MessagesPage() {
   const [statusNote, setStatusNote] = useState<string | null>(null);
   const [memberOptions, setMemberOptions] = useState<ProfileRow[]>([]);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileCardData, setProfileCardData] = useState<ProfileRow | null>(null);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const selectedConversation = conversations.find((item) => item.id === selectedConversationId) ?? null;
 
@@ -267,6 +275,7 @@ export default function MessagesPage() {
           unread: preview.unreadCount,
           updatedAtRaw: preview.lastMessageCreatedAt,
           onlineCount: onlineHints > 0 ? 1 : 0,
+          directUserId: inferredGroup ? undefined : otherParticipants[0]?.user_id,
         };
       });
 
@@ -300,12 +309,7 @@ export default function MessagesPage() {
         )
       );
 
-      await supabase
-        .from("messages")
-        .update({ read_at: new Date().toISOString() })
-        .eq("conversation_id", conversationId)
-        .neq("sender_id", user.id)
-        .is("read_at", null);
+      await markConversationMessagesAsRead(conversationId, user.id);
     },
     [user]
   );
@@ -393,10 +397,31 @@ export default function MessagesPage() {
           const row = payload.new as MessageRow;
           if (!row?.conversation_id) return;
 
-          if (row.conversation_id === selectedConversationId) {
-            loadMessages(row.conversation_id);
+          if (payload.eventType === "INSERT" && row.conversation_id === selectedConversationId) {
+            setMessages((prev) => {
+              if (prev.some((item) => item.id === row.id)) return prev;
+              const isMine = row.sender_id === user.id;
+              return [
+                ...prev,
+                {
+                  id: row.id,
+                  senderId: row.sender_id,
+                  senderName: isMine ? "Siz" : selectedConversation?.title || "Kullanıcı",
+                  senderAvatar: isMine ? null : selectedConversation?.avatarUrl || null,
+                  text: row.content,
+                  timestamp: formatClock(row.created_at),
+                  createdAtRaw: row.created_at,
+                  isRead: !!row.read_at,
+                },
+              ];
+            });
+
+            if (row.sender_id !== user.id) {
+              void markConversationAsRead(row.conversation_id);
+            }
           }
-          loadConversations();
+
+          void loadConversations();
         }
       )
       .subscribe();
@@ -404,12 +429,109 @@ export default function MessagesPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, selectedConversationId, loadConversations, loadMessages]);
+  }, [user, selectedConversationId, loadConversations, loadMessages, markConversationAsRead, selectedConversation]);
 
   const handleSelectConversation = (conversationId: string) => {
     setSelectedConversationId(conversationId);
     setIsActionsOpen(false);
+    void markConversationAsRead(conversationId);
   };
+
+
+  const renderMessageBody = (text: string) => {
+    const imageMatch = text.match(/^!\[(.*?)\]\((https?:\/\/[^\s)]+)\)$/);
+    if (imageMatch) {
+      const [, alt, url] = imageMatch;
+      return (
+        <a href={url} target="_blank" rel="noreferrer" className="block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt={alt || "Görsel"} className="max-h-64 w-auto rounded-xl object-cover" />
+        </a>
+      );
+    }
+
+    const fileMatch = text.match(/^\[(.*?)\]\((https?:\/\/[^\s)]+)\)$/);
+    if (fileMatch) {
+      const [, name, url] = fileMatch;
+      return (
+        <a href={url} target="_blank" rel="noreferrer" className="text-sm underline break-all">
+          📎 {name || "Dosya"}
+        </a>
+      );
+    }
+
+    return <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{text}</p>;
+  };
+
+  const uploadMessageAttachment = useCallback(
+    async (file: File) => {
+      if (!user || !selectedConversationId) {
+        throw new Error("Dosya yüklemek için bir sohbet seçin.");
+      }
+
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const filePath = `${user.id}/${selectedConversationId}/${Date.now()}-${safeName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("message-attachments")
+        .upload(filePath, file, { upsert: false, cacheControl: "3600", contentType: file.type });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage.from("message-attachments").getPublicUrl(filePath);
+      if (!data?.publicUrl) {
+        throw new Error("Yüklenen dosya için URL alınamadı.");
+      }
+
+      return data.publicUrl;
+    },
+    [selectedConversationId, user]
+  );
+
+  const handleAttachmentSelected = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>, kind: "image" | "file") => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+
+      setIsUploadingAttachment(true);
+      try {
+        const url = await uploadMessageAttachment(file);
+        const token = kind === "image" ? `![${file.name}](${url})` : `[${file.name}](${url})`;
+        setMessageText((prev) => (prev.trim().length > 0 ? `${prev}
+${token}` : token));
+        setStatusNote(`${kind === "image" ? "Görsel" : "Dosya"} yüklendi. Mesajı göndererek paylaşabilirsiniz.`);
+      } catch (error) {
+        console.error("Dosya yükleme hatası:", error);
+        setStatusNote("Dosya yüklenemedi. Storage bucket/policy ayarlarını kontrol edin.");
+      } finally {
+        setIsUploadingAttachment(false);
+      }
+    },
+    [uploadMessageAttachment]
+  );
+
+  const handleOpenProfileCard = useCallback(async () => {
+    if (!selectedConversation?.directUserId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, username, first_name, last_name, avatar_url")
+        .eq("id", selectedConversation.directUserId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      setProfileCardData((data as ProfileRow | null) || null);
+      setIsProfileModalOpen(true);
+    } catch (error) {
+      console.error("Profil kartı açılamadı:", error);
+      setStatusNote("Profil bilgisi alınamadı.");
+    }
+  }, [selectedConversation]);
 
   const handleSendMessage = async (event?: FormEvent) => {
     event?.preventDefault();
@@ -420,16 +542,36 @@ export default function MessagesPage() {
     setIsSending(true);
     try {
       const content = messageText.trim();
-      const { error } = await supabase.from("messages").insert({
-        conversation_id: selectedConversationId,
-        sender_id: user.id,
-        content,
-      });
+      const { data, error } = await supabase
+        .from("messages")
+        .insert({
+          conversation_id: selectedConversationId,
+          sender_id: user.id,
+          content,
+        })
+        .select("id, sender_id, content, created_at, read_at")
+        .single();
 
       if (error) throw error;
 
+      if (data) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: data.id,
+            senderId: data.sender_id,
+            senderName: "Siz",
+            senderAvatar: null,
+            text: data.content,
+            timestamp: formatClock(data.created_at),
+            createdAtRaw: data.created_at,
+            isRead: !!data.read_at,
+          },
+        ]);
+      }
+
       setMessageText("");
-      await Promise.all([loadMessages(selectedConversationId), loadConversations()]);
+      await loadConversations();
     } catch (error) {
       console.error("Mesaj gönderilemedi:", error);
       setStatusNote("Mesaj gönderilemedi. Lütfen tekrar deneyin.");
@@ -647,12 +789,16 @@ export default function MessagesPage() {
                   </div>
 
                   <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => setStatusNote("Sesli arama özelliği yakında aktif edilecek.") }>
-                      <Phone size={18} />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => setStatusNote("Görüntülü arama özelliği yakında aktif edilecek.") }>
-                      <Video size={18} />
-                    </Button>
+                    {selectedConversation.type === "group" && (
+                      <>
+                        <Button variant="ghost" size="icon" onClick={() => setStatusNote("Sesli arama özelliği yakında aktif edilecek.") }>
+                          <Phone size={18} />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setStatusNote("Görüntülü arama özelliği yakında aktif edilecek.") }>
+                          <Video size={18} />
+                        </Button>
+                      </>
+                    )}
                     <Button variant="ghost" size="icon" onClick={() => setIsInfoPanelOpen((prev) => !prev)}>
                       <Info size={18} />
                     </Button>
@@ -661,11 +807,24 @@ export default function MessagesPage() {
                     </Button>
 
                     {isActionsOpen && (
-                      <div className="absolute right-4 top-14 w-52 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl p-1 z-20">
+                      <div className="absolute right-4 top-14 w-56 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl p-1 z-20">
+                        {selectedConversation.type === "direct" && (
+                          <button
+                            className="w-full px-3 py-2 text-left text-sm rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-2"
+                            onClick={() => {
+                              void handleOpenProfileCard();
+                              setIsActionsOpen(false);
+                            }}
+                          >
+                            <User size={14} /> Profili görüntüle
+                          </button>
+                        )}
                         <button
                           className="w-full px-3 py-2 text-left text-sm rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-2"
                           onClick={() => {
-                            if (selectedConversationId) markConversationAsRead(selectedConversationId);
+                            if (selectedConversationId) {
+                              void markConversationAsRead(selectedConversationId);
+                            }
                             setIsActionsOpen(false);
                           }}
                         >
@@ -674,19 +833,23 @@ export default function MessagesPage() {
                         <button
                           className="w-full px-3 py-2 text-left text-sm rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-2"
                           onClick={() => {
-                            loadConversations();
-                            if (selectedConversationId) loadMessages(selectedConversationId);
+                            void loadConversations();
+                            if (selectedConversationId) {
+                              void loadMessages(selectedConversationId);
+                            }
                             setIsActionsOpen(false);
                           }}
                         >
                           <RefreshCw size={14} /> Yenile
                         </button>
-                        <button
-                          className="w-full px-3 py-2 text-left text-sm rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 flex items-center gap-2"
-                          onClick={handleLeaveConversation}
-                        >
-                          <LogOut size={14} /> Sohbetten ayrıl
-                        </button>
+                        {selectedConversation.type === "group" && (
+                          <button
+                            className="w-full px-3 py-2 text-left text-sm rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 flex items-center gap-2"
+                            onClick={handleLeaveConversation}
+                          >
+                            <LogOut size={14} /> Sohbetten ayrıl
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -724,7 +887,7 @@ export default function MessagesPage() {
                                 {selectedConversation.type === "group" && !isSent && (
                                   <p className="text-[11px] font-semibold mb-1 opacity-80">{message.senderName}</p>
                                 )}
-                                <p className="text-sm leading-relaxed">{message.text}</p>
+                                {renderMessageBody(message.text)}
                               </div>
                               <div className={`flex items-center gap-1 mt-1 ${isSent ? "justify-end" : "justify-start"}`}>
                                 <span className="text-xs text-neutral-500">{message.timestamp}</span>
@@ -744,11 +907,27 @@ export default function MessagesPage() {
 
                 <form onSubmit={handleSendMessage} className="p-4 border-t border-neutral-200 dark:border-neutral-800 glass">
                   <div className="flex items-end gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={(event) => void handleAttachmentSelected(event, "file")}
+                    />
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => void handleAttachmentSelected(event, "image")}
+                    />
+
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      onClick={() => setStatusNote("Dosya ekleme özelliği bir sonraki sürümde aktif olacak.")}
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingAttachment}
+                      title="Dosya ekle"
                     >
                       <Paperclip size={18} />
                     </Button>
@@ -756,7 +935,9 @@ export default function MessagesPage() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      onClick={() => setStatusNote("Medya yükleme özelliği bir sonraki sürümde aktif olacak.")}
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={isUploadingAttachment}
+                      title="Fotoğraf ekle"
                     >
                       <ImageIcon size={18} />
                     </Button>
@@ -781,7 +962,7 @@ export default function MessagesPage() {
                       <Smile size={18} />
                     </Button>
 
-                    <Button variant="primary" size="icon" type="submit" disabled={!messageText.trim() || isSending} className="h-11 w-11">
+                    <Button variant="primary" size="icon" type="submit" disabled={!messageText.trim() || isSending || isUploadingAttachment} className="h-11 w-11">
                       {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                     </Button>
                   </div>
@@ -820,6 +1001,35 @@ export default function MessagesPage() {
           )}
         </main>
       </div>
+
+      <Modal open={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} title="Kullanıcı Profili" size="sm">
+        {profileCardData ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Avatar src={profileCardData.avatar_url || undefined} fallback={formatDisplayName(profileCardData)} size="lg" />
+              <div>
+                <p className="font-semibold">{formatDisplayName(profileCardData)}</p>
+                <p className="text-sm text-neutral-500">{profileCardData.username ? `@${profileCardData.username}` : "Kullanıcı"}</p>
+              </div>
+            </div>
+            <Button
+              variant="primary"
+              className="w-full"
+              onClick={() => {
+                setIsProfileModalOpen(false);
+                if (profileCardData.id) {
+                  router.push(`/profile/${profileCardData.id}`);
+                }
+              }}
+            >
+              Profili aç
+            </Button>
+          </div>
+        ) : (
+          <p className="text-sm text-neutral-500">Profil bilgisi bulunamadı.</p>
+        )}
+      </Modal>
+
 
       <Modal open={isGroupModalOpen} onClose={() => setIsGroupModalOpen(false)} title="Yeni Grup Oluştur" size="md">
         <div className="space-y-4">
