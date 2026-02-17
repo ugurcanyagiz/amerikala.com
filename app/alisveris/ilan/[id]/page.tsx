@@ -132,11 +132,11 @@ export default function MarketplaceDetailPage() {
   const images = listing.images || [];
 
   return (
-    <div className="ak-page">
-      <div className="flex">
+    <div className="ak-page overflow-x-hidden">
+      <div className="flex min-w-0">
         <Sidebar />
 
-        <main className="flex-1">
+        <main className="flex-1 min-w-0">
           <div className="ak-shell lg:px-8 py-6">
             {/* Back Button */}
             <div className="mb-6">
@@ -305,7 +305,7 @@ export default function MarketplaceDetailPage() {
                       {listing.contact_phone && (
                         <a
                           href={`tel:${listing.contact_phone}`}
-                          className="flex items-center gap-3 w-full p-3 rounded-xl bg-green-500 text-white font-medium hover:bg-green-600 transition-colors"
+                          className="flex items-center gap-3 w-full p-3 rounded-xl bg-green-500 text-white font-medium hover:bg-green-600 transition-colors break-all"
                         >
                           <Phone size={20} />
                           {listing.contact_phone}
@@ -323,7 +323,7 @@ export default function MarketplaceDetailPage() {
                     <div className="mt-6 pt-6 border-t space-y-2 text-sm">
                       <div className="flex items-center justify-between text-neutral-500">
                         <span>İlan No</span>
-                        <span>{listing.id.slice(0, 8)}</span>
+                        <span className="break-all text-right">{listing.id.slice(0, 8)}</span>
                       </div>
                       <div className="flex items-center justify-between text-neutral-500">
                         <span>Görüntülenme</span>
@@ -331,7 +331,7 @@ export default function MarketplaceDetailPage() {
                       </div>
                       <div className="flex items-center justify-between text-neutral-500">
                         <span>Yayın Tarihi</span>
-                        <span>{formatDate(listing.created_at)}</span>
+                        <span className="text-right">{formatDate(listing.created_at)}</span>
                       </div>
                     </div>
 

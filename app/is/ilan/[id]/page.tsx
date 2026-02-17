@@ -349,11 +349,11 @@ export default function JobListingDetailPage() {
   const isOwnListing = user?.id === listing.user_id;
 
   return (
-    <div className="ak-page">
-      <div className="flex">
+    <div className="ak-page overflow-x-hidden">
+      <div className="flex min-w-0">
         <Sidebar />
 
-        <main className="flex-1">
+        <main className="flex-1 min-w-0">
           <div className="ak-shell lg:px-8 py-6">
             <div className="mb-6">
               <button
@@ -373,7 +373,7 @@ export default function JobListingDetailPage() {
                       <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-3xl">
                         {JOB_CATEGORY_ICONS[listing.category]}
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap gap-2 mb-2">
                           <Badge variant={listing.listing_type === "hiring" ? "success" : "info"}>
                             {JOB_LISTING_TYPE_LABELS[listing.listing_type]}
@@ -634,7 +634,7 @@ export default function JobListingDetailPage() {
                 <div className="flex gap-3 pt-2">
                   <Button
                     variant="outline"
-                    className="flex-1"
+                    className="flex-1 min-w-0"
                     onClick={() => setShowReportModal(false)}
                     disabled={reportSending}
                   >
@@ -642,7 +642,7 @@ export default function JobListingDetailPage() {
                   </Button>
                   <Button
                     variant="primary"
-                    className="flex-1"
+                    className="flex-1 min-w-0"
                     onClick={handleReportListing}
                     loading={reportSending}
                   >

@@ -461,11 +461,11 @@ export default function ListingDetailPage() {
   const amenities = listing.amenities || [];
 
   return (
-    <div className="ak-page">
-      <div className="flex">
+    <div className="ak-page overflow-x-hidden">
+      <div className="flex min-w-0">
         <Sidebar />
 
-        <main className="flex-1">
+        <main className="flex-1 min-w-0">
           <div className="ak-shell lg:px-8 py-6">
             {/* Back Button */}
             <div className="mb-6">

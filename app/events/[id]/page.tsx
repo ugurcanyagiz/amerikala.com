@@ -284,7 +284,7 @@ export default function EventDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-surface">
+      <div className="min-h-screen bg-surface overflow-x-hidden">
         <div className="flex">
           <Sidebar />
           <main className="flex-1 flex items-center justify-center py-16">
@@ -297,10 +297,10 @@ export default function EventDetailPage() {
 
   if (error || !event) {
     return (
-      <div className="min-h-screen bg-surface">
+      <div className="min-h-screen bg-surface overflow-x-hidden">
         <div className="flex">
           <Sidebar />
-          <main className="flex-1">
+          <main className="flex-1 min-w-0">
             <div className="ak-shell lg:px-8 py-8">
               <Link href="/events">
                 <Button variant="ghost" className="gap-2 mb-6">
@@ -336,11 +336,11 @@ export default function EventDetailPage() {
     || "Anonim";
 
   return (
-    <div className="min-h-screen bg-surface">
-      <div className="flex">
+    <div className="min-h-screen bg-surface overflow-x-hidden">
+      <div className="flex min-w-0">
         <Sidebar />
 
-        <main className="flex-1">
+        <main className="flex-1 min-w-0">
           <div className="ak-shell lg:px-8 py-6">
             {/* Back Button */}
             <Link href="/events">

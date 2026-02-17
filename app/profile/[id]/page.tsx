@@ -403,7 +403,7 @@ export default function PublicProfilePage() {
   }
 
   return (
-    <div className="ak-page py-8 px-4">
+    <div className="ak-page overflow-x-hidden py-8 px-4">
       <div className="max-w-3xl mx-auto space-y-5">
         <Link href="/people" className="inline-flex">
           <Button variant="secondary" size="sm" className="gap-2">
@@ -416,7 +416,7 @@ export default function PublicProfilePage() {
           <CardContent className="p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center gap-5">
               <Avatar src={profile.avatar_url ?? undefined} fallback={getDisplayName(profile)} size="xl" />
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold">{getDisplayName(profile)}</h1>
                   {profile.is_verified && <Badge variant="primary" size="sm">Doğrulanmış</Badge>}
