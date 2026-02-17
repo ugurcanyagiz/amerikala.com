@@ -73,6 +73,16 @@ export default function ProfilePage() {
     }
   }, [user, authLoading, router]);
 
+  // Backward-compatible deep link support: /profile#<id> -> /profile/<id>
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const hash = window.location.hash.replace("#", "").trim();
+    if (!hash) return;
+
+    router.replace(`/profile/${hash}`);
+  }, [router]);
+
   // Fetch stats
   useEffect(() => {
     if (!user || !profile) return;
