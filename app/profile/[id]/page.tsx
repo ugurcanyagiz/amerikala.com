@@ -1,9 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Heart, Loader2, MapPin, MessageCircle, Briefcase, Users, CalendarClock, Copy, Check, BadgeCheck } from "lucide-react";
+import {
+  ArrowLeft,
+  Heart,
+  Loader2,
+  MapPin,
+  MessageCircle,
+  Briefcase,
+  Users,
+  Copy,
+  Check,
+  BadgeCheck,
+  Flag,
+  ShieldAlert,
+  Send,
+} from "lucide-react";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { supabase } from "@/lib/supabase/client";
 import { Avatar } from "@/app/components/ui/Avatar";
@@ -48,6 +62,10 @@ export default function PublicProfilePage() {
   const [followLoading, setFollowLoading] = useState(false);
   const [dmLoading, setDmLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportFeedback, setReportFeedback] = useState<string | null>(null);
   const [stats, setStats] = useState<ProfileStats>({ followers: 0, following: 0, groups: 0, events: 0 });
   const [mutuals, setMutuals] = useState({ groups: 0, events: 0 });
 
@@ -200,50 +218,145 @@ export default function PublicProfilePage() {
     }
   };
 
+  const createConversationRecord = useCallback(async (targetUserId: string) => {
+    const payloads = [{ is_group: false, created_by: user?.id }, { is_group: false }, {}];
+
+    for (const payload of payloads) {
+      const { data, error } = await supabase.from("conversations").insert(payload).select("id").single();
+      if (!error && data?.id) {
+        return data.id as string;
+      }
+    }
+
+    const { data: rpcData, error: rpcError } = await supabase.rpc("create_direct_conversation", {
+      target_user_id: targetUserId,
+    });
+
+    if (!rpcError && rpcData) {
+      return rpcData as string;
+    }
+
+    throw new Error("Mesaj odası oluşturulamadı.");
+  }, [user?.id]);
+
+  const findOrCreateConversationWith = useCallback(async (targetUserId: string) => {
+    if (!user) throw new Error("Mesaj göndermek için giriş yapmalısınız.");
+
+    const { data: myRows, error: myRowsError } = await supabase
+      .from("conversation_participants")
+      .select("conversation_id")
+      .eq("user_id", user.id);
+
+    if (myRowsError) throw myRowsError;
+
+    const myIds = ((myRows as Array<{ conversation_id: string }> | null) || []).map((row) => row.conversation_id);
+
+    let conversationId = "";
+    if (myIds.length > 0) {
+      const { data: otherRows, error: otherRowsError } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", targetUserId)
+        .in("conversation_id", myIds);
+
+      if (otherRowsError) throw otherRowsError;
+      conversationId = (otherRows as Array<{ conversation_id: string }> | null)?.[0]?.conversation_id || "";
+    }
+
+    const isNewConversation = !conversationId;
+    if (!conversationId) {
+      conversationId = await createConversationRecord(targetUserId);
+    }
+
+    if (isNewConversation) {
+      const { error: participantError } = await supabase.from("conversation_participants").insert([
+        { conversation_id: conversationId, user_id: user.id },
+        { conversation_id: conversationId, user_id: targetUserId },
+      ]);
+
+      if (participantError) throw participantError;
+    }
+
+    return conversationId;
+  }, [createConversationRecord, user]);
+
   const handleSendMessage = async () => {
     if (!user || !profile || user.id === profile.id) return;
     setDmLoading(true);
 
     try {
-      const { data: myRows } = await supabase.from("conversation_participants").select("conversation_id").eq("user_id", user.id);
-      const myIds = ((myRows as Array<{ conversation_id: string }> | null) || []).map((row) => row.conversation_id);
-
-      if (myIds.length > 0) {
-        const { data: otherRows } = await supabase
-          .from("conversation_participants")
-          .select("conversation_id")
-          .eq("user_id", profile.id)
-          .in("conversation_id", myIds);
-
-        const existingConversation = (otherRows as Array<{ conversation_id: string }> | null)?.[0]?.conversation_id;
-        if (existingConversation) {
-          router.push(`/messages?conversation=${existingConversation}`);
-          return;
-        }
-      }
-
-      let conversationId = "";
-      for (const payload of [{ is_group: false, created_by: user.id }, { is_group: false }, {}]) {
-        const { data, error } = await supabase.from("conversations").insert(payload).select("id").single();
-        if (!error && data?.id) {
-          conversationId = data.id as string;
-          break;
-        }
-      }
-
-      if (!conversationId) {
-        router.push("/messages");
-        return;
-      }
-
-      await supabase.from("conversation_participants").insert([
-        { conversation_id: conversationId, user_id: user.id },
-        { conversation_id: conversationId, user_id: profile.id },
-      ]);
+      const conversationId = await findOrCreateConversationWith(profile.id);
 
       router.push(`/messages?conversation=${conversationId}`);
     } finally {
       setDmLoading(false);
+    }
+  };
+
+  const handleReportProfile = async () => {
+    if (!profile || !user || user.id === profile.id) return;
+
+    const reason = reportReason.trim();
+    const details = reportDetails.trim();
+
+    if (!reason) {
+      setReportFeedback("Lütfen rapor sebebini yazın.");
+      return;
+    }
+
+    setReportLoading(true);
+    setReportFeedback(null);
+
+    try {
+      const { data: adminRows, error: adminsError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("role", "admin")
+        .limit(20);
+
+      if (adminsError) throw adminsError;
+
+      const adminIds = ((adminRows as Array<{ id: string }> | null) || [])
+        .map((row) => row.id)
+        .filter((adminId) => adminId && adminId !== user.id);
+
+      if (adminIds.length === 0) {
+        throw new Error("Aktif admin bulunamadı.");
+      }
+
+      const profileUrl = typeof window !== "undefined"
+        ? `${window.location.origin}/profile/${profile.id}`
+        : `/profile/${profile.id}`;
+
+      const reportMessage = [
+        "🚨 Profil raporu",
+        `Raporlanan kullanıcı: ${getDisplayName(profile)} (@${profile.username || "kullanici"})`,
+        `Profil ID: ${profile.id}`,
+        `Profil linki: ${profileUrl}`,
+        `Raporlayan kullanıcı: ${user.email || user.id}`,
+        `Sebep: ${reason}`,
+        details ? `Detay: ${details}` : null,
+      ].filter(Boolean).join("\n");
+
+      for (const adminId of adminIds) {
+        const conversationId = await findOrCreateConversationWith(adminId);
+        const { error: messageError } = await supabase.from("messages").insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          content: reportMessage,
+        });
+
+        if (messageError) throw messageError;
+      }
+
+      setReportReason("");
+      setReportDetails("");
+      setReportFeedback("Rapor admin ekibine iletildi.");
+    } catch (error) {
+      console.error("Error reporting profile:", error);
+      setReportFeedback("Rapor gönderilemedi. Lütfen tekrar deneyin.");
+    } finally {
+      setReportLoading(false);
     }
   };
 
@@ -280,10 +393,10 @@ export default function PublicProfilePage() {
   return (
     <div className="ak-page py-8 px-4">
       <div className="max-w-3xl mx-auto space-y-5">
-        <Link href="/meetups" className="inline-flex">
+        <Link href="/people" className="inline-flex">
           <Button variant="secondary" size="sm" className="gap-2">
             <ArrowLeft size={16} />
-            Etkinliğe Geri Dön
+            Kişilere Geri Dön
           </Button>
         </Link>
 
@@ -357,12 +470,12 @@ export default function PublicProfilePage() {
                     router.push("/login");
                     return;
                   }
-                  router.push("/meetups/create");
+                  router.push(`/messages?user=${profile.id}`);
                 }}
                 className="gap-2"
               >
-                <CalendarClock size={16} />
-                Etkinliğe Davet Et
+                <Send size={16} />
+                Hızlı Mesaj
               </Button>
             </div>
           </CardContent>
@@ -373,14 +486,42 @@ export default function PublicProfilePage() {
             <CardTitle>Topluluk Bilgisi</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-neutral-600 dark:text-neutral-400 space-y-2">
-            <p>Bu profil etkinlik katılımcı listelerinden veya topluluk sayfalarından görüntülenebilir.</p>
-            <p>Mesajlaşma ve takip işlemleri gerçek kullanıcı verileri ile çalışır.</p>
+            <p>Bu ekran, /profile kartındaki bilgileri karşı kullanıcıya Instagram benzeri bir yerleşimle sunar.</p>
+            <p>Takip/arkadaşlık, DM ve raporlama aksiyonları doğrudan gerçek veritabanı kayıtlarıyla çalışır.</p>
             <div className="mt-4 rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-3 bg-white/60 dark:bg-neutral-900/40 space-y-2">
               <p className="font-medium text-neutral-700 dark:text-neutral-200 flex items-center gap-2"><BadgeCheck size={16} className="text-blue-500" /> Profesyonel Bağlantı Özeti</p>
               <p className="flex items-center gap-2"><Users size={14} /> Ortak Grup: {mutuals.groups}</p>
-              <p className="flex items-center gap-2"><CalendarClock size={14} /> Ortak Etkinlik: {mutuals.events}</p>
+              <p className="flex items-center gap-2"><Heart size={14} /> Ortak Etkinlik: {mutuals.events}</p>
               <p className="text-xs text-neutral-500">Bu kart, topluluk içi güvenli iletişim ve networking aksiyonları için optimize edildi.</p>
             </div>
+
+            {user && user.id !== profile.id && (
+              <div className="mt-4 rounded-xl border border-red-200/80 dark:border-red-900/50 p-4 bg-red-50/70 dark:bg-red-950/20 space-y-3">
+                <p className="font-medium text-red-700 dark:text-red-300 flex items-center gap-2">
+                  <ShieldAlert size={16} /> Admin&apos;e Profil Raporla
+                </p>
+                <input
+                  value={reportReason}
+                  onChange={(event) => setReportReason(event.target.value)}
+                  placeholder="Rapor sebebi (zorunlu)"
+                  className="w-full rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+                />
+                <textarea
+                  value={reportDetails}
+                  onChange={(event) => setReportDetails(event.target.value)}
+                  placeholder="Detaylar (opsiyonel)"
+                  rows={3}
+                  className="w-full rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+                />
+                {reportFeedback && (
+                  <p className={`text-sm ${reportFeedback.includes("iletildi") ? "text-green-600" : "text-red-600"}`}>{reportFeedback}</p>
+                )}
+                <Button variant="outline" className="gap-2" onClick={handleReportProfile} disabled={reportLoading}>
+                  <Flag size={16} />
+                  {reportLoading ? "Gönderiliyor..." : "Profili Raporla"}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
