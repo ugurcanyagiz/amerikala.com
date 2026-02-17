@@ -3,13 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { getTimeAgo, useNotifications } from "../contexts/NotificationContext";
 import { Avatar } from "./ui/Avatar";
 import { Button } from "./ui/Button";
-import { getMessagePreviews, type MessagePreview } from "@/lib/messages";
+import { getMessagePreviews, markConversationMessagesAsRead, type MessagePreview } from "@/lib/messages";
 import { supabase } from "@/lib/supabase/client";
+import { searchSiteContent, type SiteSearchResult } from "@/lib/siteSearch";
 import {
   Home,
   Calendar,
@@ -158,6 +159,16 @@ function formatMessageTime(dateString: string) {
 
   return createdAt.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
 }
+
+const SEARCH_TYPE_LABELS: Record<SiteSearchResult["type"], string> = {
+  event: "Etkinlik",
+  realEstate: "Emlak",
+  job: "İş",
+  marketplace: "Alışveriş",
+  group: "Grup",
+  profile: "Profil",
+  post: "Feed",
+};
 
 // Dropdown Component
 function NavDropdown({
@@ -500,21 +511,27 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 // Main Navbar Component
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, profile, signOut, loading, isAdmin } = useAuth();
   const displayName = getDisplayName(profile, user);
   const usernameLabel = getUsernameLabel(profile, user);
-  const { notifications, unreadCount, markAsRead, markAllAsRead, loading: notificationLoading } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, refreshNotifications, loading: notificationLoading } = useNotifications();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<SiteSearchResult[]>([]);
   const [messagePreviews, setMessagePreviews] = useState<MessagePreview[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesError, setMessagesError] = useState<string | null>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notificationPanelRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   const desktopNavItems = isAdmin
     ? [
         ...NAV_ITEMS,
@@ -526,6 +543,26 @@ export default function Navbar() {
         },
       ]
     : NAV_ITEMS;
+
+  const refreshMessagePreviews = useCallback(async () => {
+    if (!user) {
+      setMessagePreviews([]);
+      return;
+    }
+
+    setMessagesLoading(true);
+    setMessagesError(null);
+
+    try {
+      const previews = await getMessagePreviews(user.id);
+      setMessagePreviews(previews);
+    } catch (error) {
+      console.error("Mesaj önizlemeleri alınamadı:", error);
+      setMessagesError("Mesajlar yüklenemedi.");
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, [user]);
 
   // Close menu/panels on click outside
   useEffect(() => {
@@ -541,6 +578,10 @@ export default function Navbar() {
       if (messagesRef.current && !messagesRef.current.contains(e.target as Node)) {
         setMessagesOpen(false);
       }
+
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -548,27 +589,7 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const loadMessagePreviews = async () => {
-      if (!user) {
-        setMessagePreviews([]);
-        return;
-      }
-
-      setMessagesLoading(true);
-      setMessagesError(null);
-
-      try {
-        const previews = await getMessagePreviews(user.id);
-        setMessagePreviews(previews);
-      } catch (error) {
-        console.error("Mesaj önizlemeleri alınamadı:", error);
-        setMessagesError("Mesajlar yüklenemedi.");
-      } finally {
-        setMessagesLoading(false);
-      }
-    };
-
-    loadMessagePreviews();
+    refreshMessagePreviews();
 
     if (!user) {
       return;
@@ -583,21 +604,54 @@ export default function Navbar() {
           schema: "public",
           table: "messages",
         },
-        async () => {
-          try {
-            const previews = await getMessagePreviews(user.id);
-            setMessagePreviews(previews);
-          } catch (error) {
-            console.error("Realtime mesaj güncelleme hatası:", error);
-          }
+        () => {
+          void refreshMessagePreviews();
         }
       )
       .subscribe();
 
+    const handleFocus = () => {
+      void refreshMessagePreviews();
+      void refreshNotifications();
+    };
+
+    window.addEventListener("focus", handleFocus);
+
     return () => {
+      window.removeEventListener("focus", handleFocus);
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [refreshMessagePreviews, refreshNotifications, user]);
+
+  useEffect(() => {
+    void refreshMessagePreviews();
+    void refreshNotifications();
+  }, [pathname, refreshMessagePreviews, refreshNotifications]);
+
+  useEffect(() => {
+    const normalizedQuery = searchQuery.trim();
+
+    if (!searchOpen || normalizedQuery.length < 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const results = await searchSiteContent(normalizedQuery, 4);
+        setSearchResults(results.slice(0, 8));
+      } catch (error) {
+        console.error("Navbar arama hatası:", error);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [searchOpen, searchQuery]);
 
   const handleSignOut = async () => {
     setUserMenuOpen(false);
@@ -641,9 +695,75 @@ export default function Navbar() {
             {/* Right Section */}
             <div className="flex items-center gap-2">
               {/* Search Button */}
-              <button className="p-2.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-sky-50 transition-colors">
-                <Search size={20} />
-              </button>
+              <div ref={searchRef} className="relative hidden sm:block">
+                <button
+                  onClick={() => setSearchOpen((prev) => !prev)}
+                  className="p-2.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-sky-50 transition-colors"
+                  aria-label="Sitede ara"
+                  aria-expanded={searchOpen}
+                >
+                  <Search size={20} />
+                </button>
+
+                {searchOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-[420px] max-w-[90vw] rounded-2xl border border-sky-100 bg-white shadow-xl z-50 overflow-hidden">
+                    <div className="p-3 border-b border-sky-100">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
+                          <Search size={16} className="text-slate-400" />
+                          <input
+                            value={searchQuery}
+                            onChange={(event) => setSearchQuery(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                                setSearchOpen(false);
+                              }
+                            }}
+                            placeholder="Sitede ara..."
+                            className="w-full border-none bg-transparent text-sm outline-none"
+                            autoFocus
+                          />
+                        </div>
+                        <Link
+                          href={`/search${searchQuery.trim() ? `?q=${encodeURIComponent(searchQuery.trim())}` : ""}`}
+                          onClick={() => setSearchOpen(false)}
+                          className="h-10 px-3 rounded-xl bg-sky-600 text-white text-xs font-semibold hover:bg-sky-700 inline-flex items-center"
+                        >
+                          Detaylı Ara
+                        </Link>
+                      </div>
+                    </div>
+
+                    <div className="max-h-[340px] overflow-y-auto">
+                      {searchLoading ? (
+                        <p className="p-4 text-sm text-slate-500">Aranıyor...</p>
+                      ) : searchQuery.trim().length < 2 ? (
+                        <p className="p-4 text-sm text-slate-500">Aramaya başlamak için en az 2 karakter girin.</p>
+                      ) : searchResults.length === 0 ? (
+                        <p className="p-4 text-sm text-slate-500">Sonuç bulunamadı.</p>
+                      ) : (
+                        searchResults.map((item) => (
+                          <Link
+                            key={item.id}
+                            href={item.href}
+                            onClick={() => setSearchOpen(false)}
+                            className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 hover:bg-sky-50"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-slate-800 truncate">{item.title}</p>
+                              <p className="text-xs text-slate-500 truncate">{item.subtitle || "Detaylar için tıklayın"}</p>
+                            </div>
+                            <span className="text-[10px] px-2 py-1 rounded-full bg-slate-100 text-slate-600 font-medium">
+                              {SEARCH_TYPE_LABELS[item.type]}
+                            </span>
+                          </Link>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {loading ? (
                 <div className="w-9 h-9 rounded-full bg-sky-100 animate-pulse" />
@@ -653,8 +773,12 @@ export default function Navbar() {
                   <div ref={notificationPanelRef} className="relative hidden sm:block">
                     <button
                       onClick={() => {
-                        setNotificationPanelOpen(!notificationPanelOpen);
+                        const nextState = !notificationPanelOpen;
+                        setNotificationPanelOpen(nextState);
                         setUserMenuOpen(false);
+                        if (nextState) {
+                          void refreshNotifications();
+                        }
                       }}
                       className="flex p-2.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-sky-50 transition-colors relative"
                       aria-label="Bildirim panelini aç"
@@ -677,7 +801,10 @@ export default function Navbar() {
                           </div>
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={markAllAsRead}
+                              onClick={() => {
+                              markAllAsRead();
+                              void refreshNotifications();
+                            }}
                               className="text-xs font-medium text-slate-500 hover:text-slate-900"
                             >
                               Tümünü okundu yap
@@ -707,6 +834,7 @@ export default function Navbar() {
                                 href={notification.actionUrl || "/notifications"}
                                 onClick={() => {
                                   markAsRead(notification.id);
+                                  void refreshNotifications();
                                   setNotificationPanelOpen(false);
                                 }}
                                 className={`flex items-start gap-3 px-4 py-3 border-b border-sky-100 hover:bg-sky-50 transition-colors ${
@@ -741,7 +869,13 @@ export default function Navbar() {
                   {/* Messages */}
                   <div ref={messagesRef} className="relative hidden sm:block">
                     <button
-                      onClick={() => setMessagesOpen((prev) => !prev)}
+                      onClick={() => {
+                      const nextState = !messagesOpen;
+                      setMessagesOpen(nextState);
+                      if (nextState) {
+                        void refreshMessagePreviews();
+                      }
+                    }}
                       className="flex p-2.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-sky-50 transition-colors relative"
                       aria-label="Mesajlar"
                     >
@@ -780,8 +914,25 @@ export default function Navbar() {
                             messagePreviews.slice(0, 8).map((conversation) => (
                               <button
                                 key={conversation.conversationId}
-                                onClick={() => {
+                                onClick={async () => {
                                   setMessagesOpen(false);
+                                  if (user && conversation.unreadCount > 0) {
+                                    setMessagePreviews((prev) =>
+                                      prev.map((item) =>
+                                        item.conversationId === conversation.conversationId
+                                          ? { ...item, unreadCount: 0 }
+                                          : item
+                                      )
+                                    );
+
+                                    try {
+                                      await markConversationMessagesAsRead(conversation.conversationId, user.id);
+                                    } catch (error) {
+                                      console.error("Mesajlar okundu işaretlenemedi:", error);
+                                    } finally {
+                                      void refreshMessagePreviews();
+                                    }
+                                  }
                                   router.push(`/messages?conversation=${conversation.conversationId}`);
                                 }}
                                 className="w-full px-4 py-3 flex items-start gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/70 transition-colors text-left border-b last:border-b-0 border-neutral-100 dark:border-neutral-800"

@@ -132,3 +132,16 @@ export async function getMessagePreviews(userId: string): Promise<MessagePreview
 
   return previews;
 }
+
+export async function markConversationMessagesAsRead(conversationId: string, userId: string) {
+  const { error } = await supabase
+    .from("messages")
+    .update({ read_at: new Date().toISOString() })
+    .eq("conversation_id", conversationId)
+    .neq("sender_id", userId)
+    .is("read_at", null);
+
+  if (error) {
+    throw error;
+  }
+}
