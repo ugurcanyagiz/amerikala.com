@@ -237,14 +237,28 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     font-family: var(--font-sans);
     background: radial-gradient(circle at top, #ecf6ff 0%, #f7fbff 35%, #ffffff 100%);
     color: var(--color-ink);
     line-height: var(--leading-normal);
     letter-spacing: var(--tracking-normal);
+  }
+
+  img,
+  video,
+  iframe,
+  canvas,
+  svg {
+    max-width: 100%;
   }
 
   /* Headings */

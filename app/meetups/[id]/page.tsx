@@ -855,7 +855,7 @@ export default function EventDetailPage() {
   const isPast = new Date(event.event_date) < new Date(new Date().toDateString());
 
   return (
-    <div className="ak-page">
+    <div className="ak-page overflow-x-hidden">
       {/* Cover Image */}
       <div className="relative h-64 sm:h-80 bg-gradient-to-br from-red-500 to-orange-500">
         {event.cover_image_url ? (
@@ -1302,7 +1302,7 @@ export default function EventDetailPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="flex-1"
+                    className="flex-1 min-w-0"
                     onClick={copyLink}
                   >
                     {copied ? "Kopyalandı!" : "Link Kopyala"}
