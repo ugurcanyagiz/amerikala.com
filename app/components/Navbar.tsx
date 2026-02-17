@@ -653,31 +653,6 @@ export default function Navbar() {
     return () => window.clearTimeout(timer);
   }, [searchOpen, searchQuery]);
 
-  useEffect(() => {
-    const normalizedQuery = searchQuery.trim();
-
-    if (!searchOpen || normalizedQuery.length < 2) {
-      setSearchResults([]);
-      setSearchLoading(false);
-      return;
-    }
-
-    const timer = window.setTimeout(async () => {
-      setSearchLoading(true);
-      try {
-        const results = await searchSiteContent(normalizedQuery, 4);
-        setSearchResults(results.slice(0, 8));
-      } catch (error) {
-        console.error("Navbar arama hatası:", error);
-        setSearchResults([]);
-      } finally {
-        setSearchLoading(false);
-      }
-    }, 250);
-
-    return () => window.clearTimeout(timer);
-  }, [searchOpen, searchQuery]);
-
   const handleSignOut = async () => {
     setUserMenuOpen(false);
     await signOut();
