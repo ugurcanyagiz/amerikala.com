@@ -35,7 +35,6 @@ type PublicProfile = {
   avatar_url: string | null;
   city: string | null;
   state: string | null;
-  profession: string | null;
   is_verified?: boolean | null;
 };
 
@@ -76,7 +75,7 @@ export default function PublicProfilePage() {
 
       const { data: byIdData, error: byIdError } = await supabase
         .from("profiles")
-        .select("id, username, full_name, first_name, last_name, bio, avatar_url, city, state, profession, is_verified")
+        .select("id, username, full_name, first_name, last_name, bio, avatar_url, city, state, is_verified")
         .eq("id", id)
         .single();
 
@@ -88,7 +87,7 @@ export default function PublicProfilePage() {
 
       const { data: byUsernameData, error: byUsernameError } = await supabase
         .from("profiles")
-        .select("id, username, full_name, first_name, last_name, bio, avatar_url, city, state, profession, is_verified")
+        .select("id, username, full_name, first_name, last_name, bio, avatar_url, city, state, is_verified")
         .eq("username", id)
         .single();
 
@@ -425,7 +424,7 @@ export default function PublicProfilePage() {
                 <p className="text-neutral-500">@{profile.username || "kullanici"}</p>
                 <div className="flex flex-wrap gap-4 mt-2 text-sm text-neutral-600 dark:text-neutral-400">
                   <span className="flex items-center gap-1"><MapPin size={14} />{[profile.city, profile.state].filter(Boolean).join(", ") || "Konum yok"}</span>
-                  <span className="flex items-center gap-1"><Briefcase size={14} />{profile.profession || "Meslek belirtilmedi"}</span>
+                  <span className="flex items-center gap-1"><Briefcase size={14} />Topluluk üyesi</span>
                 </div>
               </div>
             </div>
