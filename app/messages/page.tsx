@@ -309,7 +309,11 @@ export default function MessagesPage() {
         )
       );
 
-      await markConversationMessagesAsRead(conversationId, user.id);
+      try {
+        await markConversationMessagesAsRead(conversationId, user.id);
+      } catch (error) {
+        console.error("Mesajlar okundu işaretlenemedi:", error);
+      }
     },
     [user]
   );
@@ -381,6 +385,28 @@ export default function MessagesPage() {
     loadMessages(selectedConversationId);
   }, [selectedConversationId, loadMessages]);
 
+  const isConversationRelevant = useCallback(
+    async (conversationId: string) => {
+      if (!user) return false;
+      if (conversations.some((conversation) => conversation.id === conversationId)) return true;
+
+      const { data, error } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("conversation_id", conversationId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Konuşma üyeliği doğrulanamadı:", error);
+        return false;
+      }
+
+      return !!data;
+    },
+    [conversations, user]
+  );
+
   useEffect(() => {
     if (!user) return;
 
@@ -397,31 +423,36 @@ export default function MessagesPage() {
           const row = payload.new as MessageRow;
           if (!row?.conversation_id) return;
 
-          if (row.conversation_id === selectedConversationId) {
-            setMessages((prev) => {
-              if (prev.some((item) => item.id === row.id)) return prev;
-              const isMine = row.sender_id === user.id;
-              return [
-                ...prev,
-                {
-                  id: row.id,
-                  senderId: row.sender_id,
-                  senderName: isMine ? "Siz" : selectedConversation?.title || "Kullanıcı",
-                  senderAvatar: isMine ? null : selectedConversation?.avatarUrl || null,
-                  text: row.content,
-                  timestamp: formatClock(row.created_at),
-                  createdAtRaw: row.created_at,
-                  isRead: !!row.read_at,
-                },
-              ];
-            });
+          void (async () => {
+            const relevant = await isConversationRelevant(row.conversation_id);
+            if (!relevant) return;
 
-            if (row.sender_id !== user.id) {
-              void markConversationAsRead(row.conversation_id);
+            if (row.conversation_id === selectedConversationId) {
+              setMessages((prev) => {
+                if (prev.some((item) => item.id === row.id)) return prev;
+                const isMine = row.sender_id === user.id;
+                return [
+                  ...prev,
+                  {
+                    id: row.id,
+                    senderId: row.sender_id,
+                    senderName: isMine ? "Siz" : selectedConversation?.title || "Kullanıcı",
+                    senderAvatar: isMine ? null : selectedConversation?.avatarUrl || null,
+                    text: row.content,
+                    timestamp: formatClock(row.created_at),
+                    createdAtRaw: row.created_at,
+                    isRead: !!row.read_at,
+                  },
+                ];
+              });
+
+              if (row.sender_id !== user.id) {
+                await markConversationAsRead(row.conversation_id);
+              }
             }
-          }
 
-          void loadConversations();
+            await loadConversations();
+          })();
         }
       )
       .subscribe();
@@ -429,7 +460,7 @@ export default function MessagesPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, selectedConversationId, loadConversations, loadMessages, markConversationAsRead, selectedConversation]);
+  }, [user, selectedConversationId, loadConversations, markConversationAsRead, selectedConversation, isConversationRelevant]);
 
   const handleSelectConversation = (conversationId: string) => {
     setSelectedConversationId(conversationId);
