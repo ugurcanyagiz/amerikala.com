@@ -389,7 +389,7 @@ export default function MessagesPage() {
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "messages",
         },
@@ -397,7 +397,7 @@ export default function MessagesPage() {
           const row = payload.new as MessageRow;
           if (!row?.conversation_id) return;
 
-          if (payload.eventType === "INSERT" && row.conversation_id === selectedConversationId) {
+          if (row.conversation_id === selectedConversationId) {
             setMessages((prev) => {
               if (prev.some((item) => item.id === row.id)) return prev;
               const isMine = row.sender_id === user.id;
