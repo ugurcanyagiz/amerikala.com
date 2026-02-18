@@ -198,7 +198,6 @@ export interface Group {
   cover_image_url: string | null;
   is_private: boolean;
   requires_approval: boolean;
-  application_question: string | null;
   member_count: number;
   status: GroupStatus;
   rejection_reason: string | null;
