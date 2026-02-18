@@ -163,7 +163,7 @@ export default function AdminPage() {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "id, username, full_name, first_name, last_name, show_full_name, city, state, profession, bio, avatar_url, cover_image_url, website, role, is_verified, follower_count, following_count, created_at, updated_at"
+          "id, username, full_name, first_name, last_name, show_full_name, city, state, bio, avatar_url, cover_image_url, website, role, is_verified, follower_count, following_count, created_at, updated_at"
         )
         .order("created_at", { ascending: false });
 
@@ -171,6 +171,7 @@ export default function AdminPage() {
 
       const normalizedUsers = (data ?? []).map((item) => ({
         ...item,
+        profession: null,
         role: item.role === "admin" || item.role === "moderator" || item.role === "user" ? item.role : "user",
       })) as Profile[];
 
