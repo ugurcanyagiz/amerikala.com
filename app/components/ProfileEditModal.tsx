@@ -192,6 +192,25 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
     return blob;
   };
 
+  const buildAvatarPath = (fileName: string) => {
+    // Storage policy compatibility: (storage.foldername(name))[1] must be user id.
+    return `${profile.id}/avatars/${fileName}`;
+  };
+
+  const extractAvatarStoragePath = (publicUrl: string) => {
+    const marker = "/object/public/avatars/";
+    const markerIndex = publicUrl.indexOf(marker);
+    if (markerIndex === -1) return null;
+
+    const pathWithQuery = publicUrl.slice(markerIndex + marker.length);
+    return pathWithQuery.split("?")[0] || null;
+  };
+
+  const isLegacyAvatarPath = (path: string) => {
+    // Legacy format was: avatars/<profile-id>-<timestamp>.jpg
+    return path.startsWith("avatars/");
+  };
+
   // Handle avatar upload
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -215,8 +234,13 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
       const processedBlob = await processAvatarImage(file);
 
       // Create unique filename
-      const fileName = `${profile.id}-${Date.now()}.jpg`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `${Date.now()}.jpg`;
+      const filePath = buildAvatarPath(fileName);
+
+      // Guardrail for RLS policy: first folder must always be the authenticated user's id.
+      if (filePath.split("/")[0] !== profile.id) {
+        throw new Error("Avatar dosya yolu policy ile uyumlu değil.");
+      }
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
@@ -237,6 +261,19 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
       setAvatarUrl(publicUrl);
       setAvatarVersion(Date.now());
       setStatus({ type: "success", message: "Fotoğraf yüklendi!" });
+
+      // Backward compatibility strategy:
+      // - Legacy URLs (`avatars/<file>`) remain readable as-is.
+      // - On each new upload, profile now points to the new user-scoped path.
+      // - Existing records can be migrated in background by copying legacy objects
+      //   into `<user-id>/avatars/<file>` and then updating `profiles.avatar_url`.
+      const previousPath = avatarUrl ? extractAvatarStoragePath(avatarUrl) : null;
+      if (previousPath && isLegacyAvatarPath(previousPath)) {
+        console.info("Legacy avatar path detected. Migrate in background:", {
+          from: previousPath,
+          to: filePath,
+        });
+      }
     } catch (error: unknown) {
       console.error("Avatar upload error:", error);
       const message = error instanceof Error ? error.message : "Bilinmeyen hata";
