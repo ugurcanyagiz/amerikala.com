@@ -108,6 +108,10 @@ type JoinRequest = {
   answer: string | null;
   status: "pending" | "approved" | "rejected";
   created_at: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+  updated_at: string;
   user: GroupProfile | null;
 };
 
@@ -265,7 +269,7 @@ export default function GroupDetailPage() {
           if (role === "admin" || role === "moderator") {
             const { data: requestRows } = await supabase
               .from("group_join_requests")
-              .select("id, user_id, group_id, answer, status, created_at, user:user_id(id,username,full_name,avatar_url)")
+              .select("id, user_id, group_id, answer, status, created_at, reviewed_by, reviewed_at, rejection_reason, updated_at, user:user_id(id,username,full_name,avatar_url)")
               .eq("group_id", groupData.id)
               .eq("status", "pending")
               .order("created_at", { ascending: true });
