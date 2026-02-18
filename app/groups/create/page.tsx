@@ -177,8 +177,6 @@ export default function CreateGroupPage() {
           cover_image_url: coverImageUrl || null,
           is_private: isPrivate,
           requires_approval: isPrivate ? true : requiresApproval,
-          application_question: applicationQuestion.trim() || null,
-          visibility: isPrivate ? "private" : "public",
           created_by: user.id,
           status: "pending"
         })

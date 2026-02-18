@@ -189,6 +189,8 @@ export default function GroupDetailPage() {
     state: "",
   });
   const [creatingEvent, setCreatingEvent] = useState(false);
+  const [applicationQuestionDraft, setApplicationQuestionDraft] = useState("");
+  const [applicationQuestionPreview, setApplicationQuestionPreview] = useState("");
 
   const [groupForm, setGroupForm] = useState({
     name: "",
@@ -197,7 +199,6 @@ export default function GroupDetailPage() {
     state: "",
     is_private: false,
     requires_approval: false,
-    application_question: "",
   });
 
   const isApprovedMember = membershipStatus === "approved";
@@ -216,6 +217,11 @@ export default function GroupDetailPage() {
         .single();
 
       if (groupError) throw groupError;
+      const questionFromDb =
+        "application_question" in groupData && typeof groupData.application_question === "string"
+          ? groupData.application_question
+          : "";
+
       setGroup(groupData);
       setGroupForm({
         name: groupData.name,
@@ -224,8 +230,9 @@ export default function GroupDetailPage() {
         state: groupData.state || "",
         is_private: groupData.is_private,
         requires_approval: groupData.requires_approval,
-        application_question: groupData.application_question || "",
       });
+      setApplicationQuestionDraft(questionFromDb);
+      setApplicationQuestionPreview(questionFromDb);
 
       const [{ data: memberRows }, { data: postRows }, { data: eventRows }] = await Promise.all([
         supabase
@@ -317,8 +324,8 @@ export default function GroupDetailPage() {
       const needsApproval = group.requires_approval || group.is_private;
       let answer: string | null = null;
 
-      if (needsApproval && group.application_question) {
-        const response = window.prompt(group.application_question, "");
+      if (needsApproval && applicationQuestionPreview) {
+        const response = window.prompt(applicationQuestionPreview, "");
         if (response === null) return;
         answer = response.trim();
       }
@@ -470,12 +477,11 @@ export default function GroupDetailPage() {
           state: groupForm.state.trim() || null,
           is_private: groupForm.is_private,
           requires_approval: groupForm.is_private ? true : groupForm.requires_approval,
-          application_question: groupForm.application_question.trim() || null,
-          visibility: groupForm.is_private ? "private" : "public",
         })
         .eq("id", group.id);
 
       if (error) throw error;
+      setApplicationQuestionPreview(applicationQuestionDraft.trim());
       await fetchGroup();
     } catch (error) {
       console.error("save group settings error", error);
@@ -852,10 +858,10 @@ export default function GroupDetailPage() {
                   <CardHeader><CardTitle>Grup Hakkında</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
                     <p className="whitespace-pre-wrap text-sm">{group.description}</p>
-                    {group.application_question && (
+                    {applicationQuestionPreview && (
                       <div className="rounded-lg bg-neutral-100 dark:bg-neutral-800 p-3 text-sm">
                         <p className="font-medium mb-1">Katılım Sorusu</p>
-                        <p>{group.application_question}</p>
+                        <p>{applicationQuestionPreview}</p>
                       </div>
                     )}
                   </CardContent>
@@ -928,12 +934,15 @@ export default function GroupDetailPage() {
                         </div>
 
                         <textarea
-                          value={groupForm.application_question}
-                          onChange={(e) => setGroupForm((prev) => ({ ...prev, application_question: e.target.value }))}
+                          value={applicationQuestionDraft}
+                          onChange={(e) => setApplicationQuestionDraft(e.target.value)}
                           className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2"
                           rows={2}
                           placeholder="Opsiyonel başvuru sorusu"
                         />
+                        <p className="text-xs text-neutral-500">
+                          Bu alan şu an sadece yerel olarak saklanır; mevcut veritabanı şemasına yazılmaz.
+                        </p>
 
                         <Button type="submit" disabled={savingGroup} className="gap-2">
                           {savingGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save size={15} />} Değişiklikleri Kaydet
