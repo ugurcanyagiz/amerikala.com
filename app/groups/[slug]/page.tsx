@@ -234,7 +234,7 @@ export default function GroupDetailPage() {
       setApplicationQuestionDraft(questionFromDb);
       setApplicationQuestionPreview(questionFromDb);
 
-      const [{ data: memberRows }, { data: postRows }, { data: eventRows }] = await Promise.all([
+      const [membersRes, postsRes, eventsRes] = await Promise.all([
         supabase
           .from("group_members")
           .select("*, profile:user_id(id,username,full_name,avatar_url)")
@@ -254,6 +254,14 @@ export default function GroupDetailPage() {
           .order("event_date", { ascending: true })
           .limit(20),
       ]);
+
+      if (membersRes.error) throw membersRes.error;
+      if (postsRes.error) throw postsRes.error;
+      if (eventsRes.error) throw eventsRes.error;
+
+      const memberRows = membersRes.data;
+      const postRows = postsRes.data;
+      const eventRows = eventsRes.data;
 
       const normalizedMembers = ((memberRows || []) as GroupMemberRow[]).map(normalizeGroupMember);
       setMembers(normalizedMembers);
