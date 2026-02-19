@@ -148,9 +148,9 @@ export default function AlisverisPage() {
 
   return (
     <div className="ak-page pb-20 md:pb-0">
-      <section className="relative py-10 bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950/20">
+      <section className="relative py-8 md:py-10 bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950/20">
         <div className="ak-shell">
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">Alışveriş</h1>
@@ -166,7 +166,7 @@ export default function AlisverisPage() {
               </Link>
             </div>
 
-            <div className="hidden md:grid md:grid-cols-[1fr_220px_220px] gap-3">
+            <div className="hidden md:grid md:grid-cols-[1fr_220px_220px] gap-3 mt-1">
               <Input
                 placeholder="Ürün veya hizmet ara..."
                 value={searchQuery}
@@ -195,7 +195,7 @@ export default function AlisverisPage() {
               />
             </div>
 
-            <div className="md:hidden flex gap-2">
+            <div className="md:hidden flex gap-2 mt-1">
               <div className="flex-1">
                 <Input
                   placeholder="Ürün veya hizmet ara..."
@@ -219,7 +219,7 @@ export default function AlisverisPage() {
               </Button>
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="flex gap-2 overflow-x-auto pt-1 pb-1">
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat.value}
