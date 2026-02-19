@@ -109,7 +109,7 @@ export default function AlisverisPage() {
     setPage(searchParams.get("page") || "1");
   }, [searchParams]);
 
-  const syncUrl = (next: {
+  const syncUrl = useCallback((next: {
     q?: string;
     category?: string;
     state?: string;
@@ -142,8 +142,27 @@ export default function AlisverisPage() {
     });
 
     const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  };
+    const nextUrl = query ? `${pathname}?${query}` : pathname;
+    const currentQuery = searchParams.toString();
+    const currentUrl = currentQuery ? `${pathname}?${currentQuery}` : pathname;
+
+    if (nextUrl !== currentUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [
+    pathname,
+    router,
+    searchParams,
+    searchQuery,
+    selectedCategory,
+    selectedState,
+    selectedCity,
+    minPrice,
+    maxPrice,
+    selectedCondition,
+    sortBy,
+    page,
+  ]);
 
   const buildFilterState = (): FilterState => ({
     q: searchQuery,
@@ -186,6 +205,14 @@ export default function AlisverisPage() {
     sort: "newest",
     page: "1",
   });
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      syncUrl({ q: searchQuery, page });
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [page, searchQuery, syncUrl]);
 
   const fetchListings = useCallback(async () => {
     setLoading(true);
@@ -281,7 +308,8 @@ export default function AlisverisPage() {
                   value={searchQuery}
                   onChange={(e) => {
                     const value = e.target.value;
-                    applyFilters({ ...buildFilterState(), q: value, page: "1" });
+                    setSearchQuery(value);
+                    setPage("1");
                   }}
                   icon={<Search size={18} />}
                 />
@@ -292,6 +320,56 @@ export default function AlisverisPage() {
                   value={selectedState}
                   onChange={(e) => {
                     applyFilters({ ...buildFilterState(), state: e.target.value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-2">
+                <Input
+                  placeholder="Şehir"
+                  value={selectedCity}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    applyFilters({ ...buildFilterState(), city: value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-2">
+                <Select
+                  options={CONDITION_OPTIONS}
+                  value={selectedCondition}
+                  onChange={(e) => {
+                    applyFilters({ ...buildFilterState(), condition: e.target.value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-1">
+                <Input
+                  type="number"
+                  placeholder="Min $"
+                  value={minPrice}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    applyFilters({ ...buildFilterState(), minPrice: value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-1">
+                <Input
+                  type="number"
+                  placeholder="Max $"
+                  value={maxPrice}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    applyFilters({ ...buildFilterState(), maxPrice: value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-1">
+                <Select
+                  options={SORT_OPTIONS}
+                  value={sortBy}
+                  onChange={(e) => {
+                    applyFilters({ ...buildFilterState(), sort: e.target.value, page: "1" });
                   }}
                 />
               </div>
@@ -394,7 +472,8 @@ export default function AlisverisPage() {
                   value={searchQuery}
                   onChange={(e) => {
                     const value = e.target.value;
-                    applyFilters({ ...buildFilterState(), q: value, page: "1" });
+                    setSearchQuery(value);
+                    setPage("1");
                   }}
                   icon={<Search size={18} />}
                 />
