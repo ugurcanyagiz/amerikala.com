@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "../contexts/AuthContext";
 import {
   MarketplaceListing,
   MarketplaceCategory,
-  MarketplaceCondition,
   MARKETPLACE_CATEGORY_LABELS,
-  MARKETPLACE_CATEGORY_ICONS,
   MARKETPLACE_CONDITION_LABELS,
   US_STATES_MAP
 } from "@/lib/types";
@@ -19,30 +19,23 @@ import { Badge } from "../components/ui/Badge";
 import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
 import {
-  ShoppingBag,
   Search,
   MapPin,
-  Heart,
-  Grid,
-  List,
   Plus,
   Package,
-  MessageCircle,
   Loader2,
-  Phone,
-  Mail,
+  Filter,
+  X,
 } from "lucide-react";
 
-type ViewMode = "grid" | "list";
-
-const CATEGORIES: { value: MarketplaceCategory | "all"; label: string; emoji: string }[] = [
-  { value: "all", label: "Tümü", emoji: "🛒" },
-  { value: "araba", label: "Araba", emoji: "🚗" },
-  { value: "elektronik", label: "Elektronik", emoji: "💻" },
-  { value: "giyim", label: "Giyim", emoji: "👕" },
-  { value: "mobilya", label: "Mobilya", emoji: "🛋️" },
-  { value: "hizmet", label: "Hizmet", emoji: "🔧" },
-  { value: "diger", label: "Diğer", emoji: "📦" },
+const CATEGORIES: { value: MarketplaceCategory | "all"; label: string }[] = [
+  { value: "all", label: "Tümü" },
+  { value: "araba", label: "Araba" },
+  { value: "elektronik", label: "Elektronik" },
+  { value: "giyim", label: "Giyim" },
+  { value: "mobilya", label: "Mobilya" },
+  { value: "hizmet", label: "Hizmet" },
+  { value: "diger", label: "Diğer" },
 ];
 
 const STATE_OPTIONS = [
@@ -64,25 +57,57 @@ const CONDITION_OPTIONS = [
 
 export default function AlisverisPage() {
   const { user } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<MarketplaceCategory | "all">("all");
-  const [selectedState, setSelectedState] = useState("all");
-  const [selectedCondition, setSelectedCondition] = useState("all");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [stats, setStats] = useState({ total: 0, sellers: 0 });
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [selectedCategory, setSelectedCategory] = useState<MarketplaceCategory | "all">((searchParams.get("category") as MarketplaceCategory) || "all");
+  const [selectedState, setSelectedState] = useState(searchParams.get("state") || "all");
+  const [selectedCondition, setSelectedCondition] = useState(searchParams.get("condition") || "all");
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
-    fetchListings();
-  }, [selectedCategory, selectedState, selectedCondition]);
+    const q = searchParams.get("q") || "";
+    const category = (searchParams.get("category") as MarketplaceCategory) || "all";
+    const state = searchParams.get("state") || "all";
+    const condition = searchParams.get("condition") || "all";
 
-  const fetchListings = async () => {
+    setSearchQuery(q);
+    setSelectedCategory(category);
+    setSelectedState(state);
+    setSelectedCondition(condition);
+  }, [searchParams]);
+
+  const syncUrl = (next: { q?: string; category?: string; state?: string; condition?: string }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const data = {
+      q: next.q ?? searchQuery,
+      category: next.category ?? selectedCategory,
+      state: next.state ?? selectedState,
+      condition: next.condition ?? selectedCondition,
+    };
+
+    Object.entries(data).forEach(([key, value]) => {
+      if (!value || value === "all") {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    });
+
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
+
+  const fetchListings = useCallback(async () => {
     setLoading(true);
     try {
       let query = supabase
         .from("marketplace_listings")
-        .select("*, user:user_id (id, username, full_name, avatar_url)", { count: "exact" })
+        .select("*, user:user_id (id, username, full_name, avatar_url)")
         .eq("status", "approved")
         .order("created_at", { ascending: false });
 
@@ -96,141 +121,126 @@ export default function AlisverisPage() {
         query = query.eq("condition", selectedCondition);
       }
 
-      const { data, count, error } = await query;
+      const { data, error } = await query;
       if (error) throw error;
 
       setListings(data || []);
-      const uniqueSellers = new Set(data?.map(l => l.user_id) || []);
-      setStats({ total: count || 0, sellers: uniqueSellers.size });
     } catch (error) {
       console.error("Error fetching listings:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCategory, selectedCondition, selectedState]);
 
-  const filteredListings = listings.filter(listing => {
-    if (!searchQuery) return true;
+  useEffect(() => {
+    fetchListings();
+  }, [fetchListings]);
+
+  const filteredListings = useMemo(() => {
+    if (!searchQuery) return listings;
     const query = searchQuery.toLowerCase();
-    return (
-      listing.title.toLowerCase().includes(query) ||
-      listing.description?.toLowerCase().includes(query) ||
-      listing.city.toLowerCase().includes(query)
-    );
-  });
+    return listings.filter((listing) => (
+      listing.title.toLowerCase().includes(query)
+      || listing.description?.toLowerCase().includes(query)
+      || listing.city.toLowerCase().includes(query)
+    ));
+  }, [listings, searchQuery]);
 
   return (
     <div className="ak-page pb-20 md:pb-0">
-      {/* Hero Section */}
-      <section className="relative py-12 lg:py-16 bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950/20">
+      <section className="relative py-8 md:py-10 bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950/20">
         <div className="ak-shell">
-          <div className="text-center max-w-2xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 text-sm font-medium mb-4">
-              <ShoppingBag size={16} />
-              Alım-Satım Platformu
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Alışveriş
-            </h1>
-            <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-              Amerika'daki Türk topluluğundan güvenilir alım-satım.
-            </p>
-
-            <Link href={user ? "/alisveris/ilan-ver" : "/login?redirect=/alisveris/ilan-ver"}>
-              <Button variant="primary" size="lg" className="gap-2 bg-orange-500 hover:bg-orange-600">
-                <Plus size={20} />
-                İlan Ver
-              </Button>
-            </Link>
-
-            {/* Stats */}
-            <div className="flex items-center justify-center gap-8 mt-8">
-              <div className="text-center">
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <div className="text-sm text-neutral-500">Aktif İlan</div>
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">Alışveriş</h1>
+                <p className="text-neutral-600 dark:text-neutral-400 mt-2">
+                  Amerika&apos;daki Türk topluluğundan güvenilir alım-satım.
+                </p>
               </div>
-              <div className="w-px h-8 bg-neutral-200 dark:bg-neutral-800" />
-              <div className="text-center">
-                <div className="text-2xl font-bold">{stats.sellers}</div>
-                <div className="text-sm text-neutral-500">Satıcı</div>
-              </div>
+              <Link href={user ? "/alisveris/ilan-ver" : "/login?redirect=/alisveris/ilan-ver"}>
+                <Button variant="primary" size="lg" className="gap-2 bg-orange-500 hover:bg-orange-600 w-full md:w-auto">
+                  <Plus size={20} />
+                  İlan Ver
+                </Button>
+              </Link>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Category Pills */}
-      <section className="ak-shell py-6">
-        <div className="flex flex-wrap justify-center gap-2">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.value}
-              onClick={() => setSelectedCategory(cat.value)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                selectedCategory === cat.value
-                  ? "bg-orange-500 text-white"
-                  : "bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-800"
-              }`}
-            >
-              <span className="mr-1.5">{cat.emoji}</span>
-              {cat.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Filters */}
-      <section className="sticky top-16 z-40 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-xl border-b border-neutral-200 dark:border-neutral-800">
-        <div className="ak-shell py-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
+            <div className="hidden md:grid md:grid-cols-[1fr_220px_220px] gap-3 mt-1">
               <Input
                 placeholder="Ürün veya hizmet ara..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSearchQuery(value);
+                  syncUrl({ q: value });
+                }}
                 icon={<Search size={18} />}
+              />
+              <Select
+                options={STATE_OPTIONS}
+                value={selectedState}
+                onChange={(e) => {
+                  setSelectedState(e.target.value);
+                  syncUrl({ state: e.target.value });
+                }}
+              />
+              <Select
+                options={CONDITION_OPTIONS}
+                value={selectedCondition}
+                onChange={(e) => {
+                  setSelectedCondition(e.target.value);
+                  syncUrl({ condition: e.target.value });
+                }}
               />
             </div>
 
-            <Select
-              options={STATE_OPTIONS}
-              value={selectedState}
-              onChange={(e) => setSelectedState(e.target.value)}
-            />
-
-            <Select
-              options={CONDITION_OPTIONS}
-              value={selectedCondition}
-              onChange={(e) => setSelectedCondition(e.target.value)}
-            />
-
-            <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-xl p-1">
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`p-2 rounded-lg transition-all ${
-                  viewMode === "grid"
-                    ? "bg-white dark:bg-neutral-700 shadow-sm"
-                    : "text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
-                }`}
+            <div className="md:hidden flex gap-2 mt-1">
+              <div className="flex-1">
+                <Input
+                  placeholder="Ürün veya hizmet ara..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSearchQuery(value);
+                    syncUrl({ q: value });
+                  }}
+                  icon={<Search size={18} />}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                className="px-4"
+                onClick={() => setIsMobileFiltersOpen(true)}
               >
-                <Grid size={20} />
-              </button>
-              <button
-                onClick={() => setViewMode("list")}
-                className={`p-2 rounded-lg transition-all ${
-                  viewMode === "list"
-                    ? "bg-white dark:bg-neutral-700 shadow-sm"
-                    : "text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
-                }`}
-              >
-                <List size={20} />
-              </button>
+                <Filter size={18} className="mr-2" />
+                Filters
+              </Button>
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto pt-1 pb-1">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.value}
+                  onClick={() => {
+                    setSelectedCategory(cat.value);
+                    syncUrl({ category: cat.value });
+                  }}
+                  className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
+                    selectedCategory === cat.value
+                      ? "bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-900 dark:border-white"
+                      : "bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Listings */}
       <section className="ak-shell py-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">
@@ -248,103 +258,98 @@ export default function AlisverisPage() {
             <CardContent className="p-12 text-center">
               <Package className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">Henüz ilan yok</h3>
-              <p className="text-neutral-500 mb-6">Bu kategoride henüz ilan bulunmuyor.</p>
-              <Link href={user ? "/alisveris/ilan-ver" : "/login?redirect=/alisveris/ilan-ver"}>
-                <Button variant="primary" className="gap-2 bg-orange-500 hover:bg-orange-600">
-                  <Plus size={18} />
-                  İlan Ver
-                </Button>
-              </Link>
+              <p className="text-neutral-500 mb-6">Bu filtrelerde ilan bulunamadı.</p>
             </CardContent>
           </Card>
         ) : (
-          <div className={viewMode === "grid" ? "grid md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {filteredListings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} viewMode={viewMode} />
+              <ListingCard key={listing.id} listing={listing} />
             ))}
           </div>
         )}
       </section>
+
+      {isMobileFiltersOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <button
+            type="button"
+            aria-label="Kapat"
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setIsMobileFiltersOpen(false)}
+          />
+          <div className="absolute bottom-0 left-0 right-0 rounded-t-2xl bg-white dark:bg-neutral-950 p-5 border-t border-neutral-200 dark:border-neutral-800">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold">Filtreler</h3>
+              <button type="button" onClick={() => setIsMobileFiltersOpen(false)} className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <Select
+                options={STATE_OPTIONS}
+                value={selectedState}
+                onChange={(e) => {
+                  setSelectedState(e.target.value);
+                  syncUrl({ state: e.target.value });
+                }}
+              />
+              <Select
+                options={CONDITION_OPTIONS}
+                value={selectedCondition}
+                onChange={(e) => {
+                  setSelectedCondition(e.target.value);
+                  syncUrl({ condition: e.target.value });
+                }}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  setSelectedState("all");
+                  setSelectedCondition("all");
+                  syncUrl({ state: "all", condition: "all" });
+                }}
+              >
+                Filtreleri Temizle
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function ListingCard({ listing, viewMode }: { listing: MarketplaceListing; viewMode: ViewMode }) {
-  const [liked, setLiked] = useState(false);
-  const categoryEmoji = MARKETPLACE_CATEGORY_ICONS[listing.category] || "📦";
+function ListingCard({ listing }: { listing: MarketplaceListing }) {
   const conditionLabel = MARKETPLACE_CONDITION_LABELS[listing.condition] || listing.condition;
-
-  if (viewMode === "list") {
-    return (
-      <Card className="hover:shadow-lg transition-shadow">
-        <CardContent className="p-4">
-          <div className="flex gap-4">
-            <div className="w-32 h-32 flex-shrink-0 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-              {listing.images && listing.images.length > 0 ? (
-                <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-4xl">{categoryEmoji}</span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xl font-bold text-orange-500">${listing.price.toLocaleString()}</p>
-                  <h3 className="font-semibold truncate mt-1">{listing.title}</h3>
-                </div>
-                <button onClick={() => setLiked(!liked)} className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800">
-                  <Heart size={20} className={liked ? "fill-red-500 text-red-500" : "text-neutral-400"} />
-                </button>
-              </div>
-              <div className="flex items-center gap-1 text-sm text-neutral-500 mt-2">
-                <MapPin size={14} />
-                {listing.city}, {US_STATES_MAP[listing.state] || listing.state}
-              </div>
-              <p className="text-sm text-neutral-500 mt-2 line-clamp-2">{listing.description}</p>
-              <div className="flex items-center gap-2 mt-3">
-                <Badge variant="outline" size="sm">{conditionLabel}</Badge>
-                <Badge variant="outline" size="sm">{MARKETPLACE_CATEGORY_LABELS[listing.category]}</Badge>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Link href={`/alisveris/ilan/${listing.id}`}>
-      <Card className="hover:shadow-lg transition-all group overflow-hidden cursor-pointer">
-        <div className="relative h-44 overflow-hidden bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+      <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden cursor-pointer">
+        <div className="relative h-44 overflow-hidden bg-neutral-100 dark:bg-neutral-800">
           {listing.images && listing.images.length > 0 ? (
-            <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            <Image src={listing.images[0]} alt={listing.title} fill className="object-cover" sizes="(max-width: 767px) 100vw, 33vw" />
           ) : (
-            <span className="text-5xl">{categoryEmoji}</span>
+            <div className="w-full h-full flex flex-col items-center justify-center text-neutral-500">
+              <Package size={30} />
+              <span className="text-xs mt-2">Görsel yok</span>
+            </div>
           )}
-          <button
-            onClick={(e) => { e.preventDefault(); setLiked(!liked); }}
-            className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/90 dark:bg-neutral-800/90 flex items-center justify-center shadow-sm"
-          >
-            <Heart size={16} className={liked ? "fill-red-500 text-red-500" : "text-neutral-500"} />
-          </button>
-          <Badge variant="default" size="sm" className="absolute top-3 left-3 bg-white/90 dark:bg-neutral-800/90">
-            {conditionLabel}
-          </Badge>
         </div>
         <CardContent className="p-4">
-          <p className="text-lg font-bold text-orange-500">${listing.price.toLocaleString()}</p>
-          <h3 className="font-semibold truncate mt-1">{listing.title}</h3>
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-lg font-bold text-orange-500">${listing.price.toLocaleString()}</p>
+            <Badge variant="outline" size="sm">{conditionLabel}</Badge>
+          </div>
+          <h3 className="font-semibold mt-1 line-clamp-2 min-h-[3rem]">{listing.title}</h3>
           <div className="flex items-center gap-1 text-sm text-neutral-500 mt-2">
             <MapPin size={12} />
             {listing.city}, {US_STATES_MAP[listing.state] || listing.state}
           </div>
-          <div className="flex items-center justify-between mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+          <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
             <Badge variant="outline" size="sm">{MARKETPLACE_CATEGORY_LABELS[listing.category]}</Badge>
-            {listing.contact_phone ? (
-              <Phone size={16} className="text-neutral-400" />
-            ) : (
-              <MessageCircle size={16} className="text-neutral-400" />
-            )}
           </div>
         </CardContent>
       </Card>
