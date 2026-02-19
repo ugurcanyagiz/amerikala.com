@@ -61,6 +61,20 @@ const SORT_OPTIONS = [
   { value: "price_desc", label: "Fiyat: Yüksekten Düşüğe" },
 ];
 
+const CATEGORY_OPTIONS = CATEGORIES.map((cat) => ({ value: cat.value, label: cat.label }));
+
+type FilterState = {
+  q: string;
+  category: MarketplaceCategory | "all";
+  state: string;
+  city: string;
+  minPrice: string;
+  maxPrice: string;
+  condition: string;
+  sort: string;
+  page: string;
+};
+
 export default function AlisverisPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -81,6 +95,7 @@ export default function AlisverisPage() {
   const [page, setPage] = useState(searchParams.get("page") || "1");
 
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [mobileDraft, setMobileDraft] = useState<FilterState | null>(null);
 
   useEffect(() => {
     setSearchQuery(searchParams.get("q") || "");
@@ -129,6 +144,48 @@ export default function AlisverisPage() {
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
+
+  const buildFilterState = (): FilterState => ({
+    q: searchQuery,
+    category: selectedCategory,
+    state: selectedState,
+    city: selectedCity,
+    minPrice,
+    maxPrice,
+    condition: selectedCondition,
+    sort: sortBy,
+    page,
+  });
+
+  const applyFilters = (next: FilterState, closeSheet = false) => {
+    setSearchQuery(next.q);
+    setSelectedCategory(next.category);
+    setSelectedState(next.state);
+    setSelectedCity(next.city);
+    setMinPrice(next.minPrice);
+    setMaxPrice(next.maxPrice);
+    setSelectedCondition(next.condition);
+    setSortBy(next.sort);
+    setPage(next.page);
+    syncUrl(next);
+
+    if (closeSheet) {
+      setIsMobileFiltersOpen(false);
+      setMobileDraft(null);
+    }
+  };
+
+  const resetFilters = (): FilterState => ({
+    q: "",
+    category: "all",
+    state: "all",
+    city: "",
+    minPrice: "",
+    maxPrice: "",
+    condition: "all",
+    sort: "newest",
+    page: "1",
+  });
 
   const fetchListings = useCallback(async () => {
     setLoading(true);
@@ -224,8 +281,7 @@ export default function AlisverisPage() {
                   value={searchQuery}
                   onChange={(e) => {
                     const value = e.target.value;
-                    setSearchQuery(value);
-                    syncUrl({ q: value, page: "1" });
+                    applyFilters({ ...buildFilterState(), q: value, page: "1" });
                   }}
                   icon={<Search size={18} />}
                 />
@@ -235,8 +291,7 @@ export default function AlisverisPage() {
                   options={STATE_OPTIONS}
                   value={selectedState}
                   onChange={(e) => {
-                    setSelectedState(e.target.value);
-                    syncUrl({ state: e.target.value, page: "1" });
+                    applyFilters({ ...buildFilterState(), state: e.target.value, page: "1" });
                   }}
                 />
               </div>
@@ -246,8 +301,7 @@ export default function AlisverisPage() {
                   value={selectedCity}
                   onChange={(e) => {
                     const value = e.target.value;
-                    setSelectedCity(value);
-                    syncUrl({ city: value, page: "1" });
+                    applyFilters({ ...buildFilterState(), city: value, page: "1" });
                   }}
                 />
               </div>
@@ -256,8 +310,38 @@ export default function AlisverisPage() {
                   options={CONDITION_OPTIONS}
                   value={selectedCondition}
                   onChange={(e) => {
-                    setSelectedCondition(e.target.value);
-                    syncUrl({ condition: e.target.value, page: "1" });
+                    applyFilters({ ...buildFilterState(), condition: e.target.value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-1">
+                <Input
+                  type="number"
+                  placeholder="Min $"
+                  value={minPrice}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    applyFilters({ ...buildFilterState(), minPrice: value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-1">
+                <Input
+                  type="number"
+                  placeholder="Max $"
+                  value={maxPrice}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    applyFilters({ ...buildFilterState(), maxPrice: value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-1">
+                <Select
+                  options={SORT_OPTIONS}
+                  value={sortBy}
+                  onChange={(e) => {
+                    applyFilters({ ...buildFilterState(), sort: e.target.value, page: "1" });
                   }}
                 />
               </div>
@@ -310,8 +394,7 @@ export default function AlisverisPage() {
                   value={searchQuery}
                   onChange={(e) => {
                     const value = e.target.value;
-                    setSearchQuery(value);
-                    syncUrl({ q: value, page: "1" });
+                    applyFilters({ ...buildFilterState(), q: value, page: "1" });
                   }}
                   icon={<Search size={18} />}
                 />
@@ -320,20 +403,22 @@ export default function AlisverisPage() {
                 type="button"
                 variant="secondary"
                 className="px-4"
-                onClick={() => setIsMobileFiltersOpen(true)}
+                onClick={() => {
+                  setMobileDraft(buildFilterState());
+                  setIsMobileFiltersOpen(true);
+                }}
               >
                 <Filter size={18} className="mr-2" />
                 Filters
               </Button>
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pt-1 pb-1">
+            <div className="hidden md:flex gap-2 overflow-x-auto pt-1 pb-1">
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat.value}
                   onClick={() => {
-                    setSelectedCategory(cat.value);
-                    syncUrl({ category: cat.value, page: "1" });
+                    applyFilters({ ...buildFilterState(), category: cat.value, page: "1" });
                   }}
                   className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
                     selectedCategory === cat.value
@@ -378,68 +463,91 @@ export default function AlisverisPage() {
         )}
       </section>
 
-      {isMobileFiltersOpen && (
+      {isMobileFiltersOpen && mobileDraft && (
         <div className="fixed inset-0 z-50 md:hidden">
           <button
             type="button"
             aria-label="Kapat"
             className="absolute inset-0 bg-black/40"
-            onClick={() => setIsMobileFiltersOpen(false)}
+            onClick={() => {
+              setIsMobileFiltersOpen(false);
+              setMobileDraft(null);
+            }}
           />
           <div className="absolute bottom-0 left-0 right-0 rounded-t-2xl bg-white dark:bg-neutral-950 p-5 border-t border-neutral-200 dark:border-neutral-800">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">Filtreler</h3>
-              <button type="button" onClick={() => setIsMobileFiltersOpen(false)} className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileFiltersOpen(false);
+                  setMobileDraft(null);
+                }}
+                className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              >
                 <X size={18} />
               </button>
             </div>
             <div className="space-y-3">
               <Select
+                options={CATEGORY_OPTIONS}
+                value={mobileDraft.category}
+                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, category: e.target.value as MarketplaceCategory | "all", page: "1" } : prev)}
+              />
+              <Select
                 options={STATE_OPTIONS}
-                value={selectedState}
-                onChange={(e) => {
-                  setSelectedState(e.target.value);
-                  syncUrl({ state: e.target.value, page: "1" });
-                }}
+                value={mobileDraft.state}
+                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, state: e.target.value, page: "1" } : prev)}
               />
               <Input
                 placeholder="Şehir"
-                value={selectedCity}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setSelectedCity(value);
-                  syncUrl({ city: value, page: "1" });
-                }}
-              />
-              <Select
-                options={CONDITION_OPTIONS}
-                value={selectedCondition}
-                onChange={(e) => {
-                  setSelectedCondition(e.target.value);
-                  syncUrl({ condition: e.target.value, page: "1" });
-                }}
+                value={mobileDraft.city}
+                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, city: e.target.value, page: "1" } : prev)}
               />
               <div className="grid grid-cols-2 gap-2">
                 <Input
                   type="number"
                   placeholder="Min $"
-                  value={minPrice}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setMinPrice(value);
-                    syncUrl({ minPrice: value, page: "1" });
-                  }}
+                  value={mobileDraft.minPrice}
+                  onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, minPrice: e.target.value, page: "1" } : prev)}
                 />
                 <Input
                   type="number"
                   placeholder="Max $"
-                  value={maxPrice}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setMaxPrice(value);
-                    syncUrl({ maxPrice: value, page: "1" });
-                  }}
+                  value={mobileDraft.maxPrice}
+                  onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, maxPrice: e.target.value, page: "1" } : prev)}
                 />
+              </div>
+              <Select
+                options={CONDITION_OPTIONS}
+                value={mobileDraft.condition}
+                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, condition: e.target.value, page: "1" } : prev)}
+              />
+              <Select
+                options={SORT_OPTIONS}
+                value={mobileDraft.sort}
+                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, sort: e.target.value, page: "1" } : prev)}
+              />
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    const cleared = resetFilters();
+                    setMobileDraft(cleared);
+                    applyFilters(cleared, true);
+                  }}
+                >
+                  Temizle
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="bg-orange-500 hover:bg-orange-600"
+                  onClick={() => applyFilters({ ...mobileDraft, q: searchQuery }, true)}
+                >
+                  Uygula
+                </Button>
               </div>
               <Select
                 options={SORT_OPTIONS}
