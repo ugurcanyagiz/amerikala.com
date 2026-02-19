@@ -33,6 +33,7 @@ export default function MeetupsPage() {
 
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [city, setCity] = useState("");
@@ -141,8 +142,9 @@ export default function MeetupsPage() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setErrorMessage(null);
+
       try {
-        // Fetch upcoming events
         const eventSelectWithFk = `
             *,
             organizer:profiles!events_organizer_id_fkey (id, username, first_name, last_name, full_name, avatar_url)
@@ -152,35 +154,63 @@ export default function MeetupsPage() {
             organizer:organizer_id (id, username, first_name, last_name, full_name, avatar_url)
           `;
 
-        const eventResultWithFk = await supabase
-          .from("events")
-          .select(eventSelectWithFk)
-          .eq("status", "approved")
-          .gte("event_date", new Date().toISOString().split("T")[0])
-          .order("event_date", { ascending: true })
-          .limit(4);
+        const buildEventQuery = (selectClause: string) => {
+          let filteredQuery = supabase
+            .from("events")
+            .select(selectClause)
+            .eq("status", "approved");
+
+          if (city) {
+            filteredQuery = filteredQuery.ilike("city", `%${city}%`);
+          }
+
+          if (fromDate) {
+            filteredQuery = filteredQuery.gte("event_date", fromDate);
+          } else {
+            filteredQuery = filteredQuery.gte("event_date", new Date().toISOString().split("T")[0]);
+          }
+
+          if (toDate) {
+            filteredQuery = filteredQuery.lte("event_date", toDate);
+          }
+
+          if (search.trim()) {
+            filteredQuery = filteredQuery.ilike("title", `%${search.trim()}%`);
+          }
+
+          if (sort === "date_desc") {
+            filteredQuery = filteredQuery.order("event_date", { ascending: false });
+          } else if (sort === "newest") {
+            filteredQuery = filteredQuery.order("created_at", { ascending: false });
+          } else {
+            filteredQuery = filteredQuery.order("event_date", { ascending: true });
+          }
+
+          return filteredQuery.limit(24);
+        };
+
+        const eventResultWithFk = await buildEventQuery(eventSelectWithFk);
 
         const eventResult = eventResultWithFk.error
-          ? await supabase
-              .from("events")
-              .select(eventSelectLegacy)
-              .eq("status", "approved")
-              .gte("event_date", new Date().toISOString().split("T")[0])
-              .order("event_date", { ascending: true })
-              .limit(4)
+          ? await buildEventQuery(eventSelectLegacy)
           : eventResultWithFk;
 
-        setUpcomingEvents((eventResult.data as Event[] | null) || []);
+        if (eventResult.error) {
+          throw eventResult.error;
+        }
 
+        setUpcomingEvents((eventResult.data as unknown as Event[] | null) || []);
       } catch (error) {
         console.error("Error fetching data:", error);
+        setUpcomingEvents([]);
+        setErrorMessage("Etkinlikler yüklenirken bir hata oluştu. Lütfen filtreleri kontrol edip tekrar deneyin.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [city, fromDate, search, sort, toDate]);
 
   // Format date
   const formatDate = (dateStr: string) => {
@@ -294,6 +324,7 @@ export default function MeetupsPage() {
                       >
                         <option value="date_asc">Tarih (Yakın)</option>
                         <option value="date_desc">Tarih (Uzak)</option>
+                        <option value="newest">Yeni Eklenenler</option>
                       </select>
                     </div>
 
@@ -349,6 +380,15 @@ export default function MeetupsPage() {
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-6 w-6 animate-spin text-[var(--color-primary)]" />
                   </div>
+                ) : errorMessage ? (
+                  <Card variant="default" padding="md">
+                    <CardContent className="p-0 text-center py-8">
+                      <p className="text-[var(--color-ink-secondary)]">{errorMessage}</p>
+                      <Button variant="outline" size="sm" className="mt-4" onClick={() => window.location.reload()}>
+                        Tekrar Dene
+                      </Button>
+                    </CardContent>
+                  </Card>
                 ) : upcomingEvents.length === 0 ? (
                   <Card variant="default" padding="md">
                     <CardContent className="p-0 text-center py-8">
