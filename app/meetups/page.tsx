@@ -27,7 +27,6 @@ export default function MeetupsPage() {
 
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ events: 0 });
 
   const resolveDisplayName = (profile?: {
     username?: string | null;
@@ -80,16 +79,6 @@ export default function MeetupsPage() {
 
         setUpcomingEvents((eventResult.data as Event[] | null) || []);
 
-        // Get stats
-        const { count: eventCount } = await supabase
-          .from("events")
-          .select("*", { count: "exact", head: true })
-          .eq("status", "approved");
-
-        setStats({
-          events: eventCount || 0,
-        });
-
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -118,34 +107,22 @@ export default function MeetupsPage() {
         <main className="flex-1">
           <div className="ak-shell lg:px-8 py-10">
             {/* Hero Section - Clean & Minimal */}
-            <section className="text-center mb-16">
+            <section className="text-center mb-12">
               <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--color-ink)] mb-4">
                 Etkinlikleri Keşfet, Buluşmalara Katıl
               </h1>
-              <p className="text-lg text-[var(--color-ink-secondary)] max-w-2xl mx-auto mb-8">
+              <p className="text-lg text-[var(--color-ink-secondary)] max-w-2xl mx-auto mb-6">
                 Amerika&apos;daki Türk topluluğunun etkinliklerini keşfet, katıl ve yeni
                 insanlarla bağlantı kur.
               </p>
 
-              <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
+              <div className="flex flex-wrap items-center justify-center gap-4">
                 <Link href="/meetups/create">
                   <Button variant="primary" size="lg" className="gap-2">
                     <CalendarDays className="h-5 w-5" />
                     Etkinlik Oluştur
                   </Button>
                 </Link>
-              </div>
-
-              {/* Stats - Inline */}
-              <div className="flex items-center justify-center gap-8 sm:gap-12 pt-8 border-t border-[var(--color-border-light)]">
-                <div className="text-center">
-                  <div className="text-2xl font-semibold text-[var(--color-ink)]">{stats.events}</div>
-                  <div className="text-sm text-[var(--color-ink-secondary)]">Etkinlik</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-semibold text-[var(--color-ink)]">50+</div>
-                  <div className="text-sm text-[var(--color-ink-secondary)]">Şehir</div>
-                </div>
               </div>
             </section>
 
