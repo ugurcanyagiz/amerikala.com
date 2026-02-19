@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -26,6 +27,9 @@ import {
 
 export default function MeetupsPage() {
   const { user } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +37,7 @@ export default function MeetupsPage() {
   const [toDate, setToDate] = useState("");
   const [city, setCity] = useState("");
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("date_asc");
   const [quickDate, setQuickDate] = useState<"today" | "weekend" | "month" | null>(null);
 
   const cityOptions = useMemo(() => {
@@ -77,6 +82,7 @@ export default function MeetupsPage() {
     setToDate("");
     setCity("");
     setSearch("");
+    setSort("date_asc");
     setQuickDate(null);
   };
 
@@ -95,6 +101,41 @@ export default function MeetupsPage() {
     if (!time) return "Saat belirtilmedi";
     return time.slice(0, 5);
   };
+
+  useEffect(() => {
+    setFromDate(searchParams.get("from") || "");
+    setToDate(searchParams.get("to") || "");
+    setCity(searchParams.get("city") || "");
+    setSearch(searchParams.get("q") || "");
+    setSort(searchParams.get("sort") || "date_asc");
+    setQuickDate(null);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    const syncParam = (key: string, value: string, defaultValue = "") => {
+      if (!value || value === defaultValue) {
+        params.delete(key);
+        return;
+      }
+      params.set(key, value);
+    };
+
+    syncParam("city", city);
+    syncParam("from", fromDate);
+    syncParam("to", toDate);
+    syncParam("q", search);
+    syncParam("sort", sort, "date_asc");
+
+    const query = params.toString();
+    const nextUrl = query ? `${pathname}?${query}` : pathname;
+    const currentUrl = searchParams.toString() ? `${pathname}?${searchParams.toString()}` : pathname;
+
+    if (nextUrl !== currentUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [city, fromDate, pathname, router, search, searchParams, sort, toDate]);
 
   // Fetch data
   useEffect(() => {
@@ -242,6 +283,18 @@ export default function MeetupsPage() {
                           className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-9 pr-3 text-sm text-[var(--color-ink)]"
                         />
                       </div>
+                    </div>
+
+                    <div className="min-w-[150px] sm:w-[170px]">
+                      <label className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Sıralama</label>
+                      <select
+                        value={sort}
+                        onChange={(event) => setSort(event.target.value)}
+                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)]"
+                      >
+                        <option value="date_asc">Tarih (Yakın)</option>
+                        <option value="date_desc">Tarih (Uzak)</option>
+                      </select>
                     </div>
 
                     <Button variant="ghost" size="sm" className="gap-1" onClick={clearFilters}>
