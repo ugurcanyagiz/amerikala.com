@@ -87,6 +87,10 @@ export default function MeetupsPage() {
     setQuickDate(null);
   };
 
+  const hasActiveFilters = Boolean(
+    fromDate || toDate || city || search.trim() || sort !== "date_asc"
+  );
+
   const resolveDisplayName = (profile?: {
     username?: string | null;
     first_name?: string | null;
@@ -201,9 +205,11 @@ export default function MeetupsPage() {
 
         setUpcomingEvents((eventResult.data as unknown as Event[] | null) || []);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error fetching data:", error);
+        }
         setUpcomingEvents([]);
-        setErrorMessage("Etkinlikler yüklenirken bir hata oluştu. Lütfen filtreleri kontrol edip tekrar deneyin.");
+        setErrorMessage("Etkinlikler yüklenemedi. Lütfen kısa bir süre sonra tekrar deneyin.");
       } finally {
         setLoading(false);
       }
@@ -391,14 +397,29 @@ export default function MeetupsPage() {
                   </Card>
                 ) : upcomingEvents.length === 0 ? (
                   <Card variant="default" padding="md">
-                    <CardContent className="p-0 text-center py-8">
+                    <CardContent className="p-0 text-center py-9">
                       <CalendarDays className="h-10 w-10 text-[var(--color-ink-tertiary)] mx-auto mb-3" />
-                      <p className="text-[var(--color-ink-secondary)]">Yaklaşan etkinlik bulunmuyor</p>
-                      <Link href="/meetups/create">
-                        <Button variant="outline" size="sm" className="mt-4">
-                          İlk Etkinliği Oluştur
-                        </Button>
-                      </Link>
+                      <h3 className="text-lg font-semibold text-[var(--color-ink)]">
+                        {hasActiveFilters ? "Sonuç bulunamadı" : "Yaklaşan etkinlik bulunmuyor"}
+                      </h3>
+                      <p className="mt-2 text-sm text-[var(--color-ink-secondary)]">
+                        {hasActiveFilters
+                          ? "Filtreleri güncelleyerek yeniden deneyebilir veya temizleyebilirsiniz."
+                          : "Henüz gösterilecek etkinlik yok. İlk etkinliği sen oluşturabilirsin."}
+                      </p>
+
+                      <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                        {hasActiveFilters && (
+                          <Button variant="outline" size="sm" onClick={clearFilters}>
+                            Filtreleri Temizle
+                          </Button>
+                        )}
+                        <Link href="/meetups/create">
+                          <Button variant="primary" size="sm">
+                            Etkinlik Oluştur
+                          </Button>
+                        </Link>
+                      </div>
                     </CardContent>
                   </Card>
                 ) : (
