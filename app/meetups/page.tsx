@@ -353,7 +353,7 @@ export default function MeetupsPage() {
             </section>
 
             {/* Upcoming Events Section */}
-            <section className="mb-12">
+            <section className="mb-12 max-w-6xl mx-auto">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-semibold text-[var(--color-ink)]">
                     Yaklaşan Etkinlikler
@@ -367,10 +367,10 @@ export default function MeetupsPage() {
                 </div>
 
                 {loading ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
                     {Array.from({ length: 6 }).map((_, index) => (
                       <Card key={index} variant="default" padding="none" className="overflow-hidden">
-                        <div className="aspect-[16/9] animate-pulse bg-gradient-to-r from-neutral-100 via-neutral-200 to-neutral-100" />
+                        <div className="h-48 animate-pulse bg-gradient-to-r from-neutral-100 via-neutral-200 to-neutral-100" />
                         <CardContent className="p-4 space-y-3">
                           <div className="h-4 w-24 rounded bg-neutral-200 animate-pulse" />
                           <div className="h-5 w-3/4 rounded bg-neutral-200 animate-pulse" />
@@ -402,7 +402,7 @@ export default function MeetupsPage() {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
                     {upcomingEvents.map((event) => (
                       <Link key={event.id} href={`/meetups/${event.id}`} className="block h-full">
                         <Card
@@ -410,14 +410,14 @@ export default function MeetupsPage() {
                           padding="none"
                           className="h-full overflow-hidden hover:scale-[1.01]"
                         >
-                          <div className="relative aspect-[16/9] bg-gradient-to-br from-slate-100 to-slate-200">
+                          <div className="relative h-48 bg-gradient-to-br from-slate-100 to-slate-200">
                             {event.cover_image_url ? (
                               <Image
                                 src={event.cover_image_url}
                                 alt={event.title}
                                 fill
                                 className="object-cover"
-                                sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                                sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
                               />
                             ) : (
                               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
