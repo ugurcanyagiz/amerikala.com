@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "../contexts/AuthContext";
@@ -19,7 +20,6 @@ import {
   Clock,
   ChevronRight,
   Globe,
-  Loader2,
   CalendarDays,
   Search,
   X,
@@ -212,16 +212,6 @@ export default function MeetupsPage() {
     fetchData();
   }, [city, fromDate, search, sort, toDate]);
 
-  // Format date
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return {
-      day: date.getDate(),
-      month: date.toLocaleDateString("tr-TR", { month: "short" }).toUpperCase(),
-      weekday: date.toLocaleDateString("tr-TR", { weekday: "short" })
-    };
-  };
-
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[var(--color-surface)]">
       <div className="flex">
@@ -377,8 +367,18 @@ export default function MeetupsPage() {
                 </div>
 
                 {loading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-[var(--color-primary)]" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <Card key={index} variant="default" padding="none" className="overflow-hidden">
+                        <div className="aspect-[16/9] animate-pulse bg-gradient-to-r from-neutral-100 via-neutral-200 to-neutral-100" />
+                        <CardContent className="p-4 space-y-3">
+                          <div className="h-4 w-24 rounded bg-neutral-200 animate-pulse" />
+                          <div className="h-5 w-3/4 rounded bg-neutral-200 animate-pulse" />
+                          <div className="h-3 w-2/3 rounded bg-neutral-200 animate-pulse" />
+                          <div className="h-3 w-1/2 rounded bg-neutral-200 animate-pulse" />
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 ) : errorMessage ? (
                   <Card variant="default" padding="md">
@@ -402,52 +402,57 @@ export default function MeetupsPage() {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="space-y-3">
-                    {upcomingEvents.map(event => {
-                      const date = formatDate(event.event_date);
-
-                      return (
-                        <Link key={event.id} href={`/meetups/${event.id}`}>
-                          <Card variant="interactive" padding="sm">
-                            <CardContent className="p-0">
-                              <div className="flex items-center gap-4">
-                                {/* Date */}
-                                <div className="flex-shrink-0 w-12 text-center">
-                                  <div className="text-xs font-medium text-[var(--color-primary)]">{date.month}</div>
-                                  <div className="text-xl font-semibold text-[var(--color-ink)]">{date.day}</div>
-                                </div>
-
-                                {/* Content */}
-                                <div className="flex-1 min-w-0">
-                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mb-1 ${EVENT_CATEGORY_COLORS[event.category]}`}>
-                                    {EVENT_CATEGORY_ICONS[event.category]}
-                                  </span>
-                                  <h3 className="font-medium text-[var(--color-ink)] line-clamp-1">
-                                    {event.title}
-                                  </h3>
-                                  <div className="flex items-center gap-3 mt-1 text-xs text-[var(--color-ink-secondary)]">
-                                    <span className="flex items-center gap-1">
-                                      <Clock className="h-3 w-3" />
-                                      {formatTime(event.start_time)}
-                                    </span>
-                                    <span className="flex items-center gap-1">
-                                      {event.is_online ? <Globe className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
-                                      {event.is_online ? "Online" : event.city}
-                                    </span>
-                                    <span className="flex items-center gap-1 truncate">
-                                      <Users className="h-3 w-3" />
-                                      {resolveDisplayName(event.organizer)}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <ChevronRight className="h-5 w-5 text-[var(--color-ink-tertiary)]" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {upcomingEvents.map((event) => (
+                      <Link key={event.id} href={`/meetups/${event.id}`} className="block h-full">
+                        <Card
+                          variant="interactive"
+                          padding="none"
+                          className="h-full overflow-hidden hover:scale-[1.01]"
+                        >
+                          <div className="relative aspect-[16/9] bg-gradient-to-br from-slate-100 to-slate-200">
+                            {event.cover_image_url ? (
+                              <Image
+                                src={event.cover_image_url}
+                                alt={event.title}
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                              />
+                            ) : (
+                              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+                                <span className="text-4xl opacity-80">{EVENT_CATEGORY_ICONS[event.category]}</span>
                               </div>
-                            </CardContent>
-                          </Card>
-                        </Link>
-                      );
-                    })}
+                            )}
+                          </div>
+
+                          <CardContent className="p-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mb-2 ${EVENT_CATEGORY_COLORS[event.category]}`}>
+                              {EVENT_CATEGORY_ICONS[event.category]}
+                            </span>
+
+                            <h3 className="font-semibold text-[var(--color-ink)] line-clamp-2 mb-2 min-h-[2.75rem]">
+                              {event.title}
+                            </h3>
+
+                            <div className="space-y-2 text-sm text-[var(--color-ink-secondary)]">
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4" />
+                                <span>{event.event_date} • {formatTime(event.start_time)}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {event.is_online ? <Globe className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}
+                                <span>{event.is_online ? "Online" : event.city}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4" />
+                                <span className="truncate">{resolveDisplayName(event.organizer)}</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}
                   </div>
                 )}
             </section>
