@@ -295,6 +295,12 @@ export default function AlisverisPage() {
                   }}
                 />
               </div>
+              <Link href={user ? "/alisveris/ilan-ver" : "/login?redirect=/alisveris/ilan-ver"}>
+                <Button variant="primary" size="lg" className="gap-2 bg-orange-500 hover:bg-orange-600 w-full md:w-auto">
+                  <Plus size={20} />
+                  İlan Ver
+                </Button>
+              </Link>
             </div>
 
             <div className="md:hidden flex gap-2 mt-1">
