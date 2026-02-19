@@ -251,42 +251,48 @@ export default function MeetupsPage() {
             </section>
 
             {/* Filter Bar */}
-            <section className="mb-8">
-              <Card variant="default" padding="sm">
+            <section className="mb-10 max-w-6xl mx-auto">
+              <Card variant="default" padding="md" className="shadow-[var(--shadow-sm)]">
                 <CardContent className="p-0">
-                  <div className="flex flex-wrap items-end gap-3">
+                  <div className="flex flex-wrap items-end gap-3 md:gap-4">
                     <div className="min-w-[150px] flex-1">
-                      <label className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Başlangıç tarihi</label>
+                      <label htmlFor="meetups-from-date" className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Başlangıç tarihi</label>
                       <input
                         type="date"
+                        id="meetups-from-date"
+                        aria-label="Başlangıç tarihi"
                         value={fromDate}
                         onChange={(event) => {
                           setFromDate(event.target.value);
                           setQuickDate(null);
                         }}
-                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)]"
+                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                       />
                     </div>
 
                     <div className="min-w-[150px] flex-1">
-                      <label className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Bitiş tarihi</label>
+                      <label htmlFor="meetups-to-date" className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Bitiş tarihi</label>
                       <input
                         type="date"
+                        id="meetups-to-date"
+                        aria-label="Bitiş tarihi"
                         value={toDate}
                         onChange={(event) => {
                           setToDate(event.target.value);
                           setQuickDate(null);
                         }}
-                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)]"
+                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                       />
                     </div>
 
                     <div className="min-w-[160px] flex-1">
-                      <label className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Şehir</label>
+                      <label htmlFor="meetups-city" className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Şehir</label>
                       <select
+                        id="meetups-city"
+                        aria-label="Şehir filtresi"
                         value={city}
                         onChange={(event) => setCity(event.target.value)}
-                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)]"
+                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                       >
                         <option value="">Tüm şehirler</option>
                         {cityOptions.map((cityOption) => (
@@ -298,25 +304,29 @@ export default function MeetupsPage() {
                     </div>
 
                     <div className="min-w-[200px] flex-[1.2]">
-                      <label className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Etkinlik ara</label>
+                      <label htmlFor="meetups-search" className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Etkinlik ara</label>
                       <div className="relative">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-tertiary)]" />
                         <input
                           type="text"
+                          id="meetups-search"
+                          aria-label="Etkinlik başlığında ara"
                           value={search}
                           onChange={(event) => setSearch(event.target.value)}
                           placeholder="Başlık içinde ara..."
-                          className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-9 pr-3 text-sm text-[var(--color-ink)]"
+                          className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-9 pr-3 text-sm text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                         />
                       </div>
                     </div>
 
                     <div className="min-w-[150px] sm:w-[170px]">
-                      <label className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Sıralama</label>
+                      <label htmlFor="meetups-sort" className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Sıralama</label>
                       <select
+                        id="meetups-sort"
+                        aria-label="Sıralama"
                         value={sort}
                         onChange={(event) => setSort(event.target.value)}
-                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)]"
+                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                       >
                         <option value="date_asc">Tarih (Yakın)</option>
                         <option value="date_desc">Tarih (Uzak)</option>
@@ -324,7 +334,7 @@ export default function MeetupsPage() {
                       </select>
                     </div>
 
-                    <Button variant="ghost" size="sm" className="gap-1" onClick={clearFilters}>
+                    <Button variant="outline" size="sm" className="gap-1" onClick={clearFilters} aria-label="Filtreleri temizle">
                       <X className="h-4 w-4" />
                       Temizle
                     </Button>
@@ -336,6 +346,7 @@ export default function MeetupsPage() {
                       variant={quickDate === "today" ? "primary" : "outline"}
                       size="sm"
                       onClick={() => applyQuickDate("today")}
+                      aria-label="Bugün için hızlı tarih filtresi"
                     >
                       Today
                     </Button>
@@ -343,6 +354,7 @@ export default function MeetupsPage() {
                       variant={quickDate === "weekend" ? "primary" : "outline"}
                       size="sm"
                       onClick={() => applyQuickDate("weekend")}
+                      aria-label="Bu hafta sonu için hızlı tarih filtresi"
                     >
                       This Weekend
                     </Button>
@@ -350,6 +362,7 @@ export default function MeetupsPage() {
                       variant={quickDate === "month" ? "primary" : "outline"}
                       size="sm"
                       onClick={() => applyQuickDate("month")}
+                      aria-label="Bu ay için hızlı tarih filtresi"
                     >
                       This Month
                     </Button>
@@ -425,7 +438,7 @@ export default function MeetupsPage() {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
                     {upcomingEvents.map((event) => (
-                      <Link key={event.id} href={`/meetups/${event.id}`} className="block h-full">
+                      <Link key={event.id} href={`/meetups/${event.id}`} className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 rounded-2xl">
                         <Card
                           variant="interactive"
                           padding="none"
