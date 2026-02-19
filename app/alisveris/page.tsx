@@ -55,6 +55,12 @@ const CONDITION_OPTIONS = [
   { value: "for_parts", label: "Parça İçin" },
 ];
 
+const SORT_OPTIONS = [
+  { value: "newest", label: "En Yeni" },
+  { value: "price_asc", label: "Fiyat: Düşükten Yükseğe" },
+  { value: "price_desc", label: "Fiyat: Yüksekten Düşüğe" },
+];
+
 export default function AlisverisPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -63,35 +69,57 @@ export default function AlisverisPage() {
 
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
+
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [selectedCategory, setSelectedCategory] = useState<MarketplaceCategory | "all">((searchParams.get("category") as MarketplaceCategory) || "all");
   const [selectedState, setSelectedState] = useState(searchParams.get("state") || "all");
+  const [selectedCity, setSelectedCity] = useState(searchParams.get("city") || "");
   const [selectedCondition, setSelectedCondition] = useState(searchParams.get("condition") || "all");
+  const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
+  const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
+  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
+  const [page, setPage] = useState(searchParams.get("page") || "1");
+
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
-    const q = searchParams.get("q") || "";
-    const category = (searchParams.get("category") as MarketplaceCategory) || "all";
-    const state = searchParams.get("state") || "all";
-    const condition = searchParams.get("condition") || "all";
-
-    setSearchQuery(q);
-    setSelectedCategory(category);
-    setSelectedState(state);
-    setSelectedCondition(condition);
+    setSearchQuery(searchParams.get("q") || "");
+    setSelectedCategory((searchParams.get("category") as MarketplaceCategory) || "all");
+    setSelectedState(searchParams.get("state") || "all");
+    setSelectedCity(searchParams.get("city") || "");
+    setSelectedCondition(searchParams.get("condition") || "all");
+    setMinPrice(searchParams.get("minPrice") || "");
+    setMaxPrice(searchParams.get("maxPrice") || "");
+    setSortBy(searchParams.get("sort") || "newest");
+    setPage(searchParams.get("page") || "1");
   }, [searchParams]);
 
-  const syncUrl = (next: { q?: string; category?: string; state?: string; condition?: string }) => {
+  const syncUrl = (next: {
+    q?: string;
+    category?: string;
+    state?: string;
+    city?: string;
+    minPrice?: string;
+    maxPrice?: string;
+    condition?: string;
+    sort?: string;
+    page?: string;
+  }) => {
     const params = new URLSearchParams(searchParams.toString());
     const data = {
       q: next.q ?? searchQuery,
       category: next.category ?? selectedCategory,
       state: next.state ?? selectedState,
+      city: next.city ?? selectedCity,
+      minPrice: next.minPrice ?? minPrice,
+      maxPrice: next.maxPrice ?? maxPrice,
       condition: next.condition ?? selectedCondition,
+      sort: next.sort ?? sortBy,
+      page: next.page ?? page,
     };
 
     Object.entries(data).forEach(([key, value]) => {
-      if (!value || value === "all") {
+      if (!value || value === "all" || (key === "sort" && value === "newest") || (key === "page" && value === "1")) {
         params.delete(key);
       } else {
         params.set(key, value);
@@ -105,23 +133,12 @@ export default function AlisverisPage() {
   const fetchListings = useCallback(async () => {
     setLoading(true);
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from("marketplace_listings")
         .select("*, user:user_id (id, username, full_name, avatar_url)")
         .eq("status", "approved")
         .order("created_at", { ascending: false });
 
-      if (selectedCategory !== "all") {
-        query = query.eq("category", selectedCategory);
-      }
-      if (selectedState !== "all") {
-        query = query.eq("state", selectedState);
-      }
-      if (selectedCondition !== "all") {
-        query = query.eq("condition", selectedCondition);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
 
       setListings(data || []);
@@ -130,21 +147,55 @@ export default function AlisverisPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, selectedCondition, selectedState]);
+  }, []);
 
   useEffect(() => {
     fetchListings();
   }, [fetchListings]);
 
   const filteredListings = useMemo(() => {
-    if (!searchQuery) return listings;
-    const query = searchQuery.toLowerCase();
-    return listings.filter((listing) => (
-      listing.title.toLowerCase().includes(query)
-      || listing.description?.toLowerCase().includes(query)
-      || listing.city.toLowerCase().includes(query)
-    ));
-  }, [listings, searchQuery]);
+    const query = searchQuery.trim().toLowerCase();
+    const cityQuery = selectedCity.trim().toLowerCase();
+    const min = minPrice ? Number(minPrice) : null;
+    const max = maxPrice ? Number(maxPrice) : null;
+
+    const nextListings = listings.filter((listing) => {
+      const matchesSearch = !query
+        || listing.title.toLowerCase().includes(query)
+        || listing.description?.toLowerCase().includes(query)
+        || listing.city.toLowerCase().includes(query);
+
+      const matchesCategory = selectedCategory === "all" || listing.category === selectedCategory;
+      const matchesState = selectedState === "all" || listing.state === selectedState;
+      const matchesCity = !cityQuery || listing.city.toLowerCase().includes(cityQuery);
+      const matchesCondition = selectedCondition === "all" || listing.condition === selectedCondition;
+      const matchesMin = min === null || listing.price >= min;
+      const matchesMax = max === null || listing.price <= max;
+
+      return matchesSearch && matchesCategory && matchesState && matchesCity && matchesCondition && matchesMin && matchesMax;
+    });
+
+    const sorted = [...nextListings];
+    if (sortBy === "price_asc") {
+      sorted.sort((a, b) => a.price - b.price);
+    } else if (sortBy === "price_desc") {
+      sorted.sort((a, b) => b.price - a.price);
+    } else {
+      sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+
+    return sorted;
+  }, [
+    listings,
+    searchQuery,
+    selectedCategory,
+    selectedState,
+    selectedCity,
+    selectedCondition,
+    minPrice,
+    maxPrice,
+    sortBy,
+  ]);
 
   return (
     <div className="ak-page pb-20 md:pb-0">
@@ -166,33 +217,90 @@ export default function AlisverisPage() {
               </Link>
             </div>
 
-            <div className="hidden md:grid md:grid-cols-[1fr_220px_220px] gap-3 mt-1">
-              <Input
-                placeholder="Ürün veya hizmet ara..."
-                value={searchQuery}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setSearchQuery(value);
-                  syncUrl({ q: value });
-                }}
-                icon={<Search size={18} />}
-              />
-              <Select
-                options={STATE_OPTIONS}
-                value={selectedState}
-                onChange={(e) => {
-                  setSelectedState(e.target.value);
-                  syncUrl({ state: e.target.value });
-                }}
-              />
-              <Select
-                options={CONDITION_OPTIONS}
-                value={selectedCondition}
-                onChange={(e) => {
-                  setSelectedCondition(e.target.value);
-                  syncUrl({ condition: e.target.value });
-                }}
-              />
+            <div className="hidden md:grid md:grid-cols-12 gap-3 mt-1">
+              <div className="col-span-3">
+                <Input
+                  placeholder="Ara (q)"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSearchQuery(value);
+                    syncUrl({ q: value, page: "1" });
+                  }}
+                  icon={<Search size={18} />}
+                />
+              </div>
+              <div className="col-span-2">
+                <Select
+                  options={STATE_OPTIONS}
+                  value={selectedState}
+                  onChange={(e) => {
+                    setSelectedState(e.target.value);
+                    syncUrl({ state: e.target.value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-2">
+                <Input
+                  placeholder="Şehir"
+                  value={selectedCity}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSelectedCity(value);
+                    syncUrl({ city: value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-2">
+                <Select
+                  options={CONDITION_OPTIONS}
+                  value={selectedCondition}
+                  onChange={(e) => {
+                    setSelectedCondition(e.target.value);
+                    syncUrl({ condition: e.target.value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-1">
+                <Input
+                  type="number"
+                  placeholder="Min $"
+                  value={minPrice}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setMinPrice(value);
+                    syncUrl({ minPrice: value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-1">
+                <Input
+                  type="number"
+                  placeholder="Max $"
+                  value={maxPrice}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setMaxPrice(value);
+                    syncUrl({ maxPrice: value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-1">
+                <Select
+                  options={SORT_OPTIONS}
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    syncUrl({ sort: e.target.value, page: "1" });
+                  }}
+                />
+              </div>
+              <Link href={user ? "/alisveris/ilan-ver" : "/login?redirect=/alisveris/ilan-ver"}>
+                <Button variant="primary" size="lg" className="gap-2 bg-orange-500 hover:bg-orange-600 w-full md:w-auto">
+                  <Plus size={20} />
+                  İlan Ver
+                </Button>
+              </Link>
             </div>
 
             <div className="md:hidden flex gap-2 mt-1">
@@ -203,7 +311,7 @@ export default function AlisverisPage() {
                   onChange={(e) => {
                     const value = e.target.value;
                     setSearchQuery(value);
-                    syncUrl({ q: value });
+                    syncUrl({ q: value, page: "1" });
                   }}
                   icon={<Search size={18} />}
                 />
@@ -225,7 +333,7 @@ export default function AlisverisPage() {
                   key={cat.value}
                   onClick={() => {
                     setSelectedCategory(cat.value);
-                    syncUrl({ category: cat.value });
+                    syncUrl({ category: cat.value, page: "1" });
                   }}
                   className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
                     selectedCategory === cat.value
@@ -291,7 +399,16 @@ export default function AlisverisPage() {
                 value={selectedState}
                 onChange={(e) => {
                   setSelectedState(e.target.value);
-                  syncUrl({ state: e.target.value });
+                  syncUrl({ state: e.target.value, page: "1" });
+                }}
+              />
+              <Input
+                placeholder="Şehir"
+                value={selectedCity}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSelectedCity(value);
+                  syncUrl({ city: value, page: "1" });
                 }}
               />
               <Select
@@ -299,7 +416,37 @@ export default function AlisverisPage() {
                 value={selectedCondition}
                 onChange={(e) => {
                   setSelectedCondition(e.target.value);
-                  syncUrl({ condition: e.target.value });
+                  syncUrl({ condition: e.target.value, page: "1" });
+                }}
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  type="number"
+                  placeholder="Min $"
+                  value={minPrice}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setMinPrice(value);
+                    syncUrl({ minPrice: value, page: "1" });
+                  }}
+                />
+                <Input
+                  type="number"
+                  placeholder="Max $"
+                  value={maxPrice}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setMaxPrice(value);
+                    syncUrl({ maxPrice: value, page: "1" });
+                  }}
+                />
+              </div>
+              <Select
+                options={SORT_OPTIONS}
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  syncUrl({ sort: e.target.value, page: "1" });
                 }}
               />
               <Button
@@ -308,8 +455,21 @@ export default function AlisverisPage() {
                 className="w-full"
                 onClick={() => {
                   setSelectedState("all");
+                  setSelectedCity("");
                   setSelectedCondition("all");
-                  syncUrl({ state: "all", condition: "all" });
+                  setMinPrice("");
+                  setMaxPrice("");
+                  setSortBy("newest");
+                  setPage("1");
+                  syncUrl({
+                    state: "all",
+                    city: "",
+                    condition: "all",
+                    minPrice: "",
+                    maxPrice: "",
+                    sort: "newest",
+                    page: "1",
+                  });
                 }}
               >
                 Filtreleri Temizle
