@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "../contexts/AuthContext";
@@ -20,6 +20,8 @@ import {
   Globe,
   Loader2,
   CalendarDays,
+  Search,
+  X,
 } from "lucide-react";
 
 export default function MeetupsPage() {
@@ -27,6 +29,56 @@ export default function MeetupsPage() {
 
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [city, setCity] = useState("");
+  const [search, setSearch] = useState("");
+  const [quickDate, setQuickDate] = useState<"today" | "weekend" | "month" | null>(null);
+
+  const cityOptions = useMemo(() => {
+    return Array.from(new Set(upcomingEvents.map((event) => event.city).filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b, "tr")
+    );
+  }, [upcomingEvents]);
+
+  const applyQuickDate = (range: "today" | "weekend" | "month") => {
+    const now = new Date();
+    const format = (date: Date) => date.toISOString().split("T")[0];
+
+    if (range === "today") {
+      const today = format(now);
+      setFromDate(today);
+      setToDate(today);
+    }
+
+    if (range === "weekend") {
+      const day = now.getDay();
+      const daysUntilSaturday = (6 - day + 7) % 7;
+      const saturday = new Date(now);
+      saturday.setDate(now.getDate() + daysUntilSaturday);
+      const sunday = new Date(saturday);
+      sunday.setDate(saturday.getDate() + 1);
+      setFromDate(format(saturday));
+      setToDate(format(sunday));
+    }
+
+    if (range === "month") {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      setFromDate(format(firstDay));
+      setToDate(format(lastDay));
+    }
+
+    setQuickDate(range);
+  };
+
+  const clearFilters = () => {
+    setFromDate("");
+    setToDate("");
+    setCity("");
+    setSearch("");
+    setQuickDate(null);
+  };
 
   const resolveDisplayName = (profile?: {
     username?: string | null;
@@ -116,14 +168,114 @@ export default function MeetupsPage() {
                 insanlarla bağlantı kur.
               </p>
 
-              <div className="flex flex-wrap items-center justify-center gap-4">
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
                 <Link href="/meetups/create">
                   <Button variant="primary" size="lg" className="gap-2">
                     <CalendarDays className="h-5 w-5" />
                     Etkinlik Oluştur
                   </Button>
                 </Link>
+                <Link href="/groups">
+                  <Button variant="primary" size="lg">
+                    Gruplar
+                  </Button>
+                </Link>
               </div>
+            </section>
+
+            {/* Filter Bar */}
+            <section className="mb-8">
+              <Card variant="default" padding="sm">
+                <CardContent className="p-0">
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="min-w-[150px] flex-1">
+                      <label className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Başlangıç tarihi</label>
+                      <input
+                        type="date"
+                        value={fromDate}
+                        onChange={(event) => {
+                          setFromDate(event.target.value);
+                          setQuickDate(null);
+                        }}
+                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)]"
+                      />
+                    </div>
+
+                    <div className="min-w-[150px] flex-1">
+                      <label className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Bitiş tarihi</label>
+                      <input
+                        type="date"
+                        value={toDate}
+                        onChange={(event) => {
+                          setToDate(event.target.value);
+                          setQuickDate(null);
+                        }}
+                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)]"
+                      />
+                    </div>
+
+                    <div className="min-w-[160px] flex-1">
+                      <label className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Şehir</label>
+                      <select
+                        value={city}
+                        onChange={(event) => setCity(event.target.value)}
+                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)]"
+                      >
+                        <option value="">Tüm şehirler</option>
+                        {cityOptions.map((cityOption) => (
+                          <option key={cityOption} value={cityOption}>
+                            {cityOption}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="min-w-[200px] flex-[1.2]">
+                      <label className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Etkinlik ara</label>
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-tertiary)]" />
+                        <input
+                          type="text"
+                          value={search}
+                          onChange={(event) => setSearch(event.target.value)}
+                          placeholder="Başlık içinde ara..."
+                          className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-9 pr-3 text-sm text-[var(--color-ink)]"
+                        />
+                      </div>
+                    </div>
+
+                    <Button variant="ghost" size="sm" className="gap-1" onClick={clearFilters}>
+                      <X className="h-4 w-4" />
+                      Temizle
+                    </Button>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-[var(--color-ink-secondary)]">Hızlı tarih:</span>
+                    <Button
+                      variant={quickDate === "today" ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => applyQuickDate("today")}
+                    >
+                      Today
+                    </Button>
+                    <Button
+                      variant={quickDate === "weekend" ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => applyQuickDate("weekend")}
+                    >
+                      This Weekend
+                    </Button>
+                    <Button
+                      variant={quickDate === "month" ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => applyQuickDate("month")}
+                    >
+                      This Month
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </section>
 
             {/* Upcoming Events Section */}
