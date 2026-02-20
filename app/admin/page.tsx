@@ -129,7 +129,7 @@ const STATUS_COLORS: Record<UserStatus, string> = {
   blocked: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
-const ROLE_FILTERS = ["all", "user", "moderator", "admin", "ultra_admin"] as const;
+const ROLE_FILTERS = ["all", "user", "moderator", "admin"] as const;
 const STATUS_FILTERS = ["all", "active", "pending", "suspended", "blocked"] as const;
 
 function formatDate(value: string | null) {
@@ -197,7 +197,6 @@ export default function AdminPage() {
   }, [toast]);
 
   const roleLabel = useMemo(() => {
-    if (profile?.role === "ultra_admin") return "Ultra Admin";
     if (profile?.role === "admin") return "Admin";
     if (profile?.role === "moderator") return "Moderator";
     return "User";
@@ -258,7 +257,7 @@ export default function AdminPage() {
 
       setSelectedUser(result.user as AdminUserDetail);
       const nextRole = result.user?.profile?.role as UserRole | undefined;
-      if (nextRole && ["user", "moderator", "admin", "ultra_admin"].includes(nextRole)) {
+      if (nextRole && ["user", "moderator", "admin"].includes(nextRole)) {
         setTargetRole(nextRole);
       }
     } catch {
@@ -881,7 +880,7 @@ export default function AdminPage() {
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-neutral-500">{formatDate(friend.followedAt)}</span>
-                              {profile?.role === "ultra_admin" && (
+                              {profile?.role === "admin" && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -987,21 +986,21 @@ export default function AdminPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Role Change (Ultra Admin Only)</p>
+                      <p className="text-sm font-medium">Role Change (Admin Only)</p>
                       <div className="flex gap-2 items-center">
                         <select
                           value={targetRole}
                           onChange={(event) => setTargetRole(event.target.value as UserRole)}
                           className="h-10 rounded-lg border border-neutral-200 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-950"
                         >
-                          {(["user", "moderator", "admin", "ultra_admin"] as UserRole[]).map((role) => (
+                          {(["user", "moderator", "admin"] as UserRole[]).map((role) => (
                             <option key={role} value={role}>{ROLE_LABELS[role]}</option>
                           ))}
                         </select>
                         <Button
                           variant="secondary"
                           size="sm"
-                          disabled={actionLoading !== null || profile?.role !== "ultra_admin"}
+                          disabled={actionLoading !== null || profile?.role !== "admin"}
                           onClick={() => runAction("role")}
                         >
                           Update Role
