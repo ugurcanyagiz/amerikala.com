@@ -97,6 +97,17 @@ type WarningItem = {
   expires_at: string | null;
 };
 
+type AuditLogItem = {
+  id: string;
+  created_at: string;
+  actor_user_id: string;
+  target_user_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  metadata: Record<string, unknown>;
+};
+
 const KPI_CARDS = [
   { label: "Open Reviews", value: "128", delta: "+12% vs week" },
   { label: "Pending Approvals", value: "34", delta: "-8% vs week" },
@@ -161,8 +172,13 @@ export default function AdminPage() {
   const [warnExpiresAt, setWarnExpiresAt] = useState("");
   const [warningsLoading, setWarningsLoading] = useState(false);
   const [warnings, setWarnings] = useState<WarningItem[]>([]);
-  const [actionLoading, setActionLoading] = useState<"warn" | "block" | "unblock" | "role" | "revoke_warning" | null>(null);
+  const [actionLoading, setActionLoading] = useState<"warn" | "block" | "unblock" | "role" | "revoke_warning" | "remove_connection" | null>(null);
   const [targetRole, setTargetRole] = useState<UserRole>("user");
+
+  const [auditLogsLoading, setAuditLogsLoading] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditTotalPages, setAuditTotalPages] = useState(1);
 
   useEffect(() => {
     if (!authLoading) {
@@ -286,6 +302,29 @@ export default function AdminPage() {
     }
   }, []);
 
+  async function removeConnection(friendUserId: string) {
+    if (!selectedUserId) return;
+    if (!window.confirm("Remove this connection?")) return;
+
+    setActionLoading("remove_connection");
+    try {
+      const response = await fetch(`/api/admin/users/${selectedUserId}/friends`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ friendUserId }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) throw new Error(result?.error || "Unable to remove connection");
+
+      setToast({ type: "success", message: result.message ?? "Connection removed." });
+      await loadFriends(selectedUserId);
+    } catch (error) {
+      setToast({ type: "error", message: error instanceof Error ? error.message : "Action failed." });
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   const loadWarnings = React.useCallback(async (userId: string) => {
     setWarningsLoading(true);
     try {
@@ -355,6 +394,24 @@ export default function AdminPage() {
     }
   }
 
+  const loadAuditLogs = React.useCallback(async () => {
+    setAuditLogsLoading(true);
+    try {
+      const params = new URLSearchParams({ page: String(auditPage), pageSize: "20" });
+      const response = await fetch(`/api/admin/audit-logs?${params.toString()}`, { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) throw new Error(result?.error || "Unable to load audit logs.");
+      setAuditLogs(result.logs ?? []);
+      setAuditPage(result.page ?? 1);
+      setAuditTotalPages(result.totalPages ?? 1);
+    } catch (error) {
+      setAuditLogs([]);
+      setToast({ type: "error", message: error instanceof Error ? error.message : "Unable to load audit logs." });
+    } finally {
+      setAuditLogsLoading(false);
+    }
+  }, [auditPage]);
+
   const runAction = async (action: "block" | "unblock" | "role") => {
     if (!selectedUserId) return;
 
@@ -403,6 +460,12 @@ export default function AdminPage() {
     if (!user || !isModerator) return;
     loadUsers();
   }, [activeTab, isModerator, loadUsers, user]);
+
+  useEffect(() => {
+    if (activeTab !== "audit-log") return;
+    if (!user || !isModerator) return;
+    loadAuditLogs();
+  }, [activeTab, isModerator, loadAuditLogs, user]);
 
   useEffect(() => {
     if (!selectedUserId) return;
@@ -651,6 +714,65 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             )}
+
+            {activeTab === "audit-log" && (
+              <Card className="border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+                <CardHeader className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Audit Log</CardTitle>
+                    <span className="text-xs text-neutral-500">Page {auditPage} / {auditTotalPages}</span>
+                  </div>
+                  <p className="text-xs text-neutral-500">Server-side admin actions and reads.</p>
+                </CardHeader>
+                <CardContent>
+                  {auditLogsLoading ? (
+                    <div className="space-y-2">
+                      {[1,2,3,4].map((i)=> (
+                        <div key={i} className="h-12 rounded-lg bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : auditLogs.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 p-4 text-sm text-neutral-500">
+                      No audit logs found.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[900px] text-sm">
+                        <thead>
+                          <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500 dark:border-neutral-800">
+                            <th className="px-2 py-3">Time</th>
+                            <th className="px-2 py-3">Actor</th>
+                            <th className="px-2 py-3">Action</th>
+                            <th className="px-2 py-3">Target</th>
+                            <th className="px-2 py-3">Entity</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {auditLogs.map((log) => (
+                            <tr key={log.id} className="border-b border-neutral-100 dark:border-neutral-800/80">
+                              <td className="px-2 py-3 text-neutral-600">{formatDate(log.created_at)}</td>
+                              <td className="px-2 py-3">{log.actor_user_id}</td>
+                              <td className="px-2 py-3">{log.action}</td>
+                              <td className="px-2 py-3">{log.target_user_id ?? "—"}</td>
+                              <td className="px-2 py-3">{log.entity_type}{log.entity_id ? `:${log.entity_id}` : ""}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    <Button variant="ghost" size="sm" disabled={auditPage <= 1 || auditLogsLoading} onClick={() => setAuditPage((p) => Math.max(1, p - 1))}>
+                      Prev
+                    </Button>
+                    <Button variant="ghost" size="sm" disabled={auditPage >= auditTotalPages || auditLogsLoading} onClick={() => setAuditPage((p) => Math.min(auditTotalPages, p + 1))}>
+                      Next
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </main>
         </div>
       </div>
@@ -683,7 +805,11 @@ export default function AdminPage() {
             </div>
 
             {selectedUserLoading ? (
-              <p className="text-sm text-neutral-500">Loading user details...</p>
+              <div className="space-y-2">
+                <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+                <div className="h-4 w-56 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+                <div className="h-4 w-32 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+              </div>
             ) : !selectedUser ? (
               <p className="text-sm text-rose-600">Unable to load user details.</p>
             ) : (
@@ -748,12 +874,24 @@ export default function AdminPage() {
                     ) : (
                       <div className="space-y-2">
                         {friends.map((friend) => (
-                          <div key={friend.userId} className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3 flex items-center justify-between">
+                          <div key={friend.userId} className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3 flex items-center justify-between gap-3">
                             <div>
                               <p className="text-sm font-medium">{friend.fullName ?? friend.username ?? "Unknown"}</p>
                               <p className="text-xs text-neutral-500">@{friend.username ?? "unknown"}</p>
                             </div>
-                            <span className="text-xs text-neutral-500">{formatDate(friend.followedAt)}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-neutral-500">{formatDate(friend.followedAt)}</span>
+                              {profile?.role === "ultra_admin" && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={actionLoading !== null}
+                                  onClick={() => removeConnection(friend.userId)}
+                                >
+                                  Remove
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
