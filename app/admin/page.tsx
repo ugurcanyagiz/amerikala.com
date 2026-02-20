@@ -55,6 +55,7 @@ export default function AdminPage() {
   }, [authLoading, isModerator, router, user]);
 
   const roleLabel = useMemo(() => {
+    if (profile?.role === "ultra_admin") return "Ultra Admin";
     if (profile?.role === "admin") return "Admin";
     if (profile?.role === "moderator") return "Moderator";
     return "User";
