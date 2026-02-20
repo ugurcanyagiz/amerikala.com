@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { writeAdminAuditLogFromRequest } from "@/lib/audit/adminAudit";
-import { AdminAuthorizationError, requireAdmin } from "@/lib/auth/admin";
+import { AdminAuthorizationError, requireAdmin, requireUltraAdmin } from "@/lib/auth/admin";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type FriendItem = {
@@ -79,6 +79,50 @@ export async function GET(
     });
 
     return NextResponse.json({ ok: true, implemented: true, friends });
+  } catch (error) {
+    if (error instanceof AdminAuthorizationError) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
+    }
+
+    return NextResponse.json({ ok: false, error: "Unexpected server error." }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) {
+  try {
+    const { user: actor } = await requireUltraAdmin();
+    const { userId } = await params;
+    const body = await request.json();
+    const friendUserId = typeof body?.friendUserId === "string" ? body.friendUserId : "";
+
+    if (!friendUserId) {
+      return NextResponse.json({ ok: false, error: "friendUserId is required." }, { status: 400 });
+    }
+
+    const admin = getSupabaseAdminClient();
+    const { error } = await admin
+      .from("follows")
+      .delete()
+      .eq("follower_id", userId)
+      .eq("following_id", friendUserId);
+
+    if (error) {
+      return NextResponse.json({ ok: false, error: "Unable to remove connection." }, { status: 500 });
+    }
+
+    await writeAdminAuditLogFromRequest(request, {
+      actorUserId: actor.id,
+      targetUserId: userId,
+      action: "admin.user.connection.remove",
+      entityType: "follow",
+      entityId: friendUserId,
+      metadata: { followerId: userId, followingId: friendUserId },
+    });
+
+    return NextResponse.json({ ok: true, message: "Connection removed." });
   } catch (error) {
     if (error instanceof AdminAuthorizationError) {
       return NextResponse.json({ ok: false, error: error.message }, { status: error.status });

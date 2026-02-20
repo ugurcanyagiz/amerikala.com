@@ -161,7 +161,7 @@ export default function AdminPage() {
   const [warnExpiresAt, setWarnExpiresAt] = useState("");
   const [warningsLoading, setWarningsLoading] = useState(false);
   const [warnings, setWarnings] = useState<WarningItem[]>([]);
-  const [actionLoading, setActionLoading] = useState<"warn" | "block" | "unblock" | "role" | "revoke_warning" | null>(null);
+  const [actionLoading, setActionLoading] = useState<"warn" | "block" | "unblock" | "role" | "revoke_warning" | "remove_connection" | null>(null);
   const [targetRole, setTargetRole] = useState<UserRole>("user");
 
   useEffect(() => {
@@ -285,6 +285,29 @@ export default function AdminPage() {
       setFriendsLoading(false);
     }
   }, []);
+
+  async function removeConnection(friendUserId: string) {
+    if (!selectedUserId) return;
+    if (!window.confirm("Remove this connection?")) return;
+
+    setActionLoading("remove_connection");
+    try {
+      const response = await fetch(`/api/admin/users/${selectedUserId}/friends`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ friendUserId }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) throw new Error(result?.error || "Unable to remove connection");
+
+      setToast({ type: "success", message: result.message ?? "Connection removed." });
+      await loadFriends(selectedUserId);
+    } catch (error) {
+      setToast({ type: "error", message: error instanceof Error ? error.message : "Action failed." });
+    } finally {
+      setActionLoading(null);
+    }
+  }
 
   const loadWarnings = React.useCallback(async (userId: string) => {
     setWarningsLoading(true);
@@ -748,12 +771,24 @@ export default function AdminPage() {
                     ) : (
                       <div className="space-y-2">
                         {friends.map((friend) => (
-                          <div key={friend.userId} className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3 flex items-center justify-between">
+                          <div key={friend.userId} className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3 flex items-center justify-between gap-3">
                             <div>
                               <p className="text-sm font-medium">{friend.fullName ?? friend.username ?? "Unknown"}</p>
                               <p className="text-xs text-neutral-500">@{friend.username ?? "unknown"}</p>
                             </div>
-                            <span className="text-xs text-neutral-500">{formatDate(friend.followedAt)}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-neutral-500">{formatDate(friend.followedAt)}</span>
+                              {profile?.role === "ultra_admin" && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={actionLoading !== null}
+                                  onClick={() => removeConnection(friend.userId)}
+                                >
+                                  Remove
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
