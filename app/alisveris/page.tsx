@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -83,6 +83,8 @@ export default function AlisverisPage() {
 
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [selectedCategory, setSelectedCategory] = useState<MarketplaceCategory | "all">((searchParams.get("category") as MarketplaceCategory) || "all");
@@ -93,6 +95,8 @@ export default function AlisverisPage() {
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
   const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
   const [page, setPage] = useState(searchParams.get("page") || "1");
+  const pageSize = 12;
+  const pageNumber = Math.max(1, Number.parseInt(page, 10) || 1);
 
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [mobileDraft, setMobileDraft] = useState<FilterState | null>(null);
@@ -216,61 +220,72 @@ export default function AlisverisPage() {
 
   const fetchListings = useCallback(async () => {
     setLoading(true);
+    setErrorMessage(null);
+
     try {
       const { data, error } = await supabase
         .from("marketplace_listings")
-        .select("*, user:user_id (id, username, full_name, avatar_url)")
-        .eq("status", "approved")
-        .order("created_at", { ascending: false });
+        .select("*, user:user_id (id, username, full_name, avatar_url)", { count: "exact" })
+        .eq("status", "approved");
+
+      const trimmedQuery = searchQuery.trim();
+      if (trimmedQuery) {
+        const escapedQuery = trimmedQuery.replaceAll(",", " ");
+        query = query.or(`title.ilike.%${escapedQuery}%,description.ilike.%${escapedQuery}%`);
+      }
+
+      if (selectedCategory !== "all") {
+        query = query.eq("category", selectedCategory);
+      }
+
+      if (selectedState !== "all") {
+        query = query.eq("state", selectedState);
+      }
+
+      if (selectedCity.trim()) {
+        query = query.ilike("city", `%${selectedCity.trim()}%`);
+      }
+
+      if (selectedCondition !== "all") {
+        query = query.eq("condition", selectedCondition);
+      }
+
+      if (minPrice) {
+        const parsedMin = Number(minPrice);
+        if (!Number.isNaN(parsedMin)) query = query.gte("price", parsedMin);
+      }
+
+      if (maxPrice) {
+        const parsedMax = Number(maxPrice);
+        if (!Number.isNaN(parsedMax)) query = query.lte("price", parsedMax);
+      }
+
+      if (sortBy === "price_asc") {
+        query = query.order("price", { ascending: true }).order("created_at", { ascending: false });
+      } else if (sortBy === "price_desc") {
+        query = query.order("price", { ascending: false }).order("created_at", { ascending: false });
+      } else {
+        query = query.order("created_at", { ascending: false });
+      }
+
+      const from = (pageNumber - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, count, error } = await query.range(from, to);
 
       if (error) throw error;
 
       setListings(data || []);
+      setTotalCount(count || 0);
     } catch (error) {
       console.error("Error fetching listings:", error);
+      setListings([]);
+      setTotalCount(0);
+      setErrorMessage("İlanlar yüklenirken bir sorun oluştu. Lütfen tekrar deneyin.");
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchListings();
-  }, [fetchListings]);
-
-  const filteredListings = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    const cityQuery = selectedCity.trim().toLowerCase();
-    const min = minPrice ? Number(minPrice) : null;
-    const max = maxPrice ? Number(maxPrice) : null;
-
-    const nextListings = listings.filter((listing) => {
-      const matchesSearch = !query
-        || listing.title.toLowerCase().includes(query)
-        || listing.description?.toLowerCase().includes(query)
-        || listing.city.toLowerCase().includes(query);
-
-      const matchesCategory = selectedCategory === "all" || listing.category === selectedCategory;
-      const matchesState = selectedState === "all" || listing.state === selectedState;
-      const matchesCity = !cityQuery || listing.city.toLowerCase().includes(cityQuery);
-      const matchesCondition = selectedCondition === "all" || listing.condition === selectedCondition;
-      const matchesMin = min === null || listing.price >= min;
-      const matchesMax = max === null || listing.price <= max;
-
-      return matchesSearch && matchesCategory && matchesState && matchesCity && matchesCondition && matchesMin && matchesMax;
-    });
-
-    const sorted = [...nextListings];
-    if (sortBy === "price_asc") {
-      sorted.sort((a, b) => a.price - b.price);
-    } else if (sortBy === "price_desc") {
-      sorted.sort((a, b) => b.price - a.price);
-    } else {
-      sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    }
-
-    return sorted;
   }, [
-    listings,
     searchQuery,
     selectedCategory,
     selectedState,
@@ -279,7 +294,15 @@ export default function AlisverisPage() {
     minPrice,
     maxPrice,
     sortBy,
+    pageNumber,
+    pageSize,
   ]);
+
+  useEffect(() => {
+    fetchListings();
+  }, [fetchListings]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
     <div className="ak-page pb-20 md:pb-0">
@@ -370,25 +393,6 @@ export default function AlisverisPage() {
                   value={sortBy}
                   onChange={(e) => {
                     applyFilters({ ...buildFilterState(), sort: e.target.value, page: "1" });
-                  }}
-                />
-              </div>
-              <div className="col-span-2">
-                <Input
-                  placeholder="Şehir"
-                  value={selectedCity}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    applyFilters({ ...buildFilterState(), city: value, page: "1" });
-                  }}
-                />
-              </div>
-              <div className="col-span-2">
-                <Select
-                  options={CONDITION_OPTIONS}
-                  value={selectedCondition}
-                  onChange={(e) => {
-                    applyFilters({ ...buildFilterState(), condition: e.target.value, page: "1" });
                   }}
                 />
               </div>
@@ -518,14 +522,21 @@ export default function AlisverisPage() {
           <h2 className="text-xl font-semibold">
             {selectedCategory === "all" ? "Tüm İlanlar" : MARKETPLACE_CATEGORY_LABELS[selectedCategory]}
           </h2>
-          <span className="text-sm text-neutral-500">{filteredListings.length} ilan</span>
+          <span className="text-sm text-neutral-500">{totalCount} ilan</span>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
           </div>
-        ) : filteredListings.length === 0 ? (
+        ) : errorMessage ? (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <h3 className="text-lg font-medium mb-2">Bir hata oluştu</h3>
+              <p className="text-neutral-500 mb-6">{errorMessage}</p>
+            </CardContent>
+          </Card>
+        ) : listings.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <Package className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
@@ -535,9 +546,31 @@ export default function AlisverisPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {filteredListings.map((listing) => (
+            {listings.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />
             ))}
+          </div>
+        )}
+
+        {!loading && !errorMessage && totalCount > pageSize && (
+          <div className="mt-8 flex items-center justify-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={pageNumber <= 1}
+              onClick={() => applyFilters({ ...buildFilterState(), page: String(pageNumber - 1) })}
+            >
+              Önceki
+            </Button>
+            <span className="text-sm text-neutral-500">Sayfa {pageNumber} / {totalPages}</span>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={pageNumber >= totalPages}
+              onClick={() => applyFilters({ ...buildFilterState(), page: String(pageNumber + 1) })}
+            >
+              Sonraki
+            </Button>
           </div>
         )}
       </section>
@@ -623,7 +656,7 @@ export default function AlisverisPage() {
                   type="button"
                   variant="primary"
                   className="bg-orange-500 hover:bg-orange-600"
-                  onClick={() => applyFilters({ ...mobileDraft, q: searchQuery }, true)}
+                  onClick={() => applyFilters(mobileDraft, true)}
                 >
                   Uygula
                 </Button>
