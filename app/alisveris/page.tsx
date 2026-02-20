@@ -441,6 +441,22 @@ export default function AlisverisPage() {
                   aria-label="Sıralama"
                 />
               </div>
+              <div className="col-span-1">
+                <Select
+                  options={SORT_OPTIONS}
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    syncUrl({ sort: e.target.value, page: "1" });
+                  }}
+                />
+              </div>
+              <Link href={user ? "/alisveris/ilan-ver" : "/login?redirect=/alisveris/ilan-ver"}>
+                <Button variant="primary" size="lg" className="gap-2 bg-orange-500 hover:bg-orange-600 w-full md:w-auto">
+                  <Plus size={20} />
+                  İlan Ver
+                </Button>
+              </Link>
             </div>
 
             <div className="md:hidden flex gap-2">
@@ -644,6 +660,39 @@ export default function AlisverisPage() {
                   Uygula
                 </Button>
               </div>
+              <Select
+                options={SORT_OPTIONS}
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  syncUrl({ sort: e.target.value, page: "1" });
+                }}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  setSelectedState("all");
+                  setSelectedCity("");
+                  setSelectedCondition("all");
+                  setMinPrice("");
+                  setMaxPrice("");
+                  setSortBy("newest");
+                  setPage("1");
+                  syncUrl({
+                    state: "all",
+                    city: "",
+                    condition: "all",
+                    minPrice: "",
+                    maxPrice: "",
+                    sort: "newest",
+                    page: "1",
+                  });
+                }}
+              >
+                Filtreleri Temizle
+              </Button>
             </div>
           </div>
         </div>
