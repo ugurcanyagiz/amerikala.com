@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -62,6 +62,7 @@ const SORT_OPTIONS = [
 ];
 
 const CATEGORY_OPTIONS = CATEGORIES.map((cat) => ({ value: cat.value, label: cat.label }));
+const PAGE_SIZE = 24;
 
 type FilterState = {
   q: string;
@@ -72,7 +73,15 @@ type FilterState = {
   maxPrice: string;
   condition: string;
   sort: string;
-  page: string;
+};
+
+const dedupeById = (items: MarketplaceListing[]) => {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
 };
 
 export default function AlisverisPage() {
@@ -83,10 +92,15 @@ export default function AlisverisPage() {
 
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchParams.get("q") || "");
   const [selectedCategory, setSelectedCategory] = useState<MarketplaceCategory | "all">((searchParams.get("category") as MarketplaceCategory) || "all");
   const [selectedState, setSelectedState] = useState(searchParams.get("state") || "all");
   const [selectedCity, setSelectedCity] = useState(searchParams.get("city") || "");
@@ -94,15 +108,16 @@ export default function AlisverisPage() {
   const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
   const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
-  const [page, setPage] = useState(searchParams.get("page") || "1");
-  const pageSize = 12;
-  const pageNumber = Math.max(1, Number.parseInt(page, 10) || 1);
 
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [mobileDraft, setMobileDraft] = useState<FilterState | null>(null);
 
+  const isRequestInFlight = useRef(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     setSearchQuery(searchParams.get("q") || "");
+    setDebouncedSearchQuery(searchParams.get("q") || "");
     setSelectedCategory((searchParams.get("category") as MarketplaceCategory) || "all");
     setSelectedState(searchParams.get("state") || "all");
     setSelectedCity(searchParams.get("city") || "");
@@ -110,8 +125,15 @@ export default function AlisverisPage() {
     setMinPrice(searchParams.get("minPrice") || "");
     setMaxPrice(searchParams.get("maxPrice") || "");
     setSortBy(searchParams.get("sort") || "newest");
-    setPage(searchParams.get("page") || "1");
   }, [searchParams]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [searchQuery]);
 
   const syncUrl = useCallback((next: {
     q?: string;
@@ -122,11 +144,10 @@ export default function AlisverisPage() {
     maxPrice?: string;
     condition?: string;
     sort?: string;
-    page?: string;
   }) => {
     const params = new URLSearchParams(searchParams.toString());
     const data = {
-      q: next.q ?? searchQuery,
+      q: next.q ?? debouncedSearchQuery,
       category: next.category ?? selectedCategory,
       state: next.state ?? selectedState,
       city: next.city ?? selectedCity,
@@ -134,11 +155,10 @@ export default function AlisverisPage() {
       maxPrice: next.maxPrice ?? maxPrice,
       condition: next.condition ?? selectedCondition,
       sort: next.sort ?? sortBy,
-      page: next.page ?? page,
     };
 
     Object.entries(data).forEach(([key, value]) => {
-      if (!value || value === "all" || (key === "sort" && value === "newest") || (key === "page" && value === "1")) {
+      if (!value || value === "all" || (key === "sort" && value === "newest")) {
         params.delete(key);
       } else {
         params.set(key, value);
@@ -157,7 +177,7 @@ export default function AlisverisPage() {
     pathname,
     router,
     searchParams,
-    searchQuery,
+    debouncedSearchQuery,
     selectedCategory,
     selectedState,
     selectedCity,
@@ -165,8 +185,11 @@ export default function AlisverisPage() {
     maxPrice,
     selectedCondition,
     sortBy,
-    page,
   ]);
+
+  useEffect(() => {
+    syncUrl({ q: debouncedSearchQuery });
+  }, [debouncedSearchQuery, syncUrl]);
 
   const buildFilterState = (): FilterState => ({
     q: searchQuery,
@@ -177,7 +200,6 @@ export default function AlisverisPage() {
     maxPrice,
     condition: selectedCondition,
     sort: sortBy,
-    page,
   });
 
   const applyFilters = (next: FilterState, closeSheet = false) => {
@@ -189,7 +211,6 @@ export default function AlisverisPage() {
     setMaxPrice(next.maxPrice);
     setSelectedCondition(next.condition);
     setSortBy(next.sort);
-    setPage(next.page);
     syncUrl(next);
 
     if (closeSheet) {
@@ -207,20 +228,20 @@ export default function AlisverisPage() {
     maxPrice: "",
     condition: "all",
     sort: "newest",
-    page: "1",
   });
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      syncUrl({ q: searchQuery, page });
-    }, 300);
+  const fetchListingsPage = useCallback(async (targetPage: number, replace: boolean) => {
+    if (isRequestInFlight.current) return;
+    isRequestInFlight.current = true;
 
-    return () => clearTimeout(timeout);
-  }, [page, searchQuery, syncUrl]);
-
-  const fetchListings = useCallback(async () => {
-    setLoading(true);
-    setErrorMessage(null);
+    if (replace) {
+      setLoading(true);
+      setErrorMessage(null);
+      setLoadMoreError(null);
+    } else {
+      setIsLoadingMore(true);
+      setLoadMoreError(null);
+    }
 
     try {
       let listingsQuery = supabase
@@ -228,27 +249,16 @@ export default function AlisverisPage() {
         .select("*, user:user_id (id, username, full_name, avatar_url)", { count: "exact" })
         .eq("status", "approved");
 
-      const trimmedQuery = searchQuery.trim();
+      const trimmedQuery = debouncedSearchQuery.trim();
       if (trimmedQuery) {
         const escapedQuery = trimmedQuery.replaceAll(",", " ");
         listingsQuery = listingsQuery.or(`title.ilike.%${escapedQuery}%,description.ilike.%${escapedQuery}%`);
       }
 
-      if (selectedCategory !== "all") {
-        listingsQuery = listingsQuery.eq("category", selectedCategory);
-      }
-
-      if (selectedState !== "all") {
-        listingsQuery = listingsQuery.eq("state", selectedState);
-      }
-
-      if (selectedCity.trim()) {
-        listingsQuery = listingsQuery.ilike("city", `%${selectedCity.trim()}%`);
-      }
-
-      if (selectedCondition !== "all") {
-        listingsQuery = listingsQuery.eq("condition", selectedCondition);
-      }
+      if (selectedCategory !== "all") listingsQuery = listingsQuery.eq("category", selectedCategory);
+      if (selectedState !== "all") listingsQuery = listingsQuery.eq("state", selectedState);
+      if (selectedCity.trim()) listingsQuery = listingsQuery.ilike("city", `%${selectedCity.trim()}%`);
+      if (selectedCondition !== "all") listingsQuery = listingsQuery.eq("condition", selectedCondition);
 
       if (minPrice) {
         const parsedMin = Number(minPrice);
@@ -268,25 +278,41 @@ export default function AlisverisPage() {
         listingsQuery = listingsQuery.order("created_at", { ascending: false });
       }
 
-      const from = (pageNumber - 1) * pageSize;
-      const to = from + pageSize - 1;
+      const from = (targetPage - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
 
       const { data: listingsData, count: listingsCount, error: listingsError } = await listingsQuery.range(from, to);
-
       if (listingsError) throw listingsError;
 
-      setListings(listingsData || []);
+      const nextPageItems = listingsData || [];
       setTotalCount(listingsCount || 0);
+      setPage(targetPage);
+      setHasMore((listingsCount || 0) > targetPage * PAGE_SIZE);
+
+      setListings((prev) => {
+        const merged = replace ? nextPageItems : [...prev, ...nextPageItems];
+        return dedupeById(merged);
+      });
     } catch (error) {
       console.error("Error fetching listings:", error);
-      setListings([]);
-      setTotalCount(0);
-      setErrorMessage("İlanlar yüklenirken bir sorun oluştu. Lütfen tekrar deneyin.");
+      if (replace) {
+        setListings([]);
+        setTotalCount(0);
+        setHasMore(false);
+        setErrorMessage("İlanlar yüklenirken bir sorun oluştu. Lütfen tekrar deneyin.");
+      } else {
+        setLoadMoreError("Daha fazla ilan yüklenemedi.");
+      }
     } finally {
-      setLoading(false);
+      if (replace) {
+        setLoading(false);
+      } else {
+        setIsLoadingMore(false);
+      }
+      isRequestInFlight.current = false;
     }
   }, [
-    searchQuery,
+    debouncedSearchQuery,
     selectedCategory,
     selectedState,
     selectedCity,
@@ -294,15 +320,38 @@ export default function AlisverisPage() {
     minPrice,
     maxPrice,
     sortBy,
-    pageNumber,
-    pageSize,
   ]);
 
   useEffect(() => {
-    fetchListings();
-  }, [fetchListings]);
+    setListings([]);
+    setPage(1);
+    setHasMore(true);
+    fetchListingsPage(1, true);
+  }, [
+    debouncedSearchQuery,
+    selectedCategory,
+    selectedState,
+    selectedCity,
+    selectedCondition,
+    minPrice,
+    maxPrice,
+    sortBy,
+    fetchListingsPage,
+  ]);
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || loading || isLoadingMore || !hasMore || !!errorMessage) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting && !isRequestInFlight.current) {
+        fetchListingsPage(page + 1, false);
+      }
+    }, { rootMargin: "200px 0px" });
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [page, hasMore, loading, isLoadingMore, errorMessage, fetchListingsPage]);
 
   return (
     <div className="ak-page pb-20 md:pb-0">
@@ -329,11 +378,7 @@ export default function AlisverisPage() {
                 <Input
                   placeholder="Ara (q)"
                   value={searchQuery}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setSearchQuery(value);
-                    setPage("1");
-                  }}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   icon={<Search size={18} />}
                 />
               </div>
@@ -341,28 +386,21 @@ export default function AlisverisPage() {
                 <Select
                   options={STATE_OPTIONS}
                   value={selectedState}
-                  onChange={(e) => {
-                    applyFilters({ ...buildFilterState(), state: e.target.value, page: "1" });
-                  }}
+                  onChange={(e) => applyFilters({ ...buildFilterState(), state: e.target.value })}
                 />
               </div>
               <div className="col-span-2">
                 <Input
                   placeholder="Şehir"
                   value={selectedCity}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    applyFilters({ ...buildFilterState(), city: value, page: "1" });
-                  }}
+                  onChange={(e) => applyFilters({ ...buildFilterState(), city: e.target.value })}
                 />
               </div>
               <div className="col-span-2">
                 <Select
                   options={CONDITION_OPTIONS}
                   value={selectedCondition}
-                  onChange={(e) => {
-                    applyFilters({ ...buildFilterState(), condition: e.target.value, page: "1" });
-                  }}
+                  onChange={(e) => applyFilters({ ...buildFilterState(), condition: e.target.value })}
                 />
               </div>
               <div className="col-span-1">
@@ -370,10 +408,7 @@ export default function AlisverisPage() {
                   type="number"
                   placeholder="Min $"
                   value={minPrice}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    applyFilters({ ...buildFilterState(), minPrice: value, page: "1" });
-                  }}
+                  onChange={(e) => applyFilters({ ...buildFilterState(), minPrice: e.target.value })}
                 />
               </div>
               <div className="col-span-1">
@@ -381,50 +416,14 @@ export default function AlisverisPage() {
                   type="number"
                   placeholder="Max $"
                   value={maxPrice}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    applyFilters({ ...buildFilterState(), maxPrice: value, page: "1" });
-                  }}
+                  onChange={(e) => applyFilters({ ...buildFilterState(), maxPrice: e.target.value })}
                 />
               </div>
               <div className="col-span-1">
                 <Select
                   options={SORT_OPTIONS}
                   value={sortBy}
-                  onChange={(e) => {
-                    applyFilters({ ...buildFilterState(), sort: e.target.value, page: "1" });
-                  }}
-                />
-              </div>
-              <div className="col-span-1">
-                <Input
-                  type="number"
-                  placeholder="Min $"
-                  value={minPrice}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    applyFilters({ ...buildFilterState(), minPrice: value, page: "1" });
-                  }}
-                />
-              </div>
-              <div className="col-span-1">
-                <Input
-                  type="number"
-                  placeholder="Max $"
-                  value={maxPrice}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    applyFilters({ ...buildFilterState(), maxPrice: value, page: "1" });
-                  }}
-                />
-              </div>
-              <div className="col-span-1">
-                <Select
-                  options={SORT_OPTIONS}
-                  value={sortBy}
-                  onChange={(e) => {
-                    applyFilters({ ...buildFilterState(), sort: e.target.value, page: "1" });
-                  }}
+                  onChange={(e) => applyFilters({ ...buildFilterState(), sort: e.target.value })}
                 />
               </div>
               <div className="col-span-1">
@@ -474,11 +473,7 @@ export default function AlisverisPage() {
                 <Input
                   placeholder="Ürün veya hizmet ara..."
                   value={searchQuery}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setSearchQuery(value);
-                    setPage("1");
-                  }}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   icon={<Search size={18} />}
                 />
               </div>
@@ -500,9 +495,7 @@ export default function AlisverisPage() {
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat.value}
-                  onClick={() => {
-                    applyFilters({ ...buildFilterState(), category: cat.value, page: "1" });
-                  }}
+                  onClick={() => applyFilters({ ...buildFilterState(), category: cat.value })}
                   className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
                     selectedCategory === cat.value
                       ? "bg-neutral-900 text-white border-neutral-900 dark:bg-white dark:text-neutral-900 dark:border-white"
@@ -540,38 +533,40 @@ export default function AlisverisPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <Package className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">Henüz ilan yok</h3>
+              <h3 className="text-lg font-medium mb-2">Sonuç bulunamadı</h3>
               <p className="text-neutral-500 mb-6">Bu filtrelerde ilan bulunamadı.</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {listings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
-            ))}
-          </div>
-        )}
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {listings.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
+            </div>
 
-        {!loading && !errorMessage && totalCount > pageSize && (
-          <div className="mt-8 flex items-center justify-center gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={pageNumber <= 1}
-              onClick={() => applyFilters({ ...buildFilterState(), page: String(pageNumber - 1) })}
-            >
-              Önceki
-            </Button>
-            <span className="text-sm text-neutral-500">Sayfa {pageNumber} / {totalPages}</span>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={pageNumber >= totalPages}
-              onClick={() => applyFilters({ ...buildFilterState(), page: String(pageNumber + 1) })}
-            >
-              Sonraki
-            </Button>
-          </div>
+            <div ref={sentinelRef} className="h-8" />
+
+            {isLoadingMore && (
+              <div className="flex items-center justify-center gap-2 py-6 text-sm text-neutral-500">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Daha fazla ilan yükleniyor...
+              </div>
+            )}
+
+            {loadMoreError && (
+              <div className="flex flex-col items-center gap-3 py-6">
+                <p className="text-sm text-neutral-500">{loadMoreError}</p>
+                <Button type="button" variant="secondary" onClick={() => fetchListingsPage(page + 1, false)}>
+                  Tekrar Dene
+                </Button>
+              </div>
+            )}
+
+            {!isLoadingMore && !hasMore && (
+              <p className="text-center text-sm text-neutral-500 py-6">No more listings</p>
+            )}
+          </>
         )}
       </section>
 
@@ -604,41 +599,41 @@ export default function AlisverisPage() {
               <Select
                 options={CATEGORY_OPTIONS}
                 value={mobileDraft.category}
-                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, category: e.target.value as MarketplaceCategory | "all", page: "1" } : prev)}
+                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, category: e.target.value as MarketplaceCategory | "all" } : prev)}
               />
               <Select
                 options={STATE_OPTIONS}
                 value={mobileDraft.state}
-                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, state: e.target.value, page: "1" } : prev)}
+                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, state: e.target.value } : prev)}
               />
               <Input
                 placeholder="Şehir"
                 value={mobileDraft.city}
-                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, city: e.target.value, page: "1" } : prev)}
+                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, city: e.target.value } : prev)}
               />
               <div className="grid grid-cols-2 gap-2">
                 <Input
                   type="number"
                   placeholder="Min $"
                   value={mobileDraft.minPrice}
-                  onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, minPrice: e.target.value, page: "1" } : prev)}
+                  onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, minPrice: e.target.value } : prev)}
                 />
                 <Input
                   type="number"
                   placeholder="Max $"
                   value={mobileDraft.maxPrice}
-                  onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, maxPrice: e.target.value, page: "1" } : prev)}
+                  onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, maxPrice: e.target.value } : prev)}
                 />
               </div>
               <Select
                 options={CONDITION_OPTIONS}
                 value={mobileDraft.condition}
-                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, condition: e.target.value, page: "1" } : prev)}
+                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, condition: e.target.value } : prev)}
               />
               <Select
                 options={SORT_OPTIONS}
                 value={mobileDraft.sort}
-                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, sort: e.target.value, page: "1" } : prev)}
+                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, sort: e.target.value } : prev)}
               />
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <Button
@@ -704,13 +699,13 @@ export default function AlisverisPage() {
 
 function ListingCard({ listing }: { listing: MarketplaceListing }) {
   const conditionLabel = MARKETPLACE_CONDITION_LABELS[listing.condition] || listing.condition;
-
+  const postedDate = new Date(listing.created_at).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
   return (
     <Link href={`/alisveris/ilan/${listing.id}`}>
       <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden cursor-pointer">
         <div className="relative h-44 overflow-hidden bg-neutral-100 dark:bg-neutral-800">
           {listing.images && listing.images.length > 0 ? (
-            <Image src={listing.images[0]} alt={listing.title} fill className="object-cover" sizes="(max-width: 767px) 100vw, 33vw" />
+            <Image src={listing.images[0]} alt={listing.title} fill className="object-cover" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-neutral-500">
               <Package size={30} />
@@ -728,6 +723,7 @@ function ListingCard({ listing }: { listing: MarketplaceListing }) {
             <MapPin size={12} />
             {listing.city}, {US_STATES_MAP[listing.state] || listing.state}
           </div>
+          <p className="text-xs text-neutral-500 mt-2">{postedDate}</p>
           <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
             <Badge variant="outline" size="sm">{MARKETPLACE_CATEGORY_LABELS[listing.category]}</Badge>
           </div>
