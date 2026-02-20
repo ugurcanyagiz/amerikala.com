@@ -223,7 +223,7 @@ export default function AlisverisPage() {
     setErrorMessage(null);
 
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from("marketplace_listings")
         .select("*, user:user_id (id, username, full_name, avatar_url)", { count: "exact" })
         .eq("status", "approved");
@@ -396,6 +396,77 @@ export default function AlisverisPage() {
                   }}
                 />
               </div>
+              <div className="col-span-1">
+                <Input
+                  type="number"
+                  placeholder="Min $"
+                  value={minPrice}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    applyFilters({ ...buildFilterState(), minPrice: value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-1">
+                <Input
+                  type="number"
+                  placeholder="Max $"
+                  value={maxPrice}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    applyFilters({ ...buildFilterState(), maxPrice: value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-1">
+                <Select
+                  options={SORT_OPTIONS}
+                  value={sortBy}
+                  onChange={(e) => {
+                    applyFilters({ ...buildFilterState(), sort: e.target.value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-1">
+                <Input
+                  type="number"
+                  placeholder="Min $"
+                  value={minPrice}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setMinPrice(value);
+                    syncUrl({ minPrice: value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-1">
+                <Input
+                  type="number"
+                  placeholder="Max $"
+                  value={maxPrice}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setMaxPrice(value);
+                    syncUrl({ maxPrice: value, page: "1" });
+                  }}
+                />
+              </div>
+              <div className="col-span-1">
+                <Select
+                  options={SORT_OPTIONS}
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    syncUrl({ sort: e.target.value, page: "1" });
+                  }}
+                />
+              </div>
+              <Link href={user ? "/alisveris/ilan-ver" : "/login?redirect=/alisveris/ilan-ver"}>
+                <Button variant="primary" size="lg" className="gap-2 bg-orange-500 hover:bg-orange-600 w-full md:w-auto">
+                  <Plus size={20} />
+                  İlan Ver
+                </Button>
+              </Link>
             </div>
 
             <div className="md:hidden flex gap-2 mt-1">
@@ -590,6 +661,39 @@ export default function AlisverisPage() {
                   Uygula
                 </Button>
               </div>
+              <Select
+                options={SORT_OPTIONS}
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  syncUrl({ sort: e.target.value, page: "1" });
+                }}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  setSelectedState("all");
+                  setSelectedCity("");
+                  setSelectedCondition("all");
+                  setMinPrice("");
+                  setMaxPrice("");
+                  setSortBy("newest");
+                  setPage("1");
+                  syncUrl({
+                    state: "all",
+                    city: "",
+                    condition: "all",
+                    minPrice: "",
+                    maxPrice: "",
+                    sort: "newest",
+                    page: "1",
+                  });
+                }}
+              >
+                Filtreleri Temizle
+              </Button>
             </div>
           </div>
         </div>
