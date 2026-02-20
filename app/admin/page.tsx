@@ -83,6 +83,16 @@ type FriendItem = {
   followedAt: string | null;
 };
 
+type WarningItem = {
+  id: string;
+  user_id: string;
+  created_at: string;
+  created_by_admin_id: string;
+  reason: string;
+  severity: "low" | "medium" | "high";
+  expires_at: string | null;
+};
+
 const KPI_CARDS = [
   { label: "Open Reviews", value: "128", delta: "+12% vs week" },
   { label: "Pending Approvals", value: "34", delta: "-8% vs week" },
@@ -140,7 +150,11 @@ export default function AdminPage() {
   const [friendsImplemented, setFriendsImplemented] = useState(true);
   const [friendsMessage, setFriendsMessage] = useState<string | null>(null);
   const [warnReason, setWarnReason] = useState("");
-  const [actionLoading, setActionLoading] = useState<"warn" | "block" | "unblock" | "role" | null>(null);
+  const [warnSeverity, setWarnSeverity] = useState<"low" | "medium" | "high">("medium");
+  const [warnExpiresAt, setWarnExpiresAt] = useState("");
+  const [warningsLoading, setWarningsLoading] = useState(false);
+  const [warnings, setWarnings] = useState<WarningItem[]>([]);
+  const [actionLoading, setActionLoading] = useState<"warn" | "block" | "unblock" | "role" | "revoke_warning" | null>(null);
   const [targetRole, setTargetRole] = useState<UserRole>("user");
 
   useEffect(() => {
@@ -265,17 +279,84 @@ export default function AdminPage() {
     }
   }, []);
 
-  const runAction = async (action: "warn" | "block" | "unblock" | "role") => {
+  const loadWarnings = React.useCallback(async (userId: string) => {
+    setWarningsLoading(true);
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/warnings`, { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) throw new Error(result?.error || "Failed to load warnings");
+      setWarnings(result.warnings ?? []);
+    } catch {
+      setWarnings([]);
+      setToast({ type: "error", message: "Failed to load warnings." });
+    } finally {
+      setWarningsLoading(false);
+    }
+  }, []);
+
+  const createWarning = async () => {
+    if (!selectedUserId) return;
+    if (!warnReason.trim()) {
+      setToast({ type: "error", message: "Warning reason is required." });
+      return;
+    }
+    if (!window.confirm("Create warning for this user?")) return;
+
+    setActionLoading("warn");
+    try {
+      const response = await fetch(`/api/admin/users/${selectedUserId}/warnings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reason: warnReason,
+          severity: warnSeverity,
+          expiresAt: warnExpiresAt || null,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) throw new Error(result?.error || "Unable to create warning");
+
+      setToast({ type: "success", message: result.message ?? "Warning created." });
+      setWarnReason("");
+      setWarnExpiresAt("");
+      await loadWarnings(selectedUserId);
+    } catch (error) {
+      setToast({ type: "error", message: error instanceof Error ? error.message : "Action failed." });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const revokeWarning = async (warningId: string) => {
+    if (!selectedUserId) return;
+    if (!window.confirm("Revoke this warning?")) return;
+
+    setActionLoading("revoke_warning");
+    try {
+      const response = await fetch(`/api/admin/users/${selectedUserId}/warnings/${warningId}`, {
+        method: "DELETE",
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) throw new Error(result?.error || "Unable to revoke warning");
+
+      setToast({ type: "success", message: result.message ?? "Warning revoked." });
+      await loadWarnings(selectedUserId);
+    } catch (error) {
+      setToast({ type: "error", message: error instanceof Error ? error.message : "Action failed." });
+    } finally {
+      setActionLoading(null);
+    }
+  }, []);
+
+  const runAction = async (action: "block" | "unblock" | "role") => {
     if (!selectedUserId) return;
 
     const actionName =
-      action === "warn"
-        ? "send warning"
-        : action === "block"
-          ? "block user"
-          : action === "unblock"
-            ? "unblock user"
-            : "change role";
+      action === "block"
+        ? "block user"
+        : action === "unblock"
+          ? "unblock user"
+          : "change role";
 
     if (!window.confirm(`Are you sure you want to ${actionName}?`)) {
       return;
@@ -284,13 +365,11 @@ export default function AdminPage() {
     setActionLoading(action);
     try {
       const body =
-        action === "warn"
-          ? { action: "warn", reason: warnReason }
-          : action === "block"
-            ? { action: "block" }
-            : action === "unblock"
-              ? { action: "unblock" }
-              : { action: "change_role", role: targetRole };
+        action === "block"
+          ? { action: "block" }
+          : action === "unblock"
+            ? { action: "unblock" }
+            : { action: "change_role", role: targetRole };
 
       const response = await fetch(`/api/admin/users/${selectedUserId}/actions`, {
         method: "POST",
@@ -304,7 +383,6 @@ export default function AdminPage() {
 
       setToast({ type: "success", message: result.message ?? "Action completed." });
       await Promise.all([loadUsers(), loadUserDetail(selectedUserId)]);
-      if (action === "warn") setWarnReason("");
     } catch (error) {
       setToast({ type: "error", message: error instanceof Error ? error.message : "Action failed." });
     } finally {
@@ -328,7 +406,8 @@ export default function AdminPage() {
     if (!selectedUserId) return;
     if (panelTab === "history") loadHistory(selectedUserId);
     if (panelTab === "friends") loadFriends(selectedUserId);
-  }, [loadFriends, loadHistory, panelTab, selectedUserId]);
+    if (panelTab === "actions") loadWarnings(selectedUserId);
+  }, [loadFriends, loadHistory, loadWarnings, panelTab, selectedUserId]);
 
   if (authLoading) {
     return (
@@ -670,7 +749,7 @@ export default function AdminPage() {
                 {panelTab === "actions" && (
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Warn User</p>
+                      <p className="text-sm font-medium">Warnings</p>
                       <textarea
                         value={warnReason}
                         onChange={(event) => setWarnReason(event.target.value)}
@@ -678,15 +757,61 @@ export default function AdminPage() {
                         placeholder="Reason for warning"
                         className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
                       />
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={actionLoading !== null || !isAdmin}
-                        onClick={() => runAction("warn")}
-                        className="gap-2"
-                      >
-                        <AlertTriangle className="w-4 h-4" /> Send Warning
-                      </Button>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <select
+                          value={warnSeverity}
+                          onChange={(event) => setWarnSeverity(event.target.value as "low" | "medium" | "high")}
+                          className="h-10 rounded-lg border border-neutral-200 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+                        >
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                        </select>
+                        <input
+                          type="datetime-local"
+                          value={warnExpiresAt}
+                          onChange={(event) => setWarnExpiresAt(event.target.value)}
+                          className="h-10 rounded-lg border border-neutral-200 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+                        />
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={actionLoading !== null || !isAdmin}
+                          onClick={createWarning}
+                          className="gap-2"
+                        >
+                          <AlertTriangle className="w-4 h-4" /> Create Warning
+                        </Button>
+                      </div>
+
+                      <div className="mt-3 space-y-2">
+                        {warningsLoading ? (
+                          <p className="text-sm text-neutral-500">Loading warnings...</p>
+                        ) : warnings.length === 0 ? (
+                          <p className="text-sm text-neutral-500">No warnings found.</p>
+                        ) : (
+                          warnings.map((warning) => (
+                            <div key={warning.id} className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-medium">{warning.reason}</p>
+                                  <p className="text-xs text-neutral-500 mt-1">
+                                    Severity: {warning.severity.toUpperCase()} · Created: {formatDate(warning.created_at)} · Expires: {formatDate(warning.expires_at)}
+                                  </p>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={actionLoading !== null || !isAdmin}
+                                  onClick={() => revokeWarning(warning.id)}
+                                >
+                                  Revoke
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-2">
