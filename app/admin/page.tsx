@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/app/contexts/AuthContext";
-import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/Card";
