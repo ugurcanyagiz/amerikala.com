@@ -346,7 +346,7 @@ export default function AdminPage() {
     } finally {
       setActionLoading(null);
     }
-  };
+  }, []);
 
   const runAction = async (action: "block" | "unblock" | "role") => {
     if (!selectedUserId) return;
