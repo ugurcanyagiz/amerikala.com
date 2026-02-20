@@ -1,5 +1,5 @@
 // User roles
-export type UserRole = 'user' | 'moderator' | 'admin';
+export type UserRole = 'user' | 'moderator' | 'admin' | 'ultra_admin';
 
 // Profile type - role is optional since it might not exist in DB yet
 export interface Profile {
@@ -575,6 +575,18 @@ export const ROLE_PERMISSIONS = {
     canApproveGroups: true,
     canApproveListings: true,
   },
+
+  ultra_admin: {
+    canDeleteOwnPosts: true,
+    canDeleteAnyPost: true,
+    canEditOwnProfile: true,
+    canEditAnyProfile: true,
+    canChangeRoles: true,
+    canAccessAdminPanel: true,
+    canApproveEvents: true,
+    canApproveGroups: true,
+    canApproveListings: true,
+  },
 } as const;
 
 // Helper function to check permission
@@ -591,6 +603,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   user: 'Kullanıcı',
   moderator: 'Moderatör',
   admin: 'Admin',
+  ultra_admin: 'Ultra Admin',
 };
 
 // Role badge colors
@@ -598,6 +611,7 @@ export const ROLE_COLORS: Record<UserRole, string> = {
   user: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
   moderator: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   admin: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  ultra_admin: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
 };
 
 // US States
