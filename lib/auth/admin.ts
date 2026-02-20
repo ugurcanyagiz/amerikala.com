@@ -2,13 +2,12 @@ import { User } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/server";
 
-export type AdminRole = "admin" | "ultra_admin";
+export type AdminRole = "admin";
 
 const ROLE_WEIGHT: Record<string, number> = {
   user: 0,
   moderator: 1,
   admin: 2,
-  ultra_admin: 3,
 };
 
 export class AdminAuthorizationError extends Error {
@@ -67,8 +66,4 @@ async function requireRole(minimumRole: AdminRole) {
 
 export async function requireAdmin() {
   return requireRole("admin");
-}
-
-export async function requireUltraAdmin() {
-  return requireRole("ultra_admin");
 }

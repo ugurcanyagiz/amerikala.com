@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { writeAdminAuditLogFromRequest } from "@/lib/audit/adminAudit";
-import { AdminAuthorizationError, requireUltraAdmin } from "@/lib/auth/admin";
+import { AdminAuthorizationError, requireAdmin } from "@/lib/auth/admin";
 
-const ALLOWED_ROLES = new Set(["user", "moderator", "admin", "ultra_admin"]);
+const ALLOWED_ROLES = new Set(["user", "moderator", "admin"]);
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { supabase, user } = await requireUltraAdmin();
+    const { supabase, user } = await requireAdmin();
     const { userId } = await params;
     const body = await request.json();
     const nextRole = typeof body?.role === "string" ? body.role : "";
@@ -19,9 +19,9 @@ export async function PATCH(
       return NextResponse.json({ ok: false, error: "Invalid role value." }, { status: 400 });
     }
 
-    if (userId === user.id && nextRole !== "ultra_admin") {
+    if (userId === user.id && nextRole !== "admin") {
       return NextResponse.json(
-        { ok: false, error: "Ultra admins cannot remove their own ultra_admin role." },
+        { ok: false, error: "Admins cannot remove their own admin role." },
         { status: 400 }
       );
     }

@@ -30,7 +30,7 @@ USING (
     SELECT 1
     FROM public.profiles p
     WHERE p.id = auth.uid()
-      AND p.role IN ('admin', 'ultra_admin')
+      AND p.role = 'admin'
   )
 );
 
@@ -53,7 +53,7 @@ WITH CHECK (
     SELECT 1
     FROM public.profiles p
     WHERE p.id = auth.uid()
-      AND p.role IN ('admin', 'ultra_admin')
+      AND p.role = 'admin'
   )
 );
 
@@ -67,7 +67,7 @@ USING (
     SELECT 1
     FROM public.profiles p
     WHERE p.id = auth.uid()
-      AND p.role IN ('admin', 'ultra_admin')
+      AND p.role = 'admin'
   )
 );
 
