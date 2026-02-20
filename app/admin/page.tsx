@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Activity,
+  AlertTriangle,
   Bell,
   ChevronLeft,
   ChevronRight,
@@ -35,6 +36,8 @@ const NAV_ITEMS = [
 
 type AdminTab = (typeof NAV_ITEMS)[number]["key"];
 type UserStatus = "active" | "pending" | "suspended";
+type PanelTab = "summary" | "history" | "friends" | "actions";
+type Toast = { type: "success" | "error"; message: string } | null;
 
 type AdminUserListItem = {
   id: string;
@@ -63,6 +66,21 @@ type AdminUserDetail = {
     created_at: string | null;
     updated_at: string | null;
   } | null;
+};
+
+type ActivityItem = {
+  id: string;
+  type: "post" | "listing" | "job_listing" | "marketplace_listing" | "comment" | "meetup";
+  label: string;
+  createdAt: string | null;
+};
+
+type FriendItem = {
+  userId: string;
+  username: string | null;
+  fullName: string | null;
+  avatarUrl: string | null;
+  followedAt: string | null;
 };
 
 const KPI_CARDS = [
@@ -96,7 +114,7 @@ function formatDate(value: string | null) {
 
 export default function AdminPage() {
   const router = useRouter();
-  const { user, loading: authLoading, isModerator, profile } = useAuth();
+  const { user, loading: authLoading, isModerator, profile, isAdmin } = useAuth();
 
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [searchQuery, setSearchQuery] = useState("");
@@ -112,6 +130,18 @@ export default function AdminPage() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUserDetail | null>(null);
   const [selectedUserLoading, setSelectedUserLoading] = useState(false);
+  const [panelTab, setPanelTab] = useState<PanelTab>("summary");
+  const [toast, setToast] = useState<Toast>(null);
+
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [history, setHistory] = useState<ActivityItem[]>([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+  const [friends, setFriends] = useState<FriendItem[]>([]);
+  const [friendsImplemented, setFriendsImplemented] = useState(true);
+  const [friendsMessage, setFriendsMessage] = useState<string | null>(null);
+  const [warnReason, setWarnReason] = useState("");
+  const [actionLoading, setActionLoading] = useState<"warn" | "block" | "unblock" | "role" | null>(null);
+  const [targetRole, setTargetRole] = useState<UserRole>("user");
 
   useEffect(() => {
     if (!authLoading) {
@@ -122,6 +152,12 @@ export default function AdminPage() {
       }
     }
   }, [authLoading, isModerator, router, user]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(id);
+  }, [toast]);
 
   const roleLabel = useMemo(() => {
     if (profile?.role === "ultra_admin") return "Ultra Admin";
@@ -184,12 +220,97 @@ export default function AdminPage() {
       }
 
       setSelectedUser(result.user as AdminUserDetail);
+      const nextRole = result.user?.profile?.role as UserRole | undefined;
+      if (nextRole && ["user", "moderator", "admin", "ultra_admin"].includes(nextRole)) {
+        setTargetRole(nextRole);
+      }
     } catch {
       setSelectedUser(null);
     } finally {
       setSelectedUserLoading(false);
     }
   }, []);
+
+  const loadHistory = React.useCallback(async (userId: string) => {
+    setHistoryLoading(true);
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/activity`, { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) throw new Error();
+      setHistory(result.activities ?? []);
+    } catch {
+      setHistory([]);
+      setToast({ type: "error", message: "Failed to load usage history." });
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  const loadFriends = React.useCallback(async (userId: string) => {
+    setFriendsLoading(true);
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/friends`, { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) throw new Error(result?.error || "Failed");
+
+      setFriendsImplemented(result.implemented !== false);
+      setFriendsMessage(result.message ?? null);
+      setFriends(result.friends ?? []);
+    } catch {
+      setFriendsImplemented(false);
+      setFriendsMessage("Friends feature not implemented.");
+      setFriends([]);
+    } finally {
+      setFriendsLoading(false);
+    }
+  }, []);
+
+  const runAction = async (action: "warn" | "block" | "unblock" | "role") => {
+    if (!selectedUserId) return;
+
+    const actionName =
+      action === "warn"
+        ? "send warning"
+        : action === "block"
+          ? "block user"
+          : action === "unblock"
+            ? "unblock user"
+            : "change role";
+
+    if (!window.confirm(`Are you sure you want to ${actionName}?`)) {
+      return;
+    }
+
+    setActionLoading(action);
+    try {
+      const body =
+        action === "warn"
+          ? { action: "warn", reason: warnReason }
+          : action === "block"
+            ? { action: "block" }
+            : action === "unblock"
+              ? { action: "unblock" }
+              : { action: "change_role", role: targetRole };
+
+      const response = await fetch(`/api/admin/users/${selectedUserId}/actions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) {
+        throw new Error(result?.error || "Action failed");
+      }
+
+      setToast({ type: "success", message: result.message ?? "Action completed." });
+      await Promise.all([loadUsers(), loadUserDetail(selectedUserId)]);
+      if (action === "warn") setWarnReason("");
+    } catch (error) {
+      setToast({ type: "error", message: error instanceof Error ? error.message : "Action failed." });
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   useEffect(() => {
     if (activeTab !== "users") return;
@@ -200,7 +321,14 @@ export default function AdminPage() {
   useEffect(() => {
     if (!selectedUserId) return;
     loadUserDetail(selectedUserId);
+    setPanelTab("summary");
   }, [loadUserDetail, selectedUserId]);
+
+  useEffect(() => {
+    if (!selectedUserId) return;
+    if (panelTab === "history") loadHistory(selectedUserId);
+    if (panelTab === "friends") loadFriends(selectedUserId);
+  }, [loadFriends, loadHistory, panelTab, selectedUserId]);
 
   if (authLoading) {
     return (
@@ -311,21 +439,19 @@ export default function AdminPage() {
             </header>
 
             {activeTab === "overview" && (
-              <>
-                <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  {KPI_CARDS.map((card) => (
-                    <Card key={card.label} className="border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-neutral-500">{card.label}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-3xl font-semibold tracking-tight">{card.value}</p>
-                        <p className="mt-1 text-xs text-neutral-500">{card.delta}</p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </section>
-              </>
+              <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {KPI_CARDS.map((card) => (
+                  <Card key={card.label} className="border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-neutral-500">{card.label}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-semibold tracking-tight">{card.value}</p>
+                      <p className="mt-1 text-xs text-neutral-500">{card.delta}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </section>
             )}
 
             {activeTab === "users" && (
@@ -364,9 +490,7 @@ export default function AdminPage() {
                         </option>
                       ))}
                     </select>
-                    <div className="text-xs text-neutral-500 flex items-center md:justify-end">
-                      Page {page} / {totalPages}
-                    </div>
+                    <div className="text-xs text-neutral-500 flex items-center md:justify-end">Page {page} / {totalPages}</div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -385,17 +509,9 @@ export default function AdminPage() {
                       </thead>
                       <tbody>
                         {usersLoading ? (
-                          <tr>
-                            <td className="px-2 py-6 text-neutral-500" colSpan={6}>
-                              Loading users...
-                            </td>
-                          </tr>
+                          <tr><td className="px-2 py-6 text-neutral-500" colSpan={6}>Loading users...</td></tr>
                         ) : users.length === 0 ? (
-                          <tr>
-                            <td className="px-2 py-6 text-neutral-500" colSpan={6}>
-                              No users found for current filters.
-                            </td>
-                          </tr>
+                          <tr><td className="px-2 py-6 text-neutral-500" colSpan={6}>No users found for current filters.</td></tr>
                         ) : (
                           users.map((item) => (
                             <tr
@@ -422,13 +538,11 @@ export default function AdminPage() {
                               <td className="px-2 py-3 text-neutral-600">{item.email ?? "—"}</td>
                               <td className="px-2 py-3">
                                 <span className="inline-flex rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                                  {ROLE_LABELS[(item.role as UserRole)] ?? item.role}
+                                  {ROLE_LABELS[item.role as UserRole] ?? item.role}
                                 </span>
                               </td>
                               <td className="px-2 py-3">
-                                <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[item.status]}`}>
-                                  {STATUS_LABELS[item.status]}
-                                </span>
+                                <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[item.status]}`}>{STATUS_LABELS[item.status]}</span>
                               </td>
                               <td className="px-2 py-3 text-neutral-600">{formatDate(item.createdAt)}</td>
                               <td className="px-2 py-3 text-neutral-600">{formatDate(item.lastSeen)}</td>
@@ -440,22 +554,10 @@ export default function AdminPage() {
                   </div>
 
                   <div className="mt-4 flex items-center justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="gap-1"
-                      disabled={page <= 1 || usersLoading}
-                      onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                    >
+                    <Button variant="ghost" size="sm" className="gap-1" disabled={page <= 1 || usersLoading} onClick={() => setPage((prev) => Math.max(prev - 1, 1))}>
                       <ChevronLeft className="w-4 h-4" /> Prev
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="gap-1"
-                      disabled={page >= totalPages || usersLoading}
-                      onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
-                    >
+                    <Button variant="ghost" size="sm" className="gap-1" disabled={page >= totalPages || usersLoading} onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}>
                       Next <ChevronRight className="w-4 h-4" />
                     </Button>
                   </div>
@@ -468,18 +570,29 @@ export default function AdminPage() {
 
       {selectedUserId && (
         <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-sm" onClick={() => setSelectedUserId(null)}>
-          <div
-            className="absolute right-0 top-0 h-full w-full max-w-lg bg-white p-6 shadow-2xl dark:bg-neutral-900"
-            onClick={(event) => event.stopPropagation()}
-          >
+          <div className="absolute right-0 top-0 h-full w-full max-w-2xl bg-white p-6 shadow-2xl dark:bg-neutral-900 overflow-y-auto" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-semibold">User Management Panel</h3>
-              <button
-                onClick={() => setSelectedUserId(null)}
-                className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-              >
+              <button onClick={() => setSelectedUserId(null)} className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800">
                 <X className="w-5 h-5" />
               </button>
+            </div>
+
+            <div className="mb-4 flex gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-3">
+              {([
+                ["summary", "Profile Summary"],
+                ["history", "Usage History"],
+                ["friends", "Friends"],
+                ["actions", "Admin Actions"],
+              ] as Array<[PanelTab, string]>).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setPanelTab(key)}
+                  className={`px-3 py-1.5 text-sm rounded-md ${panelTab === key ? "bg-blue-600 text-white" : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"}`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
 
             {selectedUserLoading ? (
@@ -487,38 +600,140 @@ export default function AdminPage() {
             ) : !selectedUser ? (
               <p className="text-sm text-rose-600">Unable to load user details.</p>
             ) : (
-              <div className="space-y-4 text-sm">
-                <div>
-                  <p className="text-neutral-500">Name</p>
-                  <p className="font-medium">{selectedUser.profile?.full_name ?? selectedUser.profile?.username ?? "Unknown"}</p>
-                </div>
-                <div>
-                  <p className="text-neutral-500">Email</p>
-                  <p className="font-medium">{selectedUser.email ?? "—"}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-neutral-500">Role</p>
-                    <p className="font-medium">{selectedUser.profile?.role ?? "user"}</p>
+              <>
+                {panelTab === "summary" && (
+                  <div className="space-y-4 text-sm">
+                    <div>
+                      <p className="text-neutral-500">Name</p>
+                      <p className="font-medium">{selectedUser.profile?.full_name ?? selectedUser.profile?.username ?? "Unknown"}</p>
+                    </div>
+                    <div>
+                      <p className="text-neutral-500">Email</p>
+                      <p className="font-medium">{selectedUser.email ?? "—"}</p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div><p className="text-neutral-500">Role</p><p className="font-medium">{selectedUser.profile?.role ?? "user"}</p></div>
+                      <div><p className="text-neutral-500">Status</p><p className="font-medium">{STATUS_LABELS[selectedUser.status]}</p></div>
+                      <div><p className="text-neutral-500">Created</p><p className="font-medium">{formatDate(selectedUser.createdAt)}</p></div>
+                    </div>
                   </div>
+                )}
+
+                {panelTab === "history" && (
                   <div>
-                    <p className="text-neutral-500">Status</p>
-                    <p className="font-medium">{STATUS_LABELS[selectedUser.status]}</p>
+                    {historyLoading ? (
+                      <p className="text-sm text-neutral-500">Loading usage history...</p>
+                    ) : history.length === 0 ? (
+                      <p className="text-sm text-neutral-500">No activity found.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {history.map((item) => (
+                          <div key={item.id} className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="text-sm font-medium">{item.type.replace("_", " ")}</p>
+                              <span className="text-xs text-neutral-500">{formatDate(item.createdAt)}</span>
+                            </div>
+                            <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-1">{item.label}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+                )}
+
+                {panelTab === "friends" && (
                   <div>
-                    <p className="text-neutral-500">Created</p>
-                    <p className="font-medium">{formatDate(selectedUser.createdAt)}</p>
+                    {friendsLoading ? (
+                      <p className="text-sm text-neutral-500">Loading friends...</p>
+                    ) : !friendsImplemented ? (
+                      <div className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 p-3 text-sm text-neutral-500">
+                        {friendsMessage ?? "Friends feature not implemented."}
+                      </div>
+                    ) : friends.length === 0 ? (
+                      <p className="text-sm text-neutral-500">No friends found.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {friends.map((friend) => (
+                          <div key={friend.userId} className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3 flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium">{friend.fullName ?? friend.username ?? "Unknown"}</p>
+                              <p className="text-xs text-neutral-500">@{friend.username ?? "unknown"}</p>
+                            </div>
+                            <span className="text-xs text-neutral-500">{formatDate(friend.followedAt)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-neutral-500">Last Seen</p>
-                    <p className="font-medium">{formatDate(selectedUser.lastSeen)}</p>
+                )}
+
+                {panelTab === "actions" && (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Warn User</p>
+                      <textarea
+                        value={warnReason}
+                        onChange={(event) => setWarnReason(event.target.value)}
+                        rows={3}
+                        placeholder="Reason for warning"
+                        className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+                      />
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        disabled={actionLoading !== null || !isAdmin}
+                        onClick={() => runAction("warn")}
+                        className="gap-2"
+                      >
+                        <AlertTriangle className="w-4 h-4" /> Send Warning
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Block Controls</p>
+                      <div className="flex gap-2">
+                        <Button variant="secondary" size="sm" disabled={actionLoading !== null || !isAdmin} onClick={() => runAction("block")}>
+                          Block
+                        </Button>
+                        <Button variant="ghost" size="sm" disabled={actionLoading !== null || !isAdmin} onClick={() => runAction("unblock")}>
+                          Unblock
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Role Change (Ultra Admin Only)</p>
+                      <div className="flex gap-2 items-center">
+                        <select
+                          value={targetRole}
+                          onChange={(event) => setTargetRole(event.target.value as UserRole)}
+                          className="h-10 rounded-lg border border-neutral-200 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+                        >
+                          {(["user", "moderator", "admin", "ultra_admin"] as UserRole[]).map((role) => (
+                            <option key={role} value={role}>{ROLE_LABELS[role]}</option>
+                          ))}
+                        </select>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={actionLoading !== null || profile?.role !== "ultra_admin"}
+                          onClick={() => runAction("role")}
+                        >
+                          Update Role
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                )}
+              </>
             )}
           </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className={`fixed right-4 top-4 z-[60] rounded-lg px-4 py-3 text-sm text-white shadow-lg ${toast.type === "success" ? "bg-emerald-600" : "bg-rose-600"}`}>
+          {toast.message}
         </div>
       )}
     </div>
