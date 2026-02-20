@@ -391,6 +391,11 @@ export default function Home() {
         <main className="flex-1">
           <section className="relative overflow-hidden border-b border-sky-100">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#d8ecff_0%,#f7fbff_45%,#ffffff_100%)]" />
+            <div
+              className="absolute inset-0 bg-cover bg-center opacity-15"
+              style={{ backgroundImage: "url('/arkaplan.png')" }}
+              aria-hidden="true"
+            />
             <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-8 lg:px-12 lg:py-16">
               <div className="grid items-center gap-10">
                 <div>
@@ -399,7 +404,7 @@ export default function Home() {
                     AMERIKALA
                   </span>
                   <h1 className="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-                    İlan ver, paylaş, haberdar ol. Tamamen ücretsiz!
+                    Amerika&apos;daki Türk topluluğu için güvenilir ilan ve paylaşım platformu.
                   </h1>
                   <p className="mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
                     Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
@@ -497,7 +502,7 @@ export default function Home() {
                         size="lg"
                         className="rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-7 font-semibold shadow-[0_12px_26px_-16px_rgba(37,99,235,0.8)]"
                       >
-                        Hemen İlan Ver
+                        Giriş Yap
                       </Button>
                     </Link>
                     <Link href="#son-ilanlar">
