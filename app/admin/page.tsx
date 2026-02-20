@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/app/contexts/AuthContext";
-import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/Card";
