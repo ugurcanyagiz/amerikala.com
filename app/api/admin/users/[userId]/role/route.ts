@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { writeAdminAuditLogFromRequest } from "@/lib/audit/adminAudit";
 import { AdminAuthorizationError, requireUltraAdmin } from "@/lib/auth/admin";
 
 const ALLOWED_ROLES = new Set(["user", "moderator", "admin", "ultra_admin"]);
@@ -25,11 +26,33 @@ export async function PATCH(
       );
     }
 
+    const { data: targetBefore, error: beforeError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (beforeError) {
+      return NextResponse.json({ ok: false, error: "Unable to fetch current role." }, { status: 500 });
+    }
+
     const { error } = await supabase.from("profiles").update({ role: nextRole }).eq("id", userId);
 
     if (error) {
       return NextResponse.json({ ok: false, error: "Unable to update role." }, { status: 500 });
     }
+
+    await writeAdminAuditLogFromRequest(request, {
+      actorUserId: user.id,
+      targetUserId: userId,
+      action: "admin.user.role.update",
+      entityType: "profile",
+      entityId: userId,
+      metadata: {
+        fromRole: targetBefore?.role ?? null,
+        toRole: nextRole,
+      },
+    });
 
     return NextResponse.json({ ok: true, userId, role: nextRole });
   } catch (error) {
