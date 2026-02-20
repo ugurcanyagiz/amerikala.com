@@ -35,7 +35,7 @@ const NAV_ITEMS = [
 ] as const;
 
 type AdminTab = (typeof NAV_ITEMS)[number]["key"];
-type UserStatus = "active" | "pending" | "suspended";
+type UserStatus = "active" | "pending" | "suspended" | "blocked";
 type PanelTab = "summary" | "history" | "friends" | "actions";
 type Toast = { type: "success" | "error"; message: string } | null;
 
@@ -63,6 +63,10 @@ type AdminUserDetail = {
     avatar_url: string | null;
     role: UserRole | string | null;
     is_verified: boolean | null;
+    is_blocked?: boolean | null;
+    blocked_reason?: string | null;
+    blocked_at?: string | null;
+    blocked_by?: string | null;
     created_at: string | null;
     updated_at: string | null;
   } | null;
@@ -104,16 +108,18 @@ const STATUS_LABELS: Record<UserStatus, string> = {
   active: "Active",
   pending: "Pending",
   suspended: "Suspended",
+  blocked: "Blocked",
 };
 
 const STATUS_COLORS: Record<UserStatus, string> = {
   active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
   pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
   suspended: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
+  blocked: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
 const ROLE_FILTERS = ["all", "user", "moderator", "admin", "ultra_admin"] as const;
-const STATUS_FILTERS = ["all", "active", "pending", "suspended"] as const;
+const STATUS_FILTERS = ["all", "active", "pending", "suspended", "blocked"] as const;
 
 function formatDate(value: string | null) {
   if (!value) return "—";
@@ -150,6 +156,7 @@ export default function AdminPage() {
   const [friendsImplemented, setFriendsImplemented] = useState(true);
   const [friendsMessage, setFriendsMessage] = useState<string | null>(null);
   const [warnReason, setWarnReason] = useState("");
+  const [blockReason, setBlockReason] = useState("");
   const [warnSeverity, setWarnSeverity] = useState<"low" | "medium" | "high">("medium");
   const [warnExpiresAt, setWarnExpiresAt] = useState("");
   const [warningsLoading, setWarningsLoading] = useState(false);
@@ -366,7 +373,7 @@ export default function AdminPage() {
     try {
       const body =
         action === "block"
-          ? { action: "block" }
+          ? { action: "block", reason: blockReason }
           : action === "unblock"
             ? { action: "unblock" }
             : { action: "change_role", role: targetRole };
@@ -383,6 +390,7 @@ export default function AdminPage() {
 
       setToast({ type: "success", message: result.message ?? "Action completed." });
       await Promise.all([loadUsers(), loadUserDetail(selectedUserId)]);
+      if (action === "block" || action === "unblock") setBlockReason("");
     } catch (error) {
       setToast({ type: "error", message: error instanceof Error ? error.message : "Action failed." });
     } finally {
@@ -695,6 +703,13 @@ export default function AdminPage() {
                       <div><p className="text-neutral-500">Status</p><p className="font-medium">{STATUS_LABELS[selectedUser.status]}</p></div>
                       <div><p className="text-neutral-500">Created</p><p className="font-medium">{formatDate(selectedUser.createdAt)}</p></div>
                     </div>
+                    {selectedUser.profile?.is_blocked && (
+                      <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
+                        <p className="font-medium">Blocked</p>
+                        <p className="mt-1">Reason: {selectedUser.profile?.blocked_reason || "—"}</p>
+                        <p className="mt-1">Blocked at: {formatDate(selectedUser.profile?.blocked_at ?? null)}</p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -816,6 +831,13 @@ export default function AdminPage() {
 
                     <div className="space-y-2">
                       <p className="text-sm font-medium">Block Controls</p>
+                      <input
+                        type="text"
+                        value={blockReason}
+                        onChange={(event) => setBlockReason(event.target.value)}
+                        placeholder="Block reason"
+                        className="h-10 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+                      />
                       <div className="flex gap-2">
                         <Button variant="secondary" size="sm" disabled={actionLoading !== null || !isAdmin} onClick={() => runAction("block")}>
                           Block

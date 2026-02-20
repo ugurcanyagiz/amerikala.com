@@ -4,7 +4,10 @@ import { writeAdminAuditLogFromRequest } from "@/lib/audit/adminAudit";
 import { AdminAuthorizationError, requireAdmin } from "@/lib/auth/admin";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
-function deriveStatus(user: { banned_until?: string | null; email_confirmed_at?: string | null }) {
+function deriveStatus(user: { banned_until?: string | null; email_confirmed_at?: string | null }, profile: { is_blocked?: boolean | null }) {
+  if (profile.is_blocked) {
+    return "blocked";
+  }
   if (user.banned_until && new Date(user.banned_until).getTime() > Date.now()) {
     return "suspended";
   }
@@ -31,7 +34,7 @@ export async function GET(
 
     const { data: profile, error: profileError } = await getSupabaseAdminClient()
       .from("profiles")
-      .select("id, username, full_name, avatar_url, role, is_verified, created_at, updated_at")
+      .select("id, username, full_name, avatar_url, role, is_verified, created_at, updated_at, is_blocked, blocked_reason, blocked_at, blocked_by")
       .eq("id", userId)
       .maybeSingle();
 
@@ -55,7 +58,7 @@ export async function GET(
         email: authUser.email ?? null,
         createdAt: authUser.created_at ?? null,
         lastSeen: authUser.last_sign_in_at ?? null,
-        status: deriveStatus(authUser),
+        status: deriveStatus(authUser, profile ?? {}),
         profile: profile ?? null,
       },
     });

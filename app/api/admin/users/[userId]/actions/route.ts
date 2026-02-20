@@ -30,8 +30,9 @@ export async function POST(
     }
 
     if (action === "block" || action === "unblock") {
-      const { user: actor } = await requireAdmin();
+      const { user: actor, supabase } = await requireAdmin();
       const admin = getSupabaseAdminClient();
+      const blockReason = typeof body?.reason === "string" ? body.reason.trim() : "";
 
       const { error } = await admin.auth.admin.updateUserById(userId, {
         ban_duration: action === "block" ? "876000h" : "none",
@@ -41,13 +42,36 @@ export async function POST(
         return NextResponse.json({ ok: false, error: "Unable to update user block status." }, { status: 500 });
       }
 
+      const { error: profileUpdateError } = await supabase
+        .from("profiles")
+        .update(
+          action === "block"
+            ? {
+                is_blocked: true,
+                blocked_reason: blockReason || null,
+                blocked_at: new Date().toISOString(),
+                blocked_by: actor.id,
+              }
+            : {
+                is_blocked: false,
+                blocked_reason: null,
+                blocked_at: null,
+                blocked_by: null,
+              }
+        )
+        .eq("id", userId);
+
+      if (profileUpdateError) {
+        return NextResponse.json({ ok: false, error: "Unable to persist profile block state." }, { status: 500 });
+      }
+
       await writeAdminAuditLogFromRequest(request, {
         actorUserId: actor.id,
         targetUserId: userId,
         action: action === "block" ? "admin.user.block" : "admin.user.unblock",
         entityType: "profile",
         entityId: userId,
-        metadata: {},
+        metadata: { reason: blockReason || null },
       });
 
       return NextResponse.json({ ok: true, message: action === "block" ? "User blocked." : "User unblocked." });

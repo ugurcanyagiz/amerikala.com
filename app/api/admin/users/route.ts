@@ -10,12 +10,15 @@ type AdminUserListItem = {
   name: string | null;
   avatarUrl: string | null;
   role: string;
-  status: "active" | "pending" | "suspended";
+  status: "active" | "pending" | "suspended" | "blocked";
   createdAt: string | null;
   lastSeen: string | null;
 };
 
-function deriveStatus(user: { banned_until?: string | null; email_confirmed_at?: string | null }): AdminUserListItem["status"] {
+function deriveStatus(user: { banned_until?: string | null; email_confirmed_at?: string | null }, profile: { is_blocked?: boolean | null }): AdminUserListItem["status"] {
+  if (profile.is_blocked) {
+    return "blocked";
+  }
   if (user.banned_until && new Date(user.banned_until).getTime() > Date.now()) {
     return "suspended";
   }
@@ -50,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     const { data: profiles, error: profilesError } = await getSupabaseAdminClient()
       .from("profiles")
-      .select("id, full_name, username, avatar_url, role")
+      .select("id, full_name, username, avatar_url, role, is_blocked, blocked_reason, blocked_at, blocked_by")
       .in("id", userIds.length > 0 ? userIds : ["00000000-0000-0000-0000-000000000000"]);
 
     if (profilesError) {
@@ -72,7 +75,7 @@ export async function GET(request: NextRequest) {
         profile?.avatar_url ??
         (typeof authUser.user_metadata?.avatar_url === "string" ? authUser.user_metadata.avatar_url : null);
       const role = typeof profile?.role === "string" ? profile.role : "user";
-      const status = deriveStatus(authUser);
+      const status = deriveStatus(authUser, profile ?? {});
 
       return {
         id: authUser.id,
