@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
       env: {
         hasSupabaseUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
         hasServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+        hasServiceRoleFallback: Boolean(process.env.SUPABASE_SERVICE_ROLE),
       },
     });
 
@@ -175,6 +176,7 @@ export async function GET(request: NextRequest) {
       env: {
         hasSupabaseUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
         hasServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+        hasServiceRoleFallback: Boolean(process.env.SUPABASE_SERVICE_ROLE),
       },
     });
 
