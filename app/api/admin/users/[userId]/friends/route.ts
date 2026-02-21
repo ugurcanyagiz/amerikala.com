@@ -17,7 +17,7 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { user: actor } = await requireAdmin();
+    const { user: actor } = await requireModerator();
     const { userId } = await params;
     const admin = getSupabaseAdminClient();
 
