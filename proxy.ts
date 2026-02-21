@@ -31,7 +31,12 @@ function createProxyClient(request: NextRequest, response: NextResponse) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const isAdminApiRoute = pathname === "/api/admin" || pathname.startsWith("/api/admin/");
+
+  if (!isAdminRoute && !isAdminApiRoute) {
+    return NextResponse.next();
+  }
 
   const nextResponse = NextResponse.next();
   const supabase = createProxyClient(request, nextResponse);
@@ -47,6 +52,7 @@ export async function proxy(request: NextRequest) {
 
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
+    loginUrl.searchParams.set("message", "Admin paneline erişmek için giriş yapmalısınız.");
     return NextResponse.redirect(loginUrl);
   }
 
@@ -62,7 +68,10 @@ export async function proxy(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "Insufficient admin privileges." }, { status: 403 });
     }
 
-    return new NextResponse("Forbidden", { status: 403 });
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    loginUrl.searchParams.set("message", "Bu alan yalnızca admin kullanıcılar içindir.");
+    return NextResponse.redirect(loginUrl);
   }
 
   return nextResponse;
