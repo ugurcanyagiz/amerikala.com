@@ -141,7 +141,7 @@ function formatDate(value: string | null) {
 
 export default function AdminPage() {
   const router = useRouter();
-  const { user, loading: authLoading, isModerator, profile, isAdmin } = useAuth();
+  const { user, loading: authLoading, isAdmin, profile } = useAuth();
 
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [searchQuery, setSearchQuery] = useState("");
@@ -184,11 +184,11 @@ export default function AdminPage() {
     if (!authLoading) {
       if (!user) {
         router.push("/login");
-      } else if (!isModerator) {
+      } else if (!isAdmin) {
         router.push("/");
       }
     }
-  }, [authLoading, isModerator, router, user]);
+  }, [authLoading, isAdmin, router, user]);
 
   useEffect(() => {
     if (!toast) return;
@@ -456,15 +456,15 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (activeTab !== "users") return;
-    if (!user || !isModerator) return;
+    if (!user || !isAdmin) return;
     loadUsers();
-  }, [activeTab, isModerator, loadUsers, user]);
+  }, [activeTab, isAdmin, loadUsers, user]);
 
   useEffect(() => {
     if (activeTab !== "audit-log") return;
-    if (!user || !isModerator) return;
+    if (!user || !isAdmin) return;
     loadAuditLogs();
-  }, [activeTab, isModerator, loadAuditLogs, user]);
+  }, [activeTab, isAdmin, loadAuditLogs, user]);
 
   useEffect(() => {
     if (!selectedUserId) return;
@@ -487,7 +487,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!user || !isModerator) {
+  if (!user || !isAdmin) {
     return (
       <div className="min-h-[calc(100vh-65px)] flex items-center justify-center">
         <Card className="w-full max-w-md">

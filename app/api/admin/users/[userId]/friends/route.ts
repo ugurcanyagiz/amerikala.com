@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { writeAdminAuditLogFromRequest } from "@/lib/audit/adminAudit";
-import { AdminAuthorizationError, requireAdmin, requireModerator } from "@/lib/auth/admin";
+import { AdminAuthorizationError, requireAdmin } from "@/lib/auth/admin";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type FriendItem = {
