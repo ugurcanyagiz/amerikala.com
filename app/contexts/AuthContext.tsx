@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const mountedRef = useRef(true);
 
   const normalizeRole = (value: unknown): UserRole | undefined => {
-    if (value === "user" || value === "moderator" || value === "admin" || value === "ultra_admin") {
+    if (value === "user" || value === "moderator" || value === "admin") {
       return value;
     }
     return undefined;
@@ -295,8 +295,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Computed values - with safe defaults
   const role: UserRole = profile?.role || "user";
-  const isAdmin = role === "admin" || role === "ultra_admin";
-  const isModerator = role === "moderator" || role === "admin" || role === "ultra_admin";
+  const isAdmin = role === "admin";
+  const isModerator = role === "moderator" || role === "admin";
 
   // Permission checker
   const can = useCallback((permission: keyof typeof ROLE_PERMISSIONS.user): boolean => {
