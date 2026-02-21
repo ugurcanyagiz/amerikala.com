@@ -1,57 +1,67 @@
+import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_FILE_EXCLUDE = [
-  "/logo.png",
-  "/favicon.ico",
-  "/robots.txt",
-  "/sitemap.xml",
-];
+import { getUserRoleFromProfiles } from "@/lib/auth/rbac";
 
-function isStaticAsset(pathname: string) {
-  return (
-    pathname.startsWith("/_next/static/") ||
-    pathname.startsWith("/_next/image/") ||
-    pathname.startsWith("/images/") ||
-    pathname.startsWith("/avatars/") ||
-    PUBLIC_FILE_EXCLUDE.includes(pathname)
+function createProxyClient(request: NextRequest, response: NextResponse) {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value);
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
   );
 }
 
-function hasSupabaseSessionCookie(request: NextRequest) {
-  return request.cookies
-    .getAll()
-    .some(({ name }) => name.includes("sb-") && name.endsWith("-auth-token"));
-}
-
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  if (isStaticAsset(pathname)) {
-    return NextResponse.next();
-  }
-
-  const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const isAdminApiRoute = pathname === "/api/admin" || pathname.startsWith("/api/admin/");
 
-  if (!isAdminRoute && !isAdminApiRoute) {
-    return NextResponse.next();
+  const nextResponse = NextResponse.next();
+  const supabase = createProxyClient(request, nextResponse);
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    if (isAdminApiRoute) {
+      return NextResponse.json({ ok: false, error: "Authentication required." }, { status: 401 });
+    }
+
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  if (hasSupabaseSessionCookie(request)) {
-    return NextResponse.next();
+  let role;
+  try {
+    role = await getUserRoleFromProfiles(supabase, user.id);
+  } catch {
+    return NextResponse.json({ ok: false, error: "Unable to resolve current role." }, { status: 500 });
   }
 
-  if (isAdminApiRoute) {
-    return NextResponse.json({ ok: false, error: "Authentication required." }, { status: 401 });
+  if (role !== "admin") {
+    if (isAdminApiRoute) {
+      return NextResponse.json({ ok: false, error: "Insufficient admin privileges." }, { status: 403 });
+    }
+
+    return new NextResponse("Forbidden", { status: 403 });
   }
 
-  const loginUrl = new URL("/login", request.url);
-  loginUrl.searchParams.set("redirect", pathname);
-  return NextResponse.redirect(loginUrl);
+  return nextResponse;
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|logo.png|robots.txt|sitemap.xml|images/|avatars/).*)",
-  ],
+  matcher: ["/admin/:path*", "/api/admin/:path*"],
 };
