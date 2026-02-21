@@ -1,22 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_FILE_EXCLUDE = [
-  "/logo.png",
-  "/favicon.ico",
-  "/robots.txt",
-  "/sitemap.xml",
-];
-
-function isStaticAsset(pathname: string) {
-  return (
-    pathname.startsWith("/_next/static/") ||
-    pathname.startsWith("/_next/image/") ||
-    pathname.startsWith("/images/") ||
-    pathname.startsWith("/avatars/") ||
-    PUBLIC_FILE_EXCLUDE.includes(pathname)
-  );
-}
-
 function hasSupabaseSessionCookie(request: NextRequest) {
   return request.cookies
     .getAll()
@@ -25,10 +8,6 @@ function hasSupabaseSessionCookie(request: NextRequest) {
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  if (isStaticAsset(pathname)) {
-    return NextResponse.next();
-  }
 
   const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const isAdminApiRoute = pathname === "/api/admin" || pathname.startsWith("/api/admin/");
@@ -51,7 +30,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|logo.png|robots.txt|sitemap.xml|images/|avatars/).*)",
-  ],
+  matcher: ["/admin/:path*", "/api/admin/:path*"],
 };
