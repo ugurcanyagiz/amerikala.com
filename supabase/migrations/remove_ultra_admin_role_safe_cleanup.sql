@@ -51,11 +51,11 @@ BEGIN
       EXECUTE 'ALTER TABLE public.profiles DROP CONSTRAINT profiles_role_check';
     END IF;
 
-    EXECUTE '
+    EXECUTE $sql$
       ALTER TABLE public.profiles
       ADD CONSTRAINT profiles_role_check
-      CHECK (role::text = ANY (ARRAY[''''user'''', ''''moderator'''', ''''admin'''']))
-    ';
+      CHECK (role::text = ANY (ARRAY['user', 'moderator', 'admin']))
+    $sql$;
   END IF;
 
   IF has_user_roles_role THEN
@@ -67,11 +67,11 @@ BEGIN
       EXECUTE 'ALTER TABLE public.user_roles DROP CONSTRAINT user_roles_role_check';
     END IF;
 
-    EXECUTE '
+    EXECUTE $sql$
       ALTER TABLE public.user_roles
       ADD CONSTRAINT user_roles_role_check
-      CHECK (role::text = ANY (ARRAY[''''user'''', ''''moderator'''', ''''admin'''']))
-    ';
+      CHECK (role::text = ANY (ARRAY['user', 'moderator', 'admin']))
+    $sql$;
   END IF;
 
   -- 3) Enum note: PostgreSQL enum value removal is not directly supported.
@@ -97,7 +97,7 @@ DO $policy$
 BEGIN
   IF to_regclass('public.admin_audit_logs') IS NOT NULL THEN
     EXECUTE 'DROP POLICY IF EXISTS "Admins can read admin audit logs" ON public.admin_audit_logs';
-    EXECUTE '
+    EXECUTE $sql$
       CREATE POLICY "Admins can read admin audit logs"
       ON public.admin_audit_logs
       FOR SELECT
@@ -107,15 +107,15 @@ BEGIN
           SELECT 1
           FROM public.profiles p
           WHERE p.id = auth.uid()
-            AND p.role::text = ''''admin''''
+            AND p.role::text = 'admin'
         )
       )
-    ';
+    $sql$;
   END IF;
 
   IF to_regclass('public.user_warnings') IS NOT NULL THEN
     EXECUTE 'DROP POLICY IF EXISTS "Admins can read warnings" ON public.user_warnings';
-    EXECUTE '
+    EXECUTE $sql$
       CREATE POLICY "Admins can read warnings"
       ON public.user_warnings
       FOR SELECT
@@ -125,13 +125,13 @@ BEGIN
           SELECT 1
           FROM public.profiles p
           WHERE p.id = auth.uid()
-            AND p.role::text = ''''admin''''
+            AND p.role::text = 'admin'
         )
       )
-    ';
+    $sql$;
 
     EXECUTE 'DROP POLICY IF EXISTS "Admins can create warnings" ON public.user_warnings';
-    EXECUTE '
+    EXECUTE $sql$
       CREATE POLICY "Admins can create warnings"
       ON public.user_warnings
       FOR INSERT
@@ -142,13 +142,13 @@ BEGIN
           SELECT 1
           FROM public.profiles p
           WHERE p.id = auth.uid()
-            AND p.role::text = ''''admin''''
+            AND p.role::text = 'admin'
         )
       )
-    ';
+    $sql$;
 
     EXECUTE 'DROP POLICY IF EXISTS "Admins can revoke warnings" ON public.user_warnings';
-    EXECUTE '
+    EXECUTE $sql$
       CREATE POLICY "Admins can revoke warnings"
       ON public.user_warnings
       FOR DELETE
@@ -158,10 +158,10 @@ BEGIN
           SELECT 1
           FROM public.profiles p
           WHERE p.id = auth.uid()
-            AND p.role::text = ''''admin''''
+            AND p.role::text = 'admin'
         )
       )
-    ';
+    $sql$;
   END IF;
 END
 $policy$;
