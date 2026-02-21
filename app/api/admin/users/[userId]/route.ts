@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { writeAdminAuditLogFromRequest } from "@/lib/audit/adminAudit";
-import { AdminAuthorizationError, requireAdmin } from "@/lib/auth/admin";
+import { AdminAuthorizationError, requireModerator } from "@/lib/auth/admin";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 function deriveStatus(user: { banned_until?: string | null; email_confirmed_at?: string | null }, profile: { is_blocked?: boolean | null }) {
@@ -22,7 +22,7 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { user: actor } = await requireAdmin();
+    const { user: actor } = await requireModerator();
     const { userId } = await params;
 
     const { data: authUserData, error: authUserError } = await getSupabaseAdminClient().auth.admin.getUserById(userId);
