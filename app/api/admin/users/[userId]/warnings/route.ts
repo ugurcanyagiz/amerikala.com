@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { writeAdminAuditLogFromRequest } from "@/lib/audit/adminAudit";
-import { AdminAuthorizationError, requireAdmin, requireModerator } from "@/lib/auth/admin";
+import { AdminAuthorizationError, requireAdmin } from "@/lib/auth/admin";
 
 const ALLOWED_SEVERITIES = ["low", "medium", "high"] as const;
 
@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { supabase, user: actor } = await requireModerator();
+    const { supabase, user: actor } = await requireAdmin();
     const { userId } = await params;
 
     const { data, error } = await supabase
