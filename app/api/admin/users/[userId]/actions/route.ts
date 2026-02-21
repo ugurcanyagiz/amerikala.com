@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { writeAdminAuditLogFromRequest } from "@/lib/audit/adminAudit";
-import { AdminAuthorizationError, requireAdmin, requireUltraAdmin } from "@/lib/auth/admin";
+import { AdminAuthorizationError, requireAdmin } from "@/lib/auth/admin";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(
@@ -78,10 +78,10 @@ export async function POST(
     }
 
     if (action === "change_role") {
-      const { user: actor, supabase } = await requireUltraAdmin();
+      const { user: actor, supabase } = await requireAdmin();
       const role = typeof body?.role === "string" ? body.role : "";
 
-      if (!["user", "moderator", "admin", "ultra_admin"].includes(role)) {
+      if (!["user", "moderator", "admin"].includes(role)) {
         return NextResponse.json({ ok: false, error: "Invalid role." }, { status: 400 });
       }
 
