@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { writeAdminAuditLogFromRequest } from "@/lib/audit/adminAudit";
-import { AdminAuthorizationError, requireAdmin, requireUltraAdmin } from "@/lib/auth/admin";
+import { AdminAuthorizationError, requireAdmin } from "@/lib/auth/admin";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type FriendItem = {
@@ -17,7 +17,7 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { user: actor } = await requireAdmin();
+    const { user: actor } = await requireAdmin(); // admin-only route guard
     const { userId } = await params;
     const admin = getSupabaseAdminClient();
 
@@ -93,7 +93,7 @@ export async function DELETE(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { user: actor } = await requireUltraAdmin();
+    const { user: actor } = await requireAdmin();
     const { userId } = await params;
     const body = await request.json();
     const friendUserId = typeof body?.friendUserId === "string" ? body.friendUserId : "";
