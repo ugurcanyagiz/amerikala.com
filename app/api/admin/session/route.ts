@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { writeAdminAuditLogFromRequest } from "@/lib/audit/adminAudit";
-import { AdminAuthorizationError, requireModerator } from "@/lib/auth/admin";
+import { AdminAuthorizationError, requireAdmin } from "@/lib/auth/admin";
 
 export async function GET(request: NextRequest) {
   try {
-    const { user, role } = await requireModerator();
+    const { user, role } = await requireAdmin();
 
     await writeAdminAuditLogFromRequest(request, {
       actorUserId: user.id,

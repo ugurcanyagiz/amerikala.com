@@ -1,15 +1,10 @@
 import { User } from "@supabase/supabase-js";
 
+import { AppRole, getUserRoleFromProfiles, hasMinimumRole } from "@/lib/auth/rbac";
 import { createClient } from "@/lib/supabase/server";
 
 export type AdminRole = "admin";
 export type ModerationRole = "moderator" | "admin";
-
-const ROLE_WEIGHT: Record<string, number> = {
-  user: 0,
-  moderator: 1,
-  admin: 2,
-};
 
 export class AdminAuthorizationError extends Error {
   status: number;
@@ -21,26 +16,15 @@ export class AdminAuthorizationError extends Error {
   }
 }
 
-function normalizeRole(value: unknown): string | null {
-  return typeof value === "string" && value.trim().length > 0 ? value : null;
-}
-
-async function resolveCurrentRole(supabase: Awaited<ReturnType<typeof createClient>>, user: User): Promise<string | null> {
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (error) {
+async function resolveCurrentRole(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  user: User
+): Promise<AppRole | null> {
+  try {
+    return await getUserRoleFromProfiles(supabase, user.id);
+  } catch {
     throw new AdminAuthorizationError("Unable to resolve current role.", 500);
   }
-
-  return (
-    normalizeRole(profile?.role) ??
-    normalizeRole(user.app_metadata?.role) ??
-    normalizeRole(user.user_metadata?.role)
-  );
 }
 
 async function requireRole(minimumRole: ModerationRole) {
@@ -55,10 +39,8 @@ async function requireRole(minimumRole: ModerationRole) {
   }
 
   const role = await resolveCurrentRole(supabase, user);
-  const currentWeight = ROLE_WEIGHT[role ?? ""] ?? -1;
-  const requiredWeight = ROLE_WEIGHT[minimumRole];
 
-  if (currentWeight < requiredWeight) {
+  if (!hasMinimumRole(role, minimumRole)) {
     throw new AdminAuthorizationError("Insufficient admin privileges.", 403);
   }
 
@@ -68,7 +50,6 @@ async function requireRole(minimumRole: ModerationRole) {
 export async function requireAdmin() {
   return requireRole("admin");
 }
-
 
 export async function requireModerator() {
   return requireRole("moderator");

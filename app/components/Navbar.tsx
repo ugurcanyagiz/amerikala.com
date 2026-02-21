@@ -92,6 +92,18 @@ function getNotificationTypeClasses(type: "likes" | "comments" | "events") {
   return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200";
 }
 
+function getRoleBadge(role?: string | null) {
+  if (role === "admin") {
+    return { label: "Admin", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" };
+  }
+
+  if (role === "moderator") {
+    return { label: "Moderator", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" };
+  }
+
+  return { label: "User", className: "bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300" };
+}
+
 function getDisplayName(
   profile: { first_name?: string | null; last_name?: string | null; full_name?: string | null; username?: string | null } | null | undefined,
   user?: { email?: string | null; user_metadata?: unknown } | null
@@ -361,6 +373,7 @@ function MobileBottomNav() {
 // Mobile Menu Sheet
 function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { user, profile, signOut, isAdmin } = useAuth();
+  const roleBadge = getRoleBadge(profile?.role);
   const router = useRouter();
   const displayName = getDisplayName(profile, user);
   const usernameLabel = getUsernameLabel(profile, user);
@@ -407,6 +420,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 <div>
                   <div className="font-semibold">{displayName}</div>
                   <div className="text-sm text-slate-500">{usernameLabel}</div>
+                  <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${roleBadge.className}`}>{roleBadge.label}</span>
                 </div>
               </Link>
             </div>
@@ -517,6 +531,7 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, profile, signOut, loading, isAdmin } = useAuth();
+  const roleBadge = getRoleBadge(profile?.role);
   const displayName = getDisplayName(profile, user);
   const usernameLabel = getUsernameLabel(profile, user);
   const { notifications, unreadCount, markAsRead, markAllAsRead, refreshNotifications, loading: notificationLoading } = useNotifications();
@@ -997,6 +1012,7 @@ export default function Navbar() {
                         <div className="px-4 py-3 border-b border-sky-100">
                           <div className="font-semibold truncate">{displayName}</div>
                           <div className="text-sm text-slate-500 truncate">{usernameLabel}</div>
+                          <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${roleBadge.className}`}>{roleBadge.label}</span>
                         </div>
                         <div className="py-1">
                           <Link
