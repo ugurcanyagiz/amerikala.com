@@ -39,32 +39,38 @@ export default function EmlakPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const { data: listings } = await supabase
+        const { data: listings, error: listingsError } = await supabase
           .from("listings")
           .select(`*, user:user_id (id, username, full_name, avatar_url)`)
           .eq("status", "approved")
           .order("created_at", { ascending: false })
           .limit(6);
 
+        if (listingsError) throw listingsError;
+
         setRecentListings(listings || []);
 
-        const { count: rentCount } = await supabase
+        const { count: rentCount, error: rentCountError } = await supabase
           .from("listings")
           .select("*", { count: "exact", head: true })
           .eq("status", "approved")
           .eq("listing_type", "rent");
 
-        const { count: saleCount } = await supabase
+        const { count: saleCount, error: saleCountError } = await supabase
           .from("listings")
           .select("*", { count: "exact", head: true })
           .eq("status", "approved")
           .eq("listing_type", "sale");
 
-        const { count: roommateCount } = await supabase
+        const { count: roommateCount, error: roommateCountError } = await supabase
           .from("listings")
           .select("*", { count: "exact", head: true })
           .eq("status", "approved")
           .eq("listing_type", "roommate");
+
+        if (rentCountError) throw rentCountError;
+        if (saleCountError) throw saleCountError;
+        if (roommateCountError) throw roommateCountError;
 
         setStats({ rent: (rentCount || 0) + (roommateCount || 0), sale: saleCount || 0 });
       } catch (error) {

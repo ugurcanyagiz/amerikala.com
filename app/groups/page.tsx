@@ -79,9 +79,11 @@ export default function GroupsPage() {
 
         if (error) {
           console.error("Error fetching groups:", error);
-        } else {
-          setGroups(data || []);
+          setGroups([]);
+          return;
         }
+
+        setGroups(data || []);
       } catch (error) {
         console.error("Error:", error);
       } finally {
