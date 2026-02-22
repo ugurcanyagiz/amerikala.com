@@ -372,7 +372,8 @@ function MobileBottomNav() {
 
 // Mobile Menu Sheet
 function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { user, profile, signOut, isAdmin } = useAuth();
+  const { user, profile, signOut, loading, isAdmin } = useAuth();
+  const showAdminLink = !loading && isAdmin;
   const roleBadge = getRoleBadge(profile?.role);
   const router = useRouter();
   const displayName = getDisplayName(profile, user);
@@ -477,7 +478,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             })}
           </div>
 
-          {isAdmin && (
+          {showAdminLink && (
             <div className="border-t border-neutral-200 dark:border-neutral-800 py-2">
               <Link
                 href="/admin"
@@ -531,6 +532,7 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, profile, signOut, loading, isAdmin } = useAuth();
+  const showAdminLink = !loading && isAdmin;
   const roleBadge = getRoleBadge(profile?.role);
   const displayName = getDisplayName(profile, user);
   const usernameLabel = getUsernameLabel(profile, user);
@@ -551,7 +553,7 @@ export default function Navbar() {
   const notificationPanelRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
-  const desktopNavItems = isAdmin
+  const desktopNavItems = showAdminLink
     ? [
         ...NAV_ITEMS,
         {
@@ -1031,7 +1033,7 @@ export default function Navbar() {
                             <Settings size={18} />
                             Ayarlar
                           </Link>
-                          {isAdmin && (
+                          {showAdminLink && (
                             <Link
                               href="/admin"
                               onClick={() => setUserMenuOpen(false)}

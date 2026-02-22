@@ -37,7 +37,7 @@ export default function IsPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const { data: jobsData, count: jobsCount } = await supabase
+        const { data: jobsData, count: jobsCount, error: jobsError } = await supabase
           .from("job_listings")
           .select("*, user:user_id (id, username, full_name, avatar_url)", { count: "exact" })
           .eq("listing_type", "hiring")
@@ -45,13 +45,16 @@ export default function IsPage() {
           .order("created_at", { ascending: false })
           .limit(3);
 
-        const { data: seekersData, count: seekersCount } = await supabase
+        const { data: seekersData, count: seekersCount, error: seekersError } = await supabase
           .from("job_listings")
           .select("*, user:user_id (id, username, full_name, avatar_url)", { count: "exact" })
           .eq("listing_type", "seeking_job")
           .eq("status", "approved")
           .order("created_at", { ascending: false })
           .limit(3);
+
+        if (jobsError) throw jobsError;
+        if (seekersError) throw seekersError;
 
         setRecentJobs(jobsData || []);
         setRecentSeekers(seekersData || []);
@@ -89,7 +92,7 @@ export default function IsPage() {
               İş İlanları
             </h1>
             <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-              Amerika'daki Türk topluluğundan iş fırsatları ve yetenekler.
+              Amerika&apos;daki Türk topluluğundan iş fırsatları ve yetenekler.
             </p>
 
             <Link href={user ? "/is/ilan-ver" : "/login?redirect=/is/ilan-ver"}>
