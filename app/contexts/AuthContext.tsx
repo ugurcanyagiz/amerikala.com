@@ -295,7 +295,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Computed values - with safe defaults
   const role: UserRole = profile?.role || "user";
-  const isAdmin = role === "admin";
+  const isAdmin = role === "admin" && profile?.is_verified === true;
   const isModerator = role === "moderator" || role === "admin";
 
   // Permission checker

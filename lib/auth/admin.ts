@@ -44,6 +44,22 @@ async function requireRole(minimumRole: ModerationRole) {
     throw new AdminAuthorizationError("Insufficient admin privileges.", 403);
   }
 
+  if (minimumRole === "admin") {
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("is_verified")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      throw new AdminAuthorizationError("Unable to verify admin profile.", 500);
+    }
+
+    if (profile?.is_verified !== true) {
+      throw new AdminAuthorizationError("Verified admin account required.", 403);
+    }
+  }
+
   return { supabase, user, role: role as ModerationRole };
 }
 
