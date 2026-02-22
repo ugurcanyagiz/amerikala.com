@@ -166,10 +166,14 @@ export default function JobListingDetailPage() {
 
         setListing(data);
 
-        await supabase
-          .from("job_listings")
-          .update({ view_count: (data.view_count || 0) + 1 })
-          .eq("id", listingId);
+        void fetch("/api/public/view", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ table: "job_listings", id: listingId }),
+          keepalive: true,
+        }).catch((touchError) => {
+          console.error("Error incrementing job listing view count:", touchError);
+        });
       } catch (fetchListingError: unknown) {
         console.error("Error fetching listing:", fetchListingError);
         setError(toErrorMessage(fetchListingError, "İlan yüklenirken bir sorun oluştu."));
