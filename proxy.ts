@@ -78,5 +78,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Keep proxy auth scoped strictly to admin routes.
+  // Everything else (including static assets like /logo.png, /favicon.ico,
+  // /_next/static/*, /_next/image/*, /images/*, /robots.txt, /sitemap.xml)
+  // must remain public and bypass this proxy.
   matcher: ["/admin/:path*", "/api/admin/:path*"],
 };
