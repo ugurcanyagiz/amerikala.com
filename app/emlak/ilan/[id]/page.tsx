@@ -211,11 +211,14 @@ export default function ListingDetailPage() {
           console.error("Error fetching listing comments:", commentsFetchError);
         }
 
-        // Increment view count
-        await supabase
-          .from("listings")
-          .update({ view_count: (listingResult.data.view_count || 0) + 1 })
-          .eq("id", listingId);
+        void fetch("/api/public/view", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ table: "listings", id: listingId }),
+          keepalive: true,
+        }).catch((touchError) => {
+          console.error("Error incrementing listing view count:", touchError);
+        });
 
         // Check if favorited
         if (user) {

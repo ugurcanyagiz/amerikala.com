@@ -65,11 +65,14 @@ export default function MarketplaceDetailPage() {
 
         setListing(data);
 
-        // Increment view count
-        await supabase
-          .from("marketplace_listings")
-          .update({ view_count: (data.view_count || 0) + 1 })
-          .eq("id", listingId);
+        void fetch("/api/public/view", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ table: "marketplace_listings", id: listingId }),
+          keepalive: true,
+        }).catch((touchError) => {
+          console.error("Error incrementing marketplace listing view count:", touchError);
+        });
       } catch (err) {
         console.error("Error fetching listing:", err);
         const message = err instanceof Error ? err.message : "İlan yüklenirken bir hata oluştu";
