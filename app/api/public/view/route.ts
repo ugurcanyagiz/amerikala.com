@@ -73,15 +73,14 @@ export async function POST(request: NextRequest) {
   const supabaseAdmin = getSupabaseAdminClient();
 
   const { error } = await supabaseAdmin.rpc("increment_view_count", {
-    table_name: table,
-    item_id: id,
+    p_table: table,
+    p_id: id,
   });
 
   if (error) {
-    console.error("Failed to increment public listing view count:", error);
-    return NextResponse.json({ error: "Failed to update view count." }, { status: 500 });
+    console.warn("Failed to increment public listing view count; continuing without blocking render:", error);
+    return NextResponse.json({ ok: true, viewCountUpdated: false }, { status: 202 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, viewCountUpdated: true });
 }
-
