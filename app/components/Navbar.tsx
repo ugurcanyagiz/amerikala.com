@@ -547,6 +547,8 @@ export default function Navbar() {
   const [messagePreviews, setMessagePreviews] = useState<MessagePreview[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesError, setMessagesError] = useState<string | null>(null);
+  const previewsInFlightRef = useRef(false);
+  const previewsQueuedRef = useRef(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notificationPanelRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
@@ -564,6 +566,11 @@ export default function Navbar() {
     : NAV_ITEMS;
 
   const refreshMessagePreviews = useCallback(async () => {
+    if (previewsInFlightRef.current) {
+      previewsQueuedRef.current = true;
+      return;
+    }
+
     if (!user) {
       setMessagePreviews([]);
       return;
@@ -571,15 +578,31 @@ export default function Navbar() {
 
     setMessagesLoading(true);
     setMessagesError(null);
+    previewsInFlightRef.current = true;
 
     try {
       const previews = await getMessagePreviews(user.id);
       setMessagePreviews(previews);
     } catch (error) {
+      const isAbortError =
+        error instanceof DOMException
+          ? error.name === "AbortError"
+          : typeof error === "object" && error !== null && "name" in error && (error as { name?: string }).name === "AbortError";
+
+      if (isAbortError) {
+        return;
+      }
+
       console.error("Mesaj önizlemeleri alınamadı:", error);
       setMessagesError("Mesajlar yüklenemedi.");
     } finally {
+      previewsInFlightRef.current = false;
       setMessagesLoading(false);
+
+      if (previewsQueuedRef.current) {
+        previewsQueuedRef.current = false;
+        void refreshMessagePreviews();
+      }
     }
   }, [user]);
 
