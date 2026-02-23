@@ -38,6 +38,7 @@ import {
   MessageCircle,
   AlertTriangle,
   X,
+  Trash2,
 } from "lucide-react";
 
 type ListingOwner = {
@@ -76,6 +77,7 @@ export default function JobListingDetailPage() {
   const [reportSending, setReportSending] = useState(false);
   const [reportFeedback, setReportFeedback] = useState<string | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<UserProfileCardData | null>(null);
+  const [deletingListing, setDeletingListing] = useState(false);
 
   const createConversationRecord = useCallback(async (targetUserId: string) => {
     const payloads = [
@@ -223,6 +225,32 @@ export default function JobListingDetailPage() {
       setDmFeedback(toErrorMessage(messageSendError, "Mesaj gönderilemedi. Lütfen tekrar deneyin."));
     } finally {
       setDmSending(false);
+    }
+  };
+
+  const handleDeleteListing = async () => {
+    if (!user) {
+      router.push(`/login?redirect=/is/ilan/${listingId}`);
+      return;
+    }
+
+    if (!listing || listing.user_id !== user.id) return;
+    if (!confirm("Bu ilanı silmek istediğinize emin misiniz?")) return;
+
+    setDeletingListing(true);
+    try {
+      const { error: deleteError } = await supabase
+        .from("job_listings")
+        .delete()
+        .eq("id", listing.id)
+        .eq("user_id", user.id);
+
+      if (deleteError) throw deleteError;
+      router.push("/is/ilanlarim?deleted=true");
+    } catch (deleteError: unknown) {
+      setDmFeedback(toErrorMessage(deleteError, "İlan silinemedi. Lütfen tekrar deneyin."));
+    } finally {
+      setDeletingListing(false);
     }
   };
 
@@ -500,6 +528,18 @@ export default function JobListingDetailPage() {
                     </div>
 
                     <div className="space-y-3">
+                      {isOwnListing && (
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50"
+                          onClick={handleDeleteListing}
+                          loading={deletingListing}
+                        >
+                          <Trash2 size={16} />
+                          İlanı Sil
+                        </Button>
+                      )}
+
                       {!isOwnListing && (
                         <div className="space-y-3 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800">
                           <div className="flex items-center gap-2 text-sm font-medium">
