@@ -128,6 +128,26 @@ export default function Home() {
     marketplace: [],
   });
 
+  const isAbortLikeError = (error: unknown) => {
+    if (!error) return false;
+    if (error instanceof DOMException) {
+      return error.name === "AbortError" || error.name === "TimeoutError";
+    }
+
+    if (typeof error !== "object") return false;
+
+    const maybeError = error as { name?: string; message?: string; details?: string; code?: string };
+    const combined = `${maybeError.name || ""} ${maybeError.message || ""} ${maybeError.details || ""} ${maybeError.code || ""}`.toLowerCase();
+
+    return (
+      maybeError.name === "AbortError" ||
+      maybeError.name === "TimeoutError" ||
+      combined.includes("aborterror") ||
+      combined.includes("signal is aborted") ||
+      combined.includes("request aborted")
+    );
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchBoxRef.current && !searchBoxRef.current.contains(event.target as Node)) {
@@ -288,7 +308,9 @@ export default function Home() {
         setAds(unified);
         setCategoryPreviewItems(previewItems);
       } catch (error) {
-        console.error("Homepage fetch error", error);
+        if (!isAbortLikeError(error)) {
+          console.error("Homepage fetch error", error);
+        }
       } finally {
         setLoading(false);
         setLoadingMoreLatestAds(false);
