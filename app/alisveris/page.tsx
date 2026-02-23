@@ -381,7 +381,7 @@ export default function AlisverisPage() {
               </Link>
             </div>
 
-            <div className="hidden md:grid md:grid-cols-12 gap-3 rounded-2xl border border-neutral-200/80 bg-white/90 p-3 shadow-sm backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/90">
+            <div className="hidden md:grid md:grid-cols-14 gap-3 rounded-2xl border border-neutral-200/80 bg-white/90 p-3 shadow-sm backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/90">
               <div className="col-span-3">
                 <Input
                   placeholder="Ara (q)"
@@ -441,22 +441,14 @@ export default function AlisverisPage() {
                   aria-label="Sıralama"
                 />
               </div>
-              <div className="col-span-1">
-                <Select
-                  options={SORT_OPTIONS}
-                  value={sortBy}
-                  onChange={(e) => {
-                    setSortBy(e.target.value);
-                    syncUrl({ sort: e.target.value, page: "1" });
-                  }}
-                />
+              <div className="col-span-2">
+                <Link href={user ? "/alisveris/ilan-ver" : "/login?redirect=/alisveris/ilan-ver"}>
+                  <Button variant="primary" size="lg" className="w-full gap-2 whitespace-nowrap bg-orange-500 px-5 hover:bg-orange-600">
+                    <Plus size={20} />
+                    İlan Ver
+                  </Button>
+                </Link>
               </div>
-              <Link href={user ? "/alisveris/ilan-ver" : "/login?redirect=/alisveris/ilan-ver"}>
-                <Button variant="primary" size="lg" className="gap-2 bg-orange-500 hover:bg-orange-600 w-full md:w-auto">
-                  <Plus size={20} />
-                  İlan Ver
-                </Button>
-              </Link>
             </div>
 
             <div className="md:hidden flex gap-2">
