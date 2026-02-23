@@ -23,6 +23,7 @@ import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import { Avatar } from "../../components/ui/Avatar";
 import UserProfileCardModal, { UserProfileCardData } from "../../components/UserProfileCardModal";
+import MobileFilterSheet from "../components/MobileFilterSheet";
 import {
   Search,
   MapPin,
@@ -43,6 +44,13 @@ import {
   UserX
 } from "lucide-react";
 
+type JobFilterDraft = {
+  searchQuery: string;
+  selectedCategory: string;
+  selectedState: string;
+  selectedJobType: string;
+};
+
 export default function IsAriyorumPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -57,6 +65,8 @@ export default function IsAriyorumPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedState, setSelectedState] = useState<string>("all");
   const [selectedJobType, setSelectedJobType] = useState<string>("all");
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [mobileDraft, setMobileDraft] = useState<JobFilterDraft | null>(null);
 
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -189,6 +199,34 @@ export default function IsAriyorumPage() {
     }
   };
 
+  const buildFilterState = (): JobFilterDraft => ({
+    searchQuery,
+    selectedCategory,
+    selectedState,
+    selectedJobType,
+  });
+
+  const resetFilterState = (): JobFilterDraft => ({
+    searchQuery: "",
+    selectedCategory: "all",
+    selectedState: "all",
+    selectedJobType: "all",
+  });
+
+  const applyFilterState = (next: JobFilterDraft) => {
+    setSearchQuery(next.searchQuery);
+    setSelectedCategory(next.selectedCategory);
+    setSelectedState(next.selectedState);
+    setSelectedJobType(next.selectedJobType);
+  };
+
+  const mobileFilterChips = [
+    searchQuery ? `Ara: ${searchQuery}` : null,
+    selectedCategory !== "all" ? JOB_CATEGORY_LABELS[selectedCategory as JobCategory] : null,
+    selectedState !== "all" ? (US_STATES_MAP[selectedState] || selectedState) : null,
+    selectedJobType !== "all" ? JOB_TYPE_LABELS[selectedJobType as JobType] : null,
+  ].filter(Boolean) as string[];
+
   return (
     <div className="min-h-screen bg-[var(--color-surface)]">
       <div className="flex">
@@ -222,11 +260,39 @@ export default function IsAriyorumPage() {
                   Profil Oluştur
                 </Button>
               </div>
+
+              {mobileFilterChips.length > 0 && (
+                <div className="mt-4 flex gap-2 overflow-x-auto md:hidden">
+                  {mobileFilterChips.map((chip) => (
+                    <Badge key={chip} variant="outline" size="sm" className="whitespace-nowrap">
+                      {chip}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
 
           {/* Filters */}
-          <section className="sticky top-[72px] z-30 bg-[var(--color-surface)] border-b border-[var(--color-border-light)]">
+          <section className="border-b border-[var(--color-border-light)] bg-[var(--color-surface)] md:hidden">
+            <div className="max-w-5xl mx-auto px-6 lg:px-8 py-3">
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full gap-2"
+                onClick={() => {
+                  setMobileDraft(buildFilterState());
+                  setIsMobileFiltersOpen(true);
+                }}
+                aria-label="Filtreleri aç"
+              >
+                <Search size={16} />
+                Filtreler
+              </Button>
+            </div>
+          </section>
+
+          <section className="sticky top-[72px] z-30 hidden bg-[var(--color-surface)] border-b border-[var(--color-border-light)] md:block">
             <div className="max-w-5xl mx-auto px-6 lg:px-8 py-4">
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1">
@@ -301,6 +367,62 @@ export default function IsAriyorumPage() {
           </section>
         </main>
       </div>
+
+      <MobileFilterSheet
+        open={isMobileFiltersOpen && !!mobileDraft}
+        title="Filters"
+        onClose={() => {
+          setIsMobileFiltersOpen(false);
+          setMobileDraft(null);
+        }}
+        onClear={() => {
+          const cleared = resetFilterState();
+          setMobileDraft(cleared);
+          applyFilterState(cleared);
+          setIsMobileFiltersOpen(false);
+        }}
+        onApply={() => {
+          if (!mobileDraft) return;
+          applyFilterState(mobileDraft);
+          setIsMobileFiltersOpen(false);
+          setMobileDraft(null);
+        }}
+      >
+        {mobileDraft && (
+          <div className="space-y-4">
+            <Input
+              placeholder="Pozisyon veya şehir ara..."
+              value={mobileDraft.searchQuery}
+              onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, searchQuery: e.target.value } : prev)}
+              icon={<Search size={18} />}
+            />
+            <Select
+              options={[
+                { value: "all", label: "Tüm Kategoriler" },
+                ...Object.entries(JOB_CATEGORY_LABELS).map(([value, label]) => ({ value, label }))
+              ]}
+              value={mobileDraft.selectedCategory}
+              onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, selectedCategory: e.target.value } : prev)}
+            />
+            <Select
+              options={[
+                { value: "all", label: "Tüm Eyaletler" },
+                ...US_STATES.map(s => ({ value: s.value, label: s.label }))
+              ]}
+              value={mobileDraft.selectedState}
+              onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, selectedState: e.target.value } : prev)}
+            />
+            <Select
+              options={[
+                { value: "all", label: "Çalışma Şekli" },
+                ...Object.entries(JOB_TYPE_LABELS).map(([value, label]) => ({ value, label }))
+              ]}
+              value={mobileDraft.selectedJobType}
+              onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, selectedJobType: e.target.value } : prev)}
+            />
+          </div>
+        )}
+      </MobileFilterSheet>
 
       {/* Create Modal */}
       {showCreateModal && (
