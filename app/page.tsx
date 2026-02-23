@@ -414,16 +414,11 @@ export default function Home() {
 
   return (
     <div className="relative min-h-[calc(100vh-64px)] overflow-x-clip bg-[#f7fbff]">
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[980px] bg-cover bg-top bg-no-repeat md:h-[920px] lg:h-[860px]"
-        style={{ backgroundImage: "url('/arkaplan.png')" }}
-        aria-hidden="true"
-      />
       <div className="flex">
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative overflow-hidden border-b border-sky-100">
+          <section className="relative overflow-hidden border-b border-sky-100 bg-[url('/arkaplan.png')] bg-cover bg-top bg-no-repeat">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(216,236,255,0.9)_0%,rgba(247,251,255,0.68)_45%,rgba(255,255,255,0)_100%)]" />
             <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-8 lg:px-12 lg:py-16">
               <div className="grid items-center gap-10">
