@@ -240,6 +240,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user, fetchProfile]);
 
+  const hydrateProfileForUser = useCallback((authUser: User) => {
+    void (async () => {
+      const userProfile = await fetchProfile(
+        authUser.id,
+        normalizeRole(authUser.app_metadata?.role) ?? normalizeRole(authUser.user_metadata?.role)
+      );
+
+      if (mountedRef.current) {
+        setProfile(userProfile);
+      }
+    })();
+  }, [fetchProfile]);
+
   // Sign out - düzeltilmiş versiyon
   const signOut = useCallback(async () => {
     devLog("auth", "signOut:start");
@@ -325,15 +338,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (currentSession?.user && mountedRef.current) {
           devLog("auth", "init:profile-fetch-start", { userId: currentSession.user.id });
-          const userProfile = await fetchProfile(
-            currentSession.user.id,
-            normalizeRole(currentSession.user.app_metadata?.role) ??
-              normalizeRole(currentSession.user.user_metadata?.role)
-          );
-          if (mountedRef.current) {
-            devLog("auth", "init:profile-set", { hasProfile: !!userProfile });
-            setProfile(userProfile);
-          }
+          hydrateProfileForUser(currentSession.user);
         }
       } catch (error) {
         if (!isAbortLikeError(error)) {
@@ -379,14 +384,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(newSession?.user ?? null);
 
             if (newSession?.user) {
-              const userProfile = await fetchProfile(
-                newSession.user.id,
-                normalizeRole(newSession.user.app_metadata?.role) ??
-                  normalizeRole(newSession.user.user_metadata?.role)
-              );
-              if (mountedRef.current) {
-                setProfile(userProfile);
-              }
+              hydrateProfileForUser(newSession.user);
             } else if (mountedRef.current) {
               setProfile(null);
             }
@@ -408,7 +406,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [hydrateProfileForUser]);
 
   // Computed values - with safe defaults
   const role: UserRole = profile?.role || "user";
