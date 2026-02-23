@@ -77,6 +77,7 @@ const getTimeAgo = (dateString: string) => {
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
+  const userId = user?.id ?? null;
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,9 +89,23 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const refreshQueuedRef = useRef(false);
 
   const isAbortError = (err: unknown) => {
-    return err instanceof DOMException
-      ? err.name === "AbortError"
-      : typeof err === "object" && err !== null && "name" in err && (err as { name?: string }).name === "AbortError";
+    if (!err) return false;
+    if (err instanceof DOMException) {
+      return err.name === "AbortError" || err.name === "TimeoutError";
+    }
+
+    if (typeof err !== "object") return false;
+
+    const maybeError = err as { name?: string; message?: string; details?: string; code?: string };
+    const combinedText = `${maybeError.name || ""} ${maybeError.message || ""} ${maybeError.details || ""} ${maybeError.code || ""}`.toLowerCase();
+
+    return (
+      maybeError.name === "AbortError" ||
+      maybeError.name === "TimeoutError" ||
+      combinedText.includes("aborterror") ||
+      combinedText.includes("signal is aborted") ||
+      combinedText.includes("request aborted")
+    );
   };
 
   useEffect(() => {
@@ -104,7 +119,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authLoading) return;
 
-    if (!user || typeof window === "undefined") {
+    if (!userId || typeof window === "undefined") {
       setReadIds(new Set());
       setDismissedIds(new Set());
       setNotifications([]);
@@ -112,8 +127,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const storedRead = window.localStorage.getItem(storageKeys.read(user.id));
-      const storedDismissed = window.localStorage.getItem(storageKeys.dismissed(user.id));
+      const storedRead = window.localStorage.getItem(storageKeys.read(userId));
+      const storedDismissed = window.localStorage.getItem(storageKeys.dismissed(userId));
 
       setReadIds(new Set(storedRead ? JSON.parse(storedRead) : []));
       setDismissedIds(new Set(storedDismissed ? JSON.parse(storedDismissed) : []));
@@ -122,17 +137,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setReadIds(new Set());
       setDismissedIds(new Set());
     }
-  }, [authLoading, user]);
+  }, [authLoading, userId]);
 
   useEffect(() => {
-    if (!user || typeof window === "undefined") return;
-    window.localStorage.setItem(storageKeys.read(user.id), JSON.stringify(Array.from(readIds)));
-  }, [readIds, user]);
+    if (!userId || typeof window === "undefined") return;
+    window.localStorage.setItem(storageKeys.read(userId), JSON.stringify(Array.from(readIds)));
+  }, [readIds, userId]);
 
   useEffect(() => {
-    if (!user || typeof window === "undefined") return;
-    window.localStorage.setItem(storageKeys.dismissed(user.id), JSON.stringify(Array.from(dismissedIds)));
-  }, [dismissedIds, user]);
+    if (!userId || typeof window === "undefined") return;
+    window.localStorage.setItem(storageKeys.dismissed(userId), JSON.stringify(Array.from(dismissedIds)));
+  }, [dismissedIds, userId]);
 
   const refreshNotifications = useCallback(async () => {
     if (refreshInFlightRef.current) {
@@ -144,7 +159,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (!user) {
+    if (!userId) {
       setNotifications([]);
       return;
     }
@@ -157,7 +172,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const { data: myPosts, error: postsError } = await supabase
         .from("posts")
         .select("id, content")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .limit(500);
 
       if (postsError) throw postsError;
@@ -171,16 +186,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               .from("likes")
               .select("post_id, user_id, created_at")
               .in("post_id", postIds)
-              .neq("user_id", user.id)
+              .neq("user_id", userId)
           : Promise.resolve({ data: [], error: null }),
         postIds.length
           ? supabase
               .from("comments")
               .select("id, post_id, user_id, content, created_at")
               .in("post_id", postIds)
-              .neq("user_id", user.id)
+              .neq("user_id", userId)
           : Promise.resolve({ data: [], error: null }),
-        supabase.from("events").select("id, title").eq("organizer_id", user.id).limit(500),
+        supabase.from("events").select("id, title").eq("organizer_id", userId).limit(500),
       ]);
 
       if (likesResult.error) throw likesResult.error;
@@ -196,7 +211,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             .from("event_attendees")
             .select("event_id, user_id, status, created_at")
             .in("event_id", eventIds)
-            .neq("user_id", user.id)
+            .neq("user_id", userId)
         : { data: [], error: null };
 
       if (eventAttendeesResult.error) throw eventAttendeesResult.error;
@@ -325,23 +340,23 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         void refreshNotifications();
       }
     }
-  }, [authLoading, user]);
+  }, [authLoading, userId]);
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
+    if (!userId) {
       setNotifications([]);
       return;
     }
 
     void refreshNotifications();
-  }, [authLoading, refreshNotifications, user]);
+  }, [authLoading, refreshNotifications, userId]);
 
   useEffect(() => {
-    if (authLoading || !user) return;
+    if (authLoading || !userId) return;
 
     const channel = supabase
-      .channel(`notifications-${user.id}`)
+      .channel(`notifications-${userId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "likes" }, () => {
         void refreshNotifications();
       })
@@ -356,7 +371,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [authLoading, refreshNotifications, user]);
+  }, [authLoading, refreshNotifications, userId]);
 
   const markAsRead = useCallback((id: string) => {
     setReadIds((prev) => new Set(prev).add(id));

@@ -45,6 +45,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return undefined;
   };
 
+  const isAbortLikeError = (error: unknown) => {
+    if (!error) return false;
+    if (error instanceof DOMException) {
+      return error.name === "AbortError" || error.name === "TimeoutError";
+    }
+
+    if (typeof error !== "object") return false;
+
+    const maybeError = error as { name?: string; message?: string; details?: string; code?: string };
+    const combined = `${maybeError.name || ""} ${maybeError.message || ""} ${maybeError.details || ""} ${maybeError.code || ""}`.toLowerCase();
+
+    return (
+      maybeError.name === "AbortError" ||
+      maybeError.name === "TimeoutError" ||
+      combined.includes("aborterror") ||
+      combined.includes("signal is aborted") ||
+      combined.includes("request aborted")
+    );
+  };
+
   // Fetch profile - sadece mevcut alanları al, eksik olanlar için varsayılan değer kullan
   const fetchProfile = useCallback(
     async (userId: string, fallbackRole?: UserRole): Promise<Profile | null> => {
@@ -60,7 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .single();
 
         if (error) {
-          console.error("Profile fetch error:", error.message);
+          if (!isAbortLikeError(error)) {
+            console.error("Profile fetch error:", error.message);
+          }
 
           // Hata durumunda minimal profile döndür
           return {
@@ -72,7 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             show_full_name: true,
             city: null,
             state: null,
-            profession: null,
             bio: null,
             avatar_url: null,
             cover_image_url: null,
@@ -103,7 +124,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           show_full_name: data.show_full_name ?? true,
           city: data.city ?? null,
           state: data.state ?? null,
-          profession: null,
           bio: data.bio ?? null,
           avatar_url: data.avatar_url ?? null,
           cover_image_url: data.cover_image_url ?? null,
@@ -118,7 +138,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         return profileWithDefaults;
       } catch (error) {
-        console.error("Error in fetchProfile:", error);
+        if (!isAbortLikeError(error)) {
+          console.error("Error in fetchProfile:", error);
+        }
         // Hata durumunda minimal profile döndür
         return {
           id: userId,
@@ -129,7 +151,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           show_full_name: true,
           city: null,
           state: null,
-          profession: null,
           bio: null,
           avatar_url: null,
           cover_image_url: null,
@@ -212,7 +233,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error("Session error:", error.message);
+          if (!isAbortLikeError(error)) {
+            console.error("Session error:", error.message);
+          }
           if (mountedRef.current) setLoading(false);
           return;
         }
@@ -238,7 +261,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch (error) {
-        console.error("Error initializing auth:", error);
+        if (!isAbortLikeError(error)) {
+          console.error("Error initializing auth:", error);
+        }
       } finally {
         if (mountedRef.current) {
           console.log("Auth initialization complete, setting loading to false");
@@ -252,36 +277,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        console.log("Auth state changed:", event);
+        try {
+          console.log("Auth state changed:", event);
 
-        if (!mountedRef.current) return;
+          if (!mountedRef.current) return;
 
-        if (event === "SIGNED_OUT") {
-          console.log("User signed out - clearing state");
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-          setLoading(false);
-          return;
-        }
-
-        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
-          console.log("User signed in or token refreshed");
-          setSession(newSession);
-          setUser(newSession?.user ?? null);
-          setLoading(false);
-
-          if (newSession?.user) {
-            const userProfile = await fetchProfile(
-              newSession.user.id,
-              normalizeRole(newSession.user.app_metadata?.role) ??
-                normalizeRole(newSession.user.user_metadata?.role)
-            );
-            if (mountedRef.current) {
-              setProfile(userProfile);
-            }
-          } else if (mountedRef.current) {
+          if (event === "SIGNED_OUT") {
+            console.log("User signed out - clearing state");
+            setSession(null);
+            setUser(null);
             setProfile(null);
+            setLoading(false);
+            return;
+          }
+
+          if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
+            console.log("User signed in or token refreshed");
+            setSession(newSession);
+            setUser(newSession?.user ?? null);
+            setLoading(false);
+
+            if (newSession?.user) {
+              const userProfile = await fetchProfile(
+                newSession.user.id,
+                normalizeRole(newSession.user.app_metadata?.role) ??
+                  normalizeRole(newSession.user.user_metadata?.role)
+              );
+              if (mountedRef.current) {
+                setProfile(userProfile);
+              }
+            } else if (mountedRef.current) {
+              setProfile(null);
+            }
+          }
+        } catch (error) {
+          if (!isAbortLikeError(error)) {
+            console.error("Auth state change handler error:", error);
           }
         }
       }

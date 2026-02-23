@@ -11,7 +11,6 @@ export interface Profile {
   show_full_name: boolean;
   city: string | null;
   state: string | null;
-  profession: string | null;
   bio: string | null;
   avatar_url: string | null;
   cover_image_url: string | null;
