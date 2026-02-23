@@ -531,6 +531,7 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, profile, signOut, loading, isAdmin } = useAuth();
+  const userId = user?.id ?? null;
   const roleBadge = getRoleBadge(profile?.role);
   const displayName = getDisplayName(profile, user);
   const usernameLabel = getUsernameLabel(profile, user);
@@ -571,7 +572,7 @@ export default function Navbar() {
       return;
     }
 
-    if (!user) {
+    if (!userId) {
       setMessagePreviews([]);
       return;
     }
@@ -581,13 +582,28 @@ export default function Navbar() {
     previewsInFlightRef.current = true;
 
     try {
-      const previews = await getMessagePreviews(user.id);
+      const previews = await getMessagePreviews(userId);
       setMessagePreviews(previews);
     } catch (error) {
-      const isAbortError =
-        error instanceof DOMException
-          ? error.name === "AbortError"
-          : typeof error === "object" && error !== null && "name" in error && (error as { name?: string }).name === "AbortError";
+      const isAbortError = (() => {
+        if (!error) return false;
+        if (error instanceof DOMException) {
+          return error.name === "AbortError" || error.name === "TimeoutError";
+        }
+
+        if (typeof error !== "object") return false;
+
+        const maybeError = error as { name?: string; message?: string; details?: string; code?: string };
+        const combinedText = `${maybeError.name || ""} ${maybeError.message || ""} ${maybeError.details || ""} ${maybeError.code || ""}`.toLowerCase();
+
+        return (
+          maybeError.name === "AbortError" ||
+          maybeError.name === "TimeoutError" ||
+          combinedText.includes("aborterror") ||
+          combinedText.includes("signal is aborted") ||
+          combinedText.includes("request aborted")
+        );
+      })();
 
       if (isAbortError) {
         return;
@@ -604,7 +620,7 @@ export default function Navbar() {
         void refreshMessagePreviews();
       }
     }
-  }, [user]);
+  }, [userId]);
 
   // Close menu/panels on click outside
   useEffect(() => {
@@ -633,12 +649,12 @@ export default function Navbar() {
   useEffect(() => {
     refreshMessagePreviews();
 
-    if (!user) {
+    if (!userId) {
       return;
     }
 
     const channel = supabase
-      .channel(`navbar-messages-${user.id}`)
+      .channel(`navbar-messages-${userId}`)
       .on(
         "postgres_changes",
         {
@@ -663,7 +679,7 @@ export default function Navbar() {
       window.removeEventListener("focus", handleFocus);
       supabase.removeChannel(channel);
     };
-  }, [refreshMessagePreviews, refreshNotifications, user]);
+  }, [refreshMessagePreviews, refreshNotifications, userId]);
 
   useEffect(() => {
     void refreshMessagePreviews();

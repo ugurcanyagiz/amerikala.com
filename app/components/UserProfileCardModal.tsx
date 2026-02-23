@@ -17,7 +17,6 @@ export type UserProfileCardData = {
   avatar_url?: string | null;
   city?: string | null;
   state?: string | null;
-  profession?: string | null;
   bio?: string | null;
 };
 
@@ -305,7 +304,7 @@ export default function UserProfileCardModal({ profile, open, onClose }: Props) 
             <Avatar src={profile.avatar_url || undefined} fallback={getDisplayName()} size="xl" />
             <div>
               <p className="text-lg font-semibold">{getDisplayName()}</p>
-              <p className="text-sm text-neutral-500">{profile.profession || "Topluluk üyesi"}</p>
+              <p className="text-sm text-neutral-500">{profile.username ? `@${profile.username}` : "Topluluk üyesi"}</p>
               <p className="text-sm text-neutral-500">{[profile.city, profile.state].filter(Boolean).join(", ") || "Konum belirtilmemiş"}</p>
             </div>
           </div>
