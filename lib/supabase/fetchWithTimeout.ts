@@ -1,6 +1,34 @@
 const DEFAULT_TIMEOUT_MS = 30000;
 const UPLOAD_TIMEOUT_MS = 60000;
 
+function combineAbortSignals(signals: Array<AbortSignal | null | undefined>): AbortSignal | undefined {
+  const activeSignals = signals.filter(Boolean) as AbortSignal[];
+  if (!activeSignals.length) return undefined;
+  if (activeSignals.length === 1) return activeSignals[0];
+
+  // Modern runtimes support AbortSignal.any and preserve abort reasons.
+  if (typeof AbortSignal !== "undefined" && typeof AbortSignal.any === "function") {
+    return AbortSignal.any(activeSignals);
+  }
+
+  const controller = new AbortController();
+  const abortFromSource = (source: AbortSignal) => {
+    if (controller.signal.aborted) return;
+    controller.abort(source.reason);
+  };
+
+  for (const source of activeSignals) {
+    if (source.aborted) {
+      abortFromSource(source);
+      break;
+    }
+
+    source.addEventListener("abort", () => abortFromSource(source), { once: true });
+  }
+
+  return controller.signal;
+}
+
 export function fetchWithTimeout(
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -25,13 +53,11 @@ export function fetchWithTimeout(
     timeoutController.abort(new DOMException("Request timed out", "TimeoutError"));
   }, resolvedTimeoutMs);
 
+  const mergedSignal = combineAbortSignals([init?.signal, timeoutController.signal]);
+
   const mergedInit: RequestInit = {
     ...init,
-    // NOTE: We intentionally do not propagate caller-provided abort signals here.
-    // Some Supabase internal callers abort aggressively during auth/router transitions,
-    // which creates noisy AbortError spam in the app even for expected cancellations.
-    // We keep a timeout-based abort to avoid hanging requests.
-    signal: timeoutController.signal,
+    signal: mergedSignal,
   };
 
   return fetch(input, mergedInit).finally(() => clearTimeout(timeoutId));

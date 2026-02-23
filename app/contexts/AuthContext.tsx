@@ -98,21 +98,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hasHydratedSnapshotRef.current = true;
   }, []);
 
-  const persistSnapshot = useCallback((nextSnapshot: AuthSnapshot | null) => {
-    if (typeof window === "undefined") return;
-
-    try {
-      if (!nextSnapshot) {
-        window.localStorage.removeItem(AUTH_SNAPSHOT_STORAGE_KEY);
-        return;
-      }
-
-      window.localStorage.setItem(AUTH_SNAPSHOT_STORAGE_KEY, JSON.stringify(nextSnapshot));
-    } catch (error) {
-      console.error("Auth snapshot yazılamadı:", error);
-    }
-  }, []);
-
   const normalizeRole = (value: unknown): UserRole | undefined => {
     if (value === "user" || value === "moderator" || value === "admin") {
       return value;
