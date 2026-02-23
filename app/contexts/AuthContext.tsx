@@ -61,13 +61,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const [initialSnapshot] = useState<AuthSnapshot | null>(() => readSnapshot());
-
-  const [user, setUser] = useState<User | null>(initialSnapshot?.user ?? null);
-  const [profile, setProfile] = useState<Profile | null>(initialSnapshot?.profile ?? null);
-  const [session, setSession] = useState<Session | null>(initialSnapshot?.session ?? null);
-  const [loading, setLoading] = useState(!initialSnapshot);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
+  const hasHydratedSnapshotRef = useRef(false);
+
+  const saveAuthSnapshot = useCallback((nextSnapshot: AuthSnapshot | null) => {
+    if (typeof window === "undefined") return;
+
+    try {
+      if (!nextSnapshot) {
+        window.localStorage.removeItem(AUTH_SNAPSHOT_STORAGE_KEY);
+        return;
+      }
+
+      window.localStorage.setItem(AUTH_SNAPSHOT_STORAGE_KEY, JSON.stringify(nextSnapshot));
+    } catch (error) {
+      console.error("Auth snapshot yazılamadı:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!mountedRef.current || hasHydratedSnapshotRef.current) return;
+
+    const snapshot = readSnapshot();
+    if (!snapshot) {
+      hasHydratedSnapshotRef.current = true;
+      return;
+    }
+
+    setSession(snapshot.session);
+    setUser(snapshot.user);
+    setProfile(snapshot.profile);
+    hasHydratedSnapshotRef.current = true;
+  }, []);
 
   const persistSnapshot = useCallback((nextSnapshot: AuthSnapshot | null) => {
     if (typeof window === "undefined") return;
@@ -236,7 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       setSession(null);
       setLoading(false);
-      persistSnapshot(null);
+      saveAuthSnapshot(null);
       
       // Supabase'den çıkış yap - scope: 'global' ile tüm sekmelerde çıkış
       const { error } = await supabase.auth.signOut({ scope: 'global' });
@@ -264,17 +293,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     devLog("auth", "signOut:completed");
-  }, [persistSnapshot]);
+  }, [saveAuthSnapshot]);
 
   useEffect(() => {
-    if (!mountedRef.current) return;
+    if (!mountedRef.current || !hasHydratedSnapshotRef.current) return;
 
-    persistSnapshot({
+    saveAuthSnapshot({
       session,
       user,
       profile,
     });
-  }, [session, user, profile, persistSnapshot]);
+  }, [session, user, profile, saveAuthSnapshot]);
 
   // Initialize auth state
   useEffect(() => {
