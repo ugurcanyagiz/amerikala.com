@@ -49,6 +49,8 @@ import {
   MessageCircle,
   Send,
   ImageIcon,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 type ListingComment = {
@@ -86,7 +88,7 @@ const toErrorMessage = (error: unknown, fallback: string) => {
 export default function ListingDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const listingId = params.id as string;
 
   const [listing, setListing] = useState<Listing | null>(null);
@@ -99,10 +101,14 @@ export default function ListingDetailPage() {
   const [commentText, setCommentText] = useState("");
   const [commentSending, setCommentSending] = useState(false);
   const [commentsError, setCommentsError] = useState<string | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
+  const [deletingListing, setDeletingListing] = useState(false);
   const [dmText, setDmText] = useState("");
   const [dmSending, setDmSending] = useState(false);
   const [dmFeedback, setDmFeedback] = useState<string | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<UserProfileCardData | null>(null);
+  const isAdmin = role === "admin";
 
   const enrichCommentsWithProfiles = useCallback(async (rows: ListingCommentDbRow[]): Promise<ListingComment[]> => {
     if (rows.length === 0) return [];
@@ -412,6 +418,86 @@ export default function ListingDetailPage() {
       setDmFeedback(toErrorMessage(messageSendError, "Mesaj gönderilemedi. Yöneticiye conversations/messages RLS izinlerini kontrol ettirin."));
     } finally {
       setDmSending(false);
+    }
+  };
+
+
+
+  const handleDeleteListing = async () => {
+    if (!listing || !user || (!isAdmin && listing.user_id !== user.id)) return;
+    if (!confirm("Bu ilanı silmek istediğinize emin misiniz?")) return;
+
+    setDeletingListing(true);
+    try {
+      let query = supabase
+        .from("listings")
+        .delete()
+        .eq("id", listing.id);
+
+      if (!isAdmin) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { error: deleteError } = await query;
+      if (deleteError) throw deleteError;
+      router.push("/emlak/ilanlarim?deleted=true");
+    } catch (deleteError) {
+      console.error("Error deleting listing:", deleteError);
+      setDmFeedback(toErrorMessage(deleteError, "İlan silinemedi."));
+    } finally {
+      setDeletingListing(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!user) return;
+    if (!confirm("Bu yorumu silmek istediğinize emin misiniz?")) return;
+
+    try {
+      let query = supabase
+        .from("listing_comments")
+        .delete()
+        .eq("id", commentId);
+
+      if (!isAdmin) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { error: deleteError } = await query;
+      if (deleteError) throw deleteError;
+      setComments((prev) => prev.filter((comment) => comment.id !== commentId));
+    } catch (deleteError) {
+      console.error("Error deleting listing comment:", deleteError);
+      setCommentsError(toErrorMessage(deleteError, "Yorum silinemedi."));
+    }
+  };
+
+  const handleUpdateComment = async () => {
+    if (!user || !editingCommentId) return;
+    const nextContent = editingCommentText.trim();
+    if (!nextContent) return;
+
+    try {
+      let query = supabase
+        .from("listing_comments")
+        .update({ content: nextContent })
+        .eq("id", editingCommentId);
+
+      if (!isAdmin) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { error: updateError } = await query;
+      if (updateError) throw updateError;
+
+      setComments((prev) => prev.map((comment) => (
+        comment.id === editingCommentId ? { ...comment, content: nextContent } : comment
+      )));
+      setEditingCommentId(null);
+      setEditingCommentText("");
+    } catch (updateError) {
+      console.error("Error updating listing comment:", updateError);
+      setCommentsError(toErrorMessage(updateError, "Yorum güncellenemedi."));
     }
   };
 
@@ -808,7 +894,50 @@ export default function ListingDetailPage() {
                                   </button>
                                   <p className="text-xs text-neutral-500">{formatDate(comment.created_at)}</p>
                                 </div>
-                                <p className="text-sm text-neutral-700 dark:text-neutral-300 mt-1 whitespace-pre-wrap">{comment.content}</p>
+                                {editingCommentId === comment.id ? (
+                                  <div className="mt-2 space-y-2">
+                                    <textarea
+                                      value={editingCommentText}
+                                      onChange={(e) => setEditingCommentText(e.target.value)}
+                                      rows={3}
+                                      className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-sm"
+                                    />
+                                    <div className="flex justify-end gap-2">
+                                      <button
+                                        className="text-xs text-neutral-500"
+                                        onClick={() => {
+                                          setEditingCommentId(null);
+                                          setEditingCommentText("");
+                                        }}
+                                      >
+                                        Vazgeç
+                                      </button>
+                                      <button className="text-xs text-emerald-600" onClick={handleUpdateComment}>Kaydet</button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-neutral-700 dark:text-neutral-300 mt-1 whitespace-pre-wrap">{comment.content}</p>
+                                )}
+
+                                {(user?.id === comment.user_id || isAdmin) && editingCommentId !== comment.id && (
+                                  <div className="mt-2 flex gap-3">
+                                    <button
+                                      className="text-xs text-neutral-500 hover:underline inline-flex items-center gap-1"
+                                      onClick={() => {
+                                        setEditingCommentId(comment.id);
+                                        setEditingCommentText(comment.content);
+                                      }}
+                                    >
+                                      <Pencil size={12} /> Düzenle
+                                    </button>
+                                    <button
+                                      className="text-xs text-red-600 hover:underline inline-flex items-center gap-1"
+                                      onClick={() => handleDeleteComment(comment.id)}
+                                    >
+                                      <Trash2 size={12} /> Sil
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -863,6 +992,18 @@ export default function ListingDetailPage() {
                     </div>
 
                     <div className="space-y-3">
+                      {(user?.id === listing.user_id || isAdmin) && (
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50"
+                          onClick={handleDeleteListing}
+                          disabled={deletingListing}
+                        >
+                          {deletingListing ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                          İlanı Sil
+                        </Button>
+                      )}
+
                       {listing.show_email && listing.contact_email && (
                         <a
                           href={`mailto:${listing.contact_email}`}

@@ -31,19 +31,23 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageCircle,
+  Trash2,
 } from "lucide-react";
 
 export default function MarketplaceDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const listingId = params.id as string;
+  const isAdmin = role === "admin";
 
   const [listing, setListing] = useState<MarketplaceListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedProfile, setSelectedProfile] = useState<UserProfileCardData | null>(null);
+  const [deletingListing, setDeletingListing] = useState(false);
+  const [ownerActionFeedback, setOwnerActionFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -84,6 +88,39 @@ export default function MarketplaceDetailPage() {
 
     fetchListing();
   }, [listingId]);
+
+  const handleDeleteListing = async () => {
+    if (!user) {
+      router.push(`/login?redirect=/alisveris/ilan/${listingId}`);
+      return;
+    }
+
+    if (!listing || (!isAdmin && listing.user_id !== user.id)) return;
+    if (!confirm("Bu ilanı silmek istediğinize emin misiniz?")) return;
+
+    setDeletingListing(true);
+    setOwnerActionFeedback(null);
+
+    try {
+      let query = supabase
+        .from("marketplace_listings")
+        .delete()
+        .eq("id", listing.id);
+
+      if (!isAdmin) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { error: deleteError } = await query;
+      if (deleteError) throw deleteError;
+      router.push("/alisveris/ilanlarim?deleted=true");
+    } catch (deleteError: unknown) {
+      const message = deleteError instanceof Error ? deleteError.message : "İlan silinemedi.";
+      setOwnerActionFeedback(message);
+    } finally {
+      setDeletingListing(false);
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -133,6 +170,8 @@ export default function MarketplaceDetailPage() {
     avatar_url?: string | null;
   };
   const images = listing.images || [];
+  const isOwnListing = user?.id === listing.user_id;
+  const canManageListing = isOwnListing || isAdmin;
 
   return (
     <div className="ak-page overflow-x-hidden">
@@ -295,6 +334,18 @@ export default function MarketplaceDetailPage() {
                     </div>
 
                     <div className="space-y-3">
+                      {canManageListing && (
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50"
+                          onClick={handleDeleteListing}
+                          disabled={deletingListing}
+                        >
+                          {deletingListing ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                          İlanı Sil
+                        </Button>
+                      )}
+
                       {listing.contact_email && (
                         <a
                           href={`mailto:${listing.contact_email}`}
@@ -338,10 +389,16 @@ export default function MarketplaceDetailPage() {
                       </div>
                     </div>
 
-                    <button className="flex items-center justify-center gap-2 w-full mt-4 p-2 text-sm text-neutral-500 hover:text-red-500 transition-colors">
-                      <Flag size={16} />
-                      İlanı Şikayet Et
-                    </button>
+                    {!canManageListing && (
+                      <button className="flex items-center justify-center gap-2 w-full mt-4 p-2 text-sm text-neutral-500 hover:text-red-500 transition-colors">
+                        <Flag size={16} />
+                        İlanı Şikayet Et
+                      </button>
+                    )}
+
+                    {ownerActionFeedback && (
+                      <p className="text-sm text-red-500">{ownerActionFeedback}</p>
+                    )}
                   </CardContent>
                 </Card>
               </div>

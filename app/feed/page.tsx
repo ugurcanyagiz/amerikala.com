@@ -20,6 +20,7 @@ import {
   MapPin,
   Loader2,
   Trash2,
+  Pencil,
   X,
   ChevronDown,
   ChevronUp,
@@ -44,12 +45,13 @@ interface CommentWithAuthor {
 
 export default function FeedPage() {
   const router = useRouter();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, role, loading: authLoading } = useAuth();
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPostContent, setNewPostContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isAdmin = role === "admin";
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -135,9 +137,10 @@ export default function FeedPage() {
 
       setPosts([newPost, ...posts]);
       setNewPostContent("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error creating post:", err);
-      setError(err.message || "Gönderi oluşturulurken bir hata oluştu.");
+      const message = err instanceof Error ? err.message : "Gönderi oluşturulurken bir hata oluştu.";
+      setError(message);
     } finally {
       setSubmitting(false);
     }
@@ -176,12 +179,45 @@ export default function FeedPage() {
     if (!confirm("Bu gönderiyi silmek istediğinize emin misiniz?")) return;
 
     try {
-      const { error } = await supabase.from("posts").delete().eq("id", postId);
+      let deleteQuery = supabase.from("posts").delete().eq("id", postId);
+      if (!isAdmin) {
+        deleteQuery = deleteQuery.eq("user_id", user?.id || "");
+      }
+      const { error } = await deleteQuery;
       if (error) throw error;
       setPosts(posts.filter(p => p.id !== postId));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting post:", error);
-      alert("Gönderi silinirken bir hata oluştu: " + error.message);
+      const message = error instanceof Error ? error.message : "Bilinmeyen hata";
+      alert("Gönderi silinirken bir hata oluştu: " + message);
+    }
+  };
+
+  const handleEditPost = async (postId: string, content: string) => {
+    const nextContent = content.trim();
+    if (!nextContent) return false;
+
+    try {
+      let query = supabase
+        .from("posts")
+        .update({ content: nextContent })
+        .eq("id", postId);
+
+      if (!isAdmin) {
+        query = query.eq("user_id", user?.id || "");
+      }
+
+      const { error } = await query;
+      if (error) throw error;
+
+      setPosts(posts.map((post) => (
+        post.id === postId ? { ...post, content: nextContent } : post
+      )));
+
+      return true;
+    } catch (editError) {
+      console.error("Error updating post:", editError);
+      return false;
     }
   };
 
@@ -217,6 +253,68 @@ export default function FeedPage() {
     } catch (error) {
       console.error("Error adding comment:", error);
       return false;
+    }
+  };
+
+  const handleEditComment = async (postId: string, commentId: string, content: string) => {
+    const nextContent = content.trim();
+    if (!nextContent) return false;
+
+    try {
+      let query = supabase
+        .from("comments")
+        .update({ content: nextContent })
+        .eq("id", commentId);
+
+      if (!isAdmin) {
+        query = query.eq("user_id", user?.id || "");
+      }
+
+      const { error } = await query;
+      if (error) throw error;
+
+      setPosts(posts.map((post) => (
+        post.id === postId
+          ? {
+            ...post,
+            comments: post.comments.map((comment) => (
+              comment.id === commentId ? { ...comment, content: nextContent } : comment
+            )),
+          }
+          : post
+      )));
+
+      return true;
+    } catch (editError) {
+      console.error("Error editing comment:", editError);
+      return false;
+    }
+  };
+
+  const handleDeleteComment = async (postId: string, commentId: string) => {
+    if (!confirm("Bu yorumu silmek istediğinize emin misiniz?")) return;
+
+    try {
+      let query = supabase
+        .from("comments")
+        .delete()
+        .eq("id", commentId);
+
+      if (!isAdmin) {
+        query = query.eq("user_id", user?.id || "");
+      }
+
+      const { error } = await query;
+      if (error) throw error;
+
+      setPosts(posts.map((post) => (
+        post.id === postId
+          ? { ...post, comments: post.comments.filter((comment) => comment.id !== commentId) }
+          : post
+      )));
+    } catch (deleteError) {
+      console.error("Error deleting comment:", deleteError);
+      alert("Yorum silinirken bir hata oluştu.");
     }
   };
 
@@ -348,9 +446,13 @@ export default function FeedPage() {
                 post={post}
                 currentUserId={user?.id}
                 currentUserProfile={profile}
+                currentUserIsAdmin={isAdmin}
                 onLike={() => handleToggleLike(post.id, post.likes?.some(l => l.user_id === user?.id) || false)}
                 onDelete={() => handleDeletePost(post.id)}
+                onEdit={(content) => handleEditPost(post.id, content)}
                 onAddComment={(content) => handleAddComment(post.id, content)}
+                onEditComment={(commentId, content) => handleEditComment(post.id, commentId, content)}
+                onDeleteComment={(commentId) => handleDeleteComment(post.id, commentId)}
                 formatDate={formatDate}
               />
             ))}
@@ -365,26 +467,39 @@ function PostCard({
   post,
   currentUserId,
   currentUserProfile,
+  currentUserIsAdmin,
   onLike,
   onDelete,
+  onEdit,
   onAddComment,
+  onEditComment,
+  onDeleteComment,
   formatDate,
 }: {
   post: PostWithAuthor;
   currentUserId?: string;
   currentUserProfile?: Profile | null;
+  currentUserIsAdmin?: boolean;
   onLike: () => void;
   onDelete: () => void;
+  onEdit: (content: string) => Promise<boolean>;
   onAddComment: (content: string) => Promise<boolean | undefined>;
+  onEditComment: (commentId: string, content: string) => Promise<boolean>;
+  onDeleteComment: (commentId: string) => void;
   formatDate: (date: string) => string;
 }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [editingPost, setEditingPost] = useState(false);
+  const [postDraft, setPostDraft] = useState(post.content);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [commentDraft, setCommentDraft] = useState("");
 
   const isLiked = post.likes?.some(l => l.user_id === currentUserId) || false;
   const isOwner = post.user_id === currentUserId;
+  const canManagePost = isOwner || currentUserIsAdmin;
   const authorName = post.profiles?.full_name || post.profiles?.username || "Kullanıcı";
 
   const handleSubmitComment = async () => {
@@ -393,6 +508,23 @@ function PostCard({
     const success = await onAddComment(commentText);
     if (success) setCommentText("");
     setSubmittingComment(false);
+  };
+
+  const submitPostEdit = async () => {
+    const success = await onEdit(postDraft);
+    if (success) {
+      setEditingPost(false);
+      setShowMenu(false);
+    }
+  };
+
+  const submitCommentEdit = async () => {
+    if (!editingCommentId) return;
+    const success = await onEditComment(editingCommentId, commentDraft);
+    if (success) {
+      setEditingCommentId(null);
+      setCommentDraft("");
+    }
   };
 
   return (
@@ -409,7 +541,7 @@ function PostCard({
             </div>
           </div>
 
-          {isOwner && (
+          {canManagePost && (
             <div className="relative">
               <button
                 onClick={() => setShowMenu(!showMenu)}
@@ -419,6 +551,17 @@ function PostCard({
               </button>
               {showMenu && (
                 <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-lg py-1 z-10">
+                  <button
+                    onClick={() => {
+                      setPostDraft(post.content);
+                      setEditingPost(true);
+                      setShowMenu(false);
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                  >
+                    <Pencil size={16} />
+                    Düzenle
+                  </button>
                   <button
                     onClick={() => { setShowMenu(false); onDelete(); }}
                     className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -433,7 +576,25 @@ function PostCard({
         </div>
 
         <div className="px-4 py-3">
-          <p className="whitespace-pre-wrap leading-relaxed">{post.content}</p>
+          {editingPost ? (
+            <div className="space-y-2">
+              <textarea
+                value={postDraft}
+                onChange={(e) => setPostDraft(e.target.value)}
+                className="w-full min-h-[90px] p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => { setEditingPost(false); setPostDraft(post.content); }}>
+                  Vazgeç
+                </Button>
+                <Button size="sm" onClick={submitPostEdit} disabled={!postDraft.trim()}>
+                  Kaydet
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="whitespace-pre-wrap leading-relaxed">{post.content}</p>
+          )}
         </div>
 
         <div className="flex items-center gap-1 px-4 py-2 border-t border-neutral-100 dark:border-neutral-800">
@@ -476,8 +637,43 @@ function PostCard({
                       <p className="text-sm font-medium">
                         {comment.profiles?.full_name || comment.profiles?.username || "Kullanıcı"}
                       </p>
-                      <p className="text-sm text-neutral-600 dark:text-neutral-400">{comment.content}</p>
+                      {editingCommentId === comment.id ? (
+                        <div className="mt-1 space-y-2">
+                          <input
+                            value={commentDraft}
+                            onChange={(e) => setCommentDraft(e.target.value)}
+                            className="w-full px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button
+                              className="text-xs text-neutral-500"
+                              onClick={() => { setEditingCommentId(null); setCommentDraft(""); }}
+                            >
+                              Vazgeç
+                            </button>
+                            <button className="text-xs text-red-600" onClick={submitCommentEdit}>Kaydet</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400">{comment.content}</p>
+                      )}
                       <p className="text-xs text-neutral-400 mt-1">{formatDate(comment.created_at)}</p>
+                      {(currentUserId === comment.user_id || currentUserIsAdmin) && editingCommentId !== comment.id && (
+                        <div className="mt-1 flex gap-3">
+                          <button
+                            className="text-xs text-neutral-500 hover:underline"
+                            onClick={() => { setEditingCommentId(comment.id); setCommentDraft(comment.content); }}
+                          >
+                            Düzenle
+                          </button>
+                          <button
+                            className="text-xs text-red-600 hover:underline"
+                            onClick={() => onDeleteComment(comment.id)}
+                          >
+                            Sil
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
