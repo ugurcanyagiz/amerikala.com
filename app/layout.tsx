@@ -19,6 +19,12 @@ const jakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
+export const metadata = {
+  icons: {
+    icon: '/favicon.ico',
+  },
+};
+
 export const metadata: Metadata = {
   title: "amerikala - Connect with Turks in the USA",
   description:
