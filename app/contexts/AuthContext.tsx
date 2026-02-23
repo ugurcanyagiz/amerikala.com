@@ -6,6 +6,14 @@ import { supabase } from "@/lib/supabase/client";
 import { Profile, UserRole, hasPermission, ROLE_PERMISSIONS } from "@/lib/types";
 import { devLog } from "@/lib/debug/devLogger";
 
+const AUTH_SNAPSHOT_STORAGE_KEY = "amerikala:auth:snapshot:v1";
+
+interface AuthSnapshot {
+  session: Session | null;
+  user: User | null;
+  profile: Profile | null;
+}
+
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
@@ -33,11 +41,62 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const readSnapshot = (): AuthSnapshot | null => {
+    if (typeof window === "undefined") return null;
+
+    try {
+      const rawValue = window.localStorage.getItem(AUTH_SNAPSHOT_STORAGE_KEY);
+      if (!rawValue) return null;
+
+      const parsed = JSON.parse(rawValue) as Partial<AuthSnapshot>;
+
+      return {
+        session: parsed.session ?? null,
+        user: parsed.user ?? null,
+        profile: parsed.profile ?? null,
+      };
+    } catch (error) {
+      console.error("Auth snapshot okunamadı:", error);
+      return null;
+    }
+  };
+
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
+  const hasHydratedSnapshotRef = useRef(false);
+
+  const persistSnapshot = useCallback((nextSnapshot: AuthSnapshot | null) => {
+    if (typeof window === "undefined") return;
+
+    try {
+      if (!nextSnapshot) {
+        window.localStorage.removeItem(AUTH_SNAPSHOT_STORAGE_KEY);
+        return;
+      }
+
+      window.localStorage.setItem(AUTH_SNAPSHOT_STORAGE_KEY, JSON.stringify(nextSnapshot));
+    } catch (error) {
+      console.error("Auth snapshot yazılamadı:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!mountedRef.current || hasHydratedSnapshotRef.current) return;
+
+    const snapshot = readSnapshot();
+    if (!snapshot) {
+      hasHydratedSnapshotRef.current = true;
+      return;
+    }
+
+    setSession(snapshot.session);
+    setUser(snapshot.user);
+    setProfile(snapshot.profile);
+    hasHydratedSnapshotRef.current = true;
+  }, []);
 
   const normalizeRole = (value: unknown): UserRole | undefined => {
     if (value === "user" || value === "moderator" || value === "admin") {
@@ -190,6 +249,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setProfile(null);
       setSession(null);
+      setLoading(false);
+      persistSnapshot(null);
       
       // Supabase'den çıkış yap - scope: 'global' ile tüm sekmelerde çıkış
       const { error } = await supabase.auth.signOut({ scope: 'global' });
@@ -217,7 +278,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     devLog("auth", "signOut:completed");
-  }, []);
+  }, [persistSnapshot]);
+
+  useEffect(() => {
+    if (!mountedRef.current || !hasHydratedSnapshotRef.current) return;
+
+    persistSnapshot({
+      session,
+      user,
+      profile,
+    });
+  }, [session, user, profile, persistSnapshot]);
 
   // Initialize auth state
   useEffect(() => {
@@ -247,6 +318,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           devLog("auth", "init:state-set", { hasUser: !!currentSession?.user });
           setSession(currentSession);
           setUser(currentSession?.user ?? null);
+          if (!currentSession?.user) {
+            setProfile(null);
+          }
         }
 
         if (currentSession?.user && mountedRef.current) {
@@ -295,8 +369,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
             devLog("auth", "state-change:session-update-start", { userId: newSession?.user?.id ?? null });
-            setLoading(true);
-            shouldFinalizeLoading = true;
+
+            if (event === "SIGNED_IN") {
+              setLoading(true);
+              shouldFinalizeLoading = true;
+            }
+
             setSession(newSession);
             setUser(newSession?.user ?? null);
 
