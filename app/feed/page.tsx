@@ -45,12 +45,13 @@ interface CommentWithAuthor {
 
 export default function FeedPage() {
   const router = useRouter();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, role, loading: authLoading } = useAuth();
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPostContent, setNewPostContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isAdmin = role === "admin";
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -178,7 +179,11 @@ export default function FeedPage() {
     if (!confirm("Bu gönderiyi silmek istediğinize emin misiniz?")) return;
 
     try {
-      const { error } = await supabase.from("posts").delete().eq("id", postId);
+      let deleteQuery = supabase.from("posts").delete().eq("id", postId);
+      if (!isAdmin) {
+        deleteQuery = deleteQuery.eq("user_id", user?.id || "");
+      }
+      const { error } = await deleteQuery;
       if (error) throw error;
       setPosts(posts.filter(p => p.id !== postId));
     } catch (error: unknown) {
@@ -193,12 +198,16 @@ export default function FeedPage() {
     if (!nextContent) return false;
 
     try {
-      const { error } = await supabase
+      let query = supabase
         .from("posts")
         .update({ content: nextContent })
-        .eq("id", postId)
-        .eq("user_id", user?.id || "");
+        .eq("id", postId);
 
+      if (!isAdmin) {
+        query = query.eq("user_id", user?.id || "");
+      }
+
+      const { error } = await query;
       if (error) throw error;
 
       setPosts(posts.map((post) => (
@@ -252,12 +261,16 @@ export default function FeedPage() {
     if (!nextContent) return false;
 
     try {
-      const { error } = await supabase
+      let query = supabase
         .from("comments")
         .update({ content: nextContent })
-        .eq("id", commentId)
-        .eq("user_id", user?.id || "");
+        .eq("id", commentId);
 
+      if (!isAdmin) {
+        query = query.eq("user_id", user?.id || "");
+      }
+
+      const { error } = await query;
       if (error) throw error;
 
       setPosts(posts.map((post) => (
@@ -282,12 +295,16 @@ export default function FeedPage() {
     if (!confirm("Bu yorumu silmek istediğinize emin misiniz?")) return;
 
     try {
-      const { error } = await supabase
+      let query = supabase
         .from("comments")
         .delete()
-        .eq("id", commentId)
-        .eq("user_id", user?.id || "");
+        .eq("id", commentId);
 
+      if (!isAdmin) {
+        query = query.eq("user_id", user?.id || "");
+      }
+
+      const { error } = await query;
       if (error) throw error;
 
       setPosts(posts.map((post) => (
@@ -429,6 +446,7 @@ export default function FeedPage() {
                 post={post}
                 currentUserId={user?.id}
                 currentUserProfile={profile}
+                currentUserIsAdmin={isAdmin}
                 onLike={() => handleToggleLike(post.id, post.likes?.some(l => l.user_id === user?.id) || false)}
                 onDelete={() => handleDeletePost(post.id)}
                 onEdit={(content) => handleEditPost(post.id, content)}
@@ -449,6 +467,7 @@ function PostCard({
   post,
   currentUserId,
   currentUserProfile,
+  currentUserIsAdmin,
   onLike,
   onDelete,
   onEdit,
@@ -460,6 +479,7 @@ function PostCard({
   post: PostWithAuthor;
   currentUserId?: string;
   currentUserProfile?: Profile | null;
+  currentUserIsAdmin?: boolean;
   onLike: () => void;
   onDelete: () => void;
   onEdit: (content: string) => Promise<boolean>;
@@ -479,6 +499,7 @@ function PostCard({
 
   const isLiked = post.likes?.some(l => l.user_id === currentUserId) || false;
   const isOwner = post.user_id === currentUserId;
+  const canManagePost = isOwner || currentUserIsAdmin;
   const authorName = post.profiles?.full_name || post.profiles?.username || "Kullanıcı";
 
   const handleSubmitComment = async () => {
@@ -520,7 +541,7 @@ function PostCard({
             </div>
           </div>
 
-          {isOwner && (
+          {canManagePost && (
             <div className="relative">
               <button
                 onClick={() => setShowMenu(!showMenu)}
@@ -637,7 +658,7 @@ function PostCard({
                         <p className="text-sm text-neutral-600 dark:text-neutral-400">{comment.content}</p>
                       )}
                       <p className="text-xs text-neutral-400 mt-1">{formatDate(comment.created_at)}</p>
-                      {currentUserId === comment.user_id && editingCommentId !== comment.id && (
+                      {(currentUserId === comment.user_id || currentUserIsAdmin) && editingCommentId !== comment.id && (
                         <div className="mt-1 flex gap-3">
                           <button
                             className="text-xs text-neutral-500 hover:underline"

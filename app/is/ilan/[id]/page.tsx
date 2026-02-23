@@ -60,8 +60,9 @@ const toErrorMessage = (error: unknown, fallback: string) => {
 export default function JobListingDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const listingId = params.id as string;
+  const isAdmin = role === "admin";
 
   const [listing, setListing] = useState<JobListing | null>(null);
   const [loading, setLoading] = useState(true);
@@ -234,17 +235,21 @@ export default function JobListingDetailPage() {
       return;
     }
 
-    if (!listing || listing.user_id !== user.id) return;
+    if (!listing || (!isAdmin && listing.user_id !== user.id)) return;
     if (!confirm("Bu ilanı silmek istediğinize emin misiniz?")) return;
 
     setDeletingListing(true);
     try {
-      const { error: deleteError } = await supabase
+      let query = supabase
         .from("job_listings")
         .delete()
-        .eq("id", listing.id)
-        .eq("user_id", user.id);
+        .eq("id", listing.id);
 
+      if (!isAdmin) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { error: deleteError } = await query;
       if (deleteError) throw deleteError;
       router.push("/is/ilanlarim?deleted=true");
     } catch (deleteError: unknown) {
@@ -379,6 +384,7 @@ export default function JobListingDetailPage() {
   const skills = listing.skills || [];
   const benefits = listing.benefits || [];
   const isOwnListing = user?.id === listing.user_id;
+  const canManageListing = isOwnListing || isAdmin;
 
   return (
     <div className="ak-page overflow-x-hidden">
@@ -528,7 +534,7 @@ export default function JobListingDetailPage() {
                     </div>
 
                     <div className="space-y-3">
-                      {isOwnListing && (
+                      {canManageListing && (
                         <Button
                           variant="outline"
                           className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50"
@@ -540,7 +546,7 @@ export default function JobListingDetailPage() {
                         </Button>
                       )}
 
-                      {!isOwnListing && (
+                      {!canManageListing && (
                         <div className="space-y-3 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800">
                           <div className="flex items-center gap-2 text-sm font-medium">
                             <MessageCircle size={16} />
@@ -609,7 +615,7 @@ export default function JobListingDetailPage() {
                       </div>
                     </div>
 
-                    {!isOwnListing && (
+                    {!canManageListing && (
                       <button
                         onClick={() => {
                           setReportFeedback(null);

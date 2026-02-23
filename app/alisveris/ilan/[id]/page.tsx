@@ -37,8 +37,9 @@ import {
 export default function MarketplaceDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const listingId = params.id as string;
+  const isAdmin = role === "admin";
 
   const [listing, setListing] = useState<MarketplaceListing | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,19 +95,23 @@ export default function MarketplaceDetailPage() {
       return;
     }
 
-    if (!listing || listing.user_id !== user.id) return;
+    if (!listing || (!isAdmin && listing.user_id !== user.id)) return;
     if (!confirm("Bu ilanı silmek istediğinize emin misiniz?")) return;
 
     setDeletingListing(true);
     setOwnerActionFeedback(null);
 
     try {
-      const { error: deleteError } = await supabase
+      let query = supabase
         .from("marketplace_listings")
         .delete()
-        .eq("id", listing.id)
-        .eq("user_id", user.id);
+        .eq("id", listing.id);
 
+      if (!isAdmin) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { error: deleteError } = await query;
       if (deleteError) throw deleteError;
       router.push("/alisveris/ilanlarim?deleted=true");
     } catch (deleteError: unknown) {
@@ -166,6 +171,7 @@ export default function MarketplaceDetailPage() {
   };
   const images = listing.images || [];
   const isOwnListing = user?.id === listing.user_id;
+  const canManageListing = isOwnListing || isAdmin;
 
   return (
     <div className="ak-page overflow-x-hidden">
@@ -328,7 +334,7 @@ export default function MarketplaceDetailPage() {
                     </div>
 
                     <div className="space-y-3">
-                      {isOwnListing && (
+                      {canManageListing && (
                         <Button
                           variant="outline"
                           className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50"
@@ -383,7 +389,7 @@ export default function MarketplaceDetailPage() {
                       </div>
                     </div>
 
-                    {!isOwnListing && (
+                    {!canManageListing && (
                       <button className="flex items-center justify-center gap-2 w-full mt-4 p-2 text-sm text-neutral-500 hover:text-red-500 transition-colors">
                         <Flag size={16} />
                         İlanı Şikayet Et

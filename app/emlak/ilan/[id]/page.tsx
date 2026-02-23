@@ -88,7 +88,7 @@ const toErrorMessage = (error: unknown, fallback: string) => {
 export default function ListingDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const listingId = params.id as string;
 
   const [listing, setListing] = useState<Listing | null>(null);
@@ -108,6 +108,7 @@ export default function ListingDetailPage() {
   const [dmSending, setDmSending] = useState(false);
   const [dmFeedback, setDmFeedback] = useState<string | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<UserProfileCardData | null>(null);
+  const isAdmin = role === "admin";
 
   const enrichCommentsWithProfiles = useCallback(async (rows: ListingCommentDbRow[]): Promise<ListingComment[]> => {
     if (rows.length === 0) return [];
@@ -423,17 +424,21 @@ export default function ListingDetailPage() {
 
 
   const handleDeleteListing = async () => {
-    if (!listing || !user || listing.user_id !== user.id) return;
+    if (!listing || !user || (!isAdmin && listing.user_id !== user.id)) return;
     if (!confirm("Bu ilanı silmek istediğinize emin misiniz?")) return;
 
     setDeletingListing(true);
     try {
-      const { error: deleteError } = await supabase
+      let query = supabase
         .from("listings")
         .delete()
-        .eq("id", listing.id)
-        .eq("user_id", user.id);
+        .eq("id", listing.id);
 
+      if (!isAdmin) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { error: deleteError } = await query;
       if (deleteError) throw deleteError;
       router.push("/emlak/ilanlarim?deleted=true");
     } catch (deleteError) {
@@ -449,12 +454,16 @@ export default function ListingDetailPage() {
     if (!confirm("Bu yorumu silmek istediğinize emin misiniz?")) return;
 
     try {
-      const { error: deleteError } = await supabase
+      let query = supabase
         .from("listing_comments")
         .delete()
-        .eq("id", commentId)
-        .eq("user_id", user.id);
+        .eq("id", commentId);
 
+      if (!isAdmin) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { error: deleteError } = await query;
       if (deleteError) throw deleteError;
       setComments((prev) => prev.filter((comment) => comment.id !== commentId));
     } catch (deleteError) {
@@ -469,12 +478,16 @@ export default function ListingDetailPage() {
     if (!nextContent) return;
 
     try {
-      const { error: updateError } = await supabase
+      let query = supabase
         .from("listing_comments")
         .update({ content: nextContent })
-        .eq("id", editingCommentId)
-        .eq("user_id", user.id);
+        .eq("id", editingCommentId);
 
+      if (!isAdmin) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { error: updateError } = await query;
       if (updateError) throw updateError;
 
       setComments((prev) => prev.map((comment) => (
@@ -906,7 +919,7 @@ export default function ListingDetailPage() {
                                   <p className="text-sm text-neutral-700 dark:text-neutral-300 mt-1 whitespace-pre-wrap">{comment.content}</p>
                                 )}
 
-                                {user?.id === comment.user_id && editingCommentId !== comment.id && (
+                                {(user?.id === comment.user_id || isAdmin) && editingCommentId !== comment.id && (
                                   <div className="mt-2 flex gap-3">
                                     <button
                                       className="text-xs text-neutral-500 hover:underline inline-flex items-center gap-1"
@@ -979,7 +992,7 @@ export default function ListingDetailPage() {
                     </div>
 
                     <div className="space-y-3">
-                      {user?.id === listing.user_id && (
+                      {(user?.id === listing.user_id || isAdmin) && (
                         <Button
                           variant="outline"
                           className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50"
