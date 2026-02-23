@@ -421,7 +421,7 @@ export default function Home() {
           <section className="relative overflow-hidden border-b border-sky-100">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#d8ecff_0%,#f7fbff_45%,#ffffff_100%)]" />
             <div
-              className="absolute inset-0 bg-cover bg-center opacity-15"
+              className="absolute inset-0 bg-cover bg-center blur-none"
               style={{ backgroundImage: "url('/arkaplan.png')" }}
               aria-hidden="true"
             />
