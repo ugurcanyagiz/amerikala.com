@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback,
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 import { Profile, UserRole, hasPermission, ROLE_PERMISSIONS } from "@/lib/types";
+import { devLog } from "@/lib/debug/devLogger";
 
 interface AuthContextType {
   user: User | null;
@@ -69,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(
     async (userId: string, fallbackRole?: UserRole): Promise<Profile | null> => {
       try {
-        console.log("Fetching profile for:", userId);
+        devLog("auth", "fetchProfile:start", { userId });
 
         const { data, error } = await supabase
           .from("profiles")
@@ -108,11 +109,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (!data) {
-          console.log("No profile data found");
+          devLog("auth", "fetchProfile:no-profile", { userId });
           return null;
         }
 
-        console.log("Profile data received:", data);
+        devLog("auth", "fetchProfile:success", { userId });
 
         // Varsayılan değerlerle profile döndür
         const profileWithDefaults: Profile = {
@@ -182,7 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign out - düzeltilmiş versiyon
   const signOut = useCallback(async () => {
-    console.log("SignOut called - starting...");
+    devLog("auth", "signOut:start");
     
     try {
       // Önce local state'i temizle
@@ -196,7 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error("Supabase signOut error:", error.message);
       } else {
-        console.log("Supabase signOut successful");
+        devLog("auth", "signOut:supabase-success");
       }
       
       // LocalStorage'ı temizle (Supabase session)
@@ -208,14 +209,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.removeItem(key);
           }
         });
-        console.log("LocalStorage cleaned");
+        devLog("auth", "signOut:localstorage-cleaned");
       }
       
     } catch (error) {
       console.error("SignOut error:", error);
     }
     
-    console.log("SignOut completed");
+    devLog("auth", "signOut:completed");
   }, []);
 
   // Initialize auth state
@@ -228,7 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isInitialized = true;
       
       try {
-        console.log("Initializing auth...");
+        devLog("auth", "init:start");
         
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
@@ -240,23 +241,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        console.log("Session found:", !!currentSession);
+        devLog("auth", "init:session-found", { hasSession: !!currentSession });
 
         if (mountedRef.current) {
+          devLog("auth", "init:state-set", { hasUser: !!currentSession?.user });
           setSession(currentSession);
           setUser(currentSession?.user ?? null);
-          setLoading(false);
         }
 
         if (currentSession?.user && mountedRef.current) {
-          console.log("Fetching profile for user:", currentSession.user.id);
+          devLog("auth", "init:profile-fetch-start", { userId: currentSession.user.id });
           const userProfile = await fetchProfile(
             currentSession.user.id,
             normalizeRole(currentSession.user.app_metadata?.role) ??
               normalizeRole(currentSession.user.user_metadata?.role)
           );
-          console.log("Profile fetched:", !!userProfile);
           if (mountedRef.current) {
+            devLog("auth", "init:profile-set", { hasProfile: !!userProfile });
             setProfile(userProfile);
           }
         }
@@ -266,7 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } finally {
         if (mountedRef.current) {
-          console.log("Auth initialization complete, setting loading to false");
+          devLog("auth", "init:loading-false");
           setLoading(false);
         }
       }
@@ -277,13 +278,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
+        let shouldFinalizeLoading = false;
         try {
-          console.log("Auth state changed:", event);
+          devLog("auth", "state-change", { event, hasSession: !!newSession });
 
           if (!mountedRef.current) return;
 
           if (event === "SIGNED_OUT") {
-            console.log("User signed out - clearing state");
+            devLog("auth", "state-change:signed-out");
             setSession(null);
             setUser(null);
             setProfile(null);
@@ -292,10 +294,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
-            console.log("User signed in or token refreshed");
+            devLog("auth", "state-change:session-update-start", { userId: newSession?.user?.id ?? null });
+            setLoading(true);
+            shouldFinalizeLoading = true;
             setSession(newSession);
             setUser(newSession?.user ?? null);
-            setLoading(false);
 
             if (newSession?.user) {
               const userProfile = await fetchProfile(
@@ -313,6 +316,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error) {
           if (!isAbortLikeError(error)) {
             console.error("Auth state change handler error:", error);
+          }
+        } finally {
+          if (shouldFinalizeLoading && mountedRef.current) {
+            devLog("auth", "state-change:session-update-finished", { userId: newSession?.user?.id ?? null });
+            setLoading(false);
           }
         }
       }

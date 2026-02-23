@@ -11,6 +11,7 @@ import { Button } from "./ui/Button";
 import { getMessagePreviews, markConversationMessagesAsRead, type MessagePreview } from "@/lib/messages";
 import { supabase } from "@/lib/supabase/client";
 import { searchSiteContent, type SiteSearchResult } from "@/lib/siteSearch";
+import { devLog } from "@/lib/debug/devLogger";
 import {
   Home,
   Calendar,
@@ -566,7 +567,7 @@ export default function Navbar() {
       ]
     : NAV_ITEMS;
 
-  const refreshMessagePreviews = useCallback(async () => {
+  const refreshMessagePreviews = useCallback(async ({ background = false }: { background?: boolean } = {}) => {
     if (previewsInFlightRef.current) {
       previewsQueuedRef.current = true;
       return;
@@ -577,13 +578,18 @@ export default function Navbar() {
       return;
     }
 
-    setMessagesLoading(true);
-    setMessagesError(null);
+    if (!background) {
+      setMessagesLoading(true);
+      setMessagesError(null);
+    }
+
+    devLog("navbar", "message-previews:fetch-start", { userId, background });
     previewsInFlightRef.current = true;
 
     try {
       const previews = await getMessagePreviews(userId);
       setMessagePreviews(previews);
+      devLog("navbar", "message-previews:set", { count: previews.length });
     } catch (error) {
       const isAbortError = (() => {
         if (!error) return false;
@@ -610,14 +616,19 @@ export default function Navbar() {
       }
 
       console.error("Mesaj önizlemeleri alınamadı:", error);
-      setMessagesError("Mesajlar yüklenemedi.");
+      if (!background) {
+        setMessagesError("Mesajlar yüklenemedi.");
+      }
     } finally {
       previewsInFlightRef.current = false;
-      setMessagesLoading(false);
+      if (!background) {
+        setMessagesLoading(false);
+      }
+      devLog("navbar", "message-previews:fetch-end", { userId, background });
 
       if (previewsQueuedRef.current) {
         previewsQueuedRef.current = false;
-        void refreshMessagePreviews();
+        void refreshMessagePreviews({ background });
       }
     }
   }, [userId]);
@@ -647,7 +658,8 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    refreshMessagePreviews();
+    devLog("navbar", "startup-refresh:run", { userId });
+    void refreshMessagePreviews({ background: true });
 
     if (!userId) {
       return;
@@ -663,13 +675,13 @@ export default function Navbar() {
           table: "messages",
         },
         () => {
-          void refreshMessagePreviews();
+          void refreshMessagePreviews({ background: true });
         }
       )
       .subscribe();
 
     const handleFocus = () => {
-      void refreshMessagePreviews();
+      void refreshMessagePreviews({ background: true });
       void refreshNotifications();
     };
 
@@ -682,7 +694,7 @@ export default function Navbar() {
   }, [refreshMessagePreviews, refreshNotifications, userId]);
 
   useEffect(() => {
-    void refreshMessagePreviews();
+    void refreshMessagePreviews({ background: true });
     void refreshNotifications();
   }, [pathname, refreshMessagePreviews, refreshNotifications]);
 

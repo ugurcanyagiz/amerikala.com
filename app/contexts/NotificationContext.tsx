@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "./AuthContext";
+import { devLog } from "@/lib/debug/devLogger";
 
 export type AppNotificationType = "likes" | "comments" | "events";
 
@@ -164,6 +165,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    devLog("notifications", "refresh:start", { userId });
     setLoading(true);
     setError(null);
     refreshInFlightRef.current = true;
@@ -324,6 +326,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       setNotifications(merged);
+      devLog("notifications", "refresh:set", { userId, count: merged.length });
     } catch (error) {
       if (isAbortError(error)) {
         return;
@@ -334,6 +337,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     } finally {
       refreshInFlightRef.current = false;
       setLoading(false);
+      devLog("notifications", "refresh:end", { userId });
 
       if (refreshQueuedRef.current) {
         refreshQueuedRef.current = false;

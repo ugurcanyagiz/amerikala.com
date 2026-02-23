@@ -16,6 +16,7 @@ import Sidebar from "./components/Sidebar";
 import { Button } from "./components/ui/Button";
 import { publicSupabase } from "@/lib/supabase/publicClient";
 import { searchSiteContent } from "@/lib/siteSearch";
+import { devLog } from "@/lib/debug/devLogger";
 
 type HomeCategoryKey = "events" | "realEstate" | "jobs" | "marketplace";
 
@@ -168,6 +169,7 @@ export default function Home() {
 
   const fetchHomepageData = useCallback(
     async (latestLimit: number) => {
+      devLog("home", "fetch:start", { latestLimit });
       setLoading(latestLimit === INITIAL_LATEST_ITEMS);
       setLoadingMoreLatestAds(latestLimit > INITIAL_LATEST_ITEMS);
       try {
@@ -307,11 +309,13 @@ export default function Home() {
 
         setAds(unified);
         setCategoryPreviewItems(previewItems);
+        devLog("home", "fetch:set", { latestLimit, count: unified.length });
       } catch (error) {
         if (!isAbortLikeError(error)) {
           console.error("Homepage fetch error", error);
         }
       } finally {
+        devLog("home", "fetch:end", { latestLimit });
         setLoading(false);
         setLoadingMoreLatestAds(false);
       }
