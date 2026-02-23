@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -427,9 +428,18 @@ export default function Home() {
             <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-8 lg:px-12 lg:py-16">
               <div className="grid items-center gap-10">
                 <div>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-1.5 text-xs font-semibold text-sky-700">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    AMERIKALA
+                  <span className="inline-flex items-center rounded-full border border-sky-200 bg-white px-4 py-1.5 text-xs font-semibold text-sky-700">
+                    <Image
+                      src="/logo.png"
+                      alt="Amerikala"
+                      width={120}
+                      height={28}
+                      className="h-6 w-auto sm:hidden"
+                    />
+                    <span className="hidden items-center gap-2 sm:inline-flex">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      AMERIKALA
+                    </span>
                   </span>
                   <h1 className="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-5xl">
                     Amerika&apos;daki Türk topluluğu için güvenilir ilan ve paylaşım platformu.
