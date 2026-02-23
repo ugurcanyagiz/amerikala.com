@@ -37,6 +37,9 @@ export const metadata: Metadata = {
     description: "The premier platform for Turkish community in America",
     type: "website",
   },
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 function NavbarFallback() {
