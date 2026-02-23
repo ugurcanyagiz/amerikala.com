@@ -84,6 +84,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const readIdsRef = useRef(readIds);
   const dismissedIdsRef = useRef(dismissedIds);
+  const refreshInFlightRef = useRef(false);
+  const refreshQueuedRef = useRef(false);
+
+  const isAbortError = (err: unknown) => {
+    return err instanceof DOMException
+      ? err.name === "AbortError"
+      : typeof err === "object" && err !== null && "name" in err && (err as { name?: string }).name === "AbortError";
+  };
 
   useEffect(() => {
     readIdsRef.current = readIds;
@@ -127,6 +135,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [dismissedIds, user]);
 
   const refreshNotifications = useCallback(async () => {
+    if (refreshInFlightRef.current) {
+      refreshQueuedRef.current = true;
+      return;
+    }
+
     if (authLoading) {
       return;
     }
@@ -138,6 +151,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
     setError(null);
+    refreshInFlightRef.current = true;
 
     try {
       const { data: myPosts, error: postsError } = await supabase
@@ -296,10 +310,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
       setNotifications(merged);
     } catch (error) {
+      if (isAbortError(error)) {
+        return;
+      }
+
       console.error("Bildirimler alınamadı:", error);
       setError("Bildirimler yüklenemedi.");
     } finally {
+      refreshInFlightRef.current = false;
       setLoading(false);
+
+      if (refreshQueuedRef.current) {
+        refreshQueuedRef.current = false;
+        void refreshNotifications();
+      }
     }
   }, [authLoading, user]);
 
