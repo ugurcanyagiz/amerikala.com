@@ -169,6 +169,7 @@ export default function Home() {
 
   const fetchHomepageData = useCallback(
     async (latestLimit: number) => {
+      const today = new Date().toISOString().split("T")[0];
       devLog("home", "fetch:start", { latestLimit });
       setLoading(latestLimit === INITIAL_LATEST_ITEMS);
       setLoadingMoreLatestAds(latestLimit > INITIAL_LATEST_ITEMS);
@@ -178,6 +179,7 @@ export default function Home() {
             .from("events")
             .select("id, title, city, state, current_attendees, created_at, cover_image_url")
             .eq("status", "approved")
+            .gte("event_date", today)
             .order("current_attendees", { ascending: false })
             .order("created_at", { ascending: false })
             .limit(latestLimit),
