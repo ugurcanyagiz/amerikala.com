@@ -52,7 +52,6 @@ type BasicProfile = {
   bio: string | null;
   city: string | null;
   state: string | null;
-  profession: string | null;
 };
 
 type EventComment = {
@@ -205,7 +204,6 @@ export default function EventDetailPage() {
         bio: authProfile.bio ?? null,
         city: authProfile.city ?? null,
         state: authProfile.state ?? null,
-        profession: authProfile.profession ?? null,
       });
     }
 
@@ -242,7 +240,6 @@ export default function EventDetailPage() {
               bio: profile.bio ?? null,
               city: profile.city ?? null,
               state: profile.state ?? null,
-              profession: profile.profession ?? null,
             }
           : null,
       } as EventAttendee;
@@ -318,7 +315,7 @@ export default function EventDetailPage() {
       try {
         const eventSelectWithOrganizer = `
             *,
-            organizer:profiles!events_organizer_id_fkey (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
+            organizer:profiles!events_organizer_id_fkey (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state)
           `;
 
         let eventData: LegacyEventRecord | null = null;
@@ -348,13 +345,13 @@ export default function EventDetailPage() {
         } else {
           let eventWithLegacyRelations = await runEventQuery(`
                 *,
-                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
+                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state)
               `);
 
           if (eventWithLegacyRelations.error && user?.id) {
             eventWithLegacyRelations = await runEventQuery(`
                 *,
-                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state, profession)
+                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state)
               `, true);
           }
 
@@ -1354,7 +1351,7 @@ export default function EventDetailPage() {
               />
               <div>
                 <p className="text-lg font-semibold">{getDisplayName(selectedAttendee)}</p>
-                <p className="text-sm text-neutral-500">{selectedAttendee.profession || "Topluluk üyesi"}</p>
+                <p className="text-sm text-neutral-500">{getUsernameLabel(selectedAttendee) || "Topluluk üyesi"}</p>
                 <p className="text-sm text-neutral-500">
                   {[selectedAttendee.city, selectedAttendee.state].filter(Boolean).join(", ") || "Konum belirtilmemiş"}
                 </p>
