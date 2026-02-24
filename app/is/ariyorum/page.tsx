@@ -610,27 +610,16 @@ function SeekerCard({ listing }: { listing: JobListing }) {
         return;
       }
 
-      const pairs = [
-        { from: "follower_id", to: "following_id" },
-        { from: "user_id", to: "target_user_id" },
-        { from: "user_id", to: "followed_user_id" },
-      ];
+      const { data: followData, error: followError } = await supabase
+        .from("follows")
+        .select("follower_id")
+        .eq("follower_id", user.id)
+        .eq("following_id", listingUser.id)
+        .limit(1);
 
-      for (const pair of pairs) {
-        const { data, error } = await supabase
-          .from("follows")
-          .select("*")
-          .eq(pair.from, user.id)
-          .eq(pair.to, listingUser.id)
-          .limit(1);
-
-        if (!error) {
-          if ((data?.length || 0) > 0) {
-            setRelationshipStatus("following");
-            return;
-          }
-          break;
-        }
+      if (!followError && (followData?.length || 0) > 0) {
+        setRelationshipStatus("following");
+        return;
       }
 
       const { data: outgoing, error: outgoingError } = await supabase
@@ -667,40 +656,22 @@ function SeekerCard({ listing }: { listing: JobListing }) {
 
   const upsertFollow = async (targetUserId: string) => {
     if (!user) return false;
-    const pairs = [
-      { from: "follower_id", to: "following_id" },
-      { from: "user_id", to: "target_user_id" },
-      { from: "user_id", to: "followed_user_id" },
-    ];
+    const { error } = await supabase
+      .from("follows")
+      .insert({ follower_id: user.id, following_id: targetUserId });
 
-    for (const pair of pairs) {
-      const { error } = await supabase
-        .from("follows")
-        .insert({ [pair.from]: user.id, [pair.to]: targetUserId });
-
-      if (!error) return true;
-    }
-    return false;
+    return !error;
   };
 
   const deleteFollow = async (targetUserId: string) => {
     if (!user) return false;
-    const pairs = [
-      { from: "follower_id", to: "following_id" },
-      { from: "user_id", to: "target_user_id" },
-      { from: "user_id", to: "followed_user_id" },
-    ];
+    const { error } = await supabase
+      .from("follows")
+      .delete()
+      .eq("follower_id", user.id)
+      .eq("following_id", targetUserId);
 
-    for (const pair of pairs) {
-      const { error } = await supabase
-        .from("follows")
-        .delete()
-        .eq(pair.from, user.id)
-        .eq(pair.to, targetUserId);
-
-      if (!error) return true;
-    }
-    return false;
+    return !error;
   };
 
   const handleToggleFollow = async () => {
