@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "@/lib/supabase/client";
@@ -11,6 +11,12 @@ import { Button } from "../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Avatar } from "../components/ui/Avatar";
 import { Badge } from "../components/ui/Badge";
+import { ProfileTabs } from "./[id]/components/ProfileTabs";
+import { FollowersList } from "./[id]/components/FollowersList";
+import { FollowingList } from "./[id]/components/FollowingList";
+import { GroupsList, GroupRow } from "./[id]/components/GroupsList";
+import { EventsList, EventRow } from "./[id]/components/EventsList";
+import { UserListItem, ProfileTab } from "./[id]/components/types";
 import { 
   Settings,
   MapPin,
@@ -30,6 +36,9 @@ import {
   Users,
   FileText,
 } from "lucide-react";
+
+const PAGE_SIZE = 8;
+const FOLLOW_COLUMNS = { from: "follower_id", to: "following_id" } as const;
 
 type ActivityItem = {
   id: string;
@@ -59,6 +68,41 @@ export default function ProfilePage() {
     joinedEvents: 0,
     joinedGroups: 0,
   });
+  const [activeTab, setActiveTab] = useState<ProfileTab>("followers");
+  const [listError, setListError] = useState<string | null>(null);
+
+  const [followers, setFollowers] = useState<UserListItem[]>([]);
+  const [followersLoading, setFollowersLoading] = useState(false);
+  const [followersSearch, setFollowersSearch] = useState("");
+  const [followersOffset, setFollowersOffset] = useState(0);
+  const [followersHasMore, setFollowersHasMore] = useState(false);
+
+  const [following, setFollowing] = useState<UserListItem[]>([]);
+  const [followingLoading, setFollowingLoading] = useState(false);
+  const [followingSearch, setFollowingSearch] = useState("");
+  const [followingOffset, setFollowingOffset] = useState(0);
+  const [followingHasMore, setFollowingHasMore] = useState(false);
+
+  const [groups, setGroups] = useState<GroupRow[]>([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [groupsOffset, setGroupsOffset] = useState(0);
+  const [groupsHasMore, setGroupsHasMore] = useState(false);
+
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsOffset, setEventsOffset] = useState(0);
+  const [eventsHasMore, setEventsHasMore] = useState(false);
+
+  const getFriendlyError = (error: { code?: string; message?: string } | null) => {
+    if (!error) return null;
+    if (error.code === "42501" || error.message?.includes("403")) {
+      return "Bu içerik gizlilik ayarları nedeniyle görüntülenemiyor.";
+    }
+    if (error.message?.includes("401")) {
+      return "Bu içeriği görmek için giriş yapmanız gerekiyor.";
+    }
+    return "Veri yüklenirken bir hata oluştu. Lütfen tekrar deneyin.";
+  };
 
   // Debug log
   useEffect(() => {
@@ -170,29 +214,20 @@ export default function ProfilePage() {
         const joinedEvents = joinedEventsResult.data || [];
         const joinedGroups = joinedGroupsResult.data || [];
 
-        let followers: Array<{ user_id: string; created_at: string }> = [];
-        const followPairs = [
-          { from: "follower_id", to: "following_id" },
-          { from: "user_id", to: "target_user_id" },
-          { from: "user_id", to: "followed_user_id" },
-        ] as const;
+        const { data: followerRows, error: followerError } = await supabase
+          .from("follows")
+          .select("follower_id, created_at")
+          .eq("following_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(20);
 
-        for (const pair of followPairs) {
-          const { data, error } = await supabase
-            .from("follows")
-            .select(`${pair.from}, created_at`)
-            .eq(pair.to, user.id)
-            .order("created_at", { ascending: false })
-            .limit(20);
+        if (followerError) throw followerError;
 
-          if (!error) {
-            followers = ((data || []) as Array<Record<string, string>>).map((row) => ({
-              user_id: row[pair.from],
-              created_at: row.created_at,
-            }));
-            break;
-          }
-        }
+        const followers: Array<{ user_id: string; created_at: string }> =
+          ((followerRows || []) as Array<{ follower_id: string; created_at: string }>).map((row) => ({
+            user_id: row.follower_id,
+            created_at: row.created_at,
+          }));
 
         const actorIds = Array.from(new Set([
           ...likes.map((item) => item.user_id),
@@ -272,6 +307,215 @@ export default function ProfilePage() {
 
     fetchActivities();
   }, [user]);
+
+  const fetchFollowersPage = useCallback(async (offset: number, reset: boolean) => {
+    if (!user?.id) return;
+    setFollowersLoading(true);
+    setListError(null);
+
+    const { data: rows, error } = await supabase
+      .from("follows")
+      .select(FOLLOW_COLUMNS.from)
+      .eq(FOLLOW_COLUMNS.to, user.id)
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) {
+      setListError(getFriendlyError(error));
+      setFollowersLoading(false);
+      return;
+    }
+
+    const ids = ((rows as unknown as Array<Record<string, string>> | null) || []).map((row) => row[FOLLOW_COLUMNS.from]).filter(Boolean);
+    if (ids.length === 0) {
+      setFollowers((prev) => (reset ? [] : prev));
+      setFollowersHasMore(false);
+      setFollowersLoading(false);
+      return;
+    }
+
+    let profileQuery = supabase.from("profiles").select("id, username, full_name, first_name, last_name, avatar_url").in("id", ids);
+    if (followersSearch.trim()) {
+      const q = followersSearch.trim();
+      profileQuery = profileQuery.or(`username.ilike.%${q}%,full_name.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%`);
+    }
+
+    const { data: profileRows, error: profilesError } = await profileQuery;
+    if (profilesError) {
+      setListError(getFriendlyError(profilesError));
+      setFollowersLoading(false);
+      return;
+    }
+
+    const map = new Map((profileRows || []).map((item) => [item.id, item as UserListItem]));
+    const ordered = ids.map((pid) => map.get(pid)).filter(Boolean) as UserListItem[];
+    setFollowers((prev) => (reset ? ordered : [...prev, ...ordered]));
+    setFollowersOffset(offset + PAGE_SIZE);
+    setFollowersHasMore(ids.length === PAGE_SIZE);
+    setFollowersLoading(false);
+  }, [followersSearch, user?.id]);
+
+  const fetchFollowingPage = useCallback(async (offset: number, reset: boolean) => {
+    if (!user?.id) return;
+    setFollowingLoading(true);
+    setListError(null);
+
+    const { data: rows, error } = await supabase
+      .from("follows")
+      .select(FOLLOW_COLUMNS.to)
+      .eq(FOLLOW_COLUMNS.from, user.id)
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) {
+      setListError(getFriendlyError(error));
+      setFollowingLoading(false);
+      return;
+    }
+
+    const ids = ((rows as unknown as Array<Record<string, string>> | null) || []).map((row) => row[FOLLOW_COLUMNS.to]).filter(Boolean);
+    if (ids.length === 0) {
+      setFollowing((prev) => (reset ? [] : prev));
+      setFollowingHasMore(false);
+      setFollowingLoading(false);
+      return;
+    }
+
+    let profileQuery = supabase.from("profiles").select("id, username, full_name, first_name, last_name, avatar_url").in("id", ids);
+    if (followingSearch.trim()) {
+      const q = followingSearch.trim();
+      profileQuery = profileQuery.or(`username.ilike.%${q}%,full_name.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%`);
+    }
+
+    const { data: profileRows, error: profilesError } = await profileQuery;
+    if (profilesError) {
+      setListError(getFriendlyError(profilesError));
+      setFollowingLoading(false);
+      return;
+    }
+
+    const map = new Map((profileRows || []).map((item) => [item.id, item as UserListItem]));
+    const ordered = ids.map((pid) => map.get(pid)).filter(Boolean) as UserListItem[];
+    setFollowing((prev) => (reset ? ordered : [...prev, ...ordered]));
+    setFollowingOffset(offset + PAGE_SIZE);
+    setFollowingHasMore(ids.length === PAGE_SIZE);
+    setFollowingLoading(false);
+  }, [followingSearch, user?.id]);
+
+  const fetchGroupsPage = useCallback(async (offset: number, reset: boolean) => {
+    if (!user?.id) return;
+    setGroupsLoading(true);
+    setListError(null);
+
+    const { data: memberships, error } = await supabase
+      .from("group_members")
+      .select("group_id")
+      .eq("user_id", user.id)
+      .eq("status", "approved")
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) {
+      setListError(getFriendlyError(error));
+      setGroupsLoading(false);
+      return;
+    }
+
+    const groupIds = (memberships || []).map((item) => item.group_id);
+    if (groupIds.length === 0) {
+      setGroups((prev) => (reset ? [] : prev));
+      setGroupsHasMore(false);
+      setGroupsLoading(false);
+      return;
+    }
+
+    const { data: groupsRows, error: groupsError } = await supabase
+      .from("groups")
+      .select("id, slug, name, description, member_count")
+      .in("id", groupIds);
+
+    if (groupsError) {
+      setListError(getFriendlyError(groupsError));
+      setGroupsLoading(false);
+      return;
+    }
+
+    const map = new Map((groupsRows || []).map((item) => [item.id, { ...item, isMember: true } as GroupRow]));
+    const ordered = groupIds.map((gid) => map.get(gid)).filter(Boolean) as GroupRow[];
+    setGroups((prev) => (reset ? ordered : [...prev, ...ordered]));
+    setGroupsOffset(offset + PAGE_SIZE);
+    setGroupsHasMore(groupIds.length === PAGE_SIZE);
+    setGroupsLoading(false);
+  }, [user?.id]);
+
+  const fetchEventsPage = useCallback(async (offset: number, reset: boolean) => {
+    if (!user?.id) return;
+    setEventsLoading(true);
+    setListError(null);
+
+    const { data: memberships, error } = await supabase
+      .from("event_attendees")
+      .select("event_id")
+      .eq("user_id", user.id)
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) {
+      setListError(getFriendlyError(error));
+      setEventsLoading(false);
+      return;
+    }
+
+    const eventIds = (memberships || []).map((item) => item.event_id);
+    if (eventIds.length === 0) {
+      setEvents((prev) => (reset ? [] : prev));
+      setEventsHasMore(false);
+      setEventsLoading(false);
+      return;
+    }
+
+    const { data: eventsRows, error: eventsError } = await supabase
+      .from("events")
+      .select("id, title, event_date, city, location_name, cover_image_url")
+      .in("id", eventIds);
+
+    if (eventsError) {
+      setListError(getFriendlyError(eventsError));
+      setEventsLoading(false);
+      return;
+    }
+
+    const map = new Map((eventsRows || []).map((item) => [item.id, { ...item, joined: true } as EventRow]));
+    const ordered = eventIds.map((eid) => map.get(eid)).filter(Boolean) as EventRow[];
+    setEvents((prev) => (reset ? ordered : [...prev, ...ordered]));
+    setEventsOffset(offset + PAGE_SIZE);
+    setEventsHasMore(eventIds.length === PAGE_SIZE);
+    setEventsLoading(false);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    if (activeTab === "groups") {
+      setGroups([]);
+      setGroupsOffset(0);
+      fetchGroupsPage(0, true);
+    }
+    if (activeTab === "events") {
+      setEvents([]);
+      setEventsOffset(0);
+      fetchEventsPage(0, true);
+    }
+  }, [activeTab, fetchEventsPage, fetchGroupsPage, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || activeTab !== "followers") return;
+    setFollowers([]);
+    setFollowersOffset(0);
+    fetchFollowersPage(0, true);
+  }, [activeTab, fetchFollowersPage, followersSearch, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || activeTab !== "following") return;
+    setFollowing([]);
+    setFollowingOffset(0);
+    fetchFollowingPage(0, true);
+  }, [activeTab, fetchFollowingPage, followingSearch, user?.id]);
 
   // Format join date
   const formatJoinDate = (dateString?: string) => {
@@ -478,26 +722,76 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-6 pt-4 border-t border-neutral-200/70 dark:border-neutral-800">
-                      <div className="text-center">
+                    <div className="flex flex-wrap gap-2 pt-4 border-t border-neutral-200/70 dark:border-neutral-800">
+                      <button onClick={() => setActiveTab("followers")} className="px-2 py-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-smooth">
                         <span className="font-semibold text-lg text-neutral-900 dark:text-neutral-100">{stats.followers}</span>
                         <span className="text-sm text-neutral-500 ml-1">Takipçi</span>
-                      </div>
-                      <div className="text-center">
+                      </button>
+                      <button onClick={() => setActiveTab("following")} className="px-2 py-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-smooth">
                         <span className="font-semibold text-lg text-neutral-900 dark:text-neutral-100">{stats.following}</span>
                         <span className="text-sm text-neutral-500 ml-1">Takip</span>
-                      </div>
-                      <div className="text-center">
+                      </button>
+                      <button onClick={() => setActiveTab("groups")} className="px-2 py-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-smooth">
                         <span className="font-semibold text-lg text-neutral-900 dark:text-neutral-100">{stats.groups}</span>
                         <span className="text-sm text-neutral-500 ml-1">Grup</span>
-                      </div>
-                      <div className="text-center">
+                      </button>
+                      <button onClick={() => setActiveTab("events")} className="px-2 py-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-smooth">
                         <span className="font-semibold text-lg text-neutral-900 dark:text-neutral-100">{stats.events}</span>
                         <span className="text-sm text-neutral-500 ml-1">Etkinlik</span>
-                      </div>
+                      </button>
                     </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="glass mb-6">
+              <CardHeader className="pb-3">
+                <CardTitle>Bağlantılar</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
+                {listError && <p className="text-sm text-red-600">{listError}</p>}
+
+                {activeTab === "followers" && (
+                  <FollowersList
+                    items={followers}
+                    loading={followersLoading}
+                    hasMore={followersHasMore}
+                    search={followersSearch}
+                    onSearchChange={setFollowersSearch}
+                    onLoadMore={() => fetchFollowersPage(followersOffset, false)}
+                  />
+                )}
+
+                {activeTab === "following" && (
+                  <FollowingList
+                    items={following}
+                    loading={followingLoading}
+                    hasMore={followingHasMore}
+                    search={followingSearch}
+                    onSearchChange={setFollowingSearch}
+                    onLoadMore={() => fetchFollowingPage(followingOffset, false)}
+                  />
+                )}
+
+                {activeTab === "groups" && (
+                  <GroupsList
+                    items={groups}
+                    loading={groupsLoading}
+                    hasMore={groupsHasMore}
+                    onLoadMore={() => fetchGroupsPage(groupsOffset, false)}
+                  />
+                )}
+
+                {activeTab === "events" && (
+                  <EventsList
+                    items={events}
+                    loading={eventsLoading}
+                    hasMore={eventsHasMore}
+                    onLoadMore={() => fetchEventsPage(eventsOffset, false)}
+                  />
+                )}
               </CardContent>
             </Card>
 
