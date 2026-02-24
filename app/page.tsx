@@ -405,6 +405,21 @@ export default function Home() {
     setSearchOpen(false);
   };
 
+  const handleCategoryCardClick = useCallback(
+    (key: HomeCategoryKey) => {
+      const config = CATEGORY_CONFIG[key];
+      const isDesktop = typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
+
+      if (isDesktop) {
+        router.push(config.href);
+        return;
+      }
+
+      setActiveCategoryPreview(key);
+    },
+    [router],
+  );
+
   const featuredAds = useMemo(() => ads.slice(0, 4), [ads]);
   const latestAds = useMemo(() => ads.slice(0, latestAdsTargetCount), [ads, latestAdsTargetCount]);
   const latestFilteredAds = useMemo(
@@ -565,7 +580,7 @@ export default function Home() {
                     <button
                       type="button"
                       key={key}
-                      onClick={() => setActiveCategoryPreview(key)}
+                      onClick={() => handleCategoryCardClick(key)}
                       onMouseEnter={() => setActiveCategoryPreview(key)}
                       onFocus={() => setActiveCategoryPreview(key)}
                       className={`group rounded-2xl border px-3 py-4 text-center transition-all sm:px-4 sm:py-5 ${
