@@ -137,7 +137,7 @@ export default function PublicProfilePage() {
     for (const pair of FOLLOW_PAIRS) {
       const { error } = await supabase
         .from("follows")
-        .select("id")
+        .select(pair.to)
         .eq(pair.to, targetProfileId)
         .limit(1);
 
@@ -236,7 +236,7 @@ export default function PublicProfilePage() {
       if (!user || !profile?.id || user.id === profile.id || !followColumns) return;
       const { data, error } = await supabase
         .from("follows")
-        .select("id")
+        .select(followColumns.from)
         .eq(followColumns.from, user.id)
         .eq(followColumns.to, profile.id)
         .limit(1);
