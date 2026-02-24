@@ -15,11 +15,41 @@ import {
 } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import { Button } from "./components/ui/Button";
+import { Modal } from "./components/ui/Modal";
 import { publicSupabase } from "@/lib/supabase/publicClient";
 import { searchSiteContent } from "@/lib/siteSearch";
 import { devLog } from "@/lib/debug/devLogger";
+import { useAuth } from "./contexts/AuthContext";
 
 type HomeCategoryKey = "events" | "realEstate" | "jobs" | "marketplace";
+
+type PostListingCategory = {
+  id: "realEstate" | "jobs" | "marketplace";
+  label: string;
+  description: string;
+  href: string;
+};
+
+const POST_LISTING_CATEGORIES: PostListingCategory[] = [
+  {
+    id: "realEstate",
+    label: "Emlak",
+    description: "Ev, oda veya arsa ilanı ver",
+    href: "/emlak/ilan-ver",
+  },
+  {
+    id: "jobs",
+    label: "İş",
+    description: "İş arayan veya işveren ilanı oluştur",
+    href: "/is/ilan-ver",
+  },
+  {
+    id: "marketplace",
+    label: "Alışveriş",
+    description: "Ürün alım-satım ilanı paylaş",
+    href: "/alisveris/ilan-ver",
+  },
+];
 
 type UnifiedAd = {
   id: string;
@@ -108,6 +138,7 @@ export default function Home() {
   const MAX_LATEST_ITEMS = MAX_LATEST_ROWS * LATEST_COLUMNS;
 
   const router = useRouter();
+  const { user } = useAuth();
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const latestAdsLoadTriggerRef = useRef<HTMLDivElement>(null);
 
@@ -121,6 +152,7 @@ export default function Home() {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const [isPostListingModalOpen, setIsPostListingModalOpen] = useState(false);
   const [latestAdsCategoryFilter, setLatestAdsCategoryFilter] = useState<"all" | HomeCategoryKey>("all");
   const [activeCategoryPreview, setActiveCategoryPreview] = useState<HomeCategoryKey>("events");
   const [categoryPreviewItems, setCategoryPreviewItems] = useState<Record<HomeCategoryKey, UnifiedAd[]>>({
@@ -405,6 +437,11 @@ export default function Home() {
     setSearchOpen(false);
   };
 
+  const handlePostListingCategorySelect = (href: string) => {
+    setIsPostListingModalOpen(false);
+    router.push(href);
+  };
+
   const handleCategoryCardClick = useCallback(
     (key: HomeCategoryKey) => {
       const config = CATEGORY_CONFIG[key];
@@ -544,15 +581,26 @@ export default function Home() {
                   </div>
 
                   <div className="mt-5 flex flex-wrap gap-3">
-                    <Link href="/login">
+                    {user ? (
                       <Button
                         variant="primary"
                         size="lg"
                         className="rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-7 font-semibold shadow-[0_12px_26px_-16px_rgba(37,99,235,0.8)]"
+                        onClick={() => setIsPostListingModalOpen(true)}
                       >
-                        Giriş Yap
+                        İlan Ver
                       </Button>
-                    </Link>
+                    ) : (
+                      <Link href="/login">
+                        <Button
+                          variant="primary"
+                          size="lg"
+                          className="rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-7 font-semibold shadow-[0_12px_26px_-16px_rgba(37,99,235,0.8)]"
+                        >
+                          Giriş Yap
+                        </Button>
+                      </Link>
+                    )}
                     <Link href="#son-ilanlar">
                       <Button
                         variant="outline"
@@ -567,6 +615,28 @@ export default function Home() {
               </div>
             </div>
           </section>
+
+          <Modal
+            open={isPostListingModalOpen}
+            onClose={() => setIsPostListingModalOpen(false)}
+            title="Hangi kategoride ilan vermek istiyorsunuz?"
+            description="Devam etmek için bir kategori seçin."
+            size="sm"
+          >
+            <div className="space-y-3">
+              {POST_LISTING_CATEGORIES.map((category) => (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => handlePostListingCategorySelect(category.href)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-sky-300 hover:bg-sky-50"
+                >
+                  <p className="text-sm font-semibold text-slate-900">{category.label}</p>
+                  <p className="mt-1 text-xs text-slate-500">{category.description}</p>
+                </button>
+              ))}
+            </div>
+          </Modal>
 
           <section className="mx-auto max-w-7xl px-4 py-12 sm:px-8 lg:px-12">
             <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_22px_45px_-40px_rgba(15,23,42,0.85)] sm:p-6">
