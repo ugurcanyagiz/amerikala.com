@@ -658,7 +658,7 @@ export default function Home() {
                       isActive={latestAdsCategoryFilter === "all"}
                       onClick={() => setLatestAdsCategoryFilter("all")}
                     >
-                      Tüm kategoriler
+                      Tümü
                     </CategoryFilterButton>
                     {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => (
                       <CategoryFilterButton key={key} isActive={latestAdsCategoryFilter === key} onClick={() => setLatestAdsCategoryFilter(key)}>
