@@ -183,3 +183,49 @@ using (auth.uid() = follower_id);
 -- create policy "user_blocks_delete_own" on public.user_blocks
 -- for delete to authenticated
 -- using (auth.uid() = blocker_id);
+
+
+-- ============================================================
+-- D) TARGETED CLEANUP SQL BASED ON YOUR PROVIDED OUTPUT
+-- ============================================================
+-- Your reported state indicates redundant policies/indexes.
+-- Execute this block once to de-duplicate without changing functional behavior.
+
+-- D1) follows indexes: keep one composite index for following_id timeline lookups
+DROP INDEX IF EXISTS public.idx_follows_following;
+DROP INDEX IF EXISTS public.follows_following_idx;
+-- Keep: public.idx_follows_following_created_at and public.idx_follows_follower_created_at
+
+-- D2) profiles SELECT policy duplication: keep a single public SELECT policy
+DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON public.profiles;
+DROP POLICY IF EXISTS "Profiles readable by authenticated users" ON public.profiles;
+DROP POLICY IF EXISTS "profiles are readable by authenticated users" ON public.profiles;
+DROP POLICY IF EXISTS "profiles are viewable by authenticated users" ON public.profiles;
+
+-- Keep or recreate one canonical SELECT policy
+DROP POLICY IF EXISTS "profiles_select_all" ON public.profiles;
+CREATE POLICY "profiles_select_all"
+ON public.profiles
+FOR SELECT
+TO public
+USING (true);
+
+-- D3) profiles UPDATE policy duplication: keep one user-own + one admin policy
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
+CREATE POLICY "profiles_update_own"
+ON public.profiles
+FOR UPDATE
+TO authenticated
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Admins can update any profile" ON public.profiles;
+DROP POLICY IF EXISTS "Admins update any profile" ON public.profiles;
+CREATE POLICY "profiles_update_admin"
+ON public.profiles
+FOR UPDATE
+TO authenticated
+USING (is_admin())
+WITH CHECK (is_admin());
