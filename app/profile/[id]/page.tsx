@@ -18,6 +18,11 @@ import { ProfileStats, ProfileTab, PublicProfile, UserListItem, getDisplayName }
 
 type FollowPair = { from: string; to: string };
 const PAGE_SIZE = 8;
+const FOLLOW_PAIRS: FollowPair[] = [
+  { from: "follower_id", to: "following_id" },
+  { from: "user_id", to: "target_user_id" },
+  { from: "user_id", to: "followed_user_id" },
+];
 
 const getFriendlyError = (error: { code?: string; message?: string } | null) => {
   if (!error) return null;
@@ -128,20 +133,34 @@ export default function PublicProfilePage() {
     loadProfile();
   }, [id]);
 
-  useEffect(() => {
-    const resolveFollowColumns = async () => {
-      const pairs: FollowPair[] = [
-        { from: "follower_id", to: "following_id" },
-        { from: "user_id", to: "target_user_id" },
-        { from: "user_id", to: "followed_user_id" },
-      ];
+  const resolveFollowColumns = useCallback(async (targetProfileId: string) => {
+    for (const pair of FOLLOW_PAIRS) {
+      const { error } = await supabase
+        .from("follows")
+        .select("id")
+        .eq(pair.to, targetProfileId)
+        .limit(1);
 
-      for (const pair of pairs) {
-        const { error } = await supabase.from("follows").select(`${pair.from},${pair.to}`).limit(1);
-        if (!error) {
-          setFollowColumns(pair);
-          return;
-        }
+      if (!error) {
+        setFollowColumns(pair);
+        return pair;
+      }
+    }
+
+    setFollowColumns(null);
+    return null;
+  }, []);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    resolveFollowColumns(profile.id);
+  }, [profile?.id, resolveFollowColumns]);
+
+  useEffect(() => {
+    const checkBlockedState = async () => {
+      if (!user || !profile || user.id === profile.id) {
+        setBlockedByOwner(false);
+        return;
       }
       setFollowColumns(null);
     };
@@ -173,27 +192,55 @@ export default function PublicProfilePage() {
     checkBlockedState();
   }, [profile, user]);
 
-  useEffect(() => {
-    const loadStats = async () => {
-      if (!profile?.id || !followColumns) return;
-
-      const [followerRes, followingRes, groupRes, eventRes] = await Promise.all([
-        supabase.from("follows").select("*", { count: "exact", head: true }).eq(followColumns.to, profile.id),
-        supabase.from("follows").select("*", { count: "exact", head: true }).eq(followColumns.from, profile.id),
-        supabase.from("group_members").select("*", { count: "exact", head: true }).eq("user_id", profile.id).eq("status", "approved"),
-        supabase.from("event_attendees").select("*", { count: "exact", head: true }).eq("user_id", profile.id),
-      ]);
-
-      setStats({
-        followers: followerRes.count || 0,
-        following: followingRes.count || 0,
-        groups: groupRes.count || 0,
-        events: eventRes.count || 0,
-      });
+      // `user_blocks` tablosu her ortamda bulunmuyor. Bu durumda ek sorgu yapmadan
+      // yalnızca profilin genel blok durumunu (`profiles.is_blocked`) kullanıyoruz.
+      setBlockedByOwner(false);
     };
 
-    loadStats();
-  }, [followColumns, profile?.id]);
+    checkBlockedState();
+  }, [profile, user]);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    const run = () => {
+      const activePairPromise = followColumns
+        ? Promise.resolve(followColumns)
+        : resolveFollowColumns(profile.id);
+
+      activePairPromise
+        .then((activeFollowPair) => {
+          if (!activeFollowPair) {
+            return Promise.resolve({ followers: 0, following: 0 });
+          }
+
+          return Promise.all([
+            supabase.from("follows").select("*", { count: "exact", head: true }).eq(activeFollowPair.to, profile.id),
+            supabase.from("follows").select("*", { count: "exact", head: true }).eq(activeFollowPair.from, profile.id),
+          ]).then(([followerRes, followingRes]) => ({
+            followers: followerRes.count || 0,
+            following: followingRes.count || 0,
+          }));
+        })
+        .then(({ followers, following }) =>
+          Promise.all([
+            supabase.from("group_members").select("*", { count: "exact", head: true }).eq("user_id", profile.id).eq("status", "approved"),
+            supabase.from("event_attendees").select("*", { count: "exact", head: true }).eq("user_id", profile.id),
+          ]).then(([groupRes, eventRes]) => ({
+            followers,
+            following,
+            groups: groupRes.count || 0,
+            events: eventRes.count || 0,
+          }))
+        )
+        .then((nextStats) => setStats(nextStats))
+        .catch((error) => {
+          console.error("Error loading profile stats:", error);
+        });
+    };
+
+    run();
+  }, [followColumns, profile?.id, resolveFollowColumns]);
 
   useEffect(() => {
     const loadMutuals = async () => {
