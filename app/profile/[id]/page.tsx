@@ -16,13 +16,8 @@ import { ProfileHeaderCard } from "./components/ProfileHeaderCard";
 import { ProfileTabs } from "./components/ProfileTabs";
 import { ProfileStats, ProfileTab, PublicProfile, UserListItem, getDisplayName } from "./components/types";
 
-type FollowPair = { from: string; to: string };
 const PAGE_SIZE = 8;
-const FOLLOW_PAIRS: FollowPair[] = [
-  { from: "follower_id", to: "following_id" },
-  { from: "user_id", to: "target_user_id" },
-  { from: "user_id", to: "followed_user_id" },
-];
+const FOLLOW_COLUMNS = { from: "follower_id", to: "following_id" } as const;
 
 const getFriendlyError = (error: { code?: string; message?: string } | null) => {
   if (!error) return null;
@@ -51,7 +46,6 @@ export default function PublicProfilePage() {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
-  const [followColumns, setFollowColumns] = useState<FollowPair | null>(null);
   const [followLoading, setFollowLoading] = useState(false);
   const [dmLoading, setDmLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -133,29 +127,6 @@ export default function PublicProfilePage() {
     loadProfile();
   }, [id]);
 
-  const resolveFollowColumns = useCallback(async (targetProfileId: string) => {
-    for (const pair of FOLLOW_PAIRS) {
-      const { error } = await supabase
-        .from("follows")
-        .select("id")
-        .eq(pair.to, targetProfileId)
-        .limit(1);
-
-      if (!error) {
-        setFollowColumns(pair);
-        return pair;
-      }
-    }
-
-    setFollowColumns(null);
-    return null;
-  }, []);
-
-  useEffect(() => {
-    if (!profile?.id) return;
-    resolveFollowColumns(profile.id);
-  }, [profile?.id, resolveFollowColumns]);
-
   useEffect(() => {
     if (!user || !profile || user.id === profile.id) {
       setBlockedByOwner(false);
@@ -171,24 +142,14 @@ export default function PublicProfilePage() {
     if (!profile?.id) return;
 
     const run = () => {
-      const activePairPromise = followColumns
-        ? Promise.resolve(followColumns)
-        : resolveFollowColumns(profile.id);
-
-      activePairPromise
-        .then((activeFollowPair) => {
-          if (!activeFollowPair) {
-            return Promise.resolve({ followers: 0, following: 0 });
-          }
-
-          return Promise.all([
-            supabase.from("follows").select("*", { count: "exact", head: true }).eq(activeFollowPair.to, profile.id),
-            supabase.from("follows").select("*", { count: "exact", head: true }).eq(activeFollowPair.from, profile.id),
-          ]).then(([followerRes, followingRes]) => ({
-            followers: followerRes.count || 0,
-            following: followingRes.count || 0,
-          }));
-        })
+      Promise.all([
+        supabase.from("follows").select("*", { count: "exact", head: true }).eq(FOLLOW_COLUMNS.to, profile.id),
+        supabase.from("follows").select("*", { count: "exact", head: true }).eq(FOLLOW_COLUMNS.from, profile.id),
+      ])
+        .then(([followerRes, followingRes]) => ({
+          followers: followerRes.count || 0,
+          following: followingRes.count || 0,
+        }))
         .then(({ followers, following }) =>
           Promise.all([
             supabase.from("group_members").select("*", { count: "exact", head: true }).eq("user_id", profile.id).eq("status", "approved"),
@@ -207,7 +168,7 @@ export default function PublicProfilePage() {
     };
 
     run();
-  }, [followColumns, profile?.id, resolveFollowColumns]);
+  }, [profile?.id]);
 
   useEffect(() => {
     const loadMutuals = async () => {
@@ -233,30 +194,29 @@ export default function PublicProfilePage() {
 
   useEffect(() => {
     const checkFollowing = async () => {
-      if (!user || !profile?.id || user.id === profile.id || !followColumns) return;
+      if (!user || !profile?.id || user.id === profile.id) return;
       const { data, error } = await supabase
         .from("follows")
-        .select("id")
-        .eq(followColumns.from, user.id)
-        .eq(followColumns.to, profile.id)
+        .select(FOLLOW_COLUMNS.from)
+        .eq(FOLLOW_COLUMNS.from, user.id)
+        .eq(FOLLOW_COLUMNS.to, profile.id)
         .limit(1);
 
       if (!error) setIsFollowing((data?.length || 0) > 0);
     };
 
     checkFollowing();
-  }, [followColumns, profile?.id, user]);
+  }, [profile?.id, user]);
 
-  const fetchFollowers = useCallback(async (reset = false) => {
-    if (!profile?.id || !followColumns) return;
-    const offset = reset ? 0 : followersOffset;
+  const fetchFollowersPage = useCallback(async (offset: number, reset: boolean) => {
+    if (!profile?.id) return;
     setFollowersLoading(true);
     setListError(null);
 
     const { data: rows, error } = await supabase
       .from("follows")
-      .select(followColumns.from)
-      .eq(followColumns.to, profile.id)
+      .select(FOLLOW_COLUMNS.from)
+      .eq(FOLLOW_COLUMNS.to, profile.id)
       .range(offset, offset + PAGE_SIZE - 1);
 
     if (error) {
@@ -265,7 +225,7 @@ export default function PublicProfilePage() {
       return;
     }
 
-    const ids = ((rows as unknown as Array<Record<string, string>> | null) || []).map((row) => row[followColumns.from]).filter(Boolean);
+    const ids = ((rows as unknown as Array<Record<string, string>> | null) || []).map((row) => row[FOLLOW_COLUMNS.from]).filter(Boolean);
     if (ids.length === 0) {
       setFollowers((prev) => (reset ? [] : prev));
       setFollowersHasMore(false);
@@ -292,18 +252,17 @@ export default function PublicProfilePage() {
     setFollowersOffset(offset + PAGE_SIZE);
     setFollowersHasMore(ids.length === PAGE_SIZE);
     setFollowersLoading(false);
-  }, [followersOffset, followersSearch, followColumns, profile?.id]);
+  }, [followersSearch, profile?.id]);
 
-  const fetchFollowing = useCallback(async (reset = false) => {
-    if (!profile?.id || !followColumns) return;
-    const offset = reset ? 0 : followingOffset;
+  const fetchFollowingPage = useCallback(async (offset: number, reset: boolean) => {
+    if (!profile?.id) return;
     setFollowingLoading(true);
     setListError(null);
 
     const { data: rows, error } = await supabase
       .from("follows")
-      .select(followColumns.to)
-      .eq(followColumns.from, profile.id)
+      .select(FOLLOW_COLUMNS.to)
+      .eq(FOLLOW_COLUMNS.from, profile.id)
       .range(offset, offset + PAGE_SIZE - 1);
 
     if (error) {
@@ -312,7 +271,7 @@ export default function PublicProfilePage() {
       return;
     }
 
-    const ids = ((rows as unknown as Array<Record<string, string>> | null) || []).map((row) => row[followColumns.to]).filter(Boolean);
+    const ids = ((rows as unknown as Array<Record<string, string>> | null) || []).map((row) => row[FOLLOW_COLUMNS.to]).filter(Boolean);
     if (ids.length === 0) {
       setFollowing((prev) => (reset ? [] : prev));
       setFollowingHasMore(false);
@@ -339,11 +298,10 @@ export default function PublicProfilePage() {
     setFollowingOffset(offset + PAGE_SIZE);
     setFollowingHasMore(ids.length === PAGE_SIZE);
     setFollowingLoading(false);
-  }, [followColumns, followingOffset, followingSearch, profile?.id]);
+  }, [followingSearch, profile?.id]);
 
-  const fetchGroups = useCallback(async (reset = false) => {
+  const fetchGroupsPage = useCallback(async (offset: number, reset: boolean) => {
     if (!profile?.id) return;
-    const offset = reset ? 0 : groupsOffset;
     setGroupsLoading(true);
     setListError(null);
 
@@ -386,11 +344,10 @@ export default function PublicProfilePage() {
     setGroupsOffset(offset + PAGE_SIZE);
     setGroupsHasMore(groupIds.length === PAGE_SIZE);
     setGroupsLoading(false);
-  }, [groupsOffset, profile?.id, user]);
+  }, [profile?.id, user]);
 
-  const fetchEvents = useCallback(async (reset = false) => {
+  const fetchEventsPage = useCallback(async (offset: number, reset: boolean) => {
     if (!profile?.id) return;
-    const offset = reset ? 0 : eventsOffset;
     setEventsLoading(true);
     setListError(null);
 
@@ -432,49 +389,49 @@ export default function PublicProfilePage() {
     setEventsOffset(offset + PAGE_SIZE);
     setEventsHasMore(eventIds.length === PAGE_SIZE);
     setEventsLoading(false);
-  }, [eventsOffset, profile?.id, user]);
+  }, [profile?.id, user]);
 
   useEffect(() => {
     if (!profile?.id || isRestricted) return;
     if (activeTab === "groups") {
       setGroups([]);
       setGroupsOffset(0);
-      fetchGroups(true);
+      fetchGroupsPage(0, true);
     }
     if (activeTab === "events") {
       setEvents([]);
       setEventsOffset(0);
-      fetchEvents(true);
+      fetchEventsPage(0, true);
     }
-  }, [activeTab, fetchEvents, fetchGroups, isRestricted, profile?.id]);
+  }, [activeTab, fetchEventsPage, fetchGroupsPage, isRestricted, profile?.id]);
 
 
   useEffect(() => {
     if (activeTab !== "followers" || !profile?.id || isRestricted) return;
     setFollowers([]);
     setFollowersOffset(0);
-    fetchFollowers(true);
-  }, [activeTab, fetchFollowers, followersSearch, isRestricted, profile?.id]);
+    fetchFollowersPage(0, true);
+  }, [activeTab, fetchFollowersPage, followersSearch, isRestricted, profile?.id]);
 
   useEffect(() => {
     if (activeTab !== "following" || !profile?.id || isRestricted) return;
     setFollowing([]);
     setFollowingOffset(0);
-    fetchFollowing(true);
-  }, [activeTab, fetchFollowing, followingSearch, isRestricted, profile?.id]);
+    fetchFollowingPage(0, true);
+  }, [activeTab, fetchFollowingPage, followingSearch, isRestricted, profile?.id]);
 
   const handleToggleFollow = async () => {
-    if (!user || !profile || user.id === profile.id || !followColumns) return;
+    if (!user || !profile || user.id === profile.id) return;
     setFollowLoading(true);
     try {
       if (isFollowing) {
-        const { error } = await supabase.from("follows").delete().eq(followColumns.from, user.id).eq(followColumns.to, profile.id);
+        const { error } = await supabase.from("follows").delete().eq(FOLLOW_COLUMNS.from, user.id).eq(FOLLOW_COLUMNS.to, profile.id);
         if (!error) {
           setIsFollowing(false);
           setStats((prev) => ({ ...prev, followers: Math.max(0, prev.followers - 1) }));
         }
       } else {
-        const { error } = await supabase.from("follows").insert({ [followColumns.from]: user.id, [followColumns.to]: profile.id });
+        const { error } = await supabase.from("follows").insert({ [FOLLOW_COLUMNS.from]: user.id, [FOLLOW_COLUMNS.to]: profile.id });
         if (!error) {
           setIsFollowing(true);
           setStats((prev) => ({ ...prev, followers: prev.followers + 1 }));
@@ -685,7 +642,7 @@ export default function PublicProfilePage() {
                 onSearchChange={(value) => {
                   setFollowersSearch(value);
                 }}
-                onLoadMore={() => fetchFollowers()}
+                onLoadMore={() => fetchFollowersPage(followersOffset, false)}
               />
             )}
 
@@ -698,12 +655,12 @@ export default function PublicProfilePage() {
                 onSearchChange={(value) => {
                   setFollowingSearch(value);
                 }}
-                onLoadMore={() => fetchFollowing()}
+                onLoadMore={() => fetchFollowingPage(followingOffset, false)}
               />
             )}
 
-            {activeTab === "groups" && <GroupsList items={groups} loading={groupsLoading} hasMore={groupsHasMore} onLoadMore={() => fetchGroups()} />}
-            {activeTab === "events" && <EventsList items={events} loading={eventsLoading} hasMore={eventsHasMore} onLoadMore={() => fetchEvents()} />}
+            {activeTab === "groups" && <GroupsList items={groups} loading={groupsLoading} hasMore={groupsHasMore} onLoadMore={() => fetchGroupsPage(groupsOffset, false)} />}
+            {activeTab === "events" && <EventsList items={events} loading={eventsLoading} hasMore={eventsHasMore} onLoadMore={() => fetchEventsPage(eventsOffset, false)} />}
           </CardContent>
         </Card>
 
