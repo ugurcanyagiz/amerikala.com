@@ -191,6 +191,35 @@ export default function PublicProfilePage() {
         followers = followerRes.count || 0;
         following = followingRes.count || 0;
       }
+      setFollowColumns(null);
+    };
+
+    resolveFollowColumns();
+  }, []);
+
+  useEffect(() => {
+    const checkBlockedState = async () => {
+      if (!user || !profile || user.id === profile.id) {
+        setBlockedByOwner(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("user_blocks")
+        .select("id")
+        .eq("blocker_id", profile.id)
+        .eq("blocked_id", user.id)
+        .limit(1);
+
+      if (error && error.code !== "42P01") {
+        console.error("Error checking user block:", error);
+      }
+
+      setBlockedByOwner((data?.length || 0) > 0);
+    };
+
+    checkBlockedState();
+  }, [profile, user]);
 
       const [groupRes, eventRes] = await Promise.all([
         supabase.from("group_members").select("*", { count: "exact", head: true }).eq("user_id", profile.id).eq("status", "approved"),
@@ -198,8 +227,8 @@ export default function PublicProfilePage() {
       ]);
 
       setStats({
-        followers,
-        following,
+        followers: followerRes.count || 0,
+        following: followingRes.count || 0,
         groups: groupRes.count || 0,
         events: eventRes.count || 0,
       });
