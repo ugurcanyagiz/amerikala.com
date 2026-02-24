@@ -46,6 +46,7 @@ export default function PublicProfilePage() {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followColumns, setFollowColumns] = useState<FollowPair | null>(null);
   const [followLoading, setFollowLoading] = useState(false);
   const [dmLoading, setDmLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -425,7 +426,7 @@ export default function PublicProfilePage() {
   }, [activeTab, fetchFollowing, followingSearch, isRestricted, profile?.id]);
 
   const handleToggleFollow = async () => {
-    if (!user || !profile || user.id === profile.id) return;
+    if (!user || !profile || user.id === profile.id || !followColumns) return;
     setFollowLoading(true);
     try {
       if (isFollowing) {
