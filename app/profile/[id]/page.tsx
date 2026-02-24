@@ -162,6 +162,35 @@ export default function PublicProfilePage() {
         setBlockedByOwner(false);
         return;
       }
+      setFollowColumns(null);
+    };
+
+    resolveFollowColumns();
+  }, []);
+
+  useEffect(() => {
+    const checkBlockedState = async () => {
+      if (!user || !profile || user.id === profile.id) {
+        setBlockedByOwner(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("user_blocks")
+        .select("id")
+        .eq("blocker_id", profile.id)
+        .eq("blocked_id", user.id)
+        .limit(1);
+
+      if (error && error.code !== "42P01") {
+        console.error("Error checking user block:", error);
+      }
+
+      setBlockedByOwner((data?.length || 0) > 0);
+    };
+
+    checkBlockedState();
+  }, [profile, user]);
 
       // `user_blocks` tablosu her ortamda bulunmuyor. Bu durumda ek sorgu yapmadan
       // yalnızca profilin genel blok durumunu (`profiles.is_blocked`) kullanıyoruz.
