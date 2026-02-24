@@ -8,11 +8,9 @@ import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/app/components/ui";
 import { Button } from "@/app/components/ui";
 import { Input } from "@/app/components/ui";
-import { Mail, Lock, Eye, EyeOff, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from "lucide-react";
 
 type StatusType = "idle" | "loading" | "success" | "error";
-
-type LoginMethod = "password" | "magic";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,7 +20,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<StatusType>("idle");
   const [statusMessage, setStatusMessage] = useState("");
-  const [loginMethod, setLoginMethod] = useState<LoginMethod>("password");
 
   useEffect(() => {
     const init = async () => {
@@ -31,15 +28,6 @@ export default function LoginPage() {
     };
     init();
   }, [router]);
-
-  useEffect(() => {
-    const accessMessage = searchParams.get("message");
-
-    if (accessMessage) {
-      setStatus("error");
-      setStatusMessage(accessMessage);
-    }
-  }, [searchParams]);
 
   const handlePasswordLogin = async () => {
     if (!email || !password) {
@@ -73,41 +61,10 @@ export default function LoginPage() {
     router.replace("/");
   };
 
-  const handleMagicLink = async () => {
-    if (!email) {
-      setStatus("error");
-      setStatusMessage("Email adresi gerekli");
-      return;
-    }
-
-    setStatus("loading");
-    setStatusMessage("Giriş linki gönderiliyor...");
-
-    const emailRedirectTo = typeof window === "undefined"
-      ? undefined
-      : `${window.location.origin}/auth/callback`;
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: emailRedirectTo ? { emailRedirectTo } : undefined,
-    });
-
-    if (error) {
-      setStatus("error");
-      const lowerMessage = error.message.toLowerCase();
-      if (lowerMessage.includes("aborted") || lowerMessage.includes("timeout")) {
-        setStatusMessage("Bağlantı zaman aşımına uğradı. Lütfen tekrar deneyin.");
-      } else {
-        setStatusMessage(`Hata: ${error.message}`);
-      }
-      return;
-    }
-
-    setStatus("success");
-    setStatusMessage("Giriş linki email adresinize gönderildi.");
-  };
-
   const isBusy = status === "loading" || status === "success";
+  const accessMessage = searchParams.get("message");
+  const effectiveStatus = statusMessage ? status : accessMessage ? "error" : "idle";
+  const effectiveStatusMessage = statusMessage || accessMessage || "";
 
   return (
     <main className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4 sm:p-6">
@@ -134,28 +91,12 @@ export default function LoginPage() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Login Method Toggle */}
             <div className="flex rounded-lg bg-[var(--color-surface-sunken)] p-1">
               <button
                 type="button"
-                onClick={() => setLoginMethod("password")}
-                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${loginMethod === "password"
-                    ? "bg-[var(--color-surface)] text-[var(--color-ink)] shadow-[var(--shadow-xs)]"
-                    : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
-                  }`}
+                className="flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors bg-[var(--color-surface)] text-[var(--color-ink)] shadow-[var(--shadow-xs)]"
               >
-                Şifre ile
-              </button>
-              <button
-                type="button"
-                onClick={() => setLoginMethod("magic")}
-                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${loginMethod === "magic"
-                    ? "bg-[var(--color-surface)] text-[var(--color-ink)] shadow-[var(--shadow-xs)]"
-                    : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
-                  }`}
-              >
-                <Sparkles className="w-4 h-4" />
-                Link ile
+                Giriş Yap
               </button>
             </div>
 
@@ -170,95 +111,68 @@ export default function LoginPage() {
               disabled={isBusy}
             />
 
-            {loginMethod === "password" && (
-              <div className="relative">
-                <Input
-                  label="Şifre"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  icon={<Lock className="w-4 h-4" />}
-                  disabled={isBusy}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-9 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            )}
-
-            {loginMethod === "magic" && (
-              <div className="text-sm text-[var(--color-ink-secondary)]">
-                Email adresinize tek kullanımlık giriş bağlantısı göndereceğiz.
-              </div>
-            )}
+            <div className="relative">
+              <Input
+                label="Şifre"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                icon={<Lock className="w-4 h-4" />}
+                disabled={isBusy}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-9 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
 
             {/* Status message */}
-            {statusMessage && (
+            {effectiveStatusMessage && (
               <div
                 className={`flex items-center gap-2 p-3 rounded-lg text-sm ${
-                  status === "success"
+                  effectiveStatus === "success"
                     ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-                    : status === "error"
+                    : effectiveStatus === "error"
                     ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
                     : "bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
                 }`}
               >
-                {status === "success" ? (
+                {effectiveStatus === "success" ? (
                   <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                ) : status === "error" ? (
+                ) : effectiveStatus === "error" ? (
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 ) : null}
-                {statusMessage}
+                {effectiveStatusMessage}
               </div>
             )}
 
             {/* Submit */}
-            {loginMethod === "password" ? (
-              <Button
-                variant="primary"
-                size="lg"
-                className="w-full"
-                onClick={handlePasswordLogin}
-                disabled={isBusy}
-              >
-                {status === "loading" ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Giriş yapılıyor...
-                  </>
-                ) : status === "success" ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    Giriş Başarılı
-                  </>
-                ) : (
-                  "Giriş Yap"
-                )}
-              </Button>
-            ) : (
-              <Button
-                variant="primary"
-                size="lg"
-                className="w-full"
-                onClick={handleMagicLink}
-                disabled={isBusy}
-              >
-                {status === "loading" ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Gönderiliyor...
-                  </>
-                ) : (
-                  "Giriş Linki Gönder"
-                )}
-              </Button>
-            )}
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-full"
+              onClick={handlePasswordLogin}
+              disabled={isBusy}
+            >
+              {status === "loading" ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Giriş yapılıyor...
+                </>
+              ) : status === "success" ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  Giriş Başarılı
+                </>
+              ) : (
+                "Giriş Yap"
+              )}
+            </Button>
 
             {/* Links */}
             <div className="flex items-center justify-between text-sm">
