@@ -208,9 +208,8 @@ export default function PublicProfilePage() {
     checkFollowing();
   }, [profile?.id, user]);
 
-  const fetchFollowers = useCallback(async (reset = false) => {
+  const fetchFollowersPage = useCallback(async (offset: number, reset: boolean) => {
     if (!profile?.id) return;
-    const offset = reset ? 0 : followersOffset;
     setFollowersLoading(true);
     setListError(null);
 
@@ -253,11 +252,10 @@ export default function PublicProfilePage() {
     setFollowersOffset(offset + PAGE_SIZE);
     setFollowersHasMore(ids.length === PAGE_SIZE);
     setFollowersLoading(false);
-  }, [followersOffset, followersSearch, profile?.id]);
+  }, [followersSearch, profile?.id]);
 
-  const fetchFollowing = useCallback(async (reset = false) => {
+  const fetchFollowingPage = useCallback(async (offset: number, reset: boolean) => {
     if (!profile?.id) return;
-    const offset = reset ? 0 : followingOffset;
     setFollowingLoading(true);
     setListError(null);
 
@@ -300,11 +298,10 @@ export default function PublicProfilePage() {
     setFollowingOffset(offset + PAGE_SIZE);
     setFollowingHasMore(ids.length === PAGE_SIZE);
     setFollowingLoading(false);
-  }, [followingOffset, followingSearch, profile?.id]);
+  }, [followingSearch, profile?.id]);
 
-  const fetchGroups = useCallback(async (reset = false) => {
+  const fetchGroupsPage = useCallback(async (offset: number, reset: boolean) => {
     if (!profile?.id) return;
-    const offset = reset ? 0 : groupsOffset;
     setGroupsLoading(true);
     setListError(null);
 
@@ -347,11 +344,10 @@ export default function PublicProfilePage() {
     setGroupsOffset(offset + PAGE_SIZE);
     setGroupsHasMore(groupIds.length === PAGE_SIZE);
     setGroupsLoading(false);
-  }, [groupsOffset, profile?.id, user]);
+  }, [profile?.id, user]);
 
-  const fetchEvents = useCallback(async (reset = false) => {
+  const fetchEventsPage = useCallback(async (offset: number, reset: boolean) => {
     if (!profile?.id) return;
-    const offset = reset ? 0 : eventsOffset;
     setEventsLoading(true);
     setListError(null);
 
@@ -393,36 +389,36 @@ export default function PublicProfilePage() {
     setEventsOffset(offset + PAGE_SIZE);
     setEventsHasMore(eventIds.length === PAGE_SIZE);
     setEventsLoading(false);
-  }, [eventsOffset, profile?.id, user]);
+  }, [profile?.id, user]);
 
   useEffect(() => {
     if (!profile?.id || isRestricted) return;
     if (activeTab === "groups") {
       setGroups([]);
       setGroupsOffset(0);
-      fetchGroups(true);
+      fetchGroupsPage(0, true);
     }
     if (activeTab === "events") {
       setEvents([]);
       setEventsOffset(0);
-      fetchEvents(true);
+      fetchEventsPage(0, true);
     }
-  }, [activeTab, fetchEvents, fetchGroups, isRestricted, profile?.id]);
+  }, [activeTab, fetchEventsPage, fetchGroupsPage, isRestricted, profile?.id]);
 
 
   useEffect(() => {
     if (activeTab !== "followers" || !profile?.id || isRestricted) return;
     setFollowers([]);
     setFollowersOffset(0);
-    fetchFollowers(true);
-  }, [activeTab, fetchFollowers, followersSearch, isRestricted, profile?.id]);
+    fetchFollowersPage(0, true);
+  }, [activeTab, fetchFollowersPage, followersSearch, isRestricted, profile?.id]);
 
   useEffect(() => {
     if (activeTab !== "following" || !profile?.id || isRestricted) return;
     setFollowing([]);
     setFollowingOffset(0);
-    fetchFollowing(true);
-  }, [activeTab, fetchFollowing, followingSearch, isRestricted, profile?.id]);
+    fetchFollowingPage(0, true);
+  }, [activeTab, fetchFollowingPage, followingSearch, isRestricted, profile?.id]);
 
   const handleToggleFollow = async () => {
     if (!user || !profile || user.id === profile.id) return;
@@ -646,7 +642,7 @@ export default function PublicProfilePage() {
                 onSearchChange={(value) => {
                   setFollowersSearch(value);
                 }}
-                onLoadMore={() => fetchFollowers()}
+                onLoadMore={() => fetchFollowersPage(followersOffset, false)}
               />
             )}
 
@@ -659,12 +655,12 @@ export default function PublicProfilePage() {
                 onSearchChange={(value) => {
                   setFollowingSearch(value);
                 }}
-                onLoadMore={() => fetchFollowing()}
+                onLoadMore={() => fetchFollowingPage(followingOffset, false)}
               />
             )}
 
-            {activeTab === "groups" && <GroupsList items={groups} loading={groupsLoading} hasMore={groupsHasMore} onLoadMore={() => fetchGroups()} />}
-            {activeTab === "events" && <EventsList items={events} loading={eventsLoading} hasMore={eventsHasMore} onLoadMore={() => fetchEvents()} />}
+            {activeTab === "groups" && <GroupsList items={groups} loading={groupsLoading} hasMore={groupsHasMore} onLoadMore={() => fetchGroupsPage(groupsOffset, false)} />}
+            {activeTab === "events" && <EventsList items={events} loading={eventsLoading} hasMore={eventsHasMore} onLoadMore={() => fetchEventsPage(eventsOffset, false)} />}
           </CardContent>
         </Card>
 
