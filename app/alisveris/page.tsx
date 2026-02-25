@@ -24,7 +24,6 @@ import {
   Plus,
   Package,
   Loader2,
-  Filter,
   X,
   CalendarDays,
 } from "lucide-react";
@@ -381,67 +380,76 @@ export default function AlisverisPage() {
               </Link>
             </div>
 
-            <div className="hidden md:grid md:grid-cols-14 gap-3 rounded-2xl border border-neutral-200/80 bg-white/90 p-3 shadow-sm backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/90">
-              <div className="col-span-3">
+            <div className="grid grid-cols-1 gap-4 rounded-2xl border border-black/10 bg-white p-5 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:grid-cols-2 md:grid-cols-12">
+              <div className="sm:col-span-2 md:col-span-6">
                 <Input
-                  placeholder="Ara (q)"
+                  placeholder="Ara"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  icon={<Search size={18} />}
+                  icon={<Search size={16} className="text-black/40" />}
                   aria-label="İlanlarda ara"
+                  className="h-11 border-black/10 bg-neutral-50 hover:bg-neutral-50 focus:border-black/10 focus:ring-2 focus:ring-red-500/20"
                 />
               </div>
-              <div className="col-span-2">
+              <div className="md:col-span-2">
                 <Select
                   options={STATE_OPTIONS}
                   value={selectedState}
                   onChange={(e) => applyFilters({ ...buildFilterState(), state: e.target.value })}
                   aria-label="Eyalet filtresi"
+                  className="h-11 border-black/10 bg-white hover:bg-black/[0.02] focus:border-black/10 focus:ring-2 focus:ring-red-500/20"
                 />
               </div>
-              <div className="col-span-2">
+              <div className="order-4 sm:col-span-2 md:order-3 md:col-span-3">
+                <div className="rounded-xl border border-black/10 bg-neutral-50/90 px-3 py-2">
+                  <p className="mb-1 text-xs text-black/50">Fiyat Aralığı</p>
+                  <div className="flex items-center overflow-hidden rounded-lg border border-black/10 bg-white">
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      value={minPrice}
+                      onChange={(e) => applyFilters({ ...buildFilterState(), minPrice: e.target.value })}
+                      aria-label="Minimum fiyat"
+                      className="h-11 w-1/2 border-0 bg-transparent px-3 text-sm text-black placeholder:text-black/40 focus:outline-none focus:ring-0"
+                    />
+                    <div className="h-6 w-px bg-black/10" />
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      value={maxPrice}
+                      onChange={(e) => applyFilters({ ...buildFilterState(), maxPrice: e.target.value })}
+                      aria-label="Maksimum fiyat"
+                      className="h-11 w-1/2 border-0 bg-transparent px-3 text-sm text-black placeholder:text-black/40 focus:outline-none focus:ring-0"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="order-3 md:order-4 md:col-span-1">
+                <div className="relative">
+                  <Select
+                    options={SORT_OPTIONS}
+                    value={sortBy}
+                    onChange={(e) => applyFilters({ ...buildFilterState(), sort: e.target.value })}
+                    aria-label="Sıralama"
+                    className="h-11 rounded-xl border-black/10 bg-white text-transparent hover:bg-black/5 focus:border-black/10 focus:ring-2 focus:ring-red-500/20"
+                  />
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-black">Sirala</span>
+                </div>
+              </div>
+
+              <div className="hidden" aria-hidden="true">
                 <Input
                   placeholder="Şehir"
                   value={selectedCity}
                   onChange={(e) => applyFilters({ ...buildFilterState(), city: e.target.value })}
                   aria-label="Şehir filtresi"
                 />
-              </div>
-              <div className="col-span-2">
                 <Select
                   options={CONDITION_OPTIONS}
                   value={selectedCondition}
                   onChange={(e) => applyFilters({ ...buildFilterState(), condition: e.target.value })}
                   aria-label="Durum filtresi"
                 />
-              </div>
-              <div className="col-span-1">
-                <Input
-                  type="number"
-                  placeholder="Min $"
-                  value={minPrice}
-                  onChange={(e) => applyFilters({ ...buildFilterState(), minPrice: e.target.value })}
-                  aria-label="Minimum fiyat"
-                />
-              </div>
-              <div className="col-span-1">
-                <Input
-                  type="number"
-                  placeholder="Max $"
-                  value={maxPrice}
-                  onChange={(e) => applyFilters({ ...buildFilterState(), maxPrice: e.target.value })}
-                  aria-label="Maksimum fiyat"
-                />
-              </div>
-              <div className="col-span-1">
-                <Select
-                  options={SORT_OPTIONS}
-                  value={sortBy}
-                  onChange={(e) => applyFilters({ ...buildFilterState(), sort: e.target.value })}
-                  aria-label="Sıralama"
-                />
-              </div>
-              <div className="col-span-2">
                 <Link href={user ? "/alisveris/ilan-ver" : "/login?redirect=/alisveris/ilan-ver"}>
                   <Button variant="primary" size="lg" className="w-full gap-2 whitespace-nowrap bg-orange-500 px-5 hover:bg-orange-600">
                     <Plus size={20} />
@@ -449,31 +457,6 @@ export default function AlisverisPage() {
                   </Button>
                 </Link>
               </div>
-            </div>
-
-            <div className="md:hidden flex gap-2">
-              <div className="flex-1">
-                <Input
-                  placeholder="Ürün veya hizmet ara..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  icon={<Search size={18} />}
-                  aria-label="İlanlarda ara"
-                />
-              </div>
-              <Button
-                type="button"
-                variant="secondary"
-                className="rounded-xl px-4 focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
-                onClick={() => {
-                  setMobileDraft(buildFilterState());
-                  setIsMobileFiltersOpen(true);
-                }}
-                aria-label="Filtreleri aç"
-              >
-                <Filter size={18} className="mr-2" />
-                Filtreler
-              </Button>
             </div>
 
             <div className="hidden md:flex gap-2 overflow-x-auto pt-1 pb-1">
