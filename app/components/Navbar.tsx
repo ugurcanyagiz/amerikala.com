@@ -242,8 +242,8 @@ function NavDropdown({
           flex items-center gap-2 border-b-2 px-1 py-5 text-sm font-semibold uppercase tracking-wide
           transition-colors duration-200
           ${isActive
-            ? "border-[var(--color-primary)] text-black"
-            : "border-transparent text-gray-600 hover:text-black"
+            ? "border-[var(--color-primary)] text-[var(--color-ink)]"
+            : "border-transparent text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
           }
         `}
       >
@@ -261,8 +261,8 @@ function NavDropdown({
           flex items-center gap-1 border-b-2 px-1 py-5 text-sm font-semibold uppercase tracking-wide
           transition-colors duration-200
           ${isActive || isOpen
-            ? "border-[var(--color-primary)] text-black"
-            : "border-transparent text-gray-600 hover:text-black"
+            ? "border-[var(--color-primary)] text-[var(--color-ink)]"
+            : "border-transparent text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
           }
         `}
       >
@@ -276,7 +276,7 @@ function NavDropdown({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-64 py-2 bg-white rounded-2xl shadow-md border border-[var(--color-border-light)] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-full left-0 mt-2 w-64 py-2 bg-white rounded-2xl shadow-xl border border-[var(--color-border-light)] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           {item.children?.map((child) => {
             const ChildIcon = child.icon;
             const isChildActive = pathname === child.href || pathname.startsWith(child.href + "/");
@@ -287,13 +287,13 @@ function NavDropdown({
                 href={child.href}
                 onClick={onClose}
                 className={`
-                  flex items-center gap-3 mx-2 px-3 py-2.5 rounded-2xl
+                  flex items-center gap-3 mx-2 px-3 py-2.5 rounded-xl
                   transition-all duration-150
                   ${child.accent 
                     ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 my-2" 
                     : isChildActive
                       ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                      : "text-neutral-600 dark:text-gray-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+                      : "text-neutral-600 dark:text-slate-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                   }
                 `}
               >
@@ -301,7 +301,7 @@ function NavDropdown({
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm">{child.label}</div>
                   {child.description && (
-                    <div className={`text-xs truncate ${child.accent ? "text-blue-100" : "text-gray-500"}`}>
+                    <div className={`text-xs truncate ${child.accent ? "text-blue-100" : "text-slate-400"}`}>
                       {child.description}
                     </div>
                   )}
@@ -343,11 +343,11 @@ function MobileBottomNav() {
               key={item.href}
               href={item.href}
               className={`
-                flex items-center justify-center gap-2 h-11 px-4 rounded-2xl shrink-0
+                flex items-center justify-center gap-2 h-11 px-4 rounded-xl shrink-0
                 transition-all duration-200
                 ${isActive 
-                  ? "text-brand-red dark:text-blue-400" 
-                  : "text-gray-600 dark:text-gray-600"
+                  ? "text-blue-600 dark:text-blue-400" 
+                  : "text-slate-500 dark:text-slate-500"
                 }
               `}
             >
@@ -400,7 +400,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
       <div className="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white dark:bg-neutral-900 shadow-2xl animate-in slide-in-from-right duration-300">
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-brand-earth/40">
+          <div className="flex items-center justify-between p-4 border-b border-sky-100">
             <span className="font-bold text-lg">Menü</span>
             <button
               onClick={onClose}
@@ -412,7 +412,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
           {/* User Info */}
           {user && (
-            <div className="p-4 border-b border-brand-earth/40">
+            <div className="p-4 border-b border-sky-100">
               <Link href="/profile" onClick={onClose} className="flex items-center gap-3">
                 <Avatar
                   src={getAvatarUrl(profile, user)}
@@ -421,7 +421,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 />
                 <div>
                   <div className="font-semibold">{displayName}</div>
-                  <div className="text-sm text-gray-600">{usernameLabel}</div>
+                  <div className="text-sm text-slate-500">{usernameLabel}</div>
                   <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${roleBadge.className}`}>{roleBadge.label}</span>
                 </div>
               </Link>
@@ -440,7 +440,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                     key={item.id}
                     href={item.href!}
                     onClick={onClose}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-brand-cream/60"
+                    className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-sky-50"
                   >
                     <Icon size={20} />
                     <span className="font-medium">{item.label}</span>
@@ -450,7 +450,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
               return (
                 <div key={item.id} className="py-2">
-                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <div className="px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     {item.label}
                   </div>
                   {item.children?.map((child) => {
@@ -463,8 +463,8 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                         className={`
                           flex items-center gap-3 px-6 py-2.5
                           ${child.accent 
-                            ? "text-brand-red dark:text-blue-400" 
-                            : "text-neutral-600 dark:text-gray-500"
+                            ? "text-blue-600 dark:text-blue-400" 
+                            : "text-neutral-600 dark:text-slate-400"
                           }
                           hover:bg-neutral-100 dark:hover:bg-neutral-800
                         `}
@@ -740,8 +740,8 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="hidden md:block sticky top-0 z-40 w-full border-b border-brand-earth/40 bg-brand-cream/95 backdrop-blur-xl">
-        <div className="mx-auto max-w-7xl px-6">
+      <header className="hidden md:block sticky top-0 z-40 w-full border-b border-[var(--color-border-light)] bg-[var(--color-surface)]/95 backdrop-blur-xl">
+        <div className="mx-auto max-w-[1400px] px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 flex-shrink-0" aria-label="Amerikala ana sayfa">
@@ -753,7 +753,7 @@ export default function Navbar() {
                 priority
                 className="h-9 w-9"
               />
-              <span className="text-lg font-bold tracking-[0.12em] text-black uppercase">amerikala</span>
+              <span className="text-lg font-bold tracking-[0.12em] text-[var(--color-ink)] uppercase">amerikala</span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -775,7 +775,7 @@ export default function Navbar() {
               <div ref={searchRef} className="relative hidden sm:block">
                 <button
                   onClick={() => setSearchOpen((prev) => !prev)}
-                  className="rounded-full p-2.5 text-gray-600 transition-colors hover:bg-white hover:text-black"
+                  className="rounded-full p-2.5 text-[var(--color-ink-secondary)] transition-colors hover:bg-white hover:text-[var(--color-ink)]"
                   aria-label="Sitede ara"
                   aria-expanded={searchOpen}
                 >
@@ -783,11 +783,11 @@ export default function Navbar() {
                 </button>
 
                 {searchOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-[420px] max-w-[90vw] rounded-2xl border border-brand-earth/40 bg-white shadow-xl z-50 overflow-hidden">
-                    <div className="p-3 border-b border-brand-earth/40">
+                  <div className="absolute right-0 top-full mt-2 w-[420px] max-w-[90vw] rounded-2xl border border-sky-100 bg-white shadow-xl z-50 overflow-hidden">
+                    <div className="p-3 border-b border-sky-100">
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 flex items-center gap-2 rounded-2xl border border-brand-earth/40 px-3 py-2">
-                          <Search size={16} className="text-gray-500" />
+                        <div className="flex-1 flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
+                          <Search size={16} className="text-slate-400" />
                           <input
                             value={searchQuery}
                             onChange={(event) => setSearchQuery(event.target.value)}
@@ -805,7 +805,7 @@ export default function Navbar() {
                         <Link
                           href={`/search${searchQuery.trim() ? `?q=${encodeURIComponent(searchQuery.trim())}` : ""}`}
                           onClick={() => setSearchOpen(false)}
-                          className="inline-flex h-10 items-center rounded-2xl bg-brand-red px-3 text-xs font-semibold text-white hover:bg-brand-red/90"
+                          className="inline-flex h-10 items-center rounded-xl bg-[var(--color-primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--color-primary-hover)]"
                         >
                           Detaylı Ara
                         </Link>
@@ -814,24 +814,24 @@ export default function Navbar() {
 
                     <div className="max-h-[340px] overflow-y-auto">
                       {searchLoading ? (
-                        <p className="p-4 text-sm text-gray-600">Aranıyor...</p>
+                        <p className="p-4 text-sm text-slate-500">Aranıyor...</p>
                       ) : searchQuery.trim().length < 2 ? (
-                        <p className="p-4 text-sm text-gray-600">Aramaya başlamak için en az 2 karakter girin.</p>
+                        <p className="p-4 text-sm text-slate-500">Aramaya başlamak için en az 2 karakter girin.</p>
                       ) : searchResults.length === 0 ? (
-                        <p className="p-4 text-sm text-gray-600">Sonuç bulunamadı.</p>
+                        <p className="p-4 text-sm text-slate-500">Sonuç bulunamadı.</p>
                       ) : (
                         searchResults.map((item) => (
                           <Link
                             key={item.id}
                             href={item.href}
                             onClick={() => setSearchOpen(false)}
-                            className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 hover:bg-brand-cream/60"
+                            className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 hover:bg-sky-50"
                           >
                             <div className="min-w-0">
-                              <p className="text-sm font-medium text-black truncate">{item.title}</p>
-                              <p className="text-xs text-gray-600 truncate">{item.subtitle || "Detaylar için tıklayın"}</p>
+                              <p className="text-sm font-medium text-slate-800 truncate">{item.title}</p>
+                              <p className="text-xs text-slate-500 truncate">{item.subtitle || "Detaylar için tıklayın"}</p>
                             </div>
-                            <span className="text-[10px] px-2 py-1 rounded-full bg-slate-100 text-gray-600 font-medium">
+                            <span className="text-[10px] px-2 py-1 rounded-full bg-slate-100 text-slate-600 font-medium">
                               {SEARCH_TYPE_LABELS[item.type]}
                             </span>
                           </Link>
@@ -843,7 +843,7 @@ export default function Navbar() {
               </div>
 
               {loading ? (
-                <div className="w-9 h-9 rounded-full bg-brand-earth/20 animate-pulse" />
+                <div className="w-9 h-9 rounded-full bg-sky-100 animate-pulse" />
               ) : user ? (
                 <>
                   {/* Notifications */}
@@ -857,38 +857,38 @@ export default function Navbar() {
                           void refreshNotifications();
                         }
                       }}
-                      className="flex p-2.5 rounded-full text-gray-600 hover:text-black hover:bg-brand-cream/60 transition-colors relative"
+                      className="flex p-2.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-sky-50 transition-colors relative"
                       aria-label="Bildirim panelini aç"
                       aria-expanded={notificationPanelOpen}
                     >
                       <Bell size={20} />
                       {unreadCount > 0 && (
-                        <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-red text-white text-[10px] font-semibold leading-[18px] text-center">
+                        <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-[18px] text-center">
                           {unreadCount > 99 ? "99+" : unreadCount}
                         </span>
                       )}
                     </button>
 
                     {notificationPanelOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-[380px] max-w-[86vw] bg-white rounded-2xl shadow-md border border-brand-earth/40 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
-                        <div className="px-4 py-3 border-b border-brand-earth/40 flex items-center justify-between">
+                      <div className="absolute right-0 top-full mt-2 w-[380px] max-w-[86vw] bg-white rounded-2xl shadow-xl border border-sky-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-sky-100 flex items-center justify-between">
                           <div>
                             <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Bildirimler</h3>
-                            <p className="text-xs text-gray-600">{unreadCount > 0 ? `${unreadCount} okunmamış bildirim` : "Tüm bildirimler okundu"}</p>
+                            <p className="text-xs text-slate-500">{unreadCount > 0 ? `${unreadCount} okunmamış bildirim` : "Tüm bildirimler okundu"}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => {
                               markAllAsRead();
                             }}
-                              className="text-xs font-medium text-gray-600 hover:text-black"
+                              className="text-xs font-medium text-slate-500 hover:text-slate-900"
                             >
                               Tümünü okundu yap
                             </button>
                             <Link
                               href="/notifications"
                               onClick={() => setNotificationPanelOpen(false)}
-                              className="text-xs font-medium text-brand-red hover:text-brand-red/80"
+                              className="text-xs font-medium text-blue-600 hover:text-blue-700"
                             >
                               Tümünü gör
                             </Link>
@@ -897,11 +897,11 @@ export default function Navbar() {
 
                         <div className="max-h-[420px] overflow-y-auto">
                           {notificationLoading ? (
-                            <div className="p-6 text-sm text-gray-600">Bildirimler yükleniyor...</div>
+                            <div className="p-6 text-sm text-slate-500">Bildirimler yükleniyor...</div>
                           ) : latestNotifications.length === 0 ? (
                             <div className="p-8 text-center">
                               <Bell className="w-10 h-10 mx-auto mb-3 text-neutral-300 dark:text-neutral-600" />
-                              <p className="text-sm text-gray-600">Yeni bildirimin yok.</p>
+                              <p className="text-sm text-slate-500">Yeni bildirimin yok.</p>
                             </div>
                           ) : (
                             latestNotifications.map((notification) => (
@@ -912,8 +912,8 @@ export default function Navbar() {
                                   markAsRead(notification.id);
                                   setNotificationPanelOpen(false);
                                 }}
-                                className={`flex items-start gap-3 px-4 py-3 border-b border-brand-earth/40 hover:bg-brand-cream/60 transition-colors ${
-                                  !notification.isRead ? "bg-brand-cream/60" : ""
+                                className={`flex items-start gap-3 px-4 py-3 border-b border-sky-100 hover:bg-sky-50 transition-colors ${
+                                  !notification.isRead ? "bg-sky-50" : ""
                                 }`}
                               >
                                 <Avatar
@@ -922,13 +922,13 @@ export default function Navbar() {
                                   size="sm"
                                 />
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-sm leading-5 text-gray-700">
+                                  <p className="text-sm leading-5 text-slate-700">
                                     <span className="font-semibold">{notification.user.name}</span> {notification.message}
                                   </p>
                                   {notification.content && (
-                                    <p className="text-xs text-gray-600 truncate mt-0.5">{notification.content}</p>
+                                    <p className="text-xs text-slate-500 truncate mt-0.5">{notification.content}</p>
                                   )}
-                                  <p className="text-xs text-gray-500 mt-1" suppressHydrationWarning>
+                                  <p className="text-xs text-slate-400 mt-1" suppressHydrationWarning>
                                     {timeHydrated ? getTimeAgo(notification.createdAt) : "..."}
                                   </p>
                                 </div>
@@ -953,28 +953,28 @@ export default function Navbar() {
                         void refreshMessagePreviews();
                       }
                     }}
-                      className="flex p-2.5 rounded-full text-gray-600 hover:text-black hover:bg-brand-cream/60 transition-colors relative"
+                      className="flex p-2.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-sky-50 transition-colors relative"
                       aria-label="Mesajlar"
                     >
                       <MessageSquare size={20} />
                       {totalUnreadMessages > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 rounded-full bg-brand-pine text-white text-[10px] font-semibold flex items-center justify-center">
+                        <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 rounded-full bg-blue-600 text-white text-[10px] font-semibold flex items-center justify-center">
                           {totalUnreadMessages > 99 ? "99+" : totalUnreadMessages}
                         </span>
                       )}
                     </button>
 
                     {messagesOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-[370px] max-w-[90vw] bg-white rounded-2xl shadow-md border border-brand-earth/40 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
-                        <div className="px-4 py-3 border-b border-brand-earth/40 flex items-center justify-between">
+                      <div className="absolute right-0 top-full mt-2 w-[370px] max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-sky-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-sky-100 flex items-center justify-between">
                           <div>
                             <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Mesajlar</p>
-                            <p className="text-xs text-gray-600">{totalUnreadMessages} okunmamış mesaj</p>
+                            <p className="text-xs text-slate-500">{totalUnreadMessages} okunmamış mesaj</p>
                           </div>
                           <Link
                             href="/messages"
                             onClick={() => setMessagesOpen(false)}
-                            className="text-xs font-medium text-brand-red hover:text-brand-red/80"
+                            className="text-xs font-medium text-blue-600 hover:text-blue-700"
                           >
                             Tümünü Gör
                           </Link>
@@ -982,11 +982,11 @@ export default function Navbar() {
 
                         <div className="max-h-[420px] overflow-y-auto">
                           {messagesLoading ? (
-                            <div className="p-4 text-sm text-gray-600">Mesajlar yükleniyor...</div>
+                            <div className="p-4 text-sm text-slate-500">Mesajlar yükleniyor...</div>
                           ) : messagesError ? (
                             <div className="p-4 text-sm text-red-500">{messagesError}</div>
                           ) : messagePreviews.length === 0 ? (
-                            <div className="p-4 text-sm text-gray-600">Henüz bir mesajınız yok.</div>
+                            <div className="p-4 text-sm text-slate-500">Henüz bir mesajınız yok.</div>
                           ) : (
                             messagePreviews.slice(0, 8).map((conversation) => (
                               <button
@@ -1024,16 +1024,16 @@ export default function Navbar() {
                                     <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">
                                       {conversation.otherUserName}
                                     </p>
-                                    <span className="text-xs text-gray-600 flex-shrink-0">
+                                    <span className="text-xs text-slate-500 flex-shrink-0">
                                       <span suppressHydrationWarning>{timeHydrated ? formatMessageTime(conversation.lastMessageCreatedAt) : "..."}</span>
                                     </span>
                                   </div>
                                   <div className="flex items-center justify-between gap-2">
-                                    <p className="text-sm text-neutral-600 dark:text-gray-500 truncate">
+                                    <p className="text-sm text-neutral-600 dark:text-slate-400 truncate">
                                       {conversation.lastMessageText}
                                     </p>
                                     {conversation.unreadCount > 0 && (
-                                      <span className="min-w-5 h-5 px-1 rounded-full bg-brand-pine text-white text-[10px] font-semibold flex items-center justify-center">
+                                      <span className="min-w-5 h-5 px-1 rounded-full bg-blue-600 text-white text-[10px] font-semibold flex items-center justify-center">
                                         {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
                                       </span>
                                     )}
@@ -1051,7 +1051,7 @@ export default function Navbar() {
                   <div ref={userMenuRef} className="relative hidden md:block">
                     <button
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
-                      className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 rounded-full border border-transparent hover:border-sky-200 hover:bg-brand-cream/60 transition-colors"
+                      className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 rounded-full border border-transparent hover:border-sky-200 hover:bg-sky-50 transition-colors"
                     >
                       <Avatar
                         src={getAvatarUrl(profile, user)}
@@ -1065,17 +1065,17 @@ export default function Navbar() {
                     </button>
 
                     {userMenuOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-56 py-2 bg-white rounded-2xl shadow-md border border-brand-earth/40 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="px-4 py-3 border-b border-brand-earth/40">
+                      <div className="absolute right-0 top-full mt-2 w-56 py-2 bg-white rounded-2xl shadow-xl border border-sky-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="px-4 py-3 border-b border-sky-100">
                           <div className="font-semibold truncate">{displayName}</div>
-                          <div className="text-sm text-gray-600 truncate">{usernameLabel}</div>
+                          <div className="text-sm text-slate-500 truncate">{usernameLabel}</div>
                           <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${roleBadge.className}`}>{roleBadge.label}</span>
                         </div>
                         <div className="py-1">
                           <Link
                             href="/profile"
                             onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-brand-cream/60"
+                            className="flex items-center gap-3 px-4 py-2.5 text-slate-700 hover:bg-sky-50"
                           >
                             <User size={18} />
                             Profilim
@@ -1083,7 +1083,7 @@ export default function Navbar() {
                           <Link
                             href="/ayarlar"
                             onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-brand-cream/60"
+                            className="flex items-center gap-3 px-4 py-2.5 text-slate-700 hover:bg-sky-50"
                           >
                             <Settings size={18} />
                             Ayarlar
@@ -1099,7 +1099,7 @@ export default function Navbar() {
                             </Link>
                           )}
                         </div>
-                        <div className="pt-1 border-t border-brand-earth/40">
+                        <div className="pt-1 border-t border-sky-100">
                           <button
                             onClick={handleSignOut}
                             className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -1115,7 +1115,7 @@ export default function Navbar() {
                   {/* Mobile Menu Button */}
                   <button
                     onClick={() => setMobileMenuOpen(true)}
-                    className="md:hidden p-2.5 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-gray-500 dark:hover:text-white dark:hover:bg-neutral-800"
+                    className="md:hidden p-2.5 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-neutral-800"
                   >
                     <Menu size={20} />
                   </button>
@@ -1123,18 +1123,18 @@ export default function Navbar() {
               ) : (
                 <>
                   <Link href="/login" className="hidden sm:block">
-                    <Button variant="ghost" size="sm" className="rounded-full border border-[#D9CDC3] bg-white px-5 text-black hover:bg-white">
+                    <Button variant="ghost" size="sm" className="rounded-full border border-[#D9CDC3] bg-white px-5 text-[var(--color-ink)] hover:bg-white">
                       Giriş Yap
                     </Button>
                   </Link>
                   <Link href="/#son-ilanlar" className="hidden sm:block">
-                    <Button variant="primary" size="sm" className="rounded-full bg-brand-red px-5 text-white hover:bg-brand-red/90">
+                    <Button variant="primary" size="sm" className="rounded-full bg-[var(--color-primary)] px-5 text-white hover:bg-[var(--color-primary-hover)]">
                       Paylaşımları Gör
                     </Button>
                   </Link>
                   <button
                     onClick={() => setMobileMenuOpen(true)}
-                    className="sm:hidden p-2.5 rounded-full text-neutral-600 hover:bg-neutral-100 dark:text-gray-500 dark:hover:bg-neutral-800"
+                    className="sm:hidden p-2.5 rounded-full text-neutral-600 hover:bg-neutral-100 dark:text-slate-400 dark:hover:bg-neutral-800"
                   >
                     <Menu size={20} />
                   </button>
