@@ -14,30 +14,30 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       font-semibold tracking-tight
       rounded-xl
       transition-all duration-150 ease-out
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red focus-visible:ring-offset-2
       disabled:opacity-50 disabled:cursor-not-allowed
       active:translate-y-px
     `;
 
     const variants: Record<string, string> = {
       primary: `
-        bg-[var(--color-primary)] text-white
-        hover:bg-[var(--color-primary-hover)]
-        shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]
+        bg-brand-red text-white
+        hover:bg-brand-red/90 active:bg-brand-red
+        shadow-sm hover:shadow-md
       `,
       secondary: `
-        bg-[var(--color-surface-raised)] text-[var(--color-ink)]
-        border border-[var(--color-border)]
-        hover:bg-[var(--color-surface-sunken)] hover:border-[var(--color-border-strong)]
+        bg-brand-pine text-white
+        hover:bg-brand-pine/90 active:bg-brand-pine
+        shadow-sm hover:shadow-md
       `,
       ghost: `
-        bg-transparent text-[var(--color-ink-secondary)]
-        hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink)]
+        bg-transparent text-gray-600
+        hover:bg-brand-cream/60 hover:text-black
       `,
       outline: `
-        bg-white text-[var(--color-ink)]
-        border border-[var(--color-border-strong)]
-        hover:bg-[var(--color-surface-raised)] hover:border-[var(--color-primary-300)]
+        bg-white text-black
+        border border-brand-earth/40
+        hover:bg-brand-cream/60 hover:border-brand-earth
       `,
       destructive: `
         bg-[var(--color-error)] text-white
