@@ -19,7 +19,6 @@ import {
   List,
   type LucideIcon,
   UserRound,
-  Rss,
   MessageSquare,
   Bell,
   Scale,
@@ -246,7 +245,6 @@ export default function Sidebar() {
               <SidebarItem href="/meetups" label="Etkinlikler" icon={Calendar} active={isActive("/meetups")} collapsed={!isExpanded} />
               <SidebarItem href="/groups" label="Gruplar" icon={UserRound} active={isActive("/groups")} collapsed={!isExpanded} />
               <SidebarItem href="/search" label="İnsanlar" icon={User} active={pathname.startsWith("/search")} collapsed={!isExpanded} />
-              <SidebarItem href="/feed" label="Akış" icon={Rss} active={isActive("/feed")} collapsed={!isExpanded} />
             </SidebarSection>
 
             <SidebarSection title="Topluluk" icon={Home} collapsed={!isExpanded}>
@@ -256,7 +254,6 @@ export default function Sidebar() {
             </SidebarSection>
 
             <SidebarSection title="Yasal" icon={Scale} collapsed={!isExpanded}>
-              <SidebarItem href="/yasal-rehber" label="Yasal Rehber" icon={Scale} active={isActive("/yasal-rehber")} collapsed={!isExpanded} />
               <SidebarItem href="/ayarlar" label="Ayarlar" icon={Settings} active={isActive("/ayarlar")} collapsed={!isExpanded} />
             </SidebarSection>
           </nav>
