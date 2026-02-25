@@ -242,8 +242,8 @@ function NavDropdown({
           flex items-center gap-2 border-b-2 px-1 py-5 text-sm font-semibold uppercase tracking-wide
           transition-colors duration-200
           ${isActive
-            ? "border-[#E53935] text-[#111111]"
-            : "border-transparent text-[#666666] hover:text-[#111111]"
+            ? "border-[var(--color-primary)] text-[var(--color-ink)]"
+            : "border-transparent text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
           }
         `}
       >
@@ -261,8 +261,8 @@ function NavDropdown({
           flex items-center gap-1 border-b-2 px-1 py-5 text-sm font-semibold uppercase tracking-wide
           transition-colors duration-200
           ${isActive || isOpen
-            ? "border-[#E53935] text-[#111111]"
-            : "border-transparent text-[#666666] hover:text-[#111111]"
+            ? "border-[var(--color-primary)] text-[var(--color-ink)]"
+            : "border-transparent text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
           }
         `}
       >
@@ -276,7 +276,7 @@ function NavDropdown({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-64 py-2 bg-white rounded-2xl shadow-xl border border-[#E7D9CF] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-full left-0 mt-2 w-64 py-2 bg-white rounded-2xl shadow-xl border border-[var(--color-border-light)] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           {item.children?.map((child) => {
             const ChildIcon = child.icon;
             const isChildActive = pathname === child.href || pathname.startsWith(child.href + "/");
@@ -740,7 +740,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="hidden md:block sticky top-0 z-40 w-full border-b border-[#E7D9CF] bg-[#F4EFEA]/95 backdrop-blur-xl">
+      <header className="hidden md:block sticky top-0 z-40 w-full border-b border-[var(--color-border-light)] bg-[var(--color-surface)]/95 backdrop-blur-xl">
         <div className="mx-auto max-w-[1400px] px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -753,7 +753,7 @@ export default function Navbar() {
                 priority
                 className="h-9 w-9"
               />
-              <span className="text-lg font-bold tracking-[0.12em] text-[#111111] uppercase">amerikala</span>
+              <span className="text-lg font-bold tracking-[0.12em] text-[var(--color-ink)] uppercase">amerikala</span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -775,7 +775,7 @@ export default function Navbar() {
               <div ref={searchRef} className="relative hidden sm:block">
                 <button
                   onClick={() => setSearchOpen((prev) => !prev)}
-                  className="rounded-full p-2.5 text-[#666666] transition-colors hover:bg-white hover:text-[#111111]"
+                  className="rounded-full p-2.5 text-[var(--color-ink-secondary)] transition-colors hover:bg-white hover:text-[var(--color-ink)]"
                   aria-label="Sitede ara"
                   aria-expanded={searchOpen}
                 >
@@ -805,7 +805,7 @@ export default function Navbar() {
                         <Link
                           href={`/search${searchQuery.trim() ? `?q=${encodeURIComponent(searchQuery.trim())}` : ""}`}
                           onClick={() => setSearchOpen(false)}
-                          className="inline-flex h-10 items-center rounded-xl bg-[#E53935] px-3 text-xs font-semibold text-white hover:bg-[#C62828]"
+                          className="inline-flex h-10 items-center rounded-xl bg-[var(--color-primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--color-primary-hover)]"
                         >
                           Detaylı Ara
                         </Link>
@@ -1123,12 +1123,12 @@ export default function Navbar() {
               ) : (
                 <>
                   <Link href="/login" className="hidden sm:block">
-                    <Button variant="ghost" size="sm" className="rounded-full border border-[#D9CDC3] bg-white px-5 text-[#111111] hover:bg-white">
+                    <Button variant="ghost" size="sm" className="rounded-full border border-[#D9CDC3] bg-white px-5 text-[var(--color-ink)] hover:bg-white">
                       Giriş Yap
                     </Button>
                   </Link>
                   <Link href="/#son-ilanlar" className="hidden sm:block">
-                    <Button variant="primary" size="sm" className="rounded-full bg-[#E53935] px-5 text-white hover:bg-[#C62828]">
+                    <Button variant="primary" size="sm" className="rounded-full bg-[var(--color-primary)] px-5 text-white hover:bg-[var(--color-primary-hover)]">
                       Paylaşımları Gör
                     </Button>
                   </Link>

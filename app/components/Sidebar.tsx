@@ -216,7 +216,7 @@ export default function Sidebar() {
 
   if (isHomePage) {
     return (
-      <aside className="sticky top-16 hidden h-[calc(100vh-64px)] w-[260px] flex-col border-r border-[#E7D9CF] bg-[#F7F1EC] md:flex">
+      <aside className="sticky top-16 hidden h-[calc(100vh-64px)] w-[260px] flex-col border-r border-[var(--color-border-light)] bg-[var(--color-surface-raised)] md:flex">
         <nav className="flex-1 overflow-y-auto px-5 py-8">
           <SidebarSection title="Keşfet" icon={Star}>
             <SidebarItem href="/meetups" label="Etkinlikler" icon={Calendar} active={isActive("/meetups")} />
@@ -237,8 +237,8 @@ export default function Sidebar() {
           </SidebarSection>
         </nav>
 
-        <div className="border-t border-[#E7D9CF] p-5">
-          <Link href={hasAuthenticatedUser ? "/emlak/ilan-ver" : "/login"} className="block rounded-xl bg-[#E53935] px-4 py-3 text-center text-lg font-semibold text-white shadow-[0_18px_28px_-20px_rgba(229,57,53,0.95)] hover:bg-[#C62828]">
+        <div className="border-t border-[var(--color-border-light)] p-5">
+          <Link href={hasAuthenticatedUser ? "/emlak/ilan-ver" : "/login"} className="block rounded-xl bg-[var(--color-primary)] px-4 py-3 text-center text-lg font-semibold text-white shadow-[0_18px_28px_-20px_rgba(229,57,53,0.95)] hover:bg-[var(--color-primary-hover)]">
             + İlan Ver
           </Link>
         </div>
@@ -389,7 +389,7 @@ function SidebarSection({
   children: ReactNode;
 }) {
   return (
-    <div className="mb-8 border-b border-[#E7D9CF] pb-6 last:border-none">
+    <div className="mb-8 border-b border-[var(--color-border-light)] pb-6 last:border-none">
       <p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.28em] text-[#9A8C84]">
         <Icon className="h-3.5 w-3.5" />
         {title}
@@ -404,7 +404,7 @@ function SidebarItem({ href, label, icon: Icon, active }: { href: string; label:
     <Link
       href={href}
       className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-base transition-colors ${
-        active ? "bg-white font-semibold text-[#111111]" : "text-[#4A4541] hover:bg-white/70"
+        active ? "bg-white font-semibold text-[var(--color-ink)]" : "text-[#4A4541] hover:bg-white/70"
       }`}
     >
       <Icon className="h-4 w-4" />

@@ -91,7 +91,7 @@ export default function RootLayout({
                   <Navbar />
                 </Suspense>
 
-                <main className="flex-1 bg-[#F4EFEA]">{children}</main>
+                <main className="flex-1 bg-[var(--color-surface)]">{children}</main>
 
               {/* Footer */}
               <footer className="border-t border-[var(--color-border-light)] bg-[var(--color-surface)] mt-auto">

@@ -10,30 +10,30 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium mb-2 text-neutral-900 dark:text-neutral-50">
+          <label className="block text-sm font-medium mb-2 text-[var(--color-ink)]">
             {label}
           </label>
         )}
         <textarea
           className={`
-            flex min-h-[100px] w-full rounded-lg
-            bg-white dark:bg-neutral-950
-            border border-neutral-200 dark:border-neutral-800
+            flex min-h-[100px] w-full rounded-xl
+            bg-[var(--color-surface-raised)]
+            border border-[var(--color-border)]
             px-3 py-2 text-sm
             transition-smooth
-            placeholder:text-neutral-500
-            focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent
+            placeholder:text-[var(--color-ink-tertiary)]
+            focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]
             disabled:cursor-not-allowed disabled:opacity-50
-            hover:border-red-500
+            hover:border-[var(--color-border-strong)]
             resize-none
-            ${error ? "border-red-500 focus:ring-red-500" : ""}
+            ${error ? "border-[var(--color-error)] focus:ring-[var(--color-error)]/20" : ""}
             ${className}
           `}
           ref={ref}
           {...props}
         />
         {error && (
-          <p className="mt-1.5 text-sm text-red-500">{error}</p>
+          <p className="mt-1.5 text-sm text-[var(--color-error)]">{error}</p>
         )}
       </div>
     );

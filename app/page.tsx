@@ -80,11 +80,11 @@ const SEARCH_TYPE_TO_SECTION: Record<string, HomeCategoryKey> = {
 };
 
 const HOME_THEME = {
-  bg: "#F4EFEA",
-  primary: "#E53935",
-  accent: "#C62828",
-  text: "#111111",
-  textSecondary: "#666666",
+  bg: "var(--color-surface)",
+  primary: "var(--color-primary)",
+  accent: "var(--color-primary-hover)",
+  text: "var(--color-ink)",
+  textSecondary: "var(--color-ink-secondary)",
 };
 
 const CATEGORY_CONFIG: Record<
@@ -102,33 +102,33 @@ const CATEGORY_CONFIG: Record<
     title: "Etkinlikler",
     href: "/meetups",
     icon: CalendarDays,
-    badgeClass: "bg-[#FCE8E7] text-[#C62828]",
+    badgeClass: "bg-[#FCE8E7] text-[var(--color-primary-hover)]",
     cardClass: "from-[#FBEDE6] via-[#FFF8F6] to-[#FDEAE8]",
-    iconCircleClass: "bg-[#E53935] text-white",
+    iconCircleClass: "bg-[var(--color-primary)] text-white",
   },
   realEstate: {
     title: "Emlak",
     href: "/emlak",
     icon: Building2,
-    badgeClass: "bg-[#FCE8E7] text-[#C62828]",
+    badgeClass: "bg-[#FCE8E7] text-[var(--color-primary-hover)]",
     cardClass: "from-[#F8EDE7] via-[#FFF8F6] to-[#FCEBE8]",
-    iconCircleClass: "bg-[#111111] text-white",
+    iconCircleClass: "bg-[var(--color-ink)] text-white",
   },
   jobs: {
     title: "İş",
     href: "/is",
     icon: BriefcaseBusiness,
-    badgeClass: "bg-[#FCE8E7] text-[#C62828]",
+    badgeClass: "bg-[#FCE8E7] text-[var(--color-primary-hover)]",
     cardClass: "from-[#F9EAE8] via-[#FFF8F6] to-[#FDEDEA]",
-    iconCircleClass: "bg-[#E53935] text-white",
+    iconCircleClass: "bg-[var(--color-primary)] text-white",
   },
   marketplace: {
     title: "Alışveriş",
     href: "/alisveris",
     icon: ShoppingBag,
-    badgeClass: "bg-[#FCE8E7] text-[#C62828]",
+    badgeClass: "bg-[#FCE8E7] text-[var(--color-primary-hover)]",
     cardClass: "from-[#F9ECE6] via-[#FFF8F6] to-[#FDEAE6]",
-    iconCircleClass: "bg-[#111111] text-white",
+    iconCircleClass: "bg-[var(--color-ink)] text-white",
   },
 };
 
@@ -471,27 +471,27 @@ export default function Home() {
   );
 
   return (
-    <div className="relative min-h-[calc(100vh-64px)] overflow-x-clip bg-[#F4EFEA]" style={{ backgroundColor: HOME_THEME.bg, color: HOME_THEME.text }}>
+    <div className="relative min-h-[calc(100vh-64px)] overflow-x-clip bg-[var(--color-surface)]" style={{ backgroundColor: HOME_THEME.bg, color: HOME_THEME.text }}>
       <div className="flex">
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative overflow-hidden border-b border-[#E7D9CF] bg-[#F4EFEA]">
+          <section className="relative overflow-hidden border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
             <div className="relative mx-auto max-w-7xl px-6 py-12 sm:px-8 lg:px-14 lg:py-14">
               <div className="grid items-center gap-10">
                 <div>
                   <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.34em] text-[#8A7F77]">
-                    <span className="h-2 w-2 rounded-full bg-[#E53935]" />
+                    <span className="h-2 w-2 rounded-full bg-[var(--color-primary)]" />
                     AMERİKA&apos;NIN #1 TÜRK TOPLULUK PLATFORMU
                   </span>
-                  <h1 className="mt-6 text-5xl font-black uppercase leading-[0.98] tracking-tight text-[#111111] sm:text-6xl lg:text-7xl">
+                  <h1 className="mt-6 text-5xl font-black uppercase leading-[0.98] tracking-tight text-[var(--color-ink)] sm:text-6xl lg:text-7xl">
                     SENİ
                     <br />
                     BEKLEYENLER
                     <br />
-                    <span className="text-[#E53935]">BURADA.</span>
+                    <span className="text-[var(--color-primary)]">BURADA.</span>
                   </h1>
-                  <p className="mt-5 max-w-2xl text-lg text-[#666666]">
+                  <p className="mt-5 max-w-2xl text-lg text-[var(--color-ink-secondary)]">
                     Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
                   </p>
 
@@ -530,20 +530,20 @@ export default function Home() {
                               onSearchSubmit();
                             }
                           }}
-                          className="w-full border-none bg-transparent text-base text-[#111111] outline-none placeholder:text-[#BE9C72]"
+                          className="w-full border-none bg-transparent text-base text-[var(--color-ink)] outline-none placeholder:text-[#BE9C72]"
                           placeholder="Etkinlik, ilan, kişi ara..."
                           aria-label="Site içi arama"
                         />
                       </div>
 
                       <button type="button" className="rounded-2xl border border-[#E8DDD4] px-8 font-semibold text-[#403B36]">TÜM</button>
-                      <Button variant="primary" className="h-12 rounded-2xl bg-[#E53935] px-10 text-base font-bold uppercase tracking-wide hover:bg-[#C62828]" onClick={onSearchSubmit}>
+                      <Button variant="primary" className="h-12 rounded-2xl bg-[var(--color-primary)] px-10 text-base font-bold uppercase tracking-wide hover:bg-[var(--color-primary-hover)]" onClick={onSearchSubmit}>
                         {searching ? "Aranıyor..." : "ARA"}
                       </Button>
                     </div>
 
                     {searchOpen && searchQuery.trim().length >= 2 && (
-                      <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-[#E7D9CF] bg-white shadow-[0_18px_40px_-30px_rgba(17,17,17,0.4)]">
+                      <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white shadow-[0_18px_40px_-30px_rgba(17,17,17,0.4)]">
                         {searching ? (
                           <p className="px-4 py-3 text-sm text-slate-500">Uygun ilanlar aranıyor...</p>
                         ) : suggestions.length === 0 ? (
@@ -567,7 +567,7 @@ export default function Home() {
                                     }`}
                                   >
                                     <div className="min-w-0">
-                                      <p className="truncate text-sm font-semibold text-[#111111]">{item.title}</p>
+                                      <p className="truncate text-sm font-semibold text-[var(--color-ink)]">{item.title}</p>
                                       <p className="truncate text-xs text-[#6C645E]">{item.location}</p>
                                     </div>
                                     <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${meta.badgeClass}`}>{meta.title}</span>
@@ -586,7 +586,7 @@ export default function Home() {
                       <Button
                         variant="primary"
                         size="lg"
-                        className="rounded-2xl bg-[#111111] px-7 font-semibold tracking-wide text-white shadow-[0_14px_26px_-18px_rgba(17,17,17,0.9)]"
+                        className="rounded-2xl bg-[var(--color-ink)] px-7 font-semibold tracking-wide text-white shadow-[0_14px_26px_-18px_rgba(17,17,17,0.9)]"
                         onClick={() => setIsPostListingModalOpen(true)}
                       >
                         İlan Ver
@@ -596,7 +596,7 @@ export default function Home() {
                         <Button
                           variant="primary"
                           size="lg"
-                          className="rounded-2xl border border-[#DCCFC3] bg-white px-7 font-semibold text-[#111111] shadow-[0_12px_20px_-16px_rgba(17,17,17,0.5)]"
+                          className="rounded-2xl border border-[#DCCFC3] bg-white px-7 font-semibold text-[var(--color-ink)] shadow-[0_12px_20px_-16px_rgba(17,17,17,0.5)]"
                         >
                           Giriş Yap
                         </Button>
@@ -606,7 +606,7 @@ export default function Home() {
                       <Button
                         variant="outline"
                         size="lg"
-                        className="rounded-2xl bg-[#E53935] px-7 font-semibold text-white shadow-[0_16px_24px_-18px_rgba(229,57,53,0.95)] hover:bg-[#C62828]"
+                        className="rounded-2xl bg-[var(--color-primary)] px-7 font-semibold text-white shadow-[0_16px_24px_-18px_rgba(229,57,53,0.95)] hover:bg-[var(--color-primary-hover)]"
                       >
                         Paylaşımları Gör →
                       </Button>
@@ -630,9 +630,9 @@ export default function Home() {
                   key={category.id}
                   type="button"
                   onClick={() => handlePostListingCategorySelect(category.href)}
-                  className="w-full rounded-2xl border border-[#E7D9CF] bg-white px-4 py-3 text-left transition hover:border-[#D7B8A7] hover:bg-[#FDF5EF]"
+                  className="w-full rounded-2xl border border-[var(--color-border-light)] bg-white px-4 py-3 text-left transition hover:border-[#D7B8A7] hover:bg-[#FDF5EF]"
                 >
-                  <p className="text-sm font-semibold text-[#111111]">{category.label}</p>
+                  <p className="text-sm font-semibold text-[var(--color-ink)]">{category.label}</p>
                   <p className="mt-1 text-xs text-[#6C645E]">{category.description}</p>
                 </button>
               ))}
@@ -640,7 +640,7 @@ export default function Home() {
           </Modal>
 
           <section className="mx-auto max-w-7xl px-4 py-12 sm:px-8 lg:px-12">
-            <div className="rounded-3xl border border-[#E7D9CF] bg-[#F8F3EE] p-4 shadow-[0_22px_45px_-40px_rgba(15,23,42,0.55)] sm:p-6">
+            <div className="rounded-3xl border border-[var(--color-border-light)] bg-[#F8F3EE] p-4 shadow-[0_22px_45px_-40px_rgba(15,23,42,0.55)] sm:p-6">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
                   const config = CATEGORY_CONFIG[key];
@@ -657,24 +657,24 @@ export default function Home() {
                       className={`group rounded-2xl border px-3 py-4 text-center transition-all sm:px-4 sm:py-5 ${
                         isActive
                           ? "border-[#E9D5C8] bg-[#FDF6F2] shadow-[0_22px_36px_-30px_rgba(17,17,17,0.35)]"
-                          : "border-[#E7D9CF] bg-white hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-30px_rgba(17,17,17,0.35)]"
+                          : "border-[var(--color-border-light)] bg-white hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-30px_rgba(17,17,17,0.35)]"
                       }`}
                     >
                       <span className={`mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full ${config.iconCircleClass} sm:h-14 sm:w-14`}>
                         <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
                       </span>
-                      <h3 className="mt-3 text-sm font-semibold text-[#111111] sm:text-lg">{config.title}</h3>
+                      <h3 className="mt-3 text-sm font-semibold text-[var(--color-ink)] sm:text-lg">{config.title}</h3>
                     </button>
                   );
                 })}
               </div>
 
-              <div className="mt-5 rounded-3xl border border-[#E7D9CF] bg-[#FBF7F3] p-4 sm:p-5">
+              <div className="mt-5 rounded-3xl border border-[var(--color-border-light)] bg-[#FBF7F3] p-4 sm:p-5">
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-base font-semibold text-[#111111]">{CATEGORY_CONFIG[activeCategoryPreview].title} - Popüler Gönderiler</h3>
+                  <h3 className="text-base font-semibold text-[var(--color-ink)]">{CATEGORY_CONFIG[activeCategoryPreview].title} - Popüler Gönderiler</h3>
                   <Link
                     href={CATEGORY_CONFIG[activeCategoryPreview].href}
-                    className="rounded-full border border-[#E7D9CF] bg-white px-3 py-1.5 text-sm font-semibold text-[#C62828] transition hover:border-[#D8B7A6] hover:text-[#A52020]"
+                    className="rounded-full border border-[var(--color-border-light)] bg-white px-3 py-1.5 text-sm font-semibold text-[var(--color-primary-hover)] transition hover:border-[#D8B7A6] hover:text-[#A52020]"
                   >
                     Tümü
                   </Link>
@@ -690,8 +690,8 @@ export default function Home() {
                       <Link
                         key={`preview-${item.id}`}
                         href={item.href}
-                        className={`relative overflow-hidden rounded-2xl border border-[#E7D9CF] transition hover:border-[#D9B9A7] hover:shadow-sm ${
-                          item.imageUrl ? "bg-[#111111]" : "bg-white"
+                        className={`relative overflow-hidden rounded-2xl border border-[var(--color-border-light)] transition hover:border-[#D9B9A7] hover:shadow-sm ${
+                          item.imageUrl ? "bg-[var(--color-ink)]" : "bg-white"
                         }`}
                       >
                         {item.imageUrl && (
@@ -719,11 +719,11 @@ export default function Home() {
 
           <AdsSection title="Öne Çıkan İlanlar" items={featuredAds} loading={loading} />
 
-          <section id="son-ilanlar" className="bg-[#F4EFEA] py-14 scroll-mt-24">
+          <section id="son-ilanlar" className="bg-[var(--color-surface)] py-14 scroll-mt-24">
             <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
               <div className="mb-7 flex items-end justify-between">
                 <div>
-                  <h2 className="text-3xl font-bold text-[#111111]">Son İlanlar</h2>
+                  <h2 className="text-3xl font-bold text-[var(--color-ink)]">Son İlanlar</h2>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <CategoryFilterButton
                       isActive={latestAdsCategoryFilter === "all"}
@@ -762,10 +762,10 @@ function AdsSection({
   loading: boolean;
 }) {
   return (
-    <section className="bg-[#F4EFEA] py-14">
+    <section className="bg-[var(--color-surface)] py-14">
       <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
         <div className="mb-7 text-center">
-          <h2 className="text-3xl font-bold text-[#111111]">{title}</h2>
+          <h2 className="text-3xl font-bold text-[var(--color-ink)]">{title}</h2>
           {subtitle && <p className="mt-1 text-[#6C645E]">{subtitle}</p>}
         </div>
         <AdsGrid items={items} loading={loading} />
@@ -788,7 +788,7 @@ function CategoryFilterButton({
       type="button"
       onClick={onClick}
       className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
-        isActive ? "border-[#E53935] bg-[#E53935] text-white" : "border-[#D8C9BE] bg-white text-[#5F5852] hover:border-[#E53935] hover:text-[#C62828]"
+        isActive ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white" : "border-[#D8C9BE] bg-white text-[#5F5852] hover:border-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
       }`}
     >
       {children}
@@ -803,7 +803,7 @@ function AdsGrid({ items, loading, latestMobileGrid = false }: { items: UnifiedA
     return (
       <div className={gridClassName}>
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-60 animate-pulse rounded-2xl border border-[#E7D9CF] bg-[#EFE4DB]" />
+          <div key={index} className="h-60 animate-pulse rounded-2xl border border-[var(--color-border-light)] bg-[#EFE4DB]" />
         ))}
       </div>
     );
@@ -821,7 +821,7 @@ function AdsGrid({ items, loading, latestMobileGrid = false }: { items: UnifiedA
           <Link
             key={item.id}
             href={item.href}
-            className="group overflow-hidden rounded-2xl border border-[#E7D9CF] bg-white transition hover:-translate-y-0.5 hover:shadow-md"
+            className="group overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white transition hover:-translate-y-0.5 hover:shadow-md"
           >
             {item.imageUrl ? (
               <div className="h-28 bg-[#F6EEE8]">
