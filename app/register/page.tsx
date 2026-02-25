@@ -377,14 +377,16 @@ export default function RegisterPage() {
                 error={errors.password}
                 disabled={status === "loading" || status === "success"}
               />
-              <button
+              <Button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-9 text-[var(--color-ink-tertiary)] hover:text-[var(--color-ink-secondary)]"
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-7 h-8 w-8 text-[var(--color-ink-tertiary)] shadow-none hover:shadow-none"
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+              </Button>
             </div>
             {/* Password strength indicator */}
             {password && (
@@ -420,14 +422,16 @@ export default function RegisterPage() {
               error={errors.confirmPassword}
               disabled={status === "loading" || status === "success"}
             />
-            <button
+            <Button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-9 text-[var(--color-ink-tertiary)] hover:text-[var(--color-ink-secondary)]"
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-7 h-8 w-8 text-[var(--color-ink-tertiary)] shadow-none hover:shadow-none"
               tabIndex={-1}
             >
               {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
+            </Button>
           </div>
 
           {/* Terms acceptance */}

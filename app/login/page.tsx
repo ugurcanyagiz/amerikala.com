@@ -92,12 +92,9 @@ export default function LoginPage() {
 
           <CardContent className="space-y-6">
             <div className="flex rounded-lg bg-[var(--color-surface-sunken)] p-1">
-              <button
-                type="button"
-                className="flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors bg-[var(--color-surface)] text-[var(--color-ink)] shadow-[var(--shadow-xs)]"
-              >
+              <Button type="button" variant="secondary" className="h-9 flex-1 shadow-[var(--shadow-xs)] hover:shadow-[var(--shadow-sm)]">
                 Giriş Yap
-              </button>
+              </Button>
             </div>
 
             {/* Email */}
@@ -121,14 +118,16 @@ export default function LoginPage() {
                 icon={<Lock className="w-4 h-4" />}
                 disabled={isBusy}
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-9 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+                className="absolute right-1 top-7 h-8 w-8 text-neutral-500 shadow-none hover:shadow-none"
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+              </Button>
             </div>
 
             {/* Status message */}
