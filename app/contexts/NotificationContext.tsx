@@ -5,11 +5,11 @@ import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "./AuthContext";
 import { devLog } from "@/lib/debug/devLogger";
 
-export type AppNotificationType = "likes" | "comments" | "events";
+export type AppNotificationType = "likes" | "comments" | "events" | "friends" | "groups";
 
 export interface AppNotification {
   id: string;
-  source: "likes" | "comments" | "event_attendees";
+  source: "likes" | "comments" | "event_attendees" | "friend_requests" | "group_join_requests";
   type: AppNotificationType;
   user: {
     id: string;
@@ -70,8 +70,14 @@ const getDisplayName = (profile?: { first_name?: string | null; last_name?: stri
 
 const parseStoredIdSet = (rawValue: string | null) => {
   if (!rawValue) return new Set<string>();
+  let parsed: unknown;
 
-  const parsed = JSON.parse(rawValue);
+  try {
+    parsed = JSON.parse(rawValue);
+  } catch {
+    return new Set<string>();
+  }
+
   if (!Array.isArray(parsed)) return new Set<string>();
 
   return new Set(parsed.filter((item): item is string => typeof item === "string"));
@@ -256,15 +262,71 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
       if (eventAttendeesResult.error) throw eventAttendeesResult.error;
 
+      const [friendRequestsResult, myGroupMembershipsResult, outgoingGroupRequestsResult, persistedStatesResult] = await Promise.all([
+        supabase
+          .from("friend_requests")
+          .select("requester_id, receiver_id, status, created_at, responded_at")
+          .or(`receiver_id.eq.${userId},requester_id.eq.${userId}`)
+          .limit(500),
+        supabase
+          .from("group_members")
+          .select("group_id")
+          .eq("user_id", userId)
+          .in("role", ["admin", "moderator"])
+          .eq("status", "approved")
+          .limit(500),
+        supabase
+          .from("group_join_requests")
+          .select("group_id, status, created_at, reviewed_at, updated_at")
+          .eq("user_id", userId)
+          .in("status", ["approved", "rejected"])
+          .limit(500),
+        supabase
+          .from("user_notification_states")
+          .select("notification_id, is_read, is_dismissed")
+          .eq("user_id", userId)
+          .limit(5000),
+      ]);
+
+      if (friendRequestsResult.error) throw friendRequestsResult.error;
+      if (myGroupMembershipsResult.error) throw myGroupMembershipsResult.error;
+      if (outgoingGroupRequestsResult.error) throw outgoingGroupRequestsResult.error;
+      if (persistedStatesResult.error && persistedStatesResult.error.code !== "42P01") throw persistedStatesResult.error;
+
       const likes = likesResult.data || [];
       const comments = commentsResult.data || [];
       const eventAttendees = eventAttendeesResult.data || [];
+      const friendRequests = friendRequestsResult.data || [];
+      const persistedStates = persistedStatesResult.data || [];
+
+      const persistedById = new Map(
+        persistedStates.map((row) => [row.notification_id as string, { isRead: Boolean(row.is_read), isDismissed: Boolean(row.is_dismissed) }])
+      );
+
+      const readSet = new Set(readIdsRef.current);
+      const dismissedSet = new Set(dismissedIdsRef.current);
+
+      persistedById.forEach((state, notificationId) => {
+        if (state.isRead) readSet.add(notificationId);
+        if (state.isDismissed) dismissedSet.add(notificationId);
+      });
+
+      if (readSet.size !== readIdsRef.current.size) {
+        readIdsRef.current = readSet;
+        setReadIds(readSet);
+      }
+
+      if (dismissedSet.size !== dismissedIdsRef.current.size) {
+        dismissedIdsRef.current = dismissedSet;
+        setDismissedIds(dismissedSet);
+      }
 
       const actorIds = Array.from(
         new Set([
           ...likes.map((like) => like.user_id),
           ...comments.map((comment) => comment.user_id),
           ...eventAttendees.map((attendee) => attendee.user_id),
+          ...friendRequests.map((request) => (request.receiver_id === userId ? request.requester_id : request.receiver_id)),
         ])
       );
 
@@ -349,10 +411,118 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           };
         });
 
+      const friendNotifications: AppNotification[] = friendRequests
+        .filter((request) => {
+          if (request.status === "pending" && request.receiver_id === userId) return true;
+          if (request.status === "accepted" && request.requester_id === userId) return true;
+          return false;
+        })
+        .map((request) => {
+          const actorId = request.receiver_id === userId ? request.requester_id : request.receiver_id;
+          const actor = profilesById.get(actorId);
+          const isIncoming = request.receiver_id === userId;
+          const id = `friend_requests:${request.requester_id}:${request.receiver_id}:${request.status}`;
+          const createdAt = request.responded_at || request.created_at;
+
+          return {
+            id,
+            source: "friend_requests",
+            type: "friends",
+            user: {
+              id: actorId,
+              name: getDisplayName(actor),
+              avatar: actor?.avatar_url || null,
+            },
+            message: isIncoming ? "size arkadaşlık isteği gönderdi" : "arkadaşlık isteğinizi kabul etti",
+            createdAt,
+            isRead: readSet.has(id),
+            actionUrl: `/profile/${actor?.username || actorId}`,
+            actionLabel: "Profili Gör",
+          };
+        });
+
+      const adminGroupIds = (myGroupMembershipsResult.data || []).map((membership) => membership.group_id as string);
+
+      const incomingGroupRequestsResult = adminGroupIds.length
+        ? await supabase
+            .from("group_join_requests")
+            .select("group_id, user_id, status, created_at, reviewed_at, updated_at")
+            .in("group_id", adminGroupIds)
+            .eq("status", "pending")
+            .neq("user_id", userId)
+            .limit(500)
+        : { data: [], error: null };
+
+      if (incomingGroupRequestsResult.error) throw incomingGroupRequestsResult.error;
+
+      const outgoingGroupRequests = outgoingGroupRequestsResult.data || [];
+      const incomingGroupRequests = incomingGroupRequestsResult.data || [];
+      const groupIds = Array.from(
+        new Set([
+          ...adminGroupIds,
+          ...outgoingGroupRequests.map((request) => request.group_id as string),
+          ...incomingGroupRequests.map((request) => request.group_id as string),
+        ])
+      );
+
+      const groupsResult = groupIds.length
+        ? await supabase
+            .from("groups")
+            .select("id, name")
+            .in("id", groupIds)
+        : { data: [], error: null };
+
+      if (groupsResult.error) throw groupsResult.error;
+      const groupNameById = new Map((groupsResult.data || []).map((group) => [group.id, group.name as string | null]));
+
+      const incomingGroupNotifications: AppNotification[] = incomingGroupRequests.map((request) => {
+        const actor = profilesById.get(request.user_id);
+        const id = `group_join_requests:incoming:${request.group_id}:${request.user_id}:pending`;
+        return {
+          id,
+          source: "group_join_requests",
+          type: "groups",
+          user: {
+            id: request.user_id,
+            name: getDisplayName(actor),
+            avatar: actor?.avatar_url || null,
+          },
+          message: "grubunuza katılım talebi gönderdi",
+          content: groupNameById.get(request.group_id) || undefined,
+          createdAt: request.created_at,
+          isRead: readSet.has(id),
+          actionUrl: "/groups",
+          actionLabel: "Talebi İncele",
+        };
+      });
+
+      const outgoingGroupNotifications: AppNotification[] = outgoingGroupRequests.map((request) => {
+        const id = `group_join_requests:outgoing:${request.group_id}:${request.status}`;
+        const status = request.status as "approved" | "rejected";
+        return {
+          id,
+          source: "group_join_requests",
+          type: "groups",
+          user: {
+            id: request.group_id,
+            name: "Grup Yönetimi",
+            avatar: null,
+          },
+          message: status === "approved" ? "grup katılım talebinizi onayladı" : "grup katılım talebinizi reddetti",
+          content: groupNameById.get(request.group_id) || undefined,
+          createdAt: request.reviewed_at || request.updated_at || request.created_at,
+          isRead: readSet.has(id),
+          actionUrl: "/groups",
+          actionLabel: "Grubu Gör",
+        };
+      });
+
+      const groupNotifications: AppNotification[] = [...incomingGroupNotifications, ...outgoingGroupNotifications];
+
       const dedupedById = new Map<string, AppNotification>();
       const readIdsSnapshot = readIdsRef.current;
 
-      [...likeNotifications, ...commentNotifications, ...attendeeNotifications].forEach((notification) => {
+      [...likeNotifications, ...commentNotifications, ...attendeeNotifications, ...friendNotifications, ...groupNotifications].forEach((notification) => {
         const candidate = readIdsSnapshot.has(notification.id) && !notification.isRead ? { ...notification, isRead: true } : notification;
         const existing = dedupedById.get(candidate.id);
 
@@ -375,7 +545,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       });
 
       const merged = Array.from(dedupedById.values())
-        .filter((notification) => !dismissedIdsRef.current.has(notification.id))
+        .filter((notification) => !dismissedSet.has(notification.id))
         .sort(compareNotifications);
 
       setNotifications(merged);
@@ -427,6 +597,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "event_attendees" }, () => {
         void refreshNotifications();
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "friend_requests" }, () => {
+        void refreshNotifications();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "group_join_requests" }, () => {
+        void refreshNotifications();
+      })
       .subscribe();
 
     return () => {
@@ -444,7 +620,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
 
     setNotifications((prev) => prev.map((notification) => (notification.id === id ? { ...notification, isRead: true } : notification)));
-  }, []);
+
+    if (userId) {
+      void supabase.from("user_notification_states").upsert({ user_id: userId, notification_id: id, is_read: true }, { onConflict: "user_id,notification_id" });
+    }
+  }, [userId]);
 
   const markAllAsRead = useCallback(() => {
     setReadIds((prev) => {
@@ -455,12 +635,25 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
 
     setNotifications((prev) => prev.map((notification) => ({ ...notification, isRead: true })));
-  }, [notifications]);
+
+    if (userId && notifications.length > 0) {
+      void supabase.from("user_notification_states").upsert(
+        notifications.map((notification) => ({ user_id: userId, notification_id: notification.id, is_read: true })),
+        { onConflict: "user_id,notification_id" }
+      );
+    }
+  }, [notifications, userId]);
 
   const deleteNotification = useCallback((id: string) => {
     setDismissedIds((prev) => new Set(prev).add(id));
     setNotifications((prev) => prev.filter((notification) => notification.id !== id));
-  }, []);
+
+    if (userId) {
+      void supabase
+        .from("user_notification_states")
+        .upsert({ user_id: userId, notification_id: id, is_dismissed: true }, { onConflict: "user_id,notification_id" });
+    }
+  }, [userId]);
 
   const unreadCount = useMemo(() => notifications.filter((notification) => !notification.isRead).length, [notifications]);
 
