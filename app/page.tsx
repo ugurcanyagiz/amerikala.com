@@ -612,9 +612,9 @@ export default function Home() {
                     )}
                     <Link href="#son-ilanlar">
                       <Button
-                        variant="ghost"
+                        variant="primary"
                         size="lg"
-                        className="h-11 rounded-xl bg-black px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_-18px_rgba(17,17,17,0.45)] hover:bg-black/90 hover:text-white"
+                        className="h-11 rounded-xl bg-black px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_-18px_rgba(17,17,17,0.45)] hover:bg-black/90 hover:text-white focus-visible:ring-black/20"
                       >
                         PAYLAŞIMLARI GÖR →
                       </Button>
