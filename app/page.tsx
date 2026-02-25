@@ -477,17 +477,31 @@ export default function Home() {
 
         <main className="relative z-10 flex-1">
           <section className="relative overflow-hidden border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
-            <div className="app-page-container relative pt-12 pb-10 sm:pb-12">
+            <div
+              className="pointer-events-none absolute inset-0"
+              aria-hidden="true"
+              style={{
+                background:
+                  "radial-gradient(120% 90% at 15% 12%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 60%), radial-gradient(95% 70% at 85% 8%, rgba(244,236,226,0.38) 0%, rgba(244,236,226,0) 72%)",
+              }}
+            />
+
+            <div className="app-page-container relative pt-14 pb-12 sm:pb-14">
               <div className="max-w-[760px]">
                 <div>
-                  <h1 className="text-[56px] font-black uppercase leading-[0.92] tracking-tight text-[var(--color-ink)] sm:text-[64px] lg:text-[72px]">
-                    SENİ
-                    <br />
-                    BEKLEYENLER
-                    <br />
-                    <span className="text-[var(--color-primary)]">BURADA.</span>
+                  <h1 className="text-[54px] font-black uppercase leading-[0.9] tracking-[-0.03em] text-[#0A0B13] sm:text-[64px] lg:text-[76px]">
+                    <span className="block">SENİ</span>
+                    <span className="block">BEKLEYENLER</span>
+                    <span
+                      className="relative mt-1 block w-fit bg-gradient-to-r from-[#D3172B] via-[#6A234A] to-[#0F3B88] bg-clip-text pb-4 text-transparent [text-shadow:0_7px_24px_rgba(17,24,39,0.18)]"
+                      style={{ WebkitTextFillColor: "transparent" }}
+                    >
+                      BURADA.
+                      <span className="absolute bottom-0 left-0 h-[2px] w-[46%] rounded-full bg-gradient-to-r from-[#D3172B] to-[#A72A3D]" aria-hidden="true" />
+                      <span className="absolute bottom-0 right-0 h-[2px] w-[46%] rounded-full bg-gradient-to-r from-[#34538F] to-[#0D316E]" aria-hidden="true" />
+                    </span>
                   </h1>
-                  <p className="mt-6 max-w-[680px] text-lg text-[var(--color-ink-secondary)]">
+                  <p className="mt-6 max-w-[680px] text-lg text-[var(--color-ink-secondary)] opacity-90">
                     Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
                   </p>
 
@@ -495,7 +509,7 @@ export default function Home() {
                     ref={searchBoxRef}
                     className="relative mt-8 w-full max-w-[710px] rounded-2xl border border-[#DECFC0] bg-white p-1.5 shadow-[0_10px_24px_-20px_rgba(17,17,17,0.4)]"
                   >
-                    <div className="grid min-h-14 gap-0 md:grid-cols-[1fr_100px_116px]">
+                    <div className="grid min-h-14 gap-0 md:grid-cols-[1fr_116px]">
                       <div className="flex items-center gap-3 px-5">
                         <Search className="h-5 w-5 text-[#C49A5C]" />
                         <input
@@ -534,13 +548,6 @@ export default function Home() {
                           aria-label="Site içi arama"
                         />
                       </div>
-
-                      <button
-                        type="button"
-                        className="rounded-[14px] border border-[#E3D6CA] bg-[#FBF8F4] px-6 text-base font-semibold text-[#403B36]"
-                      >
-                        TÜM
-                      </button>
                       <Button
                         variant="primary"
                         className="h-full min-h-14 rounded-[14px] bg-[var(--color-primary)] px-8 text-base font-bold uppercase tracking-wide hover:bg-[var(--color-primary-hover)]"
