@@ -3,16 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { 
-  Users,
   Search,
   MapPin,
   MessageCircle,
   UserPlus,
-  Filter,
   Sparkles,
-  Coffee,
-  Dumbbell,
-  Briefcase,
   Heart,
   Star,
   CheckCircle2
@@ -24,6 +19,7 @@ import { Avatar } from "../components/ui/Avatar";
 import { Badge } from "../components/ui/Badge";
 import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
+import { PageHero, ResponsiveCardGrid, StickyFilterBar } from "../components/ui/SectionPrimitives";
 
 type Interest = "all" | "coffee" | "sports" | "career" | "social" | "food";
 
@@ -48,23 +44,11 @@ export default function PeoplePage() {
         <Sidebar />
 
         <main className="flex-1 bg-[var(--color-surface)] text-[var(--color-ink)]">
-          {/* HERO */}
-          <section className="relative overflow-hidden bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-hover)] text-white">
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0 bg-[url('/pattern.svg')]" />
-            </div>
-            
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-4xl font-bold mb-2">İnsanlar</h1>
-                  <p className="text-white/85 text-lg">
-                    Amerika&apos;daki Türklerle tanış, arkadaşlık kur
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+          <PageHero
+            title="İnsanlar"
+            description="Amerika&apos;daki Türklerle tanış, arkadaşlık kur"
+            stats={(
+              <ResponsiveCardGrid cols="compact">
                 <div className="bg-[color:var(--color-surface-raised)]/20 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                   <div className="text-3xl font-bold">{PEOPLE.length * 30}</div>
                   <div className="text-sm text-white/85">Kayıtlı Üye</div>
@@ -81,13 +65,11 @@ export default function PeoplePage() {
                   <div className="text-3xl font-bold">1.2K</div>
                   <div className="text-sm text-white/85">Bu Hafta Aktif</div>
                 </div>
-              </div>
-            </div>
-          </section>
+              </ResponsiveCardGrid>
+            )}
+          />
 
-          {/* FILTERS */}
-          <section className="sticky top-16 z-40 bg-[var(--color-surface)]/90 backdrop-blur-lg border-b border-[var(--color-border-light)] shadow-sm">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <StickyFilterBar>
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1">
                   <Input
@@ -113,7 +95,7 @@ export default function PeoplePage() {
 
                 <button
                   onClick={() => setOpenToMeet(!openToMeet)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-smooth ${
+                  className={`h-10 flex items-center gap-2 px-4 rounded-xl font-medium text-sm transition-smooth ${
                     openToMeet
                       ? "bg-[var(--color-primary)] text-white"
                       : "bg-[var(--color-surface-raised)] border border-[var(--color-border-light)] text-[var(--color-ink-secondary)]"
@@ -129,7 +111,7 @@ export default function PeoplePage() {
                   <button
                     key={interest.value}
                     onClick={() => setSelectedInterest(interest.value as Interest)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-smooth whitespace-nowrap ${
+                    className={`h-10 flex items-center gap-2 px-4 rounded-full font-medium text-sm transition-smooth whitespace-nowrap ${
                       selectedInterest === interest.value
                         ? "bg-[var(--color-primary)] text-white shadow-lg"
                         : "bg-[var(--color-surface-raised)] text-[var(--color-ink-secondary)] border border-[var(--color-border-light)]"
@@ -140,29 +122,28 @@ export default function PeoplePage() {
                   </button>
                 ))}
               </div>
-            </div>
-          </section>
+          </StickyFilterBar>
 
           {/* FEATURED SECTION */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div className="flex items-center gap-2 mb-6">
               <Sparkles className="h-6 w-6 text-amber-500" />
               <h2 className="text-2xl font-bold">Öne Çıkan Üyeler</h2>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+            <ResponsiveCardGrid cols="compact" className="mb-12">
               {PEOPLE.filter(p => p.featured).map((person) => (
                 <FeaturedPersonCard key={person.id} person={person} />
               ))}
-            </div>
+            </ResponsiveCardGrid>
 
             {/* ALL PEOPLE */}
             <h2 className="text-2xl font-bold mb-6">Tüm Üyeler</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <ResponsiveCardGrid>
               {PEOPLE.map((person) => (
                 <PersonCard key={person.id} person={person} />
               ))}
-            </div>
+            </ResponsiveCardGrid>
           </section>
 
           {/* CTA SECTION */}
