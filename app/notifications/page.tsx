@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   Bell,
   Heart,
@@ -177,6 +177,11 @@ function NotificationItem({
   onDelete: () => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const timeHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   useEffect(() => {
     if (notification.isRead || !cardRef.current) return;
@@ -231,7 +236,9 @@ function NotificationItem({
               <span className="text-neutral-600 dark:text-neutral-400">{notification.message}</span>
             </p>
             {notification.content && <p className="text-sm text-neutral-500 mt-1 truncate">&quot;{notification.content}&quot;</p>}
-            <p className="text-xs text-neutral-400 mt-2">{getTimeAgo(notification.createdAt)}</p>
+            <p className="text-xs text-neutral-400 mt-2" suppressHydrationWarning>
+              {timeHydrated ? getTimeAgo(notification.createdAt) : "..."}
+            </p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -248,10 +255,12 @@ function NotificationItem({
 
         {notification.actionUrl && (
           <div className="mt-3 ml-14">
-            <Link href={notification.actionUrl} onClick={onRead}>
-              <Button variant="outline" size="sm">
-                {notification.actionLabel || "Görüntüle"}
-              </Button>
+            <Link
+              href={notification.actionUrl}
+              onClick={onRead}
+              className="inline-flex h-8 items-center justify-center rounded-lg border border-sky-200 px-3 text-sm font-medium text-[var(--color-ink)] transition-all duration-150 ease-out hover:bg-[var(--color-surface-sunken)] hover:border-sky-300"
+            >
+              {notification.actionLabel || "Görüntüle"}
             </Link>
           </div>
         )}

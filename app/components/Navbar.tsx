@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useState, useRef, useEffect } from "react";
+import { useCallback, useState, useRef, useEffect, useSyncExternalStore } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { getTimeAgo, useNotifications } from "../contexts/NotificationContext";
 import { Avatar } from "./ui/Avatar";
@@ -546,6 +546,11 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<SiteSearchResult[]>([]);
+  const timeHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const [messagePreviews, setMessagePreviews] = useState<MessagePreview[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesError, setMessagesError] = useState<string | null>(null);
@@ -922,7 +927,9 @@ export default function Navbar() {
                                   {notification.content && (
                                     <p className="text-xs text-slate-500 truncate mt-0.5">{notification.content}</p>
                                   )}
-                                  <p className="text-xs text-slate-400 mt-1">{getTimeAgo(notification.createdAt)}</p>
+                                  <p className="text-xs text-slate-400 mt-1" suppressHydrationWarning>
+                                    {timeHydrated ? getTimeAgo(notification.createdAt) : "..."}
+                                  </p>
                                 </div>
                                 <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${getNotificationTypeClasses(notification.type)}`}>
                                   {notification.type === "likes" ? "Beğeni" : notification.type === "comments" ? "Yorum" : "Etkinlik"}
@@ -1017,7 +1024,7 @@ export default function Navbar() {
                                       {conversation.otherUserName}
                                     </p>
                                     <span className="text-xs text-slate-500 flex-shrink-0">
-                                      {formatMessageTime(conversation.lastMessageCreatedAt)}
+                                      <span suppressHydrationWarning>{timeHydrated ? formatMessageTime(conversation.lastMessageCreatedAt) : "..."}</span>
                                     </span>
                                   </div>
                                   <div className="flex items-center justify-between gap-2">
