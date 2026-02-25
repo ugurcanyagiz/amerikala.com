@@ -44,7 +44,7 @@ const NAV_ITEMS = [
   },
   {
     id: "meetups",
-    label: "Buluşmalar",
+    label: "Etkinlikler",
     icon: Calendar,
     children: [
       { href: "/meetups", label: "Etkinlikler", icon: Calendar, description: "Yaklaşan etkinlikler" },
@@ -239,16 +239,16 @@ function NavDropdown({
       <Link
         href={item.href!}
         className={`
-          flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium
-          transition-all duration-200
-          ${isActive 
-            ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900" 
-            : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-neutral-800"
+          flex items-center gap-2 border-b-2 px-1 py-5 text-sm font-semibold uppercase tracking-wide
+          transition-colors duration-200
+          ${isActive
+            ? "border-[var(--color-primary)] text-[var(--color-ink)]"
+            : "border-transparent text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
           }
         `}
       >
-        <Icon size={18} />
-        <span className="hidden lg:inline">{item.label}</span>
+        <Icon size={16} className="hidden xl:block" />
+        <span className="inline">{item.label}</span>
       </Link>
     );
   }
@@ -258,16 +258,16 @@ function NavDropdown({
       <button
         onClick={onToggle}
         className={`
-          flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium
-          transition-all duration-200
+          flex items-center gap-1 border-b-2 px-1 py-5 text-sm font-semibold uppercase tracking-wide
+          transition-colors duration-200
           ${isActive || isOpen
-            ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900" 
-            : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-neutral-800"
+            ? "border-[var(--color-primary)] text-[var(--color-ink)]"
+            : "border-transparent text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
           }
         `}
       >
-        <Icon size={18} />
-        <span className="hidden lg:inline">{item.label}</span>
+        <Icon size={16} className="hidden xl:block" />
+        <span className="inline">{item.label}</span>
         <ChevronDown 
           size={14} 
           className={`hidden lg:block transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} 
@@ -276,7 +276,7 @@ function NavDropdown({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-64 py-2 bg-white rounded-2xl shadow-xl border border-sky-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-full left-0 mt-2 w-64 py-2 bg-white rounded-2xl shadow-xl border border-[var(--color-border-light)] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           {item.children?.map((child) => {
             const ChildIcon = child.icon;
             const isChildActive = pathname === child.href || pathname.startsWith(child.href + "/");
@@ -740,8 +740,8 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="hidden md:block sticky top-0 z-40 w-full bg-white/95 backdrop-blur-xl border-b border-sky-100 shadow-[0_10px_25px_-20px_rgba(37,99,235,0.5)]">
-        <div className="max-w-7xl mx-auto px-4">
+      <header className="hidden md:block sticky top-0 z-40 w-full border-b border-[var(--color-border-light)] bg-[var(--color-surface)]/95 backdrop-blur-xl">
+        <div className="mx-auto max-w-[1400px] px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 flex-shrink-0" aria-label="Amerikala ana sayfa">
@@ -753,11 +753,11 @@ export default function Navbar() {
                 priority
                 className="h-9 w-9"
               />
-              <span className="text-lg font-semibold tracking-tight text-slate-900">amerikala</span>
+              <span className="text-lg font-bold tracking-[0.12em] text-[var(--color-ink)] uppercase">amerikala</span>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-6">
               {desktopNavItems.map((item) => (
                 <NavDropdown
                   key={item.id}
@@ -775,7 +775,7 @@ export default function Navbar() {
               <div ref={searchRef} className="relative hidden sm:block">
                 <button
                   onClick={() => setSearchOpen((prev) => !prev)}
-                  className="p-2.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-sky-50 transition-colors"
+                  className="rounded-full p-2.5 text-[var(--color-ink-secondary)] transition-colors hover:bg-white hover:text-[var(--color-ink)]"
                   aria-label="Sitede ara"
                   aria-expanded={searchOpen}
                 >
@@ -805,7 +805,7 @@ export default function Navbar() {
                         <Link
                           href={`/search${searchQuery.trim() ? `?q=${encodeURIComponent(searchQuery.trim())}` : ""}`}
                           onClick={() => setSearchOpen(false)}
-                          className="h-10 px-3 rounded-xl bg-sky-600 text-white text-xs font-semibold hover:bg-sky-700 inline-flex items-center"
+                          className="inline-flex h-10 items-center rounded-xl bg-[var(--color-primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--color-primary-hover)]"
                         >
                           Detaylı Ara
                         </Link>
@@ -1123,10 +1123,14 @@ export default function Navbar() {
               ) : (
                 <>
                   <Link href="/login" className="hidden sm:block">
-                    <Button variant="ghost" size="sm">Giriş</Button>
+                    <Button variant="ghost" size="sm" className="rounded-full border border-[#D9CDC3] bg-white px-5 text-[var(--color-ink)] hover:bg-white">
+                      Giriş Yap
+                    </Button>
                   </Link>
-                  <Link href="/register" className="hidden sm:block">
-                    <Button variant="primary" size="sm">Kayıt Ol</Button>
+                  <Link href="/#son-ilanlar" className="hidden sm:block">
+                    <Button variant="primary" size="sm" className="rounded-full bg-[var(--color-primary)] px-5 text-white hover:bg-[var(--color-primary-hover)]">
+                      Paylaşımları Gör
+                    </Button>
                   </Link>
                   <button
                     onClick={() => setMobileMenuOpen(true)}

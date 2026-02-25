@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import Sidebar from "../components/Sidebar";
+import AppShell from "../components/AppShell";
 import NotificationsCenter from "./NotificationsCenter";
 import { createClient } from "@/lib/supabase/server";
 import { mapEventTypeToCategory, type NotificationListResponse } from "@/lib/notifications";
@@ -104,13 +104,8 @@ export default async function NotificationsPage() {
   const initialData = await getInitialNotifications();
 
   return (
-    <div className="ak-page">
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <NotificationsCenter initialData={initialData} />
-        </main>
-      </div>
-    </div>
+    <AppShell mainClassName="app-page-container max-w-5xl">
+      <NotificationsCenter initialData={initialData} />
+    </AppShell>
   );
 }

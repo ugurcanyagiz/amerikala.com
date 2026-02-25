@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -11,7 +10,6 @@ import {
   MapPin,
   Search,
   ShoppingBag,
-  Sparkles,
 } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import { Button } from "./components/ui/Button";
@@ -81,6 +79,14 @@ const SEARCH_TYPE_TO_SECTION: Record<string, HomeCategoryKey> = {
   post: "events",
 };
 
+const HOME_THEME = {
+  bg: "var(--color-surface)",
+  primary: "var(--color-primary)",
+  accent: "var(--color-primary-hover)",
+  text: "var(--color-ink)",
+  textSecondary: "var(--color-ink-secondary)",
+};
+
 const CATEGORY_CONFIG: Record<
   HomeCategoryKey,
   {
@@ -96,33 +102,33 @@ const CATEGORY_CONFIG: Record<
     title: "Etkinlikler",
     href: "/meetups",
     icon: CalendarDays,
-    badgeClass: "bg-sky-100 text-sky-700",
-    cardClass: "from-sky-100 via-white to-cyan-50",
-    iconCircleClass: "bg-[#7fb24f] text-white",
+    badgeClass: "bg-[#FCE8E7] text-[var(--color-primary-hover)]",
+    cardClass: "from-[#FBEDE6] via-[#FFF8F6] to-[#FDEAE8]",
+    iconCircleClass: "bg-[var(--color-primary)] text-white",
   },
   realEstate: {
     title: "Emlak",
     href: "/emlak",
     icon: Building2,
-    badgeClass: "bg-emerald-100 text-emerald-700",
-    cardClass: "from-emerald-100 via-white to-teal-50",
-    iconCircleClass: "bg-[#36b0ba] text-white",
+    badgeClass: "bg-[#FCE8E7] text-[var(--color-primary-hover)]",
+    cardClass: "from-[#F8EDE7] via-[#FFF8F6] to-[#FCEBE8]",
+    iconCircleClass: "bg-[var(--color-ink)] text-white",
   },
   jobs: {
     title: "İş",
     href: "/is",
     icon: BriefcaseBusiness,
-    badgeClass: "bg-violet-100 text-violet-700",
-    cardClass: "from-violet-100 via-white to-fuchsia-50",
-    iconCircleClass: "bg-[#63a0df] text-white",
+    badgeClass: "bg-[#FCE8E7] text-[var(--color-primary-hover)]",
+    cardClass: "from-[#F9EAE8] via-[#FFF8F6] to-[#FDEDEA]",
+    iconCircleClass: "bg-[var(--color-primary)] text-white",
   },
   marketplace: {
     title: "Alışveriş",
     href: "/alisveris",
     icon: ShoppingBag,
-    badgeClass: "bg-amber-100 text-amber-700",
-    cardClass: "from-amber-100 via-white to-orange-50",
-    iconCircleClass: "bg-[#57c0cf] text-white",
+    badgeClass: "bg-[#FCE8E7] text-[var(--color-primary-hover)]",
+    cardClass: "from-[#F9ECE6] via-[#FFF8F6] to-[#FDEAE6]",
+    iconCircleClass: "bg-[var(--color-ink)] text-white",
   },
 };
 
@@ -465,40 +471,34 @@ export default function Home() {
   );
 
   return (
-    <div className="relative min-h-[calc(100vh-64px)] overflow-x-clip bg-[#f7fbff]">
+    <div className="relative min-h-[calc(100vh-64px)] overflow-x-clip bg-[var(--color-surface)]" style={{ backgroundColor: HOME_THEME.bg, color: HOME_THEME.text }}>
       <div className="flex">
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative overflow-hidden border-b border-sky-100 bg-[url('/arkaplan.png')] bg-cover bg-top bg-no-repeat">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(216,236,255,0.9)_0%,rgba(247,251,255,0.68)_45%,rgba(255,255,255,0)_100%)]" />
-            <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-8 lg:px-12 lg:py-16">
+          <section className="relative overflow-hidden border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
+            <div className="relative mx-auto max-w-7xl px-6 py-12 sm:px-8 lg:px-14 lg:py-14">
               <div className="grid items-center gap-10">
                 <div>
-                  <span className="inline-flex items-center rounded-full border border-sky-200 bg-white px-4 py-1.5 text-xs font-semibold text-sky-700">
-                    <Image
-                      src="/logo.png"
-                      alt="Amerikala"
-                      width={120}
-                      height={28}
-                      className="h-6 w-auto sm:hidden"
-                    />
-                    <span className="hidden items-center gap-2 sm:inline-flex">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      AMERIKALA
-                    </span>
+                  <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.34em] text-[#8A7F77]">
+                    <span className="h-2 w-2 rounded-full bg-[var(--color-primary)]" />
+                    AMERİKA&apos;NIN #1 TÜRK TOPLULUK PLATFORMU
                   </span>
-                  <h1 className="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-                    Amerika&apos;daki Türk topluluğu için güvenilir ilan ve paylaşım platformu.
+                  <h1 className="mt-6 text-5xl font-black uppercase leading-[0.98] tracking-tight text-[var(--color-ink)] sm:text-6xl lg:text-7xl">
+                    SENİ
+                    <br />
+                    BEKLEYENLER
+                    <br />
+                    <span className="text-[var(--color-primary)]">BURADA.</span>
                   </h1>
-                  <p className="mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
+                  <p className="mt-5 max-w-2xl text-lg text-[var(--color-ink-secondary)]">
                     Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
                   </p>
 
-                  <div ref={searchBoxRef} className="relative mt-7 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_40px_-30px_rgba(14,116,144,0.65)]">
-                    <div className="grid gap-2 md:grid-cols-[1fr_auto]">
-                      <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
-                        <Search className="h-4 w-4 text-slate-400" />
+                  <div ref={searchBoxRef} className="relative mt-8 max-w-4xl rounded-[24px] border border-[#E6D8CC] bg-white p-2 shadow-[0_20px_45px_-38px_rgba(17,17,17,0.9)]">
+                    <div className="grid gap-2 md:grid-cols-[1fr_auto_auto]">
+                      <div className="flex items-center gap-3 rounded-2xl px-4 py-2.5">
+                        <Search className="h-5 w-5 text-[#C49A5C]" />
                         <input
                           value={searchQuery}
                           onChange={(event) => {
@@ -530,19 +530,20 @@ export default function Home() {
                               onSearchSubmit();
                             }
                           }}
-                          className="w-full border-none bg-transparent text-sm text-slate-700 outline-none"
-                          placeholder="Ne arıyorsun? (ör: kiralık ev, iş, etkinlik)"
+                          className="w-full border-none bg-transparent text-base text-[var(--color-ink)] outline-none placeholder:text-[#BE9C72]"
+                          placeholder="Etkinlik, ilan, kişi ara..."
                           aria-label="Site içi arama"
                         />
                       </div>
 
-                      <Button variant="primary" className="h-11 rounded-xl px-6" onClick={onSearchSubmit}>
-                        {searching ? "Aranıyor..." : "Ara"}
+                      <button type="button" className="rounded-2xl border border-[#E8DDD4] px-8 font-semibold text-[#403B36]">TÜM</button>
+                      <Button variant="primary" className="h-12 rounded-2xl bg-[var(--color-primary)] px-10 text-base font-bold uppercase tracking-wide hover:bg-[var(--color-primary-hover)]" onClick={onSearchSubmit}>
+                        {searching ? "Aranıyor..." : "ARA"}
                       </Button>
                     </div>
 
                     {searchOpen && searchQuery.trim().length >= 2 && (
-                      <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-[0_18px_40px_-30px_rgba(14,116,144,0.65)]">
+                      <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white shadow-[0_18px_40px_-30px_rgba(17,17,17,0.4)]">
                         {searching ? (
                           <p className="px-4 py-3 text-sm text-slate-500">Uygun ilanlar aranıyor...</p>
                         ) : suggestions.length === 0 ? (
@@ -562,12 +563,12 @@ export default function Home() {
                                       setSearchOpen(false);
                                     }}
                                     className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition ${
-                                      isActive ? "bg-sky-50" : "hover:bg-sky-50/70"
+                                      isActive ? "bg-[#FDF3EF]" : "hover:bg-[#FDF3EF]"
                                     }`}
                                   >
                                     <div className="min-w-0">
-                                      <p className="truncate text-sm font-semibold text-slate-900">{item.title}</p>
-                                      <p className="truncate text-xs text-slate-500">{item.location}</p>
+                                      <p className="truncate text-sm font-semibold text-[var(--color-ink)]">{item.title}</p>
+                                      <p className="truncate text-xs text-[#6C645E]">{item.location}</p>
                                     </div>
                                     <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${meta.badgeClass}`}>{meta.title}</span>
                                   </button>
@@ -585,7 +586,7 @@ export default function Home() {
                       <Button
                         variant="primary"
                         size="lg"
-                        className="rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-7 font-semibold shadow-[0_12px_26px_-16px_rgba(37,99,235,0.8)]"
+                        className="rounded-2xl bg-[var(--color-ink)] px-7 font-semibold tracking-wide text-white shadow-[0_14px_26px_-18px_rgba(17,17,17,0.9)]"
                         onClick={() => setIsPostListingModalOpen(true)}
                       >
                         İlan Ver
@@ -595,7 +596,7 @@ export default function Home() {
                         <Button
                           variant="primary"
                           size="lg"
-                          className="rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-7 font-semibold shadow-[0_12px_26px_-16px_rgba(37,99,235,0.8)]"
+                          className="rounded-2xl border border-[#DCCFC3] bg-white px-7 font-semibold text-[var(--color-ink)] shadow-[0_12px_20px_-16px_rgba(17,17,17,0.5)]"
                         >
                           Giriş Yap
                         </Button>
@@ -605,9 +606,9 @@ export default function Home() {
                       <Button
                         variant="outline"
                         size="lg"
-                        className="rounded-xl border-slate-200 bg-white px-7 font-medium text-slate-700 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.45)] hover:border-slate-300"
+                        className="rounded-2xl bg-[var(--color-primary)] px-7 font-semibold text-white shadow-[0_16px_24px_-18px_rgba(229,57,53,0.95)] hover:bg-[var(--color-primary-hover)]"
                       >
-                        Paylaşımları Gör
+                        Paylaşımları Gör →
                       </Button>
                     </Link>
                   </div>
@@ -629,17 +630,17 @@ export default function Home() {
                   key={category.id}
                   type="button"
                   onClick={() => handlePostListingCategorySelect(category.href)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-sky-300 hover:bg-sky-50"
+                  className="w-full rounded-2xl border border-[var(--color-border-light)] bg-white px-4 py-3 text-left transition hover:border-[#D7B8A7] hover:bg-[#FDF5EF]"
                 >
-                  <p className="text-sm font-semibold text-slate-900">{category.label}</p>
-                  <p className="mt-1 text-xs text-slate-500">{category.description}</p>
+                  <p className="text-sm font-semibold text-[var(--color-ink)]">{category.label}</p>
+                  <p className="mt-1 text-xs text-[#6C645E]">{category.description}</p>
                 </button>
               ))}
             </div>
           </Modal>
 
           <section className="mx-auto max-w-7xl px-4 py-12 sm:px-8 lg:px-12">
-            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_22px_45px_-40px_rgba(15,23,42,0.85)] sm:p-6">
+            <div className="rounded-3xl border border-[var(--color-border-light)] bg-[#F8F3EE] p-4 shadow-[0_22px_45px_-40px_rgba(15,23,42,0.55)] sm:p-6">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
                   const config = CATEGORY_CONFIG[key];
@@ -655,32 +656,32 @@ export default function Home() {
                       onFocus={() => setActiveCategoryPreview(key)}
                       className={`group rounded-2xl border px-3 py-4 text-center transition-all sm:px-4 sm:py-5 ${
                         isActive
-                          ? "border-sky-200 bg-sky-50 shadow-[0_22px_36px_-30px_rgba(14,116,144,0.7)]"
-                          : "border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-30px_rgba(14,116,144,0.45)]"
+                          ? "border-[#E9D5C8] bg-[#FDF6F2] shadow-[0_22px_36px_-30px_rgba(17,17,17,0.35)]"
+                          : "border-[var(--color-border-light)] bg-white hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-30px_rgba(17,17,17,0.35)]"
                       }`}
                     >
                       <span className={`mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full ${config.iconCircleClass} sm:h-14 sm:w-14`}>
                         <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
                       </span>
-                      <h3 className="mt-3 text-sm font-semibold text-slate-900 sm:text-lg">{config.title}</h3>
+                      <h3 className="mt-3 text-sm font-semibold text-[var(--color-ink)] sm:text-lg">{config.title}</h3>
                     </button>
                   );
                 })}
               </div>
 
-              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+              <div className="mt-5 rounded-3xl border border-[var(--color-border-light)] bg-[#FBF7F3] p-4 sm:p-5">
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-base font-semibold text-slate-900">{CATEGORY_CONFIG[activeCategoryPreview].title} - Popüler Gönderiler</h3>
+                  <h3 className="text-base font-semibold text-[var(--color-ink)]">{CATEGORY_CONFIG[activeCategoryPreview].title} - Popüler Gönderiler</h3>
                   <Link
                     href={CATEGORY_CONFIG[activeCategoryPreview].href}
-                    className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-sm font-semibold text-sky-700 transition hover:border-sky-300 hover:text-sky-800"
+                    className="rounded-full border border-[var(--color-border-light)] bg-white px-3 py-1.5 text-sm font-semibold text-[var(--color-primary-hover)] transition hover:border-[#D8B7A6] hover:text-[#A52020]"
                   >
                     Tümü
                   </Link>
                 </div>
 
                 {categoryPreviewItems[activeCategoryPreview].length === 0 ? (
-                  <p className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
+                  <p className="rounded-xl border border-dashed border-[#DCCFC3] bg-white p-6 text-center text-sm text-[#6C645E]">
                     Bu kategori için henüz gönderi bulunmuyor.
                   </p>
                 ) : (
@@ -689,8 +690,8 @@ export default function Home() {
                       <Link
                         key={`preview-${item.id}`}
                         href={item.href}
-                        className={`relative overflow-hidden rounded-xl border border-slate-200 transition hover:border-sky-200 hover:shadow-sm ${
-                          item.imageUrl ? "bg-slate-900" : "bg-white"
+                        className={`relative overflow-hidden rounded-2xl border border-[var(--color-border-light)] transition hover:border-[#D9B9A7] hover:shadow-sm ${
+                          item.imageUrl ? "bg-[var(--color-ink)]" : "bg-white"
                         }`}
                       >
                         {item.imageUrl && (
@@ -718,11 +719,11 @@ export default function Home() {
 
           <AdsSection title="Öne Çıkan İlanlar" items={featuredAds} loading={loading} />
 
-          <section id="son-ilanlar" className="bg-white py-14 scroll-mt-24">
+          <section id="son-ilanlar" className="bg-[var(--color-surface)] py-14 scroll-mt-24">
             <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
               <div className="mb-7 flex items-end justify-between">
                 <div>
-                  <h2 className="text-3xl font-bold text-slate-900">Son İlanlar</h2>
+                  <h2 className="text-3xl font-bold text-[var(--color-ink)]">Son İlanlar</h2>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <CategoryFilterButton
                       isActive={latestAdsCategoryFilter === "all"}
@@ -740,7 +741,7 @@ export default function Home() {
               </div>
               <AdsGrid items={latestFilteredAds} loading={loading} latestMobileGrid />
               <div ref={latestAdsLoadTriggerRef} className="h-2" aria-hidden="true" />
-              {loadingMoreLatestAds && <p className="mt-4 text-center text-sm text-slate-500">Daha fazla ilan yükleniyor...</p>}
+              {loadingMoreLatestAds && <p className="mt-4 text-center text-sm text-[#6C645E]">Daha fazla ilan yükleniyor...</p>}
             </div>
           </section>
         </main>
@@ -761,11 +762,11 @@ function AdsSection({
   loading: boolean;
 }) {
   return (
-    <section className="bg-slate-50 py-14">
+    <section className="bg-[var(--color-surface)] py-14">
       <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
         <div className="mb-7 text-center">
-          <h2 className="text-3xl font-bold text-slate-900">{title}</h2>
-          {subtitle && <p className="mt-1 text-slate-500">{subtitle}</p>}
+          <h2 className="text-3xl font-bold text-[var(--color-ink)]">{title}</h2>
+          {subtitle && <p className="mt-1 text-[#6C645E]">{subtitle}</p>}
         </div>
         <AdsGrid items={items} loading={loading} />
       </div>
@@ -787,7 +788,7 @@ function CategoryFilterButton({
       type="button"
       onClick={onClick}
       className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
-        isActive ? "border-sky-600 bg-sky-600 text-white" : "border-slate-300 bg-white text-slate-600 hover:border-sky-400 hover:text-sky-700"
+        isActive ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white" : "border-[#D8C9BE] bg-white text-[#5F5852] hover:border-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
       }`}
     >
       {children}
@@ -802,14 +803,14 @@ function AdsGrid({ items, loading, latestMobileGrid = false }: { items: UnifiedA
     return (
       <div className={gridClassName}>
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-60 animate-pulse rounded-2xl border border-slate-200 bg-slate-100" />
+          <div key={index} className="h-60 animate-pulse rounded-2xl border border-[var(--color-border-light)] bg-[#EFE4DB]" />
         ))}
       </div>
     );
   }
 
   if (items.length === 0) {
-    return <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">Henüz listelenecek ilan bulunamadı.</p>;
+    return <p className="rounded-xl border border-dashed border-[#D8C9BE] bg-white p-8 text-center text-[#6C645E]">Henüz listelenecek ilan bulunamadı.</p>;
   }
 
   return (
@@ -820,10 +821,10 @@ function AdsGrid({ items, loading, latestMobileGrid = false }: { items: UnifiedA
           <Link
             key={item.id}
             href={item.href}
-            className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md"
+            className="group overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white transition hover:-translate-y-0.5 hover:shadow-md"
           >
             {item.imageUrl ? (
-              <div className="h-28 bg-slate-100">
+              <div className="h-28 bg-[#F6EEE8]">
                 <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
               </div>
             ) : (
@@ -837,9 +838,9 @@ function AdsGrid({ items, loading, latestMobileGrid = false }: { items: UnifiedA
                 <MapPin className="h-4 w-4" />
                 {item.location}
               </p>
-              <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+              <div className="flex items-center justify-between border-t border-[#F0E5DC] pt-3">
                 <span className="text-sm font-semibold text-slate-700">{item.priceLabel ?? "Detaylı bilgi"}</span>
-                <span className="text-xs text-slate-500">İlana git</span>
+                <span className="text-xs text-[#6C645E]">İlana git</span>
               </div>
             </div>
           </Link>

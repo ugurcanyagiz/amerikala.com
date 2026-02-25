@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Search, Loader2, ArrowUpRight } from "lucide-react";
-import Sidebar from "../components/Sidebar";
+import AppShell from "../components/AppShell";
 import { searchSiteContent, type SiteSearchResult } from "@/lib/siteSearch";
 
 const TYPE_LABELS: Record<SiteSearchResult["type"], string> = {
@@ -82,16 +82,13 @@ export default function SearchPage() {
   }, [filteredResults]);
 
   return (
-    <div className="ak-page">
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Arama Yap</h1>
+    <AppShell mainClassName="app-page-container max-w-5xl">
+          <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 sm:p-6 shadow-sm">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--color-ink)]">Arama Yap</h1>
 
             <div className="mt-5 flex gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-ink-tertiary)]" />
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -102,13 +99,13 @@ export default function SearchPage() {
                     }
                   }}
                   placeholder="Örn: New York, yazılım, kiralık..."
-                  className="w-full h-11 rounded-xl border border-slate-200 pl-9 pr-3 text-sm outline-none focus:border-sky-400"
+                  className="w-full h-11 rounded-xl border border-[var(--color-border)] pl-9 pr-3 text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => router.replace(`/search?q=${encodeURIComponent(query.trim())}`)}
-                className="h-11 rounded-xl bg-sky-600 px-5 text-sm font-semibold text-white hover:bg-sky-700"
+                className="h-11 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white hover:bg-[var(--color-primary-hover)]"
               >
                 Ara
               </button>
@@ -122,8 +119,8 @@ export default function SearchPage() {
                   onClick={() => setActiveFilter(filter.value)}
                   className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                     activeFilter === filter.value
-                      ? "bg-sky-600 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      ? "bg-[var(--color-primary)] text-white"
+                      : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-secondary)] hover:bg-[var(--color-border-light)]"
                   }`}
                 >
                   {filter.label}
@@ -134,34 +131,34 @@ export default function SearchPage() {
 
           <div className="mt-6 space-y-5">
             {loading ? (
-              <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">
+              <div className="rounded-2xl border border-[var(--color-border)] bg-white p-8 text-center text-[var(--color-ink-secondary)]">
                 <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
                 Arama yapılıyor...
               </div>
             ) : query.trim().length < 2 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+              <div className="rounded-2xl border border-dashed border-[var(--color-border-strong)] bg-white p-8 text-center text-[var(--color-ink-secondary)]">
                 En az 2 karakter girin.
               </div>
             ) : filteredResults.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+              <div className="rounded-2xl border border-dashed border-[var(--color-border-strong)] bg-white p-8 text-center text-[var(--color-ink-secondary)]">
                 Seçili filtrede sonuç bulunamadı.
               </div>
             ) : (
               Object.entries(groupedResults).map(([group, items]) => (
-                <section key={group} className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <h2 className="text-sm font-semibold text-slate-700 mb-3">{group}</h2>
+                <section key={group} className="rounded-2xl border border-[var(--color-border)] bg-white p-4">
+                  <h2 className="text-sm font-semibold text-[var(--color-ink-secondary)] mb-3">{group}</h2>
                   <div className="space-y-2">
                     {items.map((item) => (
                       <Link
                         key={item.id}
                         href={item.href}
-                        className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2.5 hover:border-sky-200 hover:bg-sky-50 transition"
+                        className="flex items-center justify-between rounded-xl border border-[var(--color-border-light)] px-3 py-2.5 hover:border-[var(--color-border-strong)] hover:bg-[var(--color-primary-subtle)] transition"
                       >
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-slate-800 truncate">{item.title}</p>
-                          <p className="text-xs text-slate-500 truncate">{item.subtitle || "Detaylar için tıklayın"}</p>
+                          <p className="text-xs text-[var(--color-ink-secondary)] truncate">{item.subtitle || "Detaylar için tıklayın"}</p>
                         </div>
-                        <ArrowUpRight className="h-4 w-4 text-slate-400" />
+                        <ArrowUpRight className="h-4 w-4 text-[var(--color-ink-tertiary)]" />
                       </Link>
                     ))}
                   </div>
@@ -169,8 +166,6 @@ export default function SearchPage() {
               ))
             )}
           </div>
-        </main>
-      </div>
-    </div>
+        </AppShell>
   );
 }
