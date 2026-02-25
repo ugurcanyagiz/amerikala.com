@@ -717,7 +717,7 @@ function ListingCard({ listing }: { listing: MarketplaceListing }) {
   const postedDate = new Date(listing.created_at).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
   return (
     <Link href={`/alisveris/ilan/${listing.id}`} aria-label={`${listing.title} ilan detayına git`}>
-      <Card className="h-full overflow-hidden rounded-2xl border border-neutral-200/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg focus-within:ring-2 focus-within:ring-orange-400 dark:border-neutral-800">
+      <Card className="h-full overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg focus-within:ring-2 focus-within:ring-orange-400 dark:border-neutral-800 dark:bg-neutral-900">
         <div className="relative h-44 overflow-hidden bg-neutral-100 dark:bg-neutral-800">
           {listing.images && listing.images.length > 0 ? (
             <Image src={listing.images[0]} alt={listing.title} fill className="object-cover" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" />
