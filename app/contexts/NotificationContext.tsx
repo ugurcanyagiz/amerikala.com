@@ -265,7 +265,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const [friendRequestsResult, myGroupMembershipsResult, outgoingGroupRequestsResult, persistedStatesResult] = await Promise.all([
         supabase
           .from("friend_requests")
-          .select("requester_id, receiver_id, status, created_at, updated_at")
+          .select("requester_id, receiver_id, status, created_at, responded_at")
           .or(`receiver_id.eq.${userId},requester_id.eq.${userId}`)
           .limit(500),
         supabase
@@ -422,7 +422,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           const actor = profilesById.get(actorId);
           const isIncoming = request.receiver_id === userId;
           const id = `friend_requests:${request.requester_id}:${request.receiver_id}:${request.status}`;
-          const createdAt = request.updated_at || request.created_at;
+          const createdAt = request.responded_at || request.created_at;
 
           return {
             id,
