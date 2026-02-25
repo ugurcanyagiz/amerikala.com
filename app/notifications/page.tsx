@@ -20,17 +20,23 @@ import { Card, CardContent } from "../components/ui/Card";
 import { Avatar } from "../components/ui/Avatar";
 import { Badge } from "../components/ui/Badge";
 import { AppNotification, getTimeAgo, useNotifications } from "../contexts/NotificationContext";
+import { supabase } from "@/lib/supabase/client";
+import { useAuth } from "../contexts/AuthContext";
 
-type NotificationType = "all" | "likes" | "comments" | "events";
+type NotificationType = "all" | "likes" | "comments" | "events" | "friends" | "groups";
 
 export default function NotificationsPage() {
+  const { user } = useAuth();
   const { notifications, unreadCount, markAllAsRead, markAsRead, deleteNotification, refreshNotifications, loading, error } = useNotifications();
+  const [requestActionLoading, setRequestActionLoading] = useState<Record<string, boolean>>({});
 
   const types = [
     { value: "all", label: "Tümü", icon: Bell },
     { value: "likes", label: "Beğeniler", icon: Heart },
     { value: "comments", label: "Yorumlar", icon: MessageCircle },
     { value: "events", label: "Etkinlikler", icon: Calendar },
+    { value: "friends", label: "Arkadaşlık", icon: UserPlus },
+    { value: "groups", label: "Gruplar", icon: Bell },
   ] as const;
 
   const [selectedType, setSelectedType] = useState<NotificationType>("all");
@@ -45,6 +51,53 @@ export default function NotificationsPage() {
   const handleDeleteNotification = useCallback((id: string) => {
     deleteNotification(id);
   }, [deleteNotification]);
+
+  const followInsert = useCallback(async (targetUserId: string) => {
+    if (!user?.id) return false;
+
+    const pairs = [
+      { from: "follower_id", to: "following_id" },
+      { from: "user_id", to: "target_user_id" },
+      { from: "user_id", to: "followed_user_id" },
+    ] as const;
+
+    for (const pair of pairs) {
+      const { error: insertError } = await supabase.from("follows").insert({ [pair.from]: user.id, [pair.to]: targetUserId });
+      if (!insertError) return true;
+    }
+
+    return false;
+  }, [user?.id]);
+
+  const handleFriendRequestAction = useCallback(async (notification: AppNotification, action: "accept" | "reject") => {
+    if (!user?.id || !notification.friendRequest?.isIncoming || notification.friendRequest.receiverId !== user.id) return;
+
+    const requestId = notification.id;
+    setRequestActionLoading((prev) => ({ ...prev, [requestId]: true }));
+
+    try {
+      const nextStatus = action === "accept" ? "accepted" : "rejected";
+      const { error: updateError } = await supabase
+        .from("friend_requests")
+        .update({ status: nextStatus, responded_at: new Date().toISOString() })
+        .eq("requester_id", notification.friendRequest.requesterId)
+        .eq("receiver_id", notification.friendRequest.receiverId)
+        .eq("status", "pending");
+
+      if (updateError) throw updateError;
+
+      if (action === "accept") {
+        await followInsert(notification.friendRequest.requesterId);
+      }
+
+      markAsRead(notification.id);
+      await refreshNotifications();
+    } catch (actionError) {
+      console.error("Arkadaşlık isteği güncellenemedi:", actionError);
+    } finally {
+      setRequestActionLoading((prev) => ({ ...prev, [requestId]: false }));
+    }
+  }, [followInsert, markAsRead, refreshNotifications, user?.id]);
 
 
   return (
@@ -61,7 +114,7 @@ export default function NotificationsPage() {
                 {unreadCount > 0 && <Badge variant="primary">{unreadCount} yeni</Badge>}
               </h1>
               <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-                Feed beğenileri, yorumlar ve etkinlik katılımları gerçek zamanlı listelenir.
+                Beğeniler, yorumlar, etkinlikler, arkadaşlık ve grup bildirimleri gerçek zamanlı listelenir.
               </p>
             </div>
 
@@ -157,6 +210,8 @@ export default function NotificationsPage() {
                   notification={notification}
                   onRead={() => handleMarkAsRead(notification.id)}
                   onDelete={() => handleDeleteNotification(notification.id)}
+                  onFriendRequestAction={(action) => void handleFriendRequestAction(notification, action)}
+                  actionLoading={Boolean(requestActionLoading[notification.id])}
                 />
               ))
             )}
@@ -171,10 +226,14 @@ function NotificationItem({
   notification,
   onRead,
   onDelete,
+  onFriendRequestAction,
+  actionLoading,
 }: {
   notification: AppNotification;
   onRead: () => void;
   onDelete: () => void;
+  onFriendRequestAction: (action: "accept" | "reject") => void;
+  actionLoading: boolean;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const timeHydrated = useSyncExternalStore(
@@ -213,7 +272,11 @@ function NotificationItem({
       case "comments":
         return <MessageCircle className="h-5 w-5 text-blue-500" />;
       case "events":
-        return <UserPlus className="h-5 w-5 text-green-500" />;
+        return <Calendar className="h-5 w-5 text-green-500" />;
+      case "friends":
+        return <UserPlus className="h-5 w-5 text-violet-500" />;
+      case "groups":
+        return <Bell className="h-5 w-5 text-amber-500" />;
       default:
         return <Bell className="h-5 w-5 text-neutral-500" />;
     }
@@ -253,15 +316,39 @@ function NotificationItem({
           </div>
         </div>
 
-        {notification.actionUrl && (
-          <div className="mt-3 ml-14">
+        {(notification.actionUrl || (notification.type === "friends" && notification.friendRequest?.isIncoming && notification.friendRequest.status === "pending")) && (
+          <div className="mt-3 ml-14 flex flex-wrap items-center gap-2">
             <Link
-              href={notification.actionUrl}
+              href={notification.actionUrl || "/profile"}
               onClick={onRead}
               className="inline-flex h-8 items-center justify-center rounded-lg border border-sky-200 px-3 text-sm font-medium text-[var(--color-ink)] transition-all duration-150 ease-out hover:bg-[var(--color-surface-sunken)] hover:border-sky-300"
             >
               {notification.actionLabel || "Görüntüle"}
             </Link>
+
+            {notification.type === "friends" && notification.friendRequest?.isIncoming && notification.friendRequest.status === "pending" && (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => onFriendRequestAction("accept")}
+                  disabled={actionLoading}
+                  className="h-8"
+                >
+                  {actionLoading ? <Loader2 size={14} className="animate-spin" /> : "Kabul Et"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onFriendRequestAction("reject")}
+                  disabled={actionLoading}
+                  className="h-8"
+                >
+                  {actionLoading ? <Loader2 size={14} className="animate-spin" /> : "Reddet"}
+                </Button>
+              </>
+            )}
           </div>
         )}
       </CardContent>
