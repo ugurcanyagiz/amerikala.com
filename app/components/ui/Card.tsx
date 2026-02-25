@@ -10,17 +10,17 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className = "", variant = "default", padding = "md", children, ...props }, ref) => {
     const variants: Record<string, string> = {
       default: `
-        bg-[var(--color-surface)]
+        bg-white
         border border-[var(--color-border)]
         shadow-[var(--shadow-sm)]
       `,
       elevated: `
-        bg-[var(--color-surface)]
+        bg-white
         border border-[var(--color-border-light)]
         shadow-[var(--shadow-md)]
       `,
       interactive: `
-        bg-[var(--color-surface)]
+        bg-white
         border border-[var(--color-border)]
         shadow-[var(--shadow-sm)]
         hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]
@@ -29,7 +29,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
         cursor-pointer
       `,
       glass: `
-        bg-[var(--color-surface-raised)]/90
+        bg-white/95
         backdrop-blur-md
         border border-[var(--color-border-light)]
         shadow-[var(--shadow-sm)]
