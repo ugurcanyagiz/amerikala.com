@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useState, useRef, useEffect, useSyncExternalStore } from "react";
+import { useCallback, useState, useRef, useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { getTimeAgo, useNotifications } from "../contexts/NotificationContext";
 import { Avatar } from "./ui/Avatar";
+import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
 import { getMessagePreviews, markConversationMessagesAsRead, type MessagePreview } from "@/lib/messages";
 import { supabase } from "@/lib/supabase/client";
@@ -87,23 +88,17 @@ const NAV_ITEMS = [
   },
 ];
 
-function getNotificationTypeClasses(type: string) {
-  if (type === "mentions") return "bg-[var(--color-info-light)] text-[var(--color-info)]";
-  if (type === "comments") return "bg-[var(--color-success-light)] text-[var(--color-success)]";
-  if (type === "follows") return "bg-[var(--color-warning-light)] text-[var(--color-warning)]";
-  return "bg-[var(--color-info-light)] text-[var(--color-info)]";
-}
 
 function getRoleBadge(role?: string | null) {
   if (role === "admin") {
-    return { label: "Admin", className: "bg-[var(--color-error-light)] text-[var(--color-error)]" };
+    return { label: "Admin", variant: "error" as const };
   }
 
   if (role === "moderator") {
-    return { label: "Moderator", className: "bg-[var(--color-warning-light)] text-[var(--color-warning)]" };
+    return { label: "Moderator", variant: "warning" as const };
   }
 
-  return { label: "User", className: "bg-[var(--color-surface-sunken)] text-[var(--color-ink-secondary)]" };
+  return { label: "User", variant: "default" as const };
 }
 
 function getDisplayName(
@@ -315,6 +310,24 @@ function NavDropdown({
   );
 }
 
+const POPOVER_PANEL_CLASSNAME = "absolute right-0 top-full mt-2 z-50 overflow-hidden border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] rounded-[var(--radius-card)] shadow-[var(--shadow-raised)] animate-in fade-in slide-in-from-top-2 duration-200";
+
+function SearchPanel({ children }: { children: ReactNode }) {
+  return <div className={`${POPOVER_PANEL_CLASSNAME} w-[420px] max-w-[90vw]`}>{children}</div>;
+}
+
+function NotificationsPanel({ children }: { children: ReactNode }) {
+  return <div className={`${POPOVER_PANEL_CLASSNAME} w-[380px] max-w-[86vw]`}>{children}</div>;
+}
+
+function MessagesPanel({ children }: { children: ReactNode }) {
+  return <div className={`${POPOVER_PANEL_CLASSNAME} w-[370px] max-w-[90vw]`}>{children}</div>;
+}
+
+function ProfileMenuPanel({ children }: { children: ReactNode }) {
+  return <div className={`${POPOVER_PANEL_CLASSNAME} w-56 py-2`}>{children}</div>;
+}
+
 // Mobile Bottom Navigation
 function MobileBottomNav() {
   const pathname = usePathname();
@@ -422,7 +435,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 <div>
                   <div className="font-semibold">{displayName}</div>
                   <div className="text-sm text-[var(--color-ink-tertiary)]">{usernameLabel}</div>
-                  <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${roleBadge.className}`}>{roleBadge.label}</span>
+                  <Badge variant={roleBadge.variant} size="sm" className="mt-1">{roleBadge.label}</Badge>
                 </div>
               </Link>
             </div>
@@ -783,7 +796,7 @@ export default function Navbar() {
                 </button>
 
                 {searchOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-[420px] max-w-[90vw] rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] shadow-xl z-50 overflow-hidden">
+                  <SearchPanel>
                     <div className="p-3 border-b border-[var(--color-border-light)]">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 flex items-center gap-2 rounded-xl border border-[var(--color-border-light)] px-3 py-2">
@@ -805,9 +818,10 @@ export default function Navbar() {
                         <Link
                           href={`/search${searchQuery.trim() ? `?q=${encodeURIComponent(searchQuery.trim())}` : ""}`}
                           onClick={() => setSearchOpen(false)}
-                          className="inline-flex h-10 items-center rounded-xl bg-[var(--color-primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--color-primary-hover)]"
-                        >
-                          Detaylı Ara
+                          >
+                          <Button variant="primary" size="sm" className="h-10 rounded-xl px-3 text-xs font-semibold">
+                            Detaylı Ara
+                          </Button>
                         </Link>
                       </div>
                     </div>
@@ -831,19 +845,17 @@ export default function Navbar() {
                               <p className="text-sm font-medium text-[var(--color-ink)] truncate">{item.title}</p>
                               <p className="text-xs text-[var(--color-ink-tertiary)] truncate">{item.subtitle || "Detaylar için tıklayın"}</p>
                             </div>
-                            <span className="text-[10px] px-2 py-1 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-secondary)] font-medium">
-                              {SEARCH_TYPE_LABELS[item.type]}
-                            </span>
+                            <Badge variant="default" size="sm">{SEARCH_TYPE_LABELS[item.type]}</Badge>
                           </Link>
                         ))
                       )}
                     </div>
-                  </div>
+                  </SearchPanel>
                 )}
               </div>
 
               {loading ? (
-                <div className="w-9 h-9 rounded-full bg-sky-100 animate-pulse" />
+                <div className="w-9 h-9 rounded-full bg-[var(--color-surface-sunken)] animate-pulse" />
               ) : user ? (
                 <>
                   {/* Notifications */}
@@ -863,14 +875,14 @@ export default function Navbar() {
                     >
                       <Bell size={20} />
                       {unreadCount > 0 && (
-                        <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-[18px] text-center">
+                        <Badge variant="error" size="sm" className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 text-[10px] leading-[18px] justify-center">
                           {unreadCount > 99 ? "99+" : unreadCount}
-                        </span>
+                        </Badge>
                       )}
                     </button>
 
                     {notificationPanelOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-[380px] max-w-[86vw] bg-[var(--color-surface-raised)] rounded-2xl shadow-xl border border-[var(--color-border-light)] z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                      <NotificationsPanel>
                         <div className="px-4 py-3 border-b border-[var(--color-border-light)] flex items-center justify-between">
                           <div>
                             <h3 className="font-semibold text-[var(--color-ink)]">Bildirimler</h3>
@@ -888,7 +900,7 @@ export default function Navbar() {
                             <Link
                               href="/notifications"
                               onClick={() => setNotificationPanelOpen(false)}
-                              className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                              className="text-xs font-medium text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
                             >
                               Tümünü gör
                             </Link>
@@ -913,7 +925,7 @@ export default function Navbar() {
                                   setNotificationPanelOpen(false);
                                 }}
                                 className={`flex items-start gap-3 px-4 py-3 border-b border-[var(--color-border-light)] hover:bg-[var(--color-surface-sunken)] transition-colors ${
-                                  !notification.isRead ? "bg-sky-50" : ""
+                                  !notification.isRead ? "bg-[var(--color-primary-subtle)]" : ""
                                 }`}
                               >
                                 <Avatar
@@ -932,14 +944,17 @@ export default function Navbar() {
                                     {timeHydrated ? getTimeAgo(notification.createdAt) : "..."}
                                   </p>
                                 </div>
-                                <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${getNotificationTypeClasses(notification.type)}`}>
+                                <Badge
+                                  variant={notification.type === "comments" ? "success" : notification.type === "follows" ? "warning" : "info"}
+                                  size="sm"
+                                >
                                   {notification.type === "mentions" ? "Bahsetme" : notification.type === "comments" ? "Yorum" : notification.type === "follows" ? "Takip" : "Sistem"}
-                                </span>
+                                </Badge>
                               </Link>
                             ))
                           )}
                         </div>
-                      </div>
+                      </NotificationsPanel>
                     )}
                   </div>
 
@@ -958,14 +973,14 @@ export default function Navbar() {
                     >
                       <MessageSquare size={20} />
                       {totalUnreadMessages > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 rounded-full bg-blue-600 text-white text-[10px] font-semibold flex items-center justify-center">
+                        <Badge variant="primary" size="sm" className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 text-[10px] justify-center">
                           {totalUnreadMessages > 99 ? "99+" : totalUnreadMessages}
-                        </span>
+                        </Badge>
                       )}
                     </button>
 
                     {messagesOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-[370px] max-w-[90vw] bg-[var(--color-surface-raised)] rounded-2xl shadow-2xl border border-[var(--color-border-light)] z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                      <MessagesPanel>
                         <div className="px-4 py-3 border-b border-[var(--color-border-light)] flex items-center justify-between">
                           <div>
                             <p className="text-sm font-semibold text-[var(--color-ink)]">Mesajlar</p>
@@ -974,7 +989,7 @@ export default function Navbar() {
                           <Link
                             href="/messages"
                             onClick={() => setMessagesOpen(false)}
-                            className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                            className="text-xs font-medium text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
                           >
                             Tümünü Gör
                           </Link>
@@ -984,7 +999,7 @@ export default function Navbar() {
                           {messagesLoading ? (
                             <div className="p-4 text-sm text-[var(--color-ink-tertiary)]">Mesajlar yükleniyor...</div>
                           ) : messagesError ? (
-                            <div className="p-4 text-sm text-red-500">{messagesError}</div>
+                            <div className="p-4 text-sm text-[var(--color-error)]">{messagesError}</div>
                           ) : messagePreviews.length === 0 ? (
                             <div className="p-4 text-sm text-[var(--color-ink-tertiary)]">Henüz bir mesajınız yok.</div>
                           ) : (
@@ -1033,9 +1048,9 @@ export default function Navbar() {
                                       {conversation.lastMessageText}
                                     </p>
                                     {conversation.unreadCount > 0 && (
-                                      <span className="min-w-5 h-5 px-1 rounded-full bg-blue-600 text-white text-[10px] font-semibold flex items-center justify-center">
+                                      <Badge variant="primary" size="sm" className="min-w-5 h-5 px-1 text-[10px] justify-center">
                                         {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
-                                      </span>
+                                      </Badge>
                                     )}
                                   </div>
                                 </div>
@@ -1043,7 +1058,7 @@ export default function Navbar() {
                             ))
                           )}
                         </div>
-                      </div>
+                      </MessagesPanel>
                     )}
                   </div>
 
@@ -1065,11 +1080,11 @@ export default function Navbar() {
                     </button>
 
                     {userMenuOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-56 py-2 bg-[var(--color-surface-raised)] rounded-2xl shadow-xl border border-[var(--color-border-light)] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <ProfileMenuPanel>
                         <div className="px-4 py-3 border-b border-[var(--color-border-light)]">
                           <div className="font-semibold truncate">{displayName}</div>
                           <div className="text-sm text-[var(--color-ink-tertiary)] truncate">{usernameLabel}</div>
-                          <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${roleBadge.className}`}>{roleBadge.label}</span>
+                          <Badge variant={roleBadge.variant} size="sm" className="mt-1">{roleBadge.label}</Badge>
                         </div>
                         <div className="py-1">
                           <Link
@@ -1108,7 +1123,7 @@ export default function Navbar() {
                             Çıkış Yap
                           </button>
                         </div>
-                      </div>
+                      </ProfileMenuPanel>
                     )}
                   </div>
 
