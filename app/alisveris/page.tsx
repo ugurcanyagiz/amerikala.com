@@ -364,7 +364,7 @@ export default function AlisverisPage() {
   return (
     <div className="ak-page pb-20 md:pb-0">
       <section className="relative py-8 md:py-10 bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950/20">
-        <div className="ak-shell">
+        <div className="app-page-container py-0">
           <div className="flex flex-col gap-5 md:gap-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
@@ -496,7 +496,7 @@ export default function AlisverisPage() {
         </div>
       </section>
 
-      <section className="ak-shell py-8 md:py-10">
+      <section className="app-page-container py-8 md:py-10">
         <div className="mb-6 flex items-center justify-between gap-3">
           <h2 className="text-xl md:text-2xl font-semibold tracking-tight">
             {selectedCategory === "all" ? "Tüm İlanlar" : MARKETPLACE_CATEGORY_LABELS[selectedCategory]}

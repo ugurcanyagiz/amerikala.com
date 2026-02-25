@@ -82,7 +82,7 @@ export default function SearchPage() {
   }, [filteredResults]);
 
   return (
-    <AppShell mainClassName="app-page-container max-w-5xl">
+    <AppShell>
           <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 sm:p-6 shadow-sm">
             <h1 className="text-2xl sm:text-3xl font-bold text-[var(--color-ink)]">Arama Yap</h1>
 
