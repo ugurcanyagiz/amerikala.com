@@ -234,16 +234,22 @@ function NavDropdown({
       <Link
         href={item.href!}
         className={`
-          flex items-center gap-2 border-b-2 px-1 py-5 text-sm font-semibold uppercase tracking-wide
-          transition-colors duration-200
+          group relative flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold uppercase tracking-wide
+          transition-colors duration-200 hover:bg-black/5
           ${isActive
-            ? "border-[var(--color-primary)] text-[var(--color-ink)]"
-            : "border-transparent text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
+            ? "text-[var(--color-ink)]"
+            : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
           }
         `}
       >
         <Icon size={16} className="hidden xl:block" />
         <span className="inline">{item.label}</span>
+        <span
+          aria-hidden="true"
+          className={`absolute bottom-0 left-3 right-3 h-0.5 origin-center rounded-full bg-[var(--color-primary)] transition-transform duration-200 ${
+            isActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+          }`}
+        />
       </Link>
     );
   }
@@ -253,11 +259,11 @@ function NavDropdown({
       <button
         onClick={onToggle}
         className={`
-          flex items-center gap-1 border-b-2 px-1 py-5 text-sm font-semibold uppercase tracking-wide
-          transition-colors duration-200
+          group relative flex h-10 items-center gap-1 rounded-lg px-3 text-sm font-semibold uppercase tracking-wide
+          transition-colors duration-200 hover:bg-black/5
           ${isActive || isOpen
-            ? "border-[var(--color-primary)] text-[var(--color-ink)]"
-            : "border-transparent text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
+            ? "text-[var(--color-ink)]"
+            : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
           }
         `}
       >
@@ -266,6 +272,12 @@ function NavDropdown({
         <ChevronDown 
           size={14} 
           className={`hidden lg:block transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} 
+        />
+        <span
+          aria-hidden="true"
+          className={`absolute bottom-0 left-3 right-3 h-0.5 origin-center rounded-full bg-[var(--color-primary)] transition-transform duration-200 ${
+            isActive || isOpen ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+          }`}
         />
       </button>
 
@@ -753,37 +765,41 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="hidden md:block sticky top-0 z-40 w-full border-b border-[var(--color-border-light)] bg-[var(--color-surface)]/95 backdrop-blur-xl">
-        <div className="app-page-container py-0">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 flex-shrink-0" aria-label="Amerikala ana sayfa">
-              <Image
-                src="/logo.png"
-                alt="Amerikala logosu"
-                width={36}
-                height={36}
-                priority
-                className="h-9 w-9"
-              />
-              <span className="text-lg font-bold tracking-[0.12em] text-[var(--color-ink)] uppercase">amerikala</span>
-            </Link>
+      <header className="hidden md:block sticky top-0 z-40 w-full h-16 border-b border-black/10 bg-[var(--color-surface)]/95 backdrop-blur-xl">
+        <div className="mx-auto h-full max-w-7xl px-6">
+          <div className="flex h-full items-center">
+            <div className="flex flex-1 items-center justify-start">
+              {/* Logo */}
+              <Link href="/" className="flex items-center gap-2 flex-shrink-0" aria-label="Amerikala ana sayfa">
+                <Image
+                  src="/logo.png"
+                  alt="Amerikala logosu"
+                  width={36}
+                  height={36}
+                  priority
+                  className="h-9 w-9"
+                />
+                <span className="text-lg font-bold tracking-[0.12em] text-[var(--color-ink)] uppercase">amerikala</span>
+              </Link>
+            </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-6">
-              {desktopNavItems.map((item) => (
-                <NavDropdown
-                  key={item.id}
-                  item={item}
-                  isOpen={openDropdown === item.id}
-                  onToggle={() => setOpenDropdown(openDropdown === item.id ? null : item.id)}
-                  onClose={() => setOpenDropdown(null)}
-                />
-              ))}
-            </nav>
+            <div className="hidden flex-1 items-center justify-center md:flex">
+              <nav className="flex items-center gap-2 lg:gap-4">
+                {desktopNavItems.map((item) => (
+                  <NavDropdown
+                    key={item.id}
+                    item={item}
+                    isOpen={openDropdown === item.id}
+                    onToggle={() => setOpenDropdown(openDropdown === item.id ? null : item.id)}
+                    onClose={() => setOpenDropdown(null)}
+                  />
+                ))}
+              </nav>
+            </div>
 
             {/* Right Section */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-1 items-center justify-end gap-2">
               {/* Search Button */}
               <div ref={searchRef} className="relative hidden sm:block">
                 <button
@@ -1138,12 +1154,12 @@ export default function Navbar() {
               ) : (
                 <>
                   <Link href="/login" className="hidden sm:block">
-                    <Button variant="ghost" size="sm" className="rounded-full border border-[#D9CDC3] bg-[var(--color-surface-raised)] px-5 text-[var(--color-ink)] hover:bg-[var(--color-surface-raised)]">
+                    <Button variant="ghost" size="sm" className="h-10 rounded-lg border border-[#D9CDC3] bg-[var(--color-surface-raised)] px-4 text-[var(--color-ink)] hover:bg-[var(--color-surface-raised)]">
                       Giriş Yap
                     </Button>
                   </Link>
                   <Link href="/#son-ilanlar" className="hidden sm:block">
-                    <Button variant="primary" size="sm" className="rounded-full bg-[var(--color-primary)] px-5 text-white hover:bg-[var(--color-primary-hover)]">
+                    <Button variant="primary" size="sm" className="h-10 rounded-lg bg-[var(--color-primary)] px-4 text-white hover:bg-[var(--color-primary-hover)]">
                       Paylaşımları Gör
                     </Button>
                   </Link>
