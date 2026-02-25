@@ -23,6 +23,8 @@ import {
   CalendarDays,
   Search,
   X,
+  Grid,
+  List,
 } from "lucide-react";
 
 export default function MeetupsPage() {
@@ -40,6 +42,7 @@ export default function MeetupsPage() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("date_asc");
   const [quickDate, setQuickDate] = useState<"today" | "weekend" | "month" | null>(null);
+  const [filterViewMode, setFilterViewMode] = useState<"grid" | "list">("grid");
 
   const cityOptions = useMemo(() => {
     return Array.from(new Set(upcomingEvents.map((event) => event.city).filter(Boolean))).sort((a, b) =>
@@ -252,9 +255,9 @@ export default function MeetupsPage() {
 
             {/* Filter Bar */}
             <section className="mb-10 max-w-6xl mx-auto">
-              <Card variant="default" padding="md" className="shadow-[var(--shadow-sm)]">
-                <CardContent className="p-0">
-                  <div className="flex flex-wrap items-end gap-3 md:gap-4">
+              <Card className="glass">
+                <CardContent className="p-4">
+                  <div className="flex flex-col lg:flex-row gap-4">
                     <div className="min-w-[150px] flex-1">
                       <label htmlFor="meetups-from-date" className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Başlangıç tarihi</label>
                       <input
@@ -266,7 +269,7 @@ export default function MeetupsPage() {
                           setFromDate(event.target.value);
                           setQuickDate(null);
                         }}
-                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                        className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
@@ -281,7 +284,7 @@ export default function MeetupsPage() {
                           setToDate(event.target.value);
                           setQuickDate(null);
                         }}
-                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                        className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
@@ -292,7 +295,7 @@ export default function MeetupsPage() {
                         aria-label="Şehir filtresi"
                         value={city}
                         onChange={(event) => setCity(event.target.value)}
-                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                        className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">Tüm şehirler</option>
                         {cityOptions.map((cityOption) => (
@@ -306,7 +309,7 @@ export default function MeetupsPage() {
                     <div className="min-w-[200px] flex-[1.2]">
                       <label htmlFor="meetups-search" className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Etkinlik ara</label>
                       <div className="relative">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-tertiary)]" />
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                         <input
                           type="text"
                           id="meetups-search"
@@ -314,7 +317,7 @@ export default function MeetupsPage() {
                           value={search}
                           onChange={(event) => setSearch(event.target.value)}
                           placeholder="Başlık içinde ara..."
-                          className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-9 pr-3 text-sm text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     </div>
@@ -326,7 +329,7 @@ export default function MeetupsPage() {
                         aria-label="Sıralama"
                         value={sort}
                         onChange={(event) => setSort(event.target.value)}
-                        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                        className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="date_asc">Tarih (Yakın)</option>
                         <option value="date_desc">Tarih (Uzak)</option>
@@ -334,38 +337,77 @@ export default function MeetupsPage() {
                       </select>
                     </div>
 
-                    <Button variant="outline" size="sm" className="gap-1" onClick={clearFilters} aria-label="Filtreleri temizle">
+                    <Button variant="outline" size="sm" className="gap-1 h-[42px] self-end" onClick={clearFilters} aria-label="Filtreleri temizle">
                       <X className="h-4 w-4" />
                       Temizle
                     </Button>
+
+                    <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 self-end">
+                      <button
+                        type="button"
+                        onClick={() => setFilterViewMode("grid")}
+                        aria-label="Grid görünümü"
+                        className={`p-2 rounded-md transition-colors ${
+                          filterViewMode === "grid"
+                            ? "bg-white dark:bg-neutral-700 shadow-sm"
+                            : "hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                        }`}
+                      >
+                        <Grid size={20} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFilterViewMode("list")}
+                        aria-label="Liste görünümü"
+                        className={`p-2 rounded-md transition-colors ${
+                          filterViewMode === "list"
+                            ? "bg-white dark:bg-neutral-700 shadow-sm"
+                            : "hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                        }`}
+                      >
+                        <List size={20} />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <span className="text-xs text-[var(--color-ink-secondary)]">Hızlı tarih:</span>
-                    <Button
-                      variant={quickDate === "today" ? "primary" : "outline"}
-                      size="sm"
+                  <div className="flex flex-wrap gap-2 mt-4 items-center">
+                    <span className="text-xs text-[var(--color-ink-secondary)] mr-1">Hızlı tarih:</span>
+                    <button
+                      type="button"
                       onClick={() => applyQuickDate("today")}
                       aria-label="Bugün için hızlı tarih filtresi"
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                        quickDate === "today"
+                          ? "bg-blue-500 text-white"
+                          : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                      }`}
                     >
                       Today
-                    </Button>
-                    <Button
-                      variant={quickDate === "weekend" ? "primary" : "outline"}
-                      size="sm"
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => applyQuickDate("weekend")}
                       aria-label="Bu hafta sonu için hızlı tarih filtresi"
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                        quickDate === "weekend"
+                          ? "bg-blue-500 text-white"
+                          : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                      }`}
                     >
                       This Weekend
-                    </Button>
-                    <Button
-                      variant={quickDate === "month" ? "primary" : "outline"}
-                      size="sm"
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => applyQuickDate("month")}
                       aria-label="Bu ay için hızlı tarih filtresi"
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                        quickDate === "month"
+                          ? "bg-blue-500 text-white"
+                          : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                      }`}
                     >
                       This Month
-                    </Button>
+                    </button>
                   </div>
                 </CardContent>
               </Card>
@@ -388,7 +430,7 @@ export default function MeetupsPage() {
                 {loading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
                     {Array.from({ length: 6 }).map((_, index) => (
-                      <Card key={index} variant="default" padding="none" className="overflow-hidden">
+                      <Card key={index} variant="default" padding="none" className="overflow-hidden bg-white border-black/10 shadow-sm rounded-2xl">
                         <div className="h-48 animate-pulse bg-gradient-to-r from-neutral-100 via-neutral-200 to-neutral-100" />
                         <CardContent className="p-4 space-y-3">
                           <div className="h-4 w-24 rounded bg-neutral-200 animate-pulse" />
@@ -400,7 +442,7 @@ export default function MeetupsPage() {
                     ))}
                   </div>
                 ) : errorMessage ? (
-                  <Card variant="default" padding="md">
+                  <Card variant="default" padding="md" className="bg-white border-black/10 shadow-sm rounded-2xl">
                     <CardContent className="p-0 text-center py-8">
                       <p className="text-[var(--color-ink-secondary)]">{errorMessage}</p>
                       <Button variant="outline" size="sm" className="mt-4" onClick={() => window.location.reload()}>
@@ -409,7 +451,7 @@ export default function MeetupsPage() {
                     </CardContent>
                   </Card>
                 ) : upcomingEvents.length === 0 ? (
-                  <Card variant="default" padding="md">
+                  <Card variant="default" padding="md" className="bg-white border-black/10 shadow-sm rounded-2xl">
                     <CardContent className="p-0 text-center py-9">
                       <CalendarDays className="h-10 w-10 text-[var(--color-ink-tertiary)] mx-auto mb-3" />
                       <h3 className="text-lg font-semibold text-[var(--color-ink)]">
@@ -442,7 +484,7 @@ export default function MeetupsPage() {
                         <Card
                           variant="interactive"
                           padding="none"
-                          className="h-full overflow-hidden hover:scale-[1.01]"
+                          className="h-full overflow-hidden hover:scale-[1.01] bg-white border-black/10 shadow-sm rounded-2xl"
                         >
                           <div className="relative h-48 bg-gradient-to-br from-slate-100 to-slate-200">
                             {event.cover_image_url ? (
