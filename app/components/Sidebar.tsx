@@ -216,7 +216,7 @@ export default function Sidebar() {
 
   if (isHomePage) {
     return (
-      <aside className="sticky top-16 hidden h-[calc(100vh-64px)] w-[260px] flex-col border-r border-[var(--color-border-light)] bg-[var(--color-surface-raised)] md:flex">
+      <aside className="sticky top-16 hidden h-[calc(100vh-64px)] w-[260px] flex-col border-r border-brand-earth/40 bg-brand-cream/60 md:flex">
         <nav className="flex-1 overflow-y-auto px-5 py-8">
           <SidebarSection title="Keşfet" icon={Star}>
             <SidebarItem href="/meetups" label="Etkinlikler" icon={Calendar} active={isActive("/meetups")} />
@@ -237,8 +237,8 @@ export default function Sidebar() {
           </SidebarSection>
         </nav>
 
-        <div className="border-t border-[var(--color-border-light)] p-5">
-          <Link href={hasAuthenticatedUser ? "/emlak/ilan-ver" : "/login"} className="block rounded-xl bg-[var(--color-primary)] px-4 py-3 text-center text-lg font-semibold text-white shadow-[0_18px_28px_-20px_rgba(229,57,53,0.95)] hover:bg-[var(--color-primary-hover)]">
+        <div className="border-t border-brand-earth/40 p-5">
+          <Link href={hasAuthenticatedUser ? "/emlak/ilan-ver" : "/login"} className="block rounded-2xl bg-brand-red px-4 py-3 text-center text-lg font-semibold text-white shadow-[0_18px_28px_-20px_rgba(229,57,53,0.95)] hover:bg-brand-red/90">
             + İlan Ver
           </Link>
         </div>
@@ -248,14 +248,14 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`sticky top-16 hidden h-[calc(100vh-64px)] flex-col border-r border-slate-200 bg-white transition-all duration-200 md:flex ${
+      className={`sticky top-16 hidden h-[calc(100vh-64px)] flex-col border-r border-brand-earth/40 bg-brand-cream transition-all duration-200 md:flex ${
         isExpanded ? "w-64" : "w-16"
       }`}
     >
-      <div className="flex items-center justify-end border-b border-slate-200 p-2">
+      <div className="flex items-center justify-end border-b border-brand-earth/40 p-2">
         <button
           onClick={() => setIsExpanded((prev) => !prev)}
-          className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          className="rounded-lg p-2 text-gray-600 transition-colors hover:bg-brand-cream/60 hover:text-black"
           title={isExpanded ? "Daralt" : "Genişlet"}
         >
           <ChevronRight className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
@@ -263,8 +263,8 @@ export default function Sidebar() {
       </div>
 
       {hasAuthenticatedUser && isExpanded && (
-        <div className="border-b border-slate-200 px-6 py-8 text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-xl font-semibold text-slate-500">
+        <div className="border-b border-brand-earth/40 px-6 py-8 text-center">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-xl font-semibold text-gray-600">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
@@ -272,8 +272,8 @@ export default function Sidebar() {
               <span>{getInitials(displayName)}</span>
             )}
           </div>
-          <p className="text-xl font-semibold text-slate-900">{displayName}</p>
-          <p className="mt-1 text-sm text-slate-500">{username}</p>
+          <p className="text-xl font-semibold text-black">{displayName}</p>
+          <p className="mt-1 text-sm text-gray-600">{username}</p>
         </div>
       )}
 
@@ -292,14 +292,14 @@ export default function Sidebar() {
                     href={item.href}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                       active
-                        ? "bg-slate-100 font-medium text-slate-900"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        ? "bg-slate-100 font-medium text-black"
+                        : "text-gray-600 hover:bg-slate-50 hover:text-black"
                     } ${!isExpanded ? "justify-center" : ""}`}
                     title={!isExpanded ? label : undefined}
                   >
                     <Icon className="h-4 w-4" />
                     {isExpanded && <span className="flex-1 truncate">{label}</span>}
-                    {isExpanded && <ChevronRight className="h-4 w-4 text-slate-400" />}
+                    {isExpanded && <ChevronRight className="h-4 w-4 text-gray-500" />}
                   </Link>
                 </li>
               );
@@ -310,7 +310,7 @@ export default function Sidebar() {
                 <li key={item.labelKey}>
                   <button
                     onClick={item.onClick}
-                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600 ${
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-gray-600 transition-colors hover:bg-brand-cream/60 hover:text-brand-red ${
                       !isExpanded ? "justify-center" : ""
                     }`}
                     title={!isExpanded ? label : undefined}
@@ -331,8 +331,8 @@ export default function Sidebar() {
                   onClick={() => toggleGroup(item.labelKey)}
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                     hasActiveChild
-                      ? "bg-slate-100 font-medium text-slate-900"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      ? "bg-slate-100 font-medium text-black"
+                      : "text-gray-600 hover:bg-slate-50 hover:text-black"
                   } ${!isExpanded ? "justify-center" : ""}`}
                   title={!isExpanded ? label : undefined}
                 >
@@ -340,13 +340,13 @@ export default function Sidebar() {
                   {isExpanded && <span className="flex-1 text-left">{label}</span>}
                   {isExpanded && (
                     <ChevronDown
-                      className={`h-4 w-4 text-slate-400 transition-transform ${groupExpanded ? "rotate-180" : ""}`}
+                      className={`h-4 w-4 text-gray-500 transition-transform ${groupExpanded ? "rotate-180" : ""}`}
                     />
                   )}
                 </button>
 
                 {isExpanded && groupExpanded && (
-                  <ul className="mt-1 space-y-1 border-l border-slate-200 pl-4 ml-5">
+                  <ul className="mt-1 space-y-1 border-l border-brand-earth/40 pl-4 ml-5">
                     {item.children.map((child) => {
                       const active = isActive(child.href);
                       const childLabel = t(child.labelKey);
@@ -358,11 +358,11 @@ export default function Sidebar() {
                             href={child.href}
                             className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
                               active
-                                ? "bg-slate-100 font-medium text-slate-900"
-                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                ? "bg-slate-100 font-medium text-black"
+                                : "text-gray-600 hover:bg-slate-50 hover:text-black"
                             }`}
                           >
-                            {ChildIcon ? <ChildIcon className="h-4 w-4" /> : <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />}
+                            {ChildIcon ? <ChildIcon className="h-4 w-4" /> : <span className="h-1.5 w-1.5 rounded-full bg-brand-earth/60" />}
                             <span className="flex-1 truncate">{childLabel}</span>
                           </Link>
                         </li>
@@ -389,8 +389,8 @@ function SidebarSection({
   children: ReactNode;
 }) {
   return (
-    <div className="mb-8 border-b border-[var(--color-border-light)] pb-6 last:border-none">
-      <p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.28em] text-[#9A8C84]">
+    <div className="mb-8 border-b border-brand-earth/40 pb-6 last:border-none">
+      <p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.28em] text-brand-earth">
         <Icon className="h-3.5 w-3.5" />
         {title}
       </p>
@@ -404,7 +404,7 @@ function SidebarItem({ href, label, icon: Icon, active }: { href: string; label:
     <Link
       href={href}
       className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-base transition-colors ${
-        active ? "bg-white font-semibold text-[var(--color-ink)]" : "text-[#4A4541] hover:bg-white/70"
+        active ? "bg-white font-semibold text-black shadow-sm" : "text-gray-600 hover:bg-white"
       }`}
     >
       <Icon className="h-4 w-4" />
