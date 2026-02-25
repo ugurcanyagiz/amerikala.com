@@ -477,27 +477,26 @@ export default function Home() {
 
         <main className="relative z-10 flex-1">
           <section className="relative overflow-hidden border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
-            <div className="relative mx-auto max-w-7xl px-6 py-12 sm:px-8 lg:px-14 lg:py-14">
-              <div className="grid items-center gap-10">
+            <div className="relative mx-auto max-w-7xl px-6 pb-10 pt-12 sm:px-8 lg:px-14">
+              <div className="max-w-[760px]">
                 <div>
-                  <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.34em] text-[#8A7F77]">
-                    <span className="h-2 w-2 rounded-full bg-[var(--color-primary)]" />
-                    AMERİKA&apos;NIN #1 TÜRK TOPLULUK PLATFORMU
-                  </span>
-                  <h1 className="mt-6 text-5xl font-black uppercase leading-[0.98] tracking-tight text-[var(--color-ink)] sm:text-6xl lg:text-7xl">
+                  <h1 className="text-[56px] font-black uppercase leading-[0.92] tracking-tight text-[var(--color-ink)] sm:text-[64px] lg:text-[72px]">
                     SENİ
                     <br />
                     BEKLEYENLER
                     <br />
                     <span className="text-[var(--color-primary)]">BURADA.</span>
                   </h1>
-                  <p className="mt-5 max-w-2xl text-lg text-[var(--color-ink-secondary)]">
+                  <p className="mt-6 max-w-[680px] text-lg text-[var(--color-ink-secondary)]">
                     Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
                   </p>
 
-                  <div ref={searchBoxRef} className="relative mt-8 max-w-4xl rounded-[24px] border border-[#E6D8CC] bg-white p-2 shadow-[0_20px_45px_-38px_rgba(17,17,17,0.9)]">
-                    <div className="grid gap-2 md:grid-cols-[1fr_auto_auto]">
-                      <div className="flex items-center gap-3 rounded-2xl px-4 py-2.5">
+                  <div
+                    ref={searchBoxRef}
+                    className="relative mt-8 w-full max-w-[710px] rounded-2xl border border-[#DECFC0] bg-white p-1.5 shadow-[0_10px_24px_-20px_rgba(17,17,17,0.4)]"
+                  >
+                    <div className="grid min-h-14 gap-0 md:grid-cols-[1fr_100px_116px]">
+                      <div className="flex items-center gap-3 px-5">
                         <Search className="h-5 w-5 text-[#C49A5C]" />
                         <input
                           value={searchQuery}
@@ -536,8 +535,17 @@ export default function Home() {
                         />
                       </div>
 
-                      <button type="button" className="rounded-2xl border border-[#E8DDD4] px-8 font-semibold text-[#403B36]">TÜM</button>
-                      <Button variant="primary" className="h-12 rounded-2xl bg-[var(--color-primary)] px-10 text-base font-bold uppercase tracking-wide hover:bg-[var(--color-primary-hover)]" onClick={onSearchSubmit}>
+                      <button
+                        type="button"
+                        className="rounded-[14px] border border-[#E3D6CA] bg-[#FBF8F4] px-6 text-base font-semibold text-[#403B36]"
+                      >
+                        TÜM
+                      </button>
+                      <Button
+                        variant="primary"
+                        className="h-full min-h-14 rounded-[14px] bg-[var(--color-primary)] px-8 text-base font-bold uppercase tracking-wide hover:bg-[var(--color-primary-hover)]"
+                        onClick={onSearchSubmit}
+                      >
                         {searching ? "Aranıyor..." : "ARA"}
                       </Button>
                     </div>
@@ -581,12 +589,12 @@ export default function Home() {
                     )}
                   </div>
 
-                  <div className="mt-5 flex flex-wrap gap-3">
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
                     {user ? (
                       <Button
                         variant="primary"
                         size="lg"
-                        className="rounded-2xl bg-[var(--color-ink)] px-7 font-semibold tracking-wide text-white shadow-[0_14px_26px_-18px_rgba(17,17,17,0.9)]"
+                        className="h-11 rounded-xl bg-[var(--color-ink)] px-7 text-sm font-semibold tracking-wide text-white shadow-[0_14px_26px_-18px_rgba(17,17,17,0.9)]"
                         onClick={() => setIsPostListingModalOpen(true)}
                       >
                         İlan Ver
@@ -594,9 +602,9 @@ export default function Home() {
                     ) : (
                       <Link href="/login">
                         <Button
-                          variant="primary"
+                          variant="ghost"
                           size="lg"
-                          className="h-11 rounded-2xl border border-[var(--color-border-strong)] bg-white px-8 text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-ink)] shadow-[0_14px_20px_-18px_rgba(17,17,17,0.35)] hover:bg-[var(--color-surface-raised)]"
+                          className="h-11 rounded-xl border border-black bg-transparent px-7 text-sm font-bold uppercase tracking-[0.08em] text-black shadow-none hover:bg-black/5"
                         >
                           GİRİŞ YAP
                         </Button>
@@ -604,9 +612,9 @@ export default function Home() {
                     )}
                     <Link href="#son-ilanlar">
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="lg"
-                        className="h-11 rounded-2xl bg-[var(--color-ink)] px-8 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_-18px_rgba(229,57,53,0.55)] hover:bg-black"
+                        className="h-11 rounded-xl bg-black px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_-18px_rgba(17,17,17,0.45)] hover:bg-black/90 hover:text-white"
                       >
                         PAYLAŞIMLARI GÖR →
                       </Button>
