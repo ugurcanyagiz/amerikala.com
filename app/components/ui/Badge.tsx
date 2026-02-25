@@ -10,12 +10,12 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
   ({ className = "", variant = "default", size = "md", children, ...props }, ref) => {
     const variants: Record<string, string> = {
       default: `
-        bg-brand-cream/60
-        text-gray-600
+        bg-[var(--color-surface-sunken)]
+        text-[var(--color-ink-secondary)]
       `,
       primary: `
-        bg-brand-earth/20
-        text-brand-earth
+        bg-[var(--color-primary-subtle)]
+        text-[var(--color-primary)]
       `,
       success: `
         bg-[var(--color-success-light)]
@@ -35,8 +35,8 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       `,
       outline: `
         bg-transparent
-        border border-brand-earth/40
-        text-gray-600
+        border border-[var(--color-border)]
+        text-[var(--color-ink-secondary)]
       `,
       destructive: `
         bg-[var(--color-error-light)]

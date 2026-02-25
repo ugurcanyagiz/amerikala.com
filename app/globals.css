@@ -16,8 +16,8 @@
        PRIMARY COLORS
        Sıcak Terracotta - Türk Kilimi İlhamı
        ───────────────────────────────────────── */
-    --color-primary: #e8271a;
-    --color-primary-hover: #c92116;
+    --color-primary: #E53935;
+    --color-primary-hover: #C62828;
     --color-primary-light: #F7DAD8;
     --color-primary-subtle: #FDF3F2;
     --color-primary-50: #FDF3F2;
@@ -42,7 +42,7 @@
     /* ─────────────────────────────────────────
        SURFACE COLORS (Backgrounds)
        ───────────────────────────────────────── */
-    --color-surface: #f5f0eb;
+    --color-surface: #F4EFEA;
     --color-surface-raised: #FBF7F3;
     --color-surface-sunken: #EEE7E1;
     --color-surface-overlay: rgba(0, 0, 0, 0.4);
@@ -50,14 +50,9 @@
     /* ─────────────────────────────────────────
        BORDER COLORS
        ───────────────────────────────────────── */
-    --color-border: #c8a88266;
-    --color-border-light: #c8a88266;
-    --color-border-strong: #c8a882;
-
-    --color-brand-red: #e8271a;
-    --color-brand-cream: #f5f0eb;
-    --color-brand-earth: #c8a882;
-    --color-brand-pine: #2a5c45;
+    --color-border: #E2D6CC;
+    --color-border-light: #ECE1D8;
+    --color-border-strong: #CFBFB2;
 
     /* ─────────────────────────────────────────
        SEMANTIC COLORS
