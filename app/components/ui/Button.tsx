@@ -11,8 +11,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className = "", variant = "primary", size = "md", loading = false, children, disabled, ...props }, ref) => {
     const baseStyles = `
       inline-flex items-center justify-center gap-2
-      font-medium tracking-tight
-      rounded-lg
+      font-semibold tracking-tight
+      rounded-xl
       transition-all duration-150 ease-out
       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2
       disabled:opacity-50 disabled:cursor-not-allowed
@@ -21,34 +21,34 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants: Record<string, string> = {
       primary: `
-        bg-gradient-to-r from-sky-500 to-blue-600 text-white
-        hover:from-sky-600 hover:to-blue-700
-        shadow-sm hover:shadow-md
+        bg-[var(--color-primary)] text-white
+        hover:bg-[var(--color-primary-hover)]
+        shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]
       `,
       secondary: `
         bg-[var(--color-surface-raised)] text-[var(--color-ink)]
-        border border-sky-100
-        hover:bg-[var(--color-surface-sunken)] hover:border-sky-200
+        border border-[var(--color-border)]
+        hover:bg-[var(--color-surface-sunken)] hover:border-[var(--color-border-strong)]
       `,
       ghost: `
         bg-transparent text-[var(--color-ink-secondary)]
         hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink)]
       `,
       outline: `
-        bg-transparent text-[var(--color-ink)]
-        border border-sky-200
-        hover:bg-[var(--color-surface-sunken)] hover:border-sky-300
+        bg-white text-[var(--color-ink)]
+        border border-[var(--color-border-strong)]
+        hover:bg-[var(--color-surface-raised)] hover:border-[var(--color-primary-300)]
       `,
       destructive: `
         bg-[var(--color-error)] text-white
         hover:bg-[var(--color-error)]/90
-        shadow-sm
+        shadow-[var(--shadow-sm)]
       `,
     };
 
     const sizes: Record<string, string> = {
-      sm: "h-8 px-3 text-sm",
-      md: "h-10 px-4 text-sm",
+      sm: "h-9 px-4 text-sm",
+      md: "h-10 px-5 text-sm",
       lg: "h-12 px-6 text-base",
       icon: "h-10 w-10 p-0",
     };
@@ -62,25 +62,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {loading ? (
           <>
-            <svg
-              className="h-4 w-4 animate-spin"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
             <span>Loading...</span>
           </>

@@ -11,7 +11,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     const variants: Record<string, string> = {
       default: `
         bg-[var(--color-surface)]
-        border border-sky-100
+        border border-[var(--color-border)]
         shadow-[var(--shadow-sm)]
       `,
       elevated: `
@@ -21,15 +21,15 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       `,
       interactive: `
         bg-[var(--color-surface)]
-        border border-sky-100
+        border border-[var(--color-border)]
         shadow-[var(--shadow-sm)]
         hover:shadow-[var(--shadow-md)]
-        hover:border-sky-200
+        hover:border-[var(--color-border-strong)]
         transition-all duration-200 ease-out
         cursor-pointer
       `,
       glass: `
-        bg-white/80 dark:bg-neutral-900/80
+        bg-[var(--color-surface-raised)]/90
         backdrop-blur-md
         border border-[var(--color-border-light)]
         shadow-[var(--shadow-sm)]
