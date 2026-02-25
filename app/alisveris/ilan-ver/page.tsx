@@ -16,6 +16,9 @@ import {
 import Sidebar from "@/app/components/Sidebar";
 import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent } from "@/app/components/ui/Card";
+import { Input } from "@/app/components/ui/Input";
+import { Select } from "@/app/components/ui/Select";
+import { Textarea } from "@/app/components/ui/Textarea";
 import {
   ArrowLeft,
   ShoppingBag,
@@ -267,28 +270,24 @@ export default function AlisverisIlanVerPage() {
                   <label className="block text-sm font-medium mb-2">
                     İlan Başlığı <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <Input
                     type="text"
                     value={formData.title}
                     onChange={(e) => handleChange("title", e.target.value)}
                     placeholder="Örn: iPhone 14 Pro Max - 256GB"
-                    className={`w-full px-4 py-3 rounded-xl border ${
-                      errors.title ? "border-red-500" : "border-neutral-200 dark:border-neutral-700"
-                    } bg-white dark:bg-neutral-900`}
+                    error={errors.title}
                     maxLength={100}
                   />
-                  {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
                 </div>
 
                 {/* Description */}
                 <div>
                   <label className="block text-sm font-medium mb-2">Açıklama</label>
-                  <textarea
+                  <Textarea
                     value={formData.description}
                     onChange={(e) => handleChange("description", e.target.value)}
                     placeholder="Ürün hakkında detaylı bilgi..."
                     rows={4}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"
                     maxLength={2000}
                   />
                 </div>
@@ -297,15 +296,11 @@ export default function AlisverisIlanVerPage() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">Durumu</label>
-                    <select
+                    <Select
                       value={formData.condition}
                       onChange={(e) => handleChange("condition", e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"
-                    >
-                      {Object.entries(MARKETPLACE_CONDITION_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
-                    </select>
+                      options={Object.entries(MARKETPLACE_CONDITION_LABELS).map(([value, label]) => ({ value, label }))}
+                    />
                   </div>
 
                   <div>
@@ -314,14 +309,13 @@ export default function AlisverisIlanVerPage() {
                     </label>
                     <div className="relative">
                       <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={20} />
-                      <input
+                      <Input
                         type="number"
                         value={formData.price}
                         onChange={(e) => handleChange("price", e.target.value)}
                         placeholder="0"
-                        className={`w-full pl-10 pr-4 py-3 rounded-xl border ${
-                          errors.price ? "border-red-500" : "border-neutral-200 dark:border-neutral-700"
-                        } bg-white dark:bg-neutral-900`}
+                        className="pl-10"
+                        error={errors.price}
                       />
                     </div>
                     {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
@@ -348,16 +342,13 @@ export default function AlisverisIlanVerPage() {
                     <label className="block text-sm font-medium mb-2">
                       Şehir <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <Input
                       type="text"
                       value={formData.city}
                       onChange={(e) => handleChange("city", e.target.value)}
                       placeholder="Örn: New York"
-                      className={`w-full px-4 py-3 rounded-xl border ${
-                        errors.city ? "border-red-500" : "border-neutral-200 dark:border-neutral-700"
-                      } bg-white dark:bg-neutral-900`}
+                      error={errors.city}
                     />
-                    {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
                   </div>
 
                   <div>
@@ -462,12 +453,12 @@ export default function AlisverisIlanVerPage() {
                       <label className="block text-sm font-medium mb-2">E-posta</label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                        <input
+                        <Input
                           type="email"
                           value={formData.contact_email}
                           onChange={(e) => handleChange("contact_email", e.target.value)}
                           placeholder="ornek@email.com"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+                          className="pl-10"
                         />
                       </div>
                     </div>
@@ -476,12 +467,12 @@ export default function AlisverisIlanVerPage() {
                       <label className="block text-sm font-medium mb-2">Telefon</label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                        <input
+                        <Input
                           type="tel"
                           value={formData.contact_phone}
                           onChange={(e) => handleChange("contact_phone", e.target.value)}
                           placeholder="+1 (555) 123-4567"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+                          className="pl-10"
                         />
                       </div>
                     </div>
