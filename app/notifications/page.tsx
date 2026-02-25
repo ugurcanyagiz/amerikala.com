@@ -4,6 +4,34 @@ import NotificationsCenter from "./NotificationsCenter";
 import { createClient } from "@/lib/supabase/server";
 import { mapEventTypeToCategory, type NotificationListResponse } from "@/lib/notifications";
 
+interface NotificationRow {
+  id: string;
+  event_type: string;
+  title: string;
+  body: string;
+  action_url: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  read_at: string | null;
+  seen_at: string | null;
+  archived_at: string | null;
+  actor_user_id: string | null;
+}
+
+interface ActorProfileRow {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+}
+
+function buildDisplayName(profile?: ActorProfileRow) {
+  if (!profile) return "Kullanıcı";
+  return [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim() || profile.full_name || profile.username || "Kullanıcı";
+}
+
 async function getInitialNotifications(): Promise<NotificationListResponse> {
   const supabase = await createClient();
   const {
@@ -16,18 +44,27 @@ async function getInitialNotifications(): Promise<NotificationListResponse> {
 
   const { data, count } = await supabase
     .from("notifications")
-    .select(
-      "id, event_type, title, body, action_url, metadata, created_at, read_at, seen_at, archived_at, actor_user_id, profiles:actor_user_id(id, first_name, last_name, full_name, username, avatar_url)",
-      { count: "exact" }
-    )
+    .select("id, event_type, title, body, action_url, metadata, created_at, read_at, seen_at, archived_at, actor_user_id", { count: "exact" })
     .eq("recipient_user_id", user.id)
     .is("archived_at", null)
     .order("created_at", { ascending: false })
     .range(0, 19);
 
-  const items = (data ?? []).map((row) => {
-    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-    const actorName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim() || profile?.full_name || profile?.username || "Kullanıcı";
+  const rows = (data ?? []) as NotificationRow[];
+  const actorIds = Array.from(new Set(rows.map((row) => row.actor_user_id).filter((value): value is string => Boolean(value))));
+
+  let profileById = new Map<string, ActorProfileRow>();
+  if (actorIds.length > 0) {
+    const { data: profileRows } = await supabase
+      .from("profiles")
+      .select("id, first_name, last_name, full_name, username, avatar_url")
+      .in("id", actorIds);
+
+    profileById = new Map(((profileRows ?? []) as ActorProfileRow[]).map((row) => [row.id, row]));
+  }
+
+  const items = rows.map((row) => {
+    const profile = row.actor_user_id ? profileById.get(row.actor_user_id) : undefined;
 
     return {
       id: row.id,
@@ -36,7 +73,7 @@ async function getInitialNotifications(): Promise<NotificationListResponse> {
       title: row.title,
       body: row.body,
       actionUrl: row.action_url,
-      metadata: (row.metadata as Record<string, unknown>) ?? {},
+      metadata: row.metadata ?? {},
       createdAt: row.created_at,
       readAt: row.read_at,
       seenAt: row.seen_at,
@@ -47,7 +84,7 @@ async function getInitialNotifications(): Promise<NotificationListResponse> {
       actor: row.actor_user_id
         ? {
             id: row.actor_user_id,
-            name: actorName,
+            name: buildDisplayName(profile),
             avatarUrl: profile?.avatar_url ?? null,
           }
         : null,

@@ -11,20 +11,20 @@ import { getTimeAgo, type NotificationCategory, type NotificationItem, type Noti
 import { useNotifications } from "@/app/contexts/NotificationContext";
 
 const TABS: Array<{ value: NotificationCategory; label: string }> = [
-  { value: "all", label: "All" },
-  { value: "mentions", label: "Mentions" },
-  { value: "comments", label: "Comments" },
-  { value: "follows", label: "Follows" },
-  { value: "system", label: "System" },
+  { value: "all", label: "Tümü" },
+  { value: "mentions", label: "Bahsetmeler" },
+  { value: "comments", label: "Yorumlar" },
+  { value: "follows", label: "Takipler" },
+  { value: "system", label: "Sistem" },
 ];
 
 function dateBucket(date: string) {
   const now = new Date();
   const d = new Date(date);
   const diffDays = (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24);
-  if (diffDays < 1) return "Today";
-  if (diffDays < 7) return "This week";
-  return "Earlier";
+  if (diffDays < 1) return "Bugün";
+  if (diffDays < 7) return "Bu hafta";
+  return "Daha eski";
 }
 
 export default function NotificationsCenter({ initialData }: { initialData: NotificationListResponse }) {
@@ -98,15 +98,15 @@ export default function NotificationsCenter({ initialData }: { initialData: Noti
         <CardContent className="p-5 sm:p-6 flex flex-col gap-4">
           <div className="flex flex-wrap gap-3 items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold flex items-center gap-2"><Bell className="w-6 h-6 text-red-500" /> Notifications</h1>
-              <p className="text-sm text-neutral-500 mt-1">{unreadCount} unread · {total} total</p>
+              <h1 className="text-2xl font-semibold flex items-center gap-2"><Bell className="w-6 h-6 text-red-500" /> Bildirimler</h1>
+              <p className="text-sm text-neutral-500 mt-1">{unreadCount} okunmamış · toplam {total}</p>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => void runAction("mark_all_read")} disabled={loading || items.length === 0}>
-                <CheckCheck className="w-4 h-4 mr-2" /> Mark all read
+                <CheckCheck className="w-4 h-4 mr-2" /> Tümünü okundu yap
               </Button>
               <Button variant="outline" onClick={() => void runAction("archive_selected", Array.from(selected))} disabled={loading || selected.size === 0}>
-                <Archive className="w-4 h-4 mr-2" /> Archive selected
+                <Archive className="w-4 h-4 mr-2" /> Seçilenleri arşivle
               </Button>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function NotificationsCenter({ initialData }: { initialData: Noti
                 setQuery(next);
                 void loadPage(0, false);
               }}
-              placeholder="Search notifications"
+              placeholder="Bildirimlerde ara"
               className="w-full rounded-lg border border-neutral-300 pl-10 pr-3 py-2 text-sm"
             />
           </div>
@@ -149,9 +149,9 @@ export default function NotificationsCenter({ initialData }: { initialData: Noti
       )}
 
       {loading && items.length === 0 ? (
-        <Card><CardContent className="p-10 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />Loading...</CardContent></Card>
+        <Card><CardContent className="p-10 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />Yükleniyor...</CardContent></Card>
       ) : filtered.length === 0 ? (
-        <Card><CardContent className="p-10 text-center text-neutral-500">No notifications found.</CardContent></Card>
+        <Card><CardContent className="p-10 text-center text-neutral-500">Bildirim bulunamadı.</CardContent></Card>
       ) : (
         Object.entries(grouped).map(([bucket, bucketItems]) => (
           <section key={bucket} className="space-y-3">
@@ -161,7 +161,7 @@ export default function NotificationsCenter({ initialData }: { initialData: Noti
                 <CardContent className="p-4 flex gap-3">
                   <input
                     type="checkbox"
-                    aria-label="Select notification"
+                    aria-label="Bildirimi seç"
                     checked={selected.has(item.id)}
                     onChange={(event) => {
                       setSelected((prev) => {
@@ -181,12 +181,12 @@ export default function NotificationsCenter({ initialData }: { initialData: Noti
                         <p className="text-sm text-neutral-600 mt-0.5">{item.body}</p>
                         <p className="text-xs text-neutral-400 mt-1">{getTimeAgo(item.createdAt)}</p>
                       </div>
-                      {!item.isRead && <Badge variant="primary">New</Badge>}
+                      {!item.isRead && <Badge variant="primary">Yeni</Badge>}
                     </div>
                     <div className="mt-3 flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => void runAction("mark_read", [item.id])} disabled={item.isRead || loading}>Mark read</Button>
-                      <Button size="sm" variant="outline" onClick={() => void runAction("archive_selected", [item.id])} disabled={loading}>Archive</Button>
-                      <Link href={item.actionUrl ?? "/notifications"} className="text-sm text-blue-600 hover:underline inline-flex items-center">View</Link>
+                      <Button size="sm" variant="outline" onClick={() => void runAction("mark_read", [item.id])} disabled={item.isRead || loading}>Okundu yap</Button>
+                      <Button size="sm" variant="outline" onClick={() => void runAction("archive_selected", [item.id])} disabled={loading}>Arşivle</Button>
+                      <Link href={item.actionUrl ?? "/notifications"} className="text-sm text-blue-600 hover:underline inline-flex items-center">Görüntüle</Link>
                     </div>
                   </div>
                 </CardContent>
@@ -199,7 +199,7 @@ export default function NotificationsCenter({ initialData }: { initialData: Noti
       {hasMore && (
         <div className="flex justify-center">
           <Button variant="outline" onClick={() => void loadPage(items.length, true)} disabled={loading}>
-            {loading ? "Loading..." : "Load more"}
+            {loading ? "Yükleniyor..." : "Daha fazla yükle"}
           </Button>
         </div>
       )}

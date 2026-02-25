@@ -933,7 +933,7 @@ export default function Navbar() {
                                   </p>
                                 </div>
                                 <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${getNotificationTypeClasses(notification.type)}`}>
-                                  {notification.type === "mentions" ? "Mention" : notification.type === "comments" ? "Yorum" : notification.type === "follows" ? "Takip" : "Sistem"}
+                                  {notification.type === "mentions" ? "Bahsetme" : notification.type === "comments" ? "Yorum" : notification.type === "follows" ? "Takip" : "Sistem"}
                                 </span>
                               </Link>
                             ))
