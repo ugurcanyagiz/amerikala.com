@@ -741,7 +741,7 @@ export default function Navbar() {
   return (
     <>
       <header className="hidden md:block sticky top-0 z-40 w-full border-b border-[var(--color-border-light)] bg-[var(--color-surface)]/95 backdrop-blur-xl">
-        <div className="mx-auto max-w-[1400px] px-4">
+        <div className="app-page-container py-0">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 flex-shrink-0" aria-label="Amerikala ana sayfa">

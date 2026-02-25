@@ -219,7 +219,7 @@ export default function AlisverisIlanVerPage() {
         <Sidebar />
 
         <main className="flex-1">
-          <div className="max-w-3xl mx-auto px-4 py-8">
+          <div className="app-page-container max-w-3xl py-8">
             {/* Header */}
             <div className="flex items-center gap-4 mb-8">
               <Link href="/alisveris">

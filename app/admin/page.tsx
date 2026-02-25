@@ -509,7 +509,7 @@ export default function AdminPage() {
 
   return (
     <div className="bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 min-h-[calc(100vh-65px)]">
-      <div className="max-w-[1400px] mx-auto px-4 py-6 lg:px-6 lg:py-8">
+      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-8 lg:px-12 lg:py-8">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
           <aside className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 h-fit lg:sticky lg:top-20">
             <div className="mb-6 border-b border-neutral-200 pb-4 dark:border-neutral-800">

@@ -524,19 +524,20 @@
     width: 100%;
     max-width: 80rem;
     margin-inline: auto;
-    padding: 1.5rem 1rem;
+    padding-block: 1.5rem;
+    padding-inline: 1rem;
   }
 
   @media (min-width: 640px) {
     .app-page-container {
-      padding-inline: 1.5rem;
       padding-block: 2rem;
+      padding-inline: 2rem;
     }
   }
 
   @media (min-width: 1024px) {
     .app-page-container {
-      padding-inline: 2rem;
+      padding-inline: 3rem;
     }
   }
 

@@ -336,7 +336,8 @@ export default function FeedPage() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 md:pb-6">
-      <main className="max-w-2xl mx-auto px-4 py-6">
+      <main className="app-page-container">
+        <div className="mx-auto w-full max-w-2xl">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Feed</h1>
@@ -458,6 +459,7 @@ export default function FeedPage() {
             ))}
           </div>
         )}
+        </div>
       </main>
     </div>
   );

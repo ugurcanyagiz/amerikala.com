@@ -3,7 +3,7 @@ import Sidebar from "./Sidebar";
 
 export default function AppShell({
   children,
-  mainClassName = "app-page-container",
+  mainClassName = "",
 }: {
   children: ReactNode;
   mainClassName?: string;
@@ -12,7 +12,7 @@ export default function AppShell({
     <div className="ak-page">
       <div className="app-shell">
         <Sidebar />
-        <main className={`app-shell-main ${mainClassName}`}>{children}</main>
+        <main className={`app-shell-main app-page-container ${mainClassName}`.trim()}>{children}</main>
       </div>
     </div>
   );

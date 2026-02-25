@@ -574,8 +574,8 @@ export default function PublicProfilePage() {
 
   if (isRestricted) {
     return (
-      <div className="ak-page overflow-x-hidden py-8 px-4">
-        <div className="max-w-3xl mx-auto space-y-5">
+      <div className="ak-page overflow-x-hidden">
+        <div className="app-page-container max-w-3xl space-y-5 py-8">
           <Link href="/people" className="inline-flex"><Button variant="secondary" size="sm" className="gap-2"><ArrowLeft size={16} />Kişilere Geri Dön</Button></Link>
           <Card className="glass">
             <CardContent className="p-6 text-center space-y-3">
@@ -589,8 +589,8 @@ export default function PublicProfilePage() {
   }
 
   return (
-    <div className="ak-page overflow-x-hidden py-8 px-4">
-      <div className="max-w-3xl mx-auto space-y-5">
+    <div className="ak-page overflow-x-hidden">
+      <div className="app-page-container max-w-3xl space-y-5 py-8">
         <Link href="/people" className="inline-flex">
           <Button variant="secondary" size="sm" className="gap-2"><ArrowLeft size={16} />Kişilere Geri Dön</Button>
         </Link>

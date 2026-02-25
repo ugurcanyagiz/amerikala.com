@@ -477,7 +477,7 @@ export default function Home() {
 
         <main className="relative z-10 flex-1">
           <section className="relative overflow-hidden border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
-            <div className="relative mx-auto max-w-7xl px-6 pb-10 pt-12 sm:px-8 lg:px-14">
+            <div className="app-page-container relative pt-12 pb-10 sm:pb-12">
               <div className="max-w-[760px]">
                 <div>
                   <h1 className="text-[56px] font-black uppercase leading-[0.92] tracking-tight text-[var(--color-ink)] sm:text-[64px] lg:text-[72px]">
@@ -647,7 +647,7 @@ export default function Home() {
             </div>
           </Modal>
 
-          <section className="mx-auto max-w-7xl px-4 py-12 sm:px-8 lg:px-12">
+          <section className="app-page-container py-12">
             <div className="rounded-3xl border border-[var(--color-border-light)] bg-[#F8F3EE] p-4 shadow-[0_22px_45px_-40px_rgba(15,23,42,0.55)] sm:p-6">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
@@ -728,7 +728,7 @@ export default function Home() {
           <AdsSection title="Öne Çıkan İlanlar" items={featuredAds} loading={loading} />
 
           <section id="son-ilanlar" className="bg-[var(--color-surface)] py-14 scroll-mt-24">
-            <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
+            <div className="app-page-container py-0">
               <div className="mb-7 flex items-end justify-between">
                 <div>
                   <h2 className="text-3xl font-bold text-[var(--color-ink)]">Son İlanlar</h2>
@@ -771,7 +771,7 @@ function AdsSection({
 }) {
   return (
     <section className="bg-[var(--color-surface)] py-14">
-      <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
+      <div className="app-page-container py-0">
         <div className="mb-7 text-center">
           <h2 className="text-3xl font-bold text-[var(--color-ink)]">{title}</h2>
           {subtitle && <p className="mt-1 text-[#6C645E]">{subtitle}</p>}
