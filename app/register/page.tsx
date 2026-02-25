@@ -275,12 +275,12 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-[calc(100vh-65px)] flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
-      <Card variant="elevated" className="w-full max-w-md">
+    <main className="min-h-[calc(100vh-65px)] flex items-center justify-center p-4 sm:p-6 bg-[var(--color-surface)]">
+      <Card variant="elevated" className="w-full max-w-md bg-[var(--color-surface-raised)] border border-[var(--color-border-light)]">
         <CardHeader>
           <div className="flex items-center justify-center mb-4">
             <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
-              <User className="w-6 h-6 text-white" />
+              <User className="w-6 h-6 text-[var(--color-ink-inverse)]" />
             </div>
           </div>
           <CardTitle className="text-center">Hesap Oluştur</CardTitle>
@@ -324,7 +324,7 @@ export default function RegisterPage() {
               disabled={status === "loading" || status === "success"}
             />
           </div>
-          <p className="text-xs text-neutral-500 -mt-3 flex items-center gap-1">
+          <p className="text-xs text-[var(--color-ink-tertiary)] -mt-3 flex items-center gap-1">
             <AlertCircle className="w-3 h-3" />
             İsim ve soyisim kayıt sonrası değiştirilemez
           </p>
@@ -342,7 +342,7 @@ export default function RegisterPage() {
               disabled={status === "loading" || status === "success"}
             />
             {cleanUsername && !errors.username && (
-              <p className="mt-1.5 text-xs text-neutral-500">
+              <p className="mt-1.5 text-xs text-[var(--color-ink-tertiary)]">
                 Profil adresiniz: @{cleanUsername}
               </p>
             )}
@@ -358,7 +358,7 @@ export default function RegisterPage() {
               error={errors.state}
               disabled={status === "loading" || status === "success"}
             />
-            <p className="mt-1.5 text-xs text-neutral-500 flex items-center gap-1">
+            <p className="mt-1.5 text-xs text-[var(--color-ink-tertiary)] flex items-center gap-1">
               <MapPin className="w-3 h-3" />
               Yaşadığınız eyalet. Sonra değiştirebilirsiniz.
             </p>
@@ -380,7 +380,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-9 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+                className="absolute right-3 top-9 text-[var(--color-ink-tertiary)] hover:text-[var(--color-ink-secondary)]"
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -396,12 +396,12 @@ export default function RegisterPage() {
                       className={`h-1 flex-1 rounded-full transition-all ${
                         level <= passwordStrength.score
                           ? passwordStrength.color
-                          : "bg-neutral-200 dark:bg-neutral-700"
+                          : "bg-[var(--color-border)]"
                       }`}
                     />
                   ))}
                 </div>
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-[var(--color-ink-tertiary)]">
                   Şifre gücü: {passwordStrength.label}
                 </p>
               </div>
@@ -423,7 +423,7 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-9 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+              className="absolute right-3 top-9 text-[var(--color-ink-tertiary)] hover:text-[var(--color-ink-secondary)]"
               tabIndex={-1}
             >
               {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -436,15 +436,15 @@ export default function RegisterPage() {
               type="checkbox"
               checked={acceptTerms}
               onChange={(e) => setAcceptTerms(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-neutral-300 text-red-600 focus:ring-red-500"
+              className="mt-1 h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
               disabled={status === "loading" || status === "success"}
             />
-            <span className="text-sm text-neutral-600 dark:text-neutral-400">
-              <Link href="/yasal-rehber" className="text-red-600 hover:underline">
+            <span className="text-sm text-[var(--color-ink-secondary)]">
+              <Link href="/yasal-rehber" className="text-[var(--color-primary)] hover:underline">
                 Kullanım Şartları
               </Link>
               {" "}ve{" "}
-              <Link href="/yasal-rehber" className="text-red-600 hover:underline">
+              <Link href="/yasal-rehber" className="text-[var(--color-primary)] hover:underline">
                 Gizlilik Politikası
               </Link>
               &apos;nı okudum ve kabul ediyorum.
@@ -456,10 +456,10 @@ export default function RegisterPage() {
             <div
               className={`flex items-center gap-2 p-3 rounded-lg text-sm ${
                 status === "success"
-                  ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                  ? "bg-[var(--color-success-light)] text-[var(--color-success)]"
                   : status === "error"
-                  ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-                  : "bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                  ? "bg-[var(--color-error-light)] text-[var(--color-error)]"
+                  : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-secondary)]"
               }`}
             >
               {status === "success" ? (
@@ -495,11 +495,11 @@ export default function RegisterPage() {
           </Button>
 
           {/* Login link */}
-          <p className="text-center text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-center text-sm text-[var(--color-ink-secondary)]">
             Zaten hesabınız var mı?{" "}
             <Link
               href="/login"
-              className="text-red-600 hover:text-red-700 font-medium hover:underline"
+              className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium hover:underline"
             >
               Giriş Yapın
             </Link>
