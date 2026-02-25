@@ -53,20 +53,25 @@ export default function NotificationsPage() {
   }, [deleteNotification]);
 
   const followInsert = useCallback(async (targetUserId: string) => {
-    if (!user?.id) return false;
+    if (!user?.id || targetUserId === user.id) return false;
 
-    const pairs = [
-      { from: "follower_id", to: "following_id" },
-      { from: "user_id", to: "target_user_id" },
-      { from: "user_id", to: "followed_user_id" },
-    ] as const;
+    const { error: upsertError } = await supabase
+      .from("follows")
+      .upsert(
+        { follower_id: user.id, following_id: targetUserId },
+        { onConflict: "follower_id,following_id", ignoreDuplicates: true }
+      );
 
-    for (const pair of pairs) {
-      const { error: insertError } = await supabase.from("follows").insert({ [pair.from]: user.id, [pair.to]: targetUserId });
-      if (!insertError) return true;
+    if (upsertError) {
+      if (upsertError.code === "23505") {
+        return true;
+      }
+
+      console.error("Takip kaydı oluşturulamadı:", upsertError);
+      return false;
     }
 
-    return false;
+    return true;
   }, [user?.id]);
 
   const handleFriendRequestAction = useCallback(async (notification: AppNotification, action: "accept" | "reject") => {

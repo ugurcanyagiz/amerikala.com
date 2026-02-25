@@ -19,6 +19,8 @@ import { ProfileStats, ProfileTab, PublicProfile, UserListItem, getDisplayName }
 const PAGE_SIZE = 8;
 const FOLLOW_COLUMNS = { from: "follower_id", to: "following_id" } as const;
 
+const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
 const getFriendlyError = (error: { code?: string; message?: string } | null) => {
   if (!error) return null;
   if (error.code === "42501" || error.message?.includes("403")) {
@@ -112,11 +114,14 @@ export default function PublicProfilePage() {
       setLoading(true);
 
       const baseSelect = "id, username, full_name, first_name, last_name, bio, avatar_url, city, state, is_verified, is_blocked";
-      const { data: byIdData, error: byIdError } = await supabase.from("profiles").select(baseSelect).eq("id", id).single();
-      if (!byIdError && byIdData) {
-        setProfile(byIdData as PublicProfile);
-        setLoading(false);
-        return;
+
+      if (isUuid(id)) {
+        const { data: byIdData, error: byIdError } = await supabase.from("profiles").select(baseSelect).eq("id", id).single();
+        if (!byIdError && byIdData) {
+          setProfile(byIdData as PublicProfile);
+          setLoading(false);
+          return;
+        }
       }
 
       const { data: byUsernameData, error: byUsernameError } = await supabase.from("profiles").select(baseSelect).eq("username", id).single();
