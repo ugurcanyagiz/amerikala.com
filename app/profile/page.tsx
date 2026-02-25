@@ -129,14 +129,25 @@ export default function ProfilePage() {
 
   // Fetch stats
   useEffect(() => {
-    if (!user || !profile) return;
+    if (!user?.id) return;
 
     const fetchStats = async () => {
       try {
-        setStats(prev => ({
+        const [followersResult, followingResult] = await Promise.all([
+          supabase
+            .from("follows")
+            .select("*", { count: "exact", head: true })
+            .eq(FOLLOW_COLUMNS.to, user.id),
+          supabase
+            .from("follows")
+            .select("*", { count: "exact", head: true })
+            .eq(FOLLOW_COLUMNS.from, user.id),
+        ]);
+
+        setStats((prev) => ({
           ...prev,
-          followers: profile.follower_count ?? 0,
-          following: profile.following_count ?? 0,
+          followers: followersResult.count || 0,
+          following: followingResult.count || 0,
         }));
 
         // Fetch group memberships count - with error handling
@@ -146,12 +157,12 @@ export default function ProfilePage() {
             .select("*", { count: "exact", head: true })
             .eq("user_id", user.id)
             .eq("status", "approved");
-          
-          setStats(prev => ({ ...prev, groups: groupCount || 0 }));
+
+          setStats((prev) => ({ ...prev, groups: groupCount || 0 }));
         } catch {
           // Table might not exist
         }
-        
+
         // Fetch event attendances count - with error handling
         try {
           const { count: eventCount } = await supabase
@@ -159,7 +170,7 @@ export default function ProfilePage() {
             .select("*", { count: "exact", head: true })
             .eq("user_id", user.id);
 
-          setStats(prev => ({ ...prev, events: eventCount || 0 }));
+          setStats((prev) => ({ ...prev, events: eventCount || 0 }));
         } catch {
           // Table might not exist
         }
@@ -169,7 +180,7 @@ export default function ProfilePage() {
     };
 
     fetchStats();
-  }, [user, profile]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) return;
