@@ -22,6 +22,12 @@ export interface AppNotification {
   isRead: boolean;
   actionUrl?: string;
   actionLabel?: string;
+  friendRequest?: {
+    requesterId: string;
+    receiverId: string;
+    status: "pending" | "accepted" | "rejected" | "cancelled";
+    isIncoming: boolean;
+  };
 }
 
 interface NotificationContextType {
@@ -438,6 +444,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             isRead: readSet.has(id),
             actionUrl: `/profile/${actor?.username || actorId}`,
             actionLabel: "Profili Gör",
+            friendRequest: {
+              requesterId: request.requester_id,
+              receiverId: request.receiver_id,
+              status: request.status as "pending" | "accepted" | "rejected" | "cancelled",
+              isIncoming,
+            },
           };
         });
 
