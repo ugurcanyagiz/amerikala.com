@@ -35,6 +35,17 @@ interface NotificationContextType {
   refreshNotifications: () => Promise<void>;
 }
 
+const getNotificationTimestamp = (notification: Pick<AppNotification, "createdAt">) => {
+  const timestamp = new Date(notification.createdAt).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+};
+
+const compareNotifications = (a: AppNotification, b: AppNotification) => {
+  const timestampDiff = getNotificationTimestamp(b) - getNotificationTimestamp(a);
+  if (timestampDiff !== 0) return timestampDiff;
+  return a.id.localeCompare(b.id);
+};
+
 const NotificationContext = createContext<NotificationContextType>({
   notifications: [],
   unreadCount: 0,
@@ -84,6 +95,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [notificationStateHydrated, setNotificationStateHydrated] = useState(false);
   const readIdsRef = useRef(readIds);
   const dismissedIdsRef = useRef(dismissedIds);
   const refreshInFlightRef = useRef(false);
@@ -124,19 +136,32 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setReadIds(new Set());
       setDismissedIds(new Set());
       setNotifications([]);
+      readIdsRef.current = new Set();
+      dismissedIdsRef.current = new Set();
+      setNotificationStateHydrated(false);
       return;
     }
 
     try {
       const storedRead = window.localStorage.getItem(storageKeys.read(userId));
       const storedDismissed = window.localStorage.getItem(storageKeys.dismissed(userId));
+      const nextReadIds = new Set(storedRead ? JSON.parse(storedRead) : []);
+      const nextDismissedIds = new Set(storedDismissed ? JSON.parse(storedDismissed) : []);
 
-      setReadIds(new Set(storedRead ? JSON.parse(storedRead) : []));
-      setDismissedIds(new Set(storedDismissed ? JSON.parse(storedDismissed) : []));
+      readIdsRef.current = nextReadIds;
+      dismissedIdsRef.current = nextDismissedIds;
+      setReadIds(nextReadIds);
+      setDismissedIds(nextDismissedIds);
     } catch (error) {
       console.error("Bildirim durumları yüklenemedi:", error);
-      setReadIds(new Set());
-      setDismissedIds(new Set());
+      const fallbackReadIds = new Set<string>();
+      const fallbackDismissedIds = new Set<string>();
+      readIdsRef.current = fallbackReadIds;
+      dismissedIdsRef.current = fallbackDismissedIds;
+      setReadIds(fallbackReadIds);
+      setDismissedIds(fallbackDismissedIds);
+    } finally {
+      setNotificationStateHydrated(true);
     }
   }, [authLoading, userId]);
 
@@ -157,6 +182,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
 
     if (authLoading) {
+      return;
+    }
+
+    if (!notificationStateHydrated) {
       return;
     }
 
@@ -312,18 +341,33 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         });
 
       const dedupedById = new Map<string, AppNotification>();
+      const readIdsSnapshot = readIdsRef.current;
 
       [...likeNotifications, ...commentNotifications, ...attendeeNotifications].forEach((notification) => {
-        const existing = dedupedById.get(notification.id);
+        const candidate = readIdsSnapshot.has(notification.id) && !notification.isRead ? { ...notification, isRead: true } : notification;
+        const existing = dedupedById.get(candidate.id);
 
-        if (!existing || new Date(notification.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
-          dedupedById.set(notification.id, notification);
+        if (!existing) {
+          dedupedById.set(candidate.id, candidate);
+          return;
+        }
+
+        const nextTimestamp = getNotificationTimestamp(candidate);
+        const existingTimestamp = getNotificationTimestamp(existing);
+
+        if (nextTimestamp > existingTimestamp) {
+          dedupedById.set(candidate.id, candidate);
+          return;
+        }
+
+        if (nextTimestamp === existingTimestamp && candidate.id.localeCompare(existing.id) < 0) {
+          dedupedById.set(candidate.id, candidate);
         }
       });
 
       const merged = Array.from(dedupedById.values())
         .filter((notification) => !dismissedIdsRef.current.has(notification.id))
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        .sort(compareNotifications);
 
       setNotifications(merged);
       devLog("notifications", "refresh:set", { userId, count: merged.length });
@@ -344,7 +388,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         void refreshNotifications();
       }
     }
-  }, [authLoading, userId]);
+  }, [authLoading, notificationStateHydrated, userId]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -353,11 +397,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    if (!notificationStateHydrated) {
+      return;
+    }
+
     void refreshNotifications();
-  }, [authLoading, refreshNotifications, userId]);
+  }, [authLoading, notificationStateHydrated, refreshNotifications, userId]);
 
   useEffect(() => {
-    if (authLoading || !userId) return;
+    if (authLoading || !userId || !notificationStateHydrated) return;
 
     const channel = supabase
       .channel(`notifications-${userId}`)
@@ -375,10 +423,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [authLoading, refreshNotifications, userId]);
+  }, [authLoading, notificationStateHydrated, refreshNotifications, userId]);
 
   const markAsRead = useCallback((id: string) => {
-    setReadIds((prev) => new Set(prev).add(id));
+    setReadIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      readIdsRef.current = next;
+      return next;
+    });
+
     setNotifications((prev) => prev.map((notification) => (notification.id === id ? { ...notification, isRead: true } : notification)));
   }, []);
 
@@ -386,6 +441,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setReadIds((prev) => {
       const next = new Set(prev);
       notifications.forEach((notification) => next.add(notification.id));
+      readIdsRef.current = next;
       return next;
     });
 
