@@ -596,9 +596,9 @@ export default function Home() {
                         <Button
                           variant="primary"
                           size="lg"
-                          className="rounded-2xl border border-[#DCCFC3] bg-white px-7 font-semibold text-[var(--color-ink)] shadow-[0_12px_20px_-16px_rgba(17,17,17,0.5)]"
+                          className="h-11 rounded-2xl border border-[var(--color-border-strong)] bg-white px-8 text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-ink)] shadow-[0_14px_20px_-18px_rgba(17,17,17,0.35)] hover:bg-[var(--color-surface-raised)]"
                         >
-                          Giriş Yap
+                          GİRİŞ YAP
                         </Button>
                       </Link>
                     )}
@@ -606,9 +606,9 @@ export default function Home() {
                       <Button
                         variant="outline"
                         size="lg"
-                        className="rounded-2xl bg-[var(--color-primary)] px-7 font-semibold text-white shadow-[0_16px_24px_-18px_rgba(229,57,53,0.95)] hover:bg-[var(--color-primary-hover)]"
+                        className="h-11 rounded-2xl bg-[var(--color-ink)] px-8 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_-18px_rgba(229,57,53,0.55)] hover:bg-black"
                       >
-                        Paylaşımları Gör →
+                        PAYLAŞIMLARI GÖR →
                       </Button>
                     </Link>
                   </div>
