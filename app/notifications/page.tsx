@@ -21,7 +21,7 @@ import { Avatar } from "../components/ui/Avatar";
 import { Badge } from "../components/ui/Badge";
 import { AppNotification, getTimeAgo, useNotifications } from "../contexts/NotificationContext";
 
-type NotificationType = "all" | "likes" | "comments" | "events";
+type NotificationType = "all" | "likes" | "comments" | "events" | "friends" | "groups";
 
 export default function NotificationsPage() {
   const { notifications, unreadCount, markAllAsRead, markAsRead, deleteNotification, refreshNotifications, loading, error } = useNotifications();
@@ -31,6 +31,8 @@ export default function NotificationsPage() {
     { value: "likes", label: "Beğeniler", icon: Heart },
     { value: "comments", label: "Yorumlar", icon: MessageCircle },
     { value: "events", label: "Etkinlikler", icon: Calendar },
+    { value: "friends", label: "Arkadaşlık", icon: UserPlus },
+    { value: "groups", label: "Gruplar", icon: Bell },
   ] as const;
 
   const [selectedType, setSelectedType] = useState<NotificationType>("all");
@@ -61,7 +63,7 @@ export default function NotificationsPage() {
                 {unreadCount > 0 && <Badge variant="primary">{unreadCount} yeni</Badge>}
               </h1>
               <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-                Feed beğenileri, yorumlar ve etkinlik katılımları gerçek zamanlı listelenir.
+                Beğeniler, yorumlar, etkinlikler, arkadaşlık ve grup bildirimleri gerçek zamanlı listelenir.
               </p>
             </div>
 
@@ -213,7 +215,11 @@ function NotificationItem({
       case "comments":
         return <MessageCircle className="h-5 w-5 text-blue-500" />;
       case "events":
-        return <UserPlus className="h-5 w-5 text-green-500" />;
+        return <Calendar className="h-5 w-5 text-green-500" />;
+      case "friends":
+        return <UserPlus className="h-5 w-5 text-violet-500" />;
+      case "groups":
+        return <Bell className="h-5 w-5 text-amber-500" />;
       default:
         return <Bell className="h-5 w-5 text-neutral-500" />;
     }
