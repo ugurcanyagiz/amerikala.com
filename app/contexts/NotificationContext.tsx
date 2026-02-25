@@ -68,6 +68,15 @@ const getDisplayName = (profile?: { first_name?: string | null; last_name?: stri
   return fullName || profile.username || "Kullanıcı";
 };
 
+const parseStoredIdSet = (rawValue: string | null) => {
+  if (!rawValue) return new Set<string>();
+
+  const parsed = JSON.parse(rawValue);
+  if (!Array.isArray(parsed)) return new Set<string>();
+
+  return new Set(parsed.filter((item): item is string => typeof item === "string"));
+};
+
 const getTimeAgo = (dateString: string) => {
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return "Az önce";
@@ -95,6 +104,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [notificationStateHydrated, setNotificationStateHydrated] = useState(false);
   const readIdsRef = useRef(readIds);
   const dismissedIdsRef = useRef(dismissedIds);
   const refreshInFlightRef = useRef(false);
@@ -135,19 +145,32 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setReadIds(new Set());
       setDismissedIds(new Set());
       setNotifications([]);
+      readIdsRef.current = new Set();
+      dismissedIdsRef.current = new Set();
+      setNotificationStateHydrated(false);
       return;
     }
 
     try {
       const storedRead = window.localStorage.getItem(storageKeys.read(userId));
       const storedDismissed = window.localStorage.getItem(storageKeys.dismissed(userId));
+      const nextReadIds = parseStoredIdSet(storedRead);
+      const nextDismissedIds = parseStoredIdSet(storedDismissed);
 
-      setReadIds(new Set(storedRead ? JSON.parse(storedRead) : []));
-      setDismissedIds(new Set(storedDismissed ? JSON.parse(storedDismissed) : []));
+      readIdsRef.current = nextReadIds;
+      dismissedIdsRef.current = nextDismissedIds;
+      setReadIds(nextReadIds);
+      setDismissedIds(nextDismissedIds);
     } catch (error) {
       console.error("Bildirim durumları yüklenemedi:", error);
-      setReadIds(new Set());
-      setDismissedIds(new Set());
+      const fallbackReadIds = new Set<string>();
+      const fallbackDismissedIds = new Set<string>();
+      readIdsRef.current = fallbackReadIds;
+      dismissedIdsRef.current = fallbackDismissedIds;
+      setReadIds(fallbackReadIds);
+      setDismissedIds(fallbackDismissedIds);
+    } finally {
+      setNotificationStateHydrated(true);
     }
   }, [authLoading, userId]);
 
@@ -168,6 +191,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
 
     if (authLoading) {
+      return;
+    }
+
+    if (!notificationStateHydrated) {
       return;
     }
 
@@ -370,7 +397,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         void refreshNotifications();
       }
     }
-  }, [authLoading, userId]);
+  }, [authLoading, notificationStateHydrated, userId]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -379,11 +406,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    if (!notificationStateHydrated) {
+      return;
+    }
+
     void refreshNotifications();
-  }, [authLoading, refreshNotifications, userId]);
+  }, [authLoading, notificationStateHydrated, refreshNotifications, userId]);
 
   useEffect(() => {
-    if (authLoading || !userId) return;
+    if (authLoading || !userId || !notificationStateHydrated) return;
 
     const channel = supabase
       .channel(`notifications-${userId}`)
@@ -401,7 +432,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [authLoading, refreshNotifications, userId]);
+  }, [authLoading, notificationStateHydrated, refreshNotifications, userId]);
 
   const markAsRead = useCallback((id: string) => {
     setReadIds((prev) => {
