@@ -12,10 +12,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyles = `
       inline-flex items-center justify-center gap-2
       font-semibold tracking-tight
-      rounded-xl
+      rounded-[var(--radius-xl)]
       transition-all duration-150 ease-out
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2
-      disabled:opacity-50 disabled:cursor-not-allowed
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 focus-visible:ring-offset-2
+      disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
       active:translate-y-px
     `;
 
@@ -23,26 +23,28 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       primary: `
         bg-[var(--color-primary)] text-white
         hover:bg-[var(--color-primary-hover)]
-        shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]
+        shadow-[var(--shadow-sm)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]
       `,
       secondary: `
         bg-[var(--color-surface-raised)] text-[var(--color-ink)]
         border border-[var(--color-border)]
-        hover:bg-[var(--color-surface-sunken)] hover:border-[var(--color-border-strong)]
+        shadow-[var(--shadow-xs)]
+        hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] hover:border-[var(--color-border-strong)]
       `,
       ghost: `
         bg-transparent text-[var(--color-ink-secondary)]
         hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink)]
       `,
       outline: `
-        bg-white text-[var(--color-ink)]
+        bg-[var(--color-surface)] text-[var(--color-ink)]
         border border-[var(--color-border-strong)]
-        hover:bg-[var(--color-surface-raised)] hover:border-[var(--color-primary-300)]
+        shadow-[var(--shadow-xs)]
+        hover:-translate-y-0.5 hover:bg-[var(--color-surface-raised)] hover:shadow-[var(--shadow-sm)] hover:border-[var(--color-primary-300)]
       `,
       destructive: `
         bg-[var(--color-error)] text-white
         hover:bg-[var(--color-error)]/90
-        shadow-[var(--shadow-sm)]
+        shadow-[var(--shadow-sm)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]
       `,
     };
 
