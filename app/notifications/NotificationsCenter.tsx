@@ -7,6 +7,7 @@ import { Avatar } from "@/app/components/ui/Avatar";
 import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent } from "@/app/components/ui/Card";
 import { Badge } from "@/app/components/ui/Badge";
+import { Modal } from "@/app/components/ui/Modal";
 import { getTimeAgo, type NotificationCategory, type NotificationItem, type NotificationListResponse } from "@/lib/notifications";
 import { useNotifications } from "@/app/contexts/NotificationContext";
 
@@ -27,6 +28,11 @@ function dateBucket(date: string) {
   return "Daha eski";
 }
 
+function getFriendRequestId(item: NotificationItem) {
+  const value = item.metadata?.friend_request_id;
+  return typeof value === "string" ? value : null;
+}
+
 export default function NotificationsCenter({ initialData }: { initialData: NotificationListResponse }) {
   const { unreadCount, refreshNotifications } = useNotifications();
   const [items, setItems] = useState(initialData.items);
@@ -37,6 +43,8 @@ export default function NotificationsCenter({ initialData }: { initialData: Noti
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [activeFriendRequestNotification, setActiveFriendRequestNotification] = useState<NotificationItem | null>(null);
+  const [friendRequestLoading, setFriendRequestLoading] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -89,6 +97,42 @@ export default function NotificationsCenter({ initialData }: { initialData: Noti
     } catch {
       setError("İşlem tamamlanamadı.");
       setLoading(false);
+    }
+  };
+
+  const respondFriendRequest = async (decision: "accept" | "reject") => {
+    if (!activeFriendRequestNotification) return;
+
+    setFriendRequestLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/notifications/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "respond_friend_request",
+          notificationId: activeFriendRequestNotification.id,
+          decision,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(payload?.error ?? "Arkadaşlık isteği güncellenemedi.");
+      }
+
+      setActiveFriendRequestNotification(null);
+      await loadPage(0, false);
+      await refreshNotifications();
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setError(requestError.message);
+      } else {
+        setError("Arkadaşlık isteği güncellenemedi.");
+      }
+    } finally {
+      setFriendRequestLoading(false);
     }
   };
 
@@ -156,42 +200,56 @@ export default function NotificationsCenter({ initialData }: { initialData: Noti
         Object.entries(grouped).map(([bucket, bucketItems]) => (
           <section key={bucket} className="space-y-3">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{bucket}</h2>
-            {bucketItems.map((item) => (
-              <Card key={item.id} className={item.isRead ? "" : "border-l-4 border-l-red-500"}>
-                <CardContent className="p-4 flex gap-3">
-                  <input
-                    type="checkbox"
-                    aria-label="Bildirimi seç"
-                    checked={selected.has(item.id)}
-                    onChange={(event) => {
-                      setSelected((prev) => {
-                        const next = new Set(prev);
-                        if (event.target.checked) next.add(item.id);
-                        else next.delete(item.id);
-                        return next;
-                      });
-                    }}
-                    className="mt-1"
-                  />
-                  <Avatar src={item.actor?.avatarUrl ?? undefined} fallback={item.actor?.name ?? "S"} size="sm" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-medium">{item.title}</p>
-                        <p className="text-sm text-neutral-600 mt-0.5">{item.body}</p>
-                        <p className="text-xs text-neutral-400 mt-1">{getTimeAgo(item.createdAt)}</p>
+            {bucketItems.map((item) => {
+              const hasFriendRequestAction = item.eventType === "social.friend_request" && Boolean(getFriendRequestId(item));
+
+              return (
+                <Card key={item.id} className={item.isRead ? "" : "border-l-4 border-l-red-500"}>
+                  <CardContent className="p-4 flex gap-3">
+                    <input
+                      type="checkbox"
+                      aria-label="Bildirimi seç"
+                      checked={selected.has(item.id)}
+                      onChange={(event) => {
+                        setSelected((prev) => {
+                          const next = new Set(prev);
+                          if (event.target.checked) next.add(item.id);
+                          else next.delete(item.id);
+                          return next;
+                        });
+                      }}
+                      className="mt-1"
+                    />
+                    <Avatar src={item.actor?.avatarUrl ?? undefined} fallback={item.actor?.name ?? "S"} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium">{item.title}</p>
+                          <p className="text-sm text-neutral-600 mt-0.5">{item.body}</p>
+                          <p className="text-xs text-neutral-400 mt-1">{getTimeAgo(item.createdAt)}</p>
+                        </div>
+                        {!item.isRead && <Badge variant="primary">Yeni</Badge>}
                       </div>
-                      {!item.isRead && <Badge variant="primary">Yeni</Badge>}
+                      <div className="mt-3 flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => void runAction("mark_read", [item.id])} disabled={item.isRead || loading}>Okundu yap</Button>
+                        <Button size="sm" variant="outline" onClick={() => void runAction("archive_selected", [item.id])} disabled={loading}>Arşivle</Button>
+                        {hasFriendRequestAction ? (
+                          <button
+                            type="button"
+                            onClick={() => setActiveFriendRequestNotification(item)}
+                            className="text-sm text-blue-600 hover:underline inline-flex items-center"
+                          >
+                            Görüntüle
+                          </button>
+                        ) : (
+                          <Link href={item.actionUrl ?? "/notifications"} className="text-sm text-blue-600 hover:underline inline-flex items-center">Görüntüle</Link>
+                        )}
+                      </div>
                     </div>
-                    <div className="mt-3 flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => void runAction("mark_read", [item.id])} disabled={item.isRead || loading}>Okundu yap</Button>
-                      <Button size="sm" variant="outline" onClick={() => void runAction("archive_selected", [item.id])} disabled={loading}>Arşivle</Button>
-                      <Link href={item.actionUrl ?? "/notifications"} className="text-sm text-blue-600 hover:underline inline-flex items-center">Görüntüle</Link>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </section>
         ))
       )}
@@ -203,6 +261,51 @@ export default function NotificationsCenter({ initialData }: { initialData: Noti
           </Button>
         </div>
       )}
+
+      <Modal
+        open={Boolean(activeFriendRequestNotification)}
+        onClose={() => {
+          if (!friendRequestLoading) {
+            setActiveFriendRequestNotification(null);
+          }
+        }}
+        title="Arkadaşlık isteği"
+        description="Bu isteği kabul edebilir veya reddedebilirsiniz."
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-sm font-medium text-slate-900">{activeFriendRequestNotification?.title}</p>
+            <p className="text-sm text-slate-600 mt-1">{activeFriendRequestNotification?.body}</p>
+          </div>
+
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setActiveFriendRequestNotification(null)}
+              disabled={friendRequestLoading}
+            >
+              Vazgeç
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void respondFriendRequest("reject")}
+              loading={friendRequestLoading}
+            >
+              Reddet
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void respondFriendRequest("accept")}
+              loading={friendRequestLoading}
+            >
+              Kabul et
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
