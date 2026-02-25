@@ -602,9 +602,9 @@ export default function Home() {
                     ) : (
                       <Link href="/login">
                         <Button
-                          variant="primary"
+                          variant="ghost"
                           size="lg"
-                          className="h-11 rounded-xl border border-[var(--color-border-strong)] bg-white px-7 text-sm font-bold uppercase tracking-[0.08em] text-[var(--color-ink)] shadow-[0_12px_18px_-18px_rgba(17,17,17,0.35)] hover:bg-[var(--color-surface-raised)]"
+                          className="h-11 rounded-xl border border-black bg-transparent px-7 text-sm font-bold uppercase tracking-[0.08em] text-black shadow-none hover:bg-black/5"
                         >
                           GİRİŞ YAP
                         </Button>
@@ -612,9 +612,9 @@ export default function Home() {
                     )}
                     <Link href="#son-ilanlar">
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="lg"
-                        className="h-11 rounded-xl bg-[var(--color-ink)] px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_-18px_rgba(229,57,53,0.55)] hover:bg-black"
+                        className="h-11 rounded-xl bg-black px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_-18px_rgba(17,17,17,0.45)] hover:bg-black/90 hover:text-white"
                       >
                         PAYLAŞIMLARI GÖR →
                       </Button>
