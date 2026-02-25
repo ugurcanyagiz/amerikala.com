@@ -254,6 +254,7 @@ export default function Sidebar() {
             </SidebarSection>
 
             <SidebarSection title="Yasal" icon={Scale} collapsed={!isExpanded}>
+              <SidebarItem href="/profile" label="Profil" icon={User} active={isActive("/profile")} collapsed={!isExpanded} />
               <SidebarItem href="/ayarlar" label="Ayarlar" icon={Settings} active={isActive("/ayarlar")} collapsed={!isExpanded} />
             </SidebarSection>
           </nav>
