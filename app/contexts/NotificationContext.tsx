@@ -436,8 +436,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             message: isIncoming ? "size arkadaşlık isteği gönderdi" : "arkadaşlık isteğinizi kabul etti",
             createdAt,
             isRead: readSet.has(id),
-            actionUrl: "/profil",
-            actionLabel: isIncoming ? "Profili Gör" : "Bağlantıyı Gör",
+            actionUrl: `/profile/${actor?.username || actorId}`,
+            actionLabel: "Profili Gör",
           };
         });
 
