@@ -85,6 +85,12 @@ const NAV_ITEMS = [
       { href: "/alisveris/ilanlarim", label: "İlanlarım", icon: List },
     ],
   },
+  {
+    id: "firmalar",
+    label: "Firmalar",
+    href: "/firmalar",
+    icon: Building2,
+  },
 ];
 
 function getNotificationTypeClasses(type: string) {
