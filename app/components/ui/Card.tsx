@@ -16,14 +16,14 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       `,
       elevated: `
         bg-[var(--color-surface)]
+        border border-[var(--color-border-light)]
         shadow-[var(--shadow-md)]
-        border-0
       `,
       interactive: `
         bg-[var(--color-surface)]
         border border-[var(--color-border)]
         shadow-[var(--shadow-sm)]
-        hover:shadow-[var(--shadow-md)]
+        hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]
         hover:border-[var(--color-border-strong)]
         transition-all duration-200 ease-out
         cursor-pointer
@@ -46,7 +46,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={`rounded-2xl ${variants[variant]} ${paddings[padding]} ${className}`}
+        className={`rounded-[var(--radius-2xl)] ${variants[variant]} ${paddings[padding]} ${className}`}
         {...props}
       >
         {children}

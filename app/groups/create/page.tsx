@@ -15,6 +15,7 @@ import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/Card";
 import { Input } from "@/app/components/ui/Input";
 import { Textarea } from "@/app/components/ui/Textarea";
+import { Select } from "@/app/components/ui/Select";
 import { 
   ArrowLeft,
   Users,
@@ -362,21 +363,12 @@ export default function CreateGroupPage() {
                     <label className="block text-sm font-medium mb-1.5">
                       Eyalet <span className="text-red-500">*</span>
                     </label>
-                    <select
+                    <Select
                       value={state}
                       onChange={(e) => setState(e.target.value)}
-                      className={`w-full px-4 py-2.5 rounded-lg border ${
-                        errors.state 
-                          ? "border-red-500" 
-                          : "border-neutral-200 dark:border-neutral-700"
-                      } bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    >
-                      <option value="">Seçin...</option>
-                      {US_STATES.map(s => (
-                        <option key={s.value} value={s.value}>{s.label}</option>
-                      ))}
-                    </select>
-                    {errors.state && <p className="text-red-500 text-sm mt-1">{errors.state}</p>}
+                      options={[{ value: "", label: "Seçin..." }, ...US_STATES]}
+                      error={errors.state}
+                    />
                   </div>
                 </div>
               )}

@@ -17,6 +17,9 @@ import {
 import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent } from "@/app/components/ui/Card";
 import { Badge } from "@/app/components/ui/Badge";
+import { Input } from "@/app/components/ui/Input";
+import { Select } from "@/app/components/ui/Select";
+import { Textarea } from "@/app/components/ui/Textarea";
 import {
   ArrowLeft,
   Briefcase,
@@ -140,7 +143,7 @@ export default function IsIlanVerPage() {
 
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1) as Step);
 
-  const handleChange = (field: keyof FormData, value: any) => {
+  const handleChange = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
@@ -276,46 +279,48 @@ export default function IsIlanVerPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-2">Başlık *</label>
-                  <input type="text" value={formData.title} onChange={(e) => handleChange("title", e.target.value)}
+                  <Input
+                    value={formData.title}
+                    onChange={(e) => handleChange("title", e.target.value)}
                     placeholder={formData.listing_type === "hiring" ? "Örn: Full Stack Developer Aranıyor" : "Örn: Deneyimli Yazılım Geliştirici"}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                  {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+                    error={errors.title}
+                  />
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">Kategori</label>
-                    <select value={formData.category} onChange={(e) => handleChange("category", e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                      {Object.entries(JOB_CATEGORY_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>{JOB_CATEGORY_ICONS[value as JobCategory]} {label}</option>
-                      ))}
-                    </select>
+                    <Select
+                      value={formData.category}
+                      onChange={(e) => handleChange("category", e.target.value)}
+                      options={Object.entries(JOB_CATEGORY_LABELS).map(([value, label]) => ({ value, label: `${JOB_CATEGORY_ICONS[value as JobCategory]} ${label}` }))}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">Çalışma Şekli</label>
-                    <select value={formData.job_type} onChange={(e) => handleChange("job_type", e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                      {Object.entries(JOB_TYPE_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
-                    </select>
+                    <Select
+                      value={formData.job_type}
+                      onChange={(e) => handleChange("job_type", e.target.value)}
+                      options={Object.entries(JOB_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
+                    />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-2">Açıklama *</label>
-                  <textarea value={formData.description} onChange={(e) => handleChange("description", e.target.value)} rows={5}
+                  <Textarea
+                    value={formData.description}
+                    onChange={(e) => handleChange("description", e.target.value)}
+                    rows={5}
                     placeholder={formData.listing_type === "hiring" ? "İş tanımı, gereksinimler, sorumluluklar..." : "Deneyim, yetenekler, aradığınız pozisyon..."}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:ring-2 focus:ring-blue-500" />
-                  {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+                    error={errors.description}
+                  />
                 </div>
 
                 {formData.listing_type === "hiring" && (
                   <div>
                     <label className="block text-sm font-medium mb-2">Şirket Adı</label>
-                    <input type="text" value={formData.company_name} onChange={(e) => handleChange("company_name", e.target.value)}
-                      placeholder="Şirket adı (opsiyonel)" className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900" />
+                    <Input type="text" value={formData.company_name} onChange={(e) => handleChange("company_name", e.target.value)} placeholder="Şirket adı (opsiyonel)" />
                   </div>
                 )}
               </div>
@@ -328,18 +333,11 @@ export default function IsIlanVerPage() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">Şehir *</label>
-                    <input type="text" value={formData.city} onChange={(e) => handleChange("city", e.target.value)}
-                      placeholder="Örn: New York" className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900" />
-                    {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
+                    <Input type="text" value={formData.city} onChange={(e) => handleChange("city", e.target.value)} placeholder="Örn: New York" error={errors.city} />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">Eyalet *</label>
-                    <select value={formData.state} onChange={(e) => handleChange("state", e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                      <option value="">Eyalet Seçin</option>
-                      {US_STATES.map((state) => <option key={state.value} value={state.value}>{state.label}</option>)}
-                    </select>
-                    {errors.state && <p className="text-red-500 text-sm mt-1">{errors.state}</p>}
+                    <Select value={formData.state} onChange={(e) => handleChange("state", e.target.value)} options={[{ value: "", label: "Eyalet Seçin" }, ...US_STATES]} error={errors.state} />
                   </div>
                 </div>
 
@@ -376,9 +374,8 @@ export default function IsIlanVerPage() {
                 <div>
                   <label className="block text-sm font-medium mb-2">Yetenekler</label>
                   <div className="flex gap-2 mb-2">
-                    <input type="text" value={newSkill} onChange={(e) => setNewSkill(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())} placeholder="Yetenek ekle"
-                      className="flex-1 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900" />
+                    <Input type="text" value={newSkill} onChange={(e) => setNewSkill(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())} placeholder="Yetenek ekle" className="flex-1" />
                     <Button type="button" variant="outline" onClick={addSkill}><Plus size={18} /></Button>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -410,21 +407,18 @@ export default function IsIlanVerPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-2">E-posta *</label>
-                  <input type="email" value={formData.contact_email} onChange={(e) => handleChange("contact_email", e.target.value)}
-                    placeholder="ornek@email.com" className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900" />
-                  {errors.contact_email && <p className="text-red-500 text-sm mt-1">{errors.contact_email}</p>}
+                  <Input type="email" value={formData.contact_email} onChange={(e) => handleChange("contact_email", e.target.value)}
+                    placeholder="ornek@email.com" error={errors.contact_email} />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-2">Telefon</label>
-                  <input type="tel" value={formData.contact_phone} onChange={(e) => handleChange("contact_phone", e.target.value)}
-                    placeholder="+1 (555) 123-4567" className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900" />
+                  <Input type="tel" value={formData.contact_phone} onChange={(e) => handleChange("contact_phone", e.target.value)} placeholder="+1 (555) 123-4567" />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-2">Web Sitesi</label>
-                  <input type="url" value={formData.website_url} onChange={(e) => handleChange("website_url", e.target.value)}
-                    placeholder="https://..." className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900" />
+                  <Input type="url" value={formData.website_url} onChange={(e) => handleChange("website_url", e.target.value)} placeholder="https://..." />
                 </div>
 
                 <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
