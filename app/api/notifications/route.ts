@@ -1,8 +1,9 @@
-import { redirect } from "next/navigation";
-import Sidebar from "../components/Sidebar";
-import NotificationsCenter from "./NotificationsCenter";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { mapEventTypeToCategory, type NotificationListResponse } from "@/lib/notifications";
+import { mapEventTypeToCategory, type NotificationCategory, type NotificationItem } from "@/lib/notifications";
+
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 50;
 
 interface NotificationRow {
   id: string;
@@ -32,38 +33,80 @@ function buildDisplayName(profile?: ActorProfileRow) {
   return [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim() || profile.full_name || profile.username || "Kullanıcı";
 }
 
-async function getInitialNotifications(): Promise<NotificationListResponse> {
+export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
+  if (userError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data, count } = await supabase
+  const { searchParams } = new URL(request.url);
+  const tab = (searchParams.get("tab") ?? "all") as NotificationCategory;
+  const query = (searchParams.get("q") ?? "").trim();
+  const limit = Math.min(Math.max(Number(searchParams.get("limit") ?? DEFAULT_LIMIT), 1), MAX_LIMIT);
+  const offset = Math.max(Number(searchParams.get("offset") ?? 0), 0);
+  const includeArchived = searchParams.get("includeArchived") === "true";
+
+  let dbQuery = supabase
     .from("notifications")
     .select("id, event_type, title, body, action_url, metadata, created_at, read_at, seen_at, archived_at, actor_user_id", { count: "exact" })
     .eq("recipient_user_id", user.id)
-    .is("archived_at", null)
     .order("created_at", { ascending: false })
-    .range(0, 19);
+    .range(offset, offset + limit - 1);
+
+  if (!includeArchived) {
+    dbQuery = dbQuery.is("archived_at", null);
+  }
+
+  if (tab !== "all") {
+    if (tab === "mentions") {
+      dbQuery = dbQuery.ilike("event_type", "%mention%");
+    } else if (tab === "comments") {
+      dbQuery = dbQuery.or("event_type.ilike.%comment%,event_type.ilike.%reply%");
+    } else if (tab === "follows") {
+      dbQuery = dbQuery.or("event_type.ilike.%follow%,event_type.ilike.%friend%");
+    } else if (tab === "system") {
+      dbQuery = dbQuery
+        .not("event_type", "ilike", "%mention%")
+        .not("event_type", "ilike", "%comment%")
+        .not("event_type", "ilike", "%reply%")
+        .not("event_type", "ilike", "%follow%")
+        .not("event_type", "ilike", "%friend%");
+    }
+  }
+
+  if (query.length >= 2) {
+    dbQuery = dbQuery.or(`title.ilike.%${query}%,body.ilike.%${query}%`);
+  }
+
+  const { data, error, count } = await dbQuery;
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   const rows = (data ?? []) as NotificationRow[];
   const actorIds = Array.from(new Set(rows.map((row) => row.actor_user_id).filter((value): value is string => Boolean(value))));
 
   let profileById = new Map<string, ActorProfileRow>();
   if (actorIds.length > 0) {
-    const { data: profileRows } = await supabase
+    const { data: profileRows, error: profileError } = await supabase
       .from("profiles")
       .select("id, first_name, last_name, full_name, username, avatar_url")
       .in("id", actorIds);
 
-    profileById = new Map(((profileRows ?? []) as ActorProfileRow[]).map((row) => [row.id, row]));
+    if (profileError) {
+      return NextResponse.json({ error: profileError.message }, { status: 500 });
+    }
+
+    profileById = new Map((profileRows as ActorProfileRow[]).map((row) => [row.id, row]));
   }
 
-  const items = rows.map((row) => {
+  const items: NotificationItem[] = rows.map((row) => {
     const profile = row.actor_user_id ? profileById.get(row.actor_user_id) : undefined;
 
     return {
@@ -91,26 +134,11 @@ async function getInitialNotifications(): Promise<NotificationListResponse> {
     };
   });
 
-  return {
+  return NextResponse.json({
     items,
     total: count ?? items.length,
-    hasMore: items.length < (count ?? items.length),
-    limit: 20,
-    offset: 0,
-  };
-}
-
-export default async function NotificationsPage() {
-  const initialData = await getInitialNotifications();
-
-  return (
-    <div className="ak-page">
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <NotificationsCenter initialData={initialData} />
-        </main>
-      </div>
-    </div>
-  );
+    hasMore: offset + items.length < (count ?? items.length),
+    limit,
+    offset,
+  });
 }
