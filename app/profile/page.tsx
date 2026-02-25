@@ -27,7 +27,6 @@ import {
   Shield,
   CheckCircle,
   Activity,
-  History,
   RefreshCw,
   Heart,
   MessageSquare,
@@ -46,6 +45,7 @@ type ActivityItem = {
   title: string;
   description: string;
   createdAt: string;
+  href: string;
 };
 
 export default function ProfilePage() {
@@ -61,13 +61,6 @@ export default function ProfilePage() {
   });
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
-  const [activitySummary, setActivitySummary] = useState({
-    likes: 0,
-    comments: 0,
-    newFollowers: 0,
-    joinedEvents: 0,
-    joinedGroups: 0,
-  });
   const [activeTab, setActiveTab] = useState<ProfileTab>("followers");
   const [listError, setListError] = useState<string | null>(null);
 
@@ -205,7 +198,7 @@ export default function ProfilePage() {
             ? supabase.from("likes").select("post_id, user_id, created_at").in("post_id", postIds).neq("user_id", user.id)
             : Promise.resolve({ data: [], error: null }),
           postIds.length
-            ? supabase.from("comments").select("id, user_id, created_at").in("post_id", postIds).neq("user_id", user.id)
+            ? supabase.from("comments").select("id, post_id, user_id, content, created_at").in("post_id", postIds).neq("user_id", user.id)
             : Promise.resolve({ data: [], error: null }),
           supabase.from("event_attendees").select("event_id, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
           supabase
@@ -224,6 +217,18 @@ export default function ProfilePage() {
         const comments = commentsResult.data || [];
         const joinedEvents = joinedEventsResult.data || [];
         const joinedGroups = joinedGroupsResult.data || [];
+
+        const [eventRowsResult, groupRowsResult] = await Promise.all([
+          joinedEvents.length
+            ? supabase.from("events").select("id, title").in("id", joinedEvents.map((item) => item.event_id))
+            : Promise.resolve({ data: [], error: null }),
+          joinedGroups.length
+            ? supabase.from("groups").select("id, name, slug").in("id", joinedGroups.map((item) => item.group_id))
+            : Promise.resolve({ data: [], error: null }),
+        ]);
+
+        const eventsMap = new Map((eventRowsResult.data || []).map((item) => [item.id, item]));
+        const groupsMap = new Map((groupRowsResult.data || []).map((item) => [item.id, item]));
 
         const { data: followerRows, error: followerError } = await supabase
           .from("follows")
@@ -261,13 +266,15 @@ export default function ProfilePage() {
             title: "Gönderin beğenildi",
             description: `${actorMap.get(item.user_id) || "Bir kullanıcı"} gönderini beğendi.`,
             createdAt: item.created_at,
+            href: "/feed",
           })),
           ...comments.map((item) => ({
             id: `comment-${item.id}`,
             type: "comment" as const,
             title: "Yeni yorum",
-            description: `${actorMap.get(item.user_id) || "Bir kullanıcı"} gönderine yorum yaptı.`,
+            description: `${actorMap.get(item.user_id) || "Bir kullanıcı"} gönderine yorum yaptı${item.content ? `: \"${String(item.content).slice(0, 80)}\"` : "."}`,
             createdAt: item.created_at,
+            href: "/feed",
           })),
           ...followers.map((item) => ({
             id: `follower-${item.user_id}-${item.created_at}`,
@@ -275,20 +282,23 @@ export default function ProfilePage() {
             title: "Yeni arkadaş / takipçi",
             description: `${actorMap.get(item.user_id) || "Bir kullanıcı"} seni takip etti.`,
             createdAt: item.created_at,
+            href: `/profile/${item.user_id}`,
           })),
           ...joinedEvents.map((item) => ({
             id: `event-${item.event_id}-${item.created_at}`,
             type: "event_join" as const,
             title: "Etkinlik katılımı",
-            description: "Bir etkinliğe katılım gösterdin.",
+            description: `${eventsMap.get(item.event_id)?.title || "Bir"} etkinliğine katılım gösterdin.`,
             createdAt: item.created_at,
+            href: `/events/${item.event_id}`,
           })),
           ...joinedGroups.map((item) => ({
             id: `group-${item.group_id}-${item.joined_at}`,
             type: "group_join" as const,
             title: "Yeni grup üyeliği",
-            description: "Toplulukta bir gruba katıldın.",
+            description: `${groupsMap.get(item.group_id)?.name || "Bir"} grubuna katıldın.`,
             createdAt: item.joined_at,
+            href: groupsMap.get(item.group_id)?.slug ? `/groups/${groupsMap.get(item.group_id)?.slug}` : "/groups",
           })),
           ...(myPosts || []).map((post) => ({
             id: `post-${post.id}`,
@@ -296,19 +306,13 @@ export default function ProfilePage() {
             title: "Gönderi paylaştın",
             description: "Feed üzerinde yeni bir paylaşım yaptın.",
             createdAt: post.created_at,
+            href: "/feed",
           })),
         ]
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
           .slice(0, 12);
 
         setActivities(feed);
-        setActivitySummary({
-          likes: likes.length,
-          comments: comments.length,
-          newFollowers: followers.length,
-          joinedEvents: joinedEvents.length,
-          joinedGroups: joinedGroups.length,
-        });
       } catch (error) {
         console.error("Error fetching activities:", error);
       } finally {
@@ -806,39 +810,10 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
+            <div className="space-y-6">
+              <div className="space-y-6">
                 <Card className="glass">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Activity size={18} className="text-red-500" />
-                      Aktiviteler
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 pt-0 space-y-6">
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div className="rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-4 bg-white/60 dark:bg-neutral-900/40">
-                        <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Beğeniler</p>
-                        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{activitySummary.likes}</p>
-                        <p className="text-sm text-neutral-500">Gönderi etkileşimleri</p>
-                      </div>
-                      <div className="rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-4 bg-white/60 dark:bg-neutral-900/40">
-                        <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Bağlantılar</p>
-                        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{activitySummary.newFollowers}</p>
-                        <p className="text-sm text-neutral-500">Yeni arkadaşlıklar ve takipler</p>
-                      </div>
-                      <div className="rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-4 bg-white/60 dark:bg-neutral-900/40">
-                        <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Yorumlar</p>
-                        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{activitySummary.comments}</p>
-                        <p className="text-sm text-neutral-500">Topluluk geri bildirimleri</p>
-                      </div>
-                      <div className="rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-4 bg-white/60 dark:bg-neutral-900/40">
-                        <p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Topluluk Katılımı</p>
-                        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{activitySummary.joinedGroups + activitySummary.joinedEvents}</p>
-                        <p className="text-sm text-neutral-500">Grup + etkinlik üyeliği</p>
-                      </div>
-                    </div>
-
+                  <CardContent className="p-6 space-y-6">
                     {activityLoading ? (
                       <div className="text-center py-8 text-neutral-500">Aktiviteler yükleniyor...</div>
                     ) : activities.length === 0 ? (
@@ -850,7 +825,12 @@ export default function ProfilePage() {
                     ) : (
                       <div className="space-y-3">
                         {activities.map((item) => (
-                          <div key={item.id} className="flex items-start gap-3 rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-3 bg-white/70 dark:bg-neutral-900/40">
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => router.push(item.href)}
+                            className="w-full text-left flex items-start gap-3 rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-3 bg-white/70 dark:bg-neutral-900/40 hover:bg-neutral-100/80 dark:hover:bg-neutral-900 transition-smooth"
+                          >
                             <div className="mt-0.5 h-7 w-7 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
                               {getActivityIcon(item.type)}
                             </div>
@@ -859,41 +839,10 @@ export default function ProfilePage() {
                               <p className="text-sm text-neutral-600 dark:text-neutral-400">{item.description}</p>
                             </div>
                             <span className="text-xs text-neutral-500">{getRelativeTime(item.createdAt)}</span>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="space-y-6">
-                <Card className="glass">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <History className="h-5 w-5 text-neutral-500" />
-                      Tarihçe Özeti
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0 space-y-4 text-sm text-neutral-600 dark:text-neutral-400">
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="font-medium text-neutral-700 dark:text-neutral-200">Katılım</span>
-                      <span>{formatJoinDate(profile.created_at)}</span>
-                    </div>
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="font-medium text-neutral-700 dark:text-neutral-200">Konum</span>
-                      <span>
-                        {[profile.city, profile.state && US_STATES_MAP[profile.state]].filter(Boolean).join(", ") || "—"}
-                      </span>
-                    </div>
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="font-medium text-neutral-700 dark:text-neutral-200">Takipçiler</span>
-                      <span>{stats.followers}</span>
-                    </div>
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="font-medium text-neutral-700 dark:text-neutral-200">Takip</span>
-                      <span>{stats.following}</span>
-                    </div>
                   </CardContent>
                 </Card>
               </div>
