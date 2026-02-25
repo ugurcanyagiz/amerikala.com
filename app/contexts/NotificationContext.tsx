@@ -1,16 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { getTimeAgo, type NotificationItem, type NotificationListResponse } from "@/lib/notifications";
 import { useAuth } from "./AuthContext";
-import { devLog } from "@/lib/debug/devLogger";
-
-export type AppNotificationType = "likes" | "comments" | "events" | "friends" | "groups";
 
 export interface AppNotification {
   id: string;
-  source: "likes" | "comments" | "event_attendees" | "friend_requests" | "group_join_requests";
-  type: AppNotificationType;
+  type: string;
   user: {
     id: string;
     name: string;
@@ -21,13 +17,6 @@ export interface AppNotification {
   createdAt: string;
   isRead: boolean;
   actionUrl?: string;
-  actionLabel?: string;
-  friendRequest?: {
-    requesterId: string;
-    receiverId: string;
-    status: "pending" | "accepted" | "rejected" | "cancelled";
-    isIncoming: boolean;
-  };
 }
 
 interface NotificationContextType {
@@ -35,643 +24,108 @@ interface NotificationContextType {
   unreadCount: number;
   loading: boolean;
   error: string | null;
-  markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
-  deleteNotification: (id: string) => void;
+  markAsRead: (id: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
   refreshNotifications: () => Promise<void>;
 }
-
-const getNotificationTimestamp = (notification: Pick<AppNotification, "createdAt">) => {
-  const timestamp = new Date(notification.createdAt).getTime();
-  return Number.isNaN(timestamp) ? 0 : timestamp;
-};
-
-const compareNotifications = (a: AppNotification, b: AppNotification) => {
-  const timestampDiff = getNotificationTimestamp(b) - getNotificationTimestamp(a);
-  if (timestampDiff !== 0) return timestampDiff;
-  return a.id.localeCompare(b.id);
-};
 
 const NotificationContext = createContext<NotificationContextType>({
   notifications: [],
   unreadCount: 0,
   loading: false,
   error: null,
-  markAsRead: () => {},
-  markAllAsRead: () => {},
-  deleteNotification: () => {},
+  markAsRead: async () => {},
+  markAllAsRead: async () => {},
+  deleteNotification: async () => {},
   refreshNotifications: async () => {},
 });
 
-const storageKeys = {
-  read: (userId: string) => `amerikala:notifications:read:${userId}`,
-  dismissed: (userId: string) => `amerikala:notifications:dismissed:${userId}`,
-};
-
-const getDisplayName = (profile?: { first_name?: string | null; last_name?: string | null; username?: string | null } | null) => {
-  if (!profile) return "Kullanıcı";
-  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
-  return fullName || profile.username || "Kullanıcı";
-};
-
-const parseStoredIdSet = (rawValue: string | null) => {
-  if (!rawValue) return new Set<string>();
-  let parsed: unknown;
-
-  try {
-    parsed = JSON.parse(rawValue);
-  } catch {
-    return new Set<string>();
-  }
-
-  if (!Array.isArray(parsed)) return new Set<string>();
-
-  return new Set(parsed.filter((item): item is string => typeof item === "string"));
-};
-
-const getTimeAgo = (dateString: string) => {
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return "Az önce";
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return "Az önce";
-  if (minutes < 60) return `${minutes} dakika önce`;
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} saat önce`;
-
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} gün önce`;
-
-  return date.toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
-};
+function toAppNotification(item: NotificationItem): AppNotification {
+  return {
+    id: item.id,
+    type: item.category,
+    user: {
+      id: item.actor?.id ?? "system",
+      name: item.actor?.name ?? "Sistem",
+      avatar: item.actor?.avatarUrl ?? null,
+    },
+    message: item.title,
+    content: item.body,
+    createdAt: item.createdAt,
+    isRead: item.isRead,
+    actionUrl: item.actionUrl ?? "/notifications",
+  };
+}
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
-  const userId = user?.id ?? null;
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [readIds, setReadIds] = useState<Set<string>>(new Set());
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
-  const [notificationStateHydrated, setNotificationStateHydrated] = useState(false);
-  const readIdsRef = useRef(readIds);
-  const dismissedIdsRef = useRef(dismissedIds);
-  const refreshInFlightRef = useRef(false);
-  const refreshQueuedRef = useRef(false);
-
-  const isAbortError = (err: unknown) => {
-    if (!err) return false;
-    if (err instanceof DOMException) {
-      return err.name === "AbortError" || err.name === "TimeoutError";
-    }
-
-    if (typeof err !== "object") return false;
-
-    const maybeError = err as { name?: string; message?: string; details?: string; code?: string };
-    const combinedText = `${maybeError.name || ""} ${maybeError.message || ""} ${maybeError.details || ""} ${maybeError.code || ""}`.toLowerCase();
-
-    return (
-      maybeError.name === "AbortError" ||
-      maybeError.name === "TimeoutError" ||
-      combinedText.includes("aborterror") ||
-      combinedText.includes("signal is aborted") ||
-      combinedText.includes("request aborted")
-    );
-  };
-
-  useEffect(() => {
-    readIdsRef.current = readIds;
-  }, [readIds]);
-
-  useEffect(() => {
-    dismissedIdsRef.current = dismissedIds;
-  }, [dismissedIds]);
-
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!userId || typeof window === "undefined") {
-      setReadIds(new Set());
-      setDismissedIds(new Set());
-      setNotifications([]);
-      readIdsRef.current = new Set();
-      dismissedIdsRef.current = new Set();
-      setNotificationStateHydrated(false);
-      return;
-    }
-
-    try {
-      const storedRead = window.localStorage.getItem(storageKeys.read(userId));
-      const storedDismissed = window.localStorage.getItem(storageKeys.dismissed(userId));
-      const nextReadIds = parseStoredIdSet(storedRead);
-      const nextDismissedIds = parseStoredIdSet(storedDismissed);
-
-      readIdsRef.current = nextReadIds;
-      dismissedIdsRef.current = nextDismissedIds;
-      setReadIds(nextReadIds);
-      setDismissedIds(nextDismissedIds);
-    } catch (error) {
-      console.error("Bildirim durumları yüklenemedi:", error);
-      const fallbackReadIds = new Set<string>();
-      const fallbackDismissedIds = new Set<string>();
-      readIdsRef.current = fallbackReadIds;
-      dismissedIdsRef.current = fallbackDismissedIds;
-      setReadIds(fallbackReadIds);
-      setDismissedIds(fallbackDismissedIds);
-    } finally {
-      setNotificationStateHydrated(true);
-    }
-  }, [authLoading, userId]);
-
-  useEffect(() => {
-    if (!userId || typeof window === "undefined") return;
-    window.localStorage.setItem(storageKeys.read(userId), JSON.stringify(Array.from(readIds)));
-  }, [readIds, userId]);
-
-  useEffect(() => {
-    if (!userId || typeof window === "undefined") return;
-    window.localStorage.setItem(storageKeys.dismissed(userId), JSON.stringify(Array.from(dismissedIds)));
-  }, [dismissedIds, userId]);
 
   const refreshNotifications = useCallback(async () => {
-    if (refreshInFlightRef.current) {
-      refreshQueuedRef.current = true;
-      return;
-    }
-
-    if (authLoading) {
-      return;
-    }
-
-    if (!notificationStateHydrated) {
-      return;
-    }
-
-    if (!userId) {
+    if (!user) {
       setNotifications([]);
       return;
     }
 
-    devLog("notifications", "refresh:start", { userId });
     setLoading(true);
     setError(null);
-    refreshInFlightRef.current = true;
 
     try {
-      const { data: myPosts, error: postsError } = await supabase
-        .from("posts")
-        .select("id, content")
-        .eq("user_id", userId)
-        .limit(500);
-
-      if (postsError) throw postsError;
-
-      const postIds = (myPosts || []).map((post) => post.id);
-      const postContentById = new Map((myPosts || []).map((post) => [post.id, post.content as string | null]));
-
-      const [likesResult, commentsResult, myEventsResult] = await Promise.all([
-        postIds.length
-          ? supabase
-              .from("likes")
-              .select("post_id, user_id, created_at")
-              .in("post_id", postIds)
-              .neq("user_id", userId)
-          : Promise.resolve({ data: [], error: null }),
-        postIds.length
-          ? supabase
-              .from("comments")
-              .select("id, post_id, user_id, content, created_at")
-              .in("post_id", postIds)
-              .neq("user_id", userId)
-          : Promise.resolve({ data: [], error: null }),
-        supabase.from("events").select("id, title").eq("organizer_id", userId).limit(500),
-      ]);
-
-      if (likesResult.error) throw likesResult.error;
-      if (commentsResult.error) throw commentsResult.error;
-      if (myEventsResult.error) throw myEventsResult.error;
-
-      const myEvents = myEventsResult.data || [];
-      const eventIds = myEvents.map((event) => event.id);
-      const eventTitleById = new Map(myEvents.map((event) => [event.id, event.title as string | null]));
-
-      const eventAttendeesResult = eventIds.length
-        ? await supabase
-            .from("event_attendees")
-            .select("event_id, user_id, status, created_at")
-            .in("event_id", eventIds)
-            .neq("user_id", userId)
-        : { data: [], error: null };
-
-      if (eventAttendeesResult.error) throw eventAttendeesResult.error;
-
-      const [friendRequestsResult, myGroupMembershipsResult, outgoingGroupRequestsResult, persistedStatesResult] = await Promise.all([
-        supabase
-          .from("friend_requests")
-          .select("requester_id, receiver_id, status, created_at, responded_at")
-          .or(`receiver_id.eq.${userId},requester_id.eq.${userId}`)
-          .limit(500),
-        supabase
-          .from("group_members")
-          .select("group_id")
-          .eq("user_id", userId)
-          .in("role", ["admin", "moderator"])
-          .eq("status", "approved")
-          .limit(500),
-        supabase
-          .from("group_join_requests")
-          .select("group_id, status, created_at, reviewed_at, updated_at")
-          .eq("user_id", userId)
-          .in("status", ["approved", "rejected"])
-          .limit(500),
-        supabase
-          .from("user_notification_states")
-          .select("notification_id, is_read, is_dismissed")
-          .eq("user_id", userId)
-          .limit(5000),
-      ]);
-
-      if (friendRequestsResult.error) throw friendRequestsResult.error;
-      if (myGroupMembershipsResult.error) throw myGroupMembershipsResult.error;
-      if (outgoingGroupRequestsResult.error) throw outgoingGroupRequestsResult.error;
-      if (persistedStatesResult.error && persistedStatesResult.error.code !== "42P01") throw persistedStatesResult.error;
-
-      const likes = likesResult.data || [];
-      const comments = commentsResult.data || [];
-      const eventAttendees = eventAttendeesResult.data || [];
-      const friendRequests = friendRequestsResult.data || [];
-      const persistedStates = persistedStatesResult.data || [];
-
-      const persistedById = new Map(
-        persistedStates.map((row) => [row.notification_id as string, { isRead: Boolean(row.is_read), isDismissed: Boolean(row.is_dismissed) }])
-      );
-
-      const readSet = new Set(readIdsRef.current);
-      const dismissedSet = new Set(dismissedIdsRef.current);
-
-      persistedById.forEach((state, notificationId) => {
-        if (state.isRead) readSet.add(notificationId);
-        if (state.isDismissed) dismissedSet.add(notificationId);
-      });
-
-      if (readSet.size !== readIdsRef.current.size) {
-        readIdsRef.current = readSet;
-        setReadIds(readSet);
+      const response = await fetch("/api/notifications?limit=20&offset=0", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("Bildirimler alınamadı");
       }
 
-      if (dismissedSet.size !== dismissedIdsRef.current.size) {
-        dismissedIdsRef.current = dismissedSet;
-        setDismissedIds(dismissedSet);
-      }
-
-      const actorIds = Array.from(
-        new Set([
-          ...likes.map((like) => like.user_id),
-          ...comments.map((comment) => comment.user_id),
-          ...eventAttendees.map((attendee) => attendee.user_id),
-          ...friendRequests.map((request) => (request.receiver_id === userId ? request.requester_id : request.receiver_id)),
-        ])
-      );
-
-      const profilesResult = actorIds.length
-        ? await supabase
-            .from("profiles")
-            .select("id, first_name, last_name, username, avatar_url")
-            .in("id", actorIds)
-        : { data: [], error: null };
-
-      if (profilesResult.error) throw profilesResult.error;
-
-      const profilesById = new Map((profilesResult.data || []).map((profile) => [profile.id, profile]));
-
-      const likeNotifications: AppNotification[] = likes.map((like) => {
-        const actor = profilesById.get(like.user_id);
-        const id = `likes:${like.post_id}:${like.user_id}`;
-
-        return {
-          id,
-          source: "likes",
-          type: "likes",
-          user: {
-            id: like.user_id,
-            name: getDisplayName(actor),
-            avatar: actor?.avatar_url || null,
-          },
-          message: "gönderinizi beğendi",
-          content: postContentById.get(like.post_id) || undefined,
-          createdAt: like.created_at,
-          isRead: readIdsRef.current.has(id),
-          actionUrl: "/feed",
-          actionLabel: "Gönderiyi Gör",
-        };
-      });
-
-      const commentNotifications: AppNotification[] = comments.map((comment) => {
-        const actor = profilesById.get(comment.user_id);
-        const id = `comments:${comment.id}`;
-
-        return {
-          id,
-          source: "comments",
-          type: "comments",
-          user: {
-            id: comment.user_id,
-            name: getDisplayName(actor),
-            avatar: actor?.avatar_url || null,
-          },
-          message: "gönderinize yorum yaptı",
-          content: comment.content,
-          createdAt: comment.created_at,
-          isRead: readIdsRef.current.has(id),
-          actionUrl: "/feed",
-          actionLabel: "Yorumu Gör",
-        };
-      });
-
-      const attendeeNotifications: AppNotification[] = eventAttendees
-        .filter((attendee) => attendee.status === "pending" || attendee.status === "going")
-        .map((attendee) => {
-          const actor = profilesById.get(attendee.user_id);
-          const id = `event_attendees:${attendee.event_id}:${attendee.user_id}`;
-          const eventTitle = eventTitleById.get(attendee.event_id);
-          const isApprovalRequest = attendee.status === "pending";
-
-          return {
-            id,
-            source: "event_attendees",
-            type: "events",
-            user: {
-              id: attendee.user_id,
-              name: getDisplayName(actor),
-              avatar: actor?.avatar_url || null,
-            },
-            message: isApprovalRequest ? "etkinliğinize katılım isteği gönderdi" : "etkinliğinize katılım gösterdi",
-            content: eventTitle || undefined,
-            createdAt: attendee.created_at,
-            isRead: readIdsRef.current.has(id),
-            actionUrl: `/meetups/${attendee.event_id}`,
-            actionLabel: isApprovalRequest ? "İsteği İncele" : "Etkinliği Gör",
-          };
-        });
-
-      const friendNotifications: AppNotification[] = friendRequests
-        .filter((request) => {
-          if (request.status === "pending" && request.receiver_id === userId) return true;
-          if (request.status === "accepted" && request.requester_id === userId) return true;
-          return false;
-        })
-        .map((request) => {
-          const actorId = request.receiver_id === userId ? request.requester_id : request.receiver_id;
-          const actor = profilesById.get(actorId);
-          const isIncoming = request.receiver_id === userId;
-          const id = `friend_requests:${request.requester_id}:${request.receiver_id}:${request.status}`;
-          const createdAt = request.responded_at || request.created_at;
-
-          return {
-            id,
-            source: "friend_requests",
-            type: "friends",
-            user: {
-              id: actorId,
-              name: getDisplayName(actor),
-              avatar: actor?.avatar_url || null,
-            },
-            message: isIncoming ? "size arkadaşlık isteği gönderdi" : "arkadaşlık isteğinizi kabul etti",
-            createdAt,
-            isRead: readSet.has(id),
-            actionUrl: `/profile/${actor?.username || actorId}`,
-            actionLabel: "Profili Gör",
-            friendRequest: {
-              requesterId: request.requester_id,
-              receiverId: request.receiver_id,
-              status: request.status as "pending" | "accepted" | "rejected" | "cancelled",
-              isIncoming,
-            },
-          };
-        });
-
-      const adminGroupIds = (myGroupMembershipsResult.data || []).map((membership) => membership.group_id as string);
-
-      const incomingGroupRequestsResult = adminGroupIds.length
-        ? await supabase
-            .from("group_join_requests")
-            .select("group_id, user_id, status, created_at, reviewed_at, updated_at")
-            .in("group_id", adminGroupIds)
-            .eq("status", "pending")
-            .neq("user_id", userId)
-            .limit(500)
-        : { data: [], error: null };
-
-      if (incomingGroupRequestsResult.error) throw incomingGroupRequestsResult.error;
-
-      const outgoingGroupRequests = outgoingGroupRequestsResult.data || [];
-      const incomingGroupRequests = incomingGroupRequestsResult.data || [];
-      const groupIds = Array.from(
-        new Set([
-          ...adminGroupIds,
-          ...outgoingGroupRequests.map((request) => request.group_id as string),
-          ...incomingGroupRequests.map((request) => request.group_id as string),
-        ])
-      );
-
-      const groupsResult = groupIds.length
-        ? await supabase
-            .from("groups")
-            .select("id, name")
-            .in("id", groupIds)
-        : { data: [], error: null };
-
-      if (groupsResult.error) throw groupsResult.error;
-      const groupNameById = new Map((groupsResult.data || []).map((group) => [group.id, group.name as string | null]));
-
-      const incomingGroupNotifications: AppNotification[] = incomingGroupRequests.map((request) => {
-        const actor = profilesById.get(request.user_id);
-        const id = `group_join_requests:incoming:${request.group_id}:${request.user_id}:pending`;
-        return {
-          id,
-          source: "group_join_requests",
-          type: "groups",
-          user: {
-            id: request.user_id,
-            name: getDisplayName(actor),
-            avatar: actor?.avatar_url || null,
-          },
-          message: "grubunuza katılım talebi gönderdi",
-          content: groupNameById.get(request.group_id) || undefined,
-          createdAt: request.created_at,
-          isRead: readSet.has(id),
-          actionUrl: "/groups",
-          actionLabel: "Talebi İncele",
-        };
-      });
-
-      const outgoingGroupNotifications: AppNotification[] = outgoingGroupRequests.map((request) => {
-        const id = `group_join_requests:outgoing:${request.group_id}:${request.status}`;
-        const status = request.status as "approved" | "rejected";
-        return {
-          id,
-          source: "group_join_requests",
-          type: "groups",
-          user: {
-            id: request.group_id,
-            name: "Grup Yönetimi",
-            avatar: null,
-          },
-          message: status === "approved" ? "grup katılım talebinizi onayladı" : "grup katılım talebinizi reddetti",
-          content: groupNameById.get(request.group_id) || undefined,
-          createdAt: request.reviewed_at || request.updated_at || request.created_at,
-          isRead: readSet.has(id),
-          actionUrl: "/groups",
-          actionLabel: "Grubu Gör",
-        };
-      });
-
-      const groupNotifications: AppNotification[] = [...incomingGroupNotifications, ...outgoingGroupNotifications];
-
-      const dedupedById = new Map<string, AppNotification>();
-      const readIdsSnapshot = readIdsRef.current;
-
-      [...likeNotifications, ...commentNotifications, ...attendeeNotifications, ...friendNotifications, ...groupNotifications].forEach((notification) => {
-        const candidate = readIdsSnapshot.has(notification.id) && !notification.isRead ? { ...notification, isRead: true } : notification;
-        const existing = dedupedById.get(candidate.id);
-
-        if (!existing) {
-          dedupedById.set(candidate.id, candidate);
-          return;
-        }
-
-        const nextTimestamp = getNotificationTimestamp(candidate);
-        const existingTimestamp = getNotificationTimestamp(existing);
-
-        if (nextTimestamp > existingTimestamp) {
-          dedupedById.set(candidate.id, candidate);
-          return;
-        }
-
-        if (nextTimestamp === existingTimestamp && candidate.id.localeCompare(existing.id) < 0) {
-          dedupedById.set(candidate.id, candidate);
-        }
-      });
-
-      const merged = Array.from(dedupedById.values())
-        .filter((notification) => !dismissedSet.has(notification.id))
-        .sort(compareNotifications);
-
-      setNotifications(merged);
-      devLog("notifications", "refresh:set", { userId, count: merged.length });
-    } catch (error) {
-      if (isAbortError(error)) {
-        return;
-      }
-
-      console.error("Bildirimler alınamadı:", error);
+      const payload = (await response.json()) as NotificationListResponse;
+      setNotifications(payload.items.map(toAppNotification));
+    } catch (fetchError) {
+      console.error(fetchError);
       setError("Bildirimler yüklenemedi.");
     } finally {
-      refreshInFlightRef.current = false;
       setLoading(false);
-      devLog("notifications", "refresh:end", { userId });
-
-      if (refreshQueuedRef.current) {
-        refreshQueuedRef.current = false;
-        void refreshNotifications();
-      }
     }
-  }, [authLoading, notificationStateHydrated, userId]);
+  }, [user]);
 
   useEffect(() => {
     if (authLoading) return;
-    if (!userId) {
-      setNotifications([]);
-      return;
-    }
-
-    if (!notificationStateHydrated) {
-      return;
-    }
-
     void refreshNotifications();
-  }, [authLoading, notificationStateHydrated, refreshNotifications, userId]);
+  }, [authLoading, refreshNotifications]);
 
-  useEffect(() => {
-    if (authLoading || !userId || !notificationStateHydrated) return;
-
-    const channel = supabase
-      .channel(`notifications-${userId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "likes" }, () => {
-        void refreshNotifications();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, () => {
-        void refreshNotifications();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "event_attendees" }, () => {
-        void refreshNotifications();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "friend_requests" }, () => {
-        void refreshNotifications();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "group_join_requests" }, () => {
-        void refreshNotifications();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [authLoading, notificationStateHydrated, refreshNotifications, userId]);
-
-  const markAsRead = useCallback((id: string) => {
-    setReadIds((prev) => {
-      if (prev.has(id)) return prev;
-      const next = new Set(prev);
-      next.add(id);
-      readIdsRef.current = next;
-      return next;
+  const markAsRead = useCallback(async (id: string) => {
+    setNotifications((prev) => prev.map((item) => (item.id === id ? { ...item, isRead: true } : item)));
+    await fetch("/api/notifications/actions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "mark_read", ids: [id] }),
     });
+  }, []);
 
-    setNotifications((prev) => prev.map((notification) => (notification.id === id ? { ...notification, isRead: true } : notification)));
-
-    if (userId) {
-      void supabase.from("user_notification_states").upsert({ user_id: userId, notification_id: id, is_read: true }, { onConflict: "user_id,notification_id" });
-    }
-  }, [userId]);
-
-  const markAllAsRead = useCallback(() => {
-    setReadIds((prev) => {
-      const next = new Set(prev);
-      notifications.forEach((notification) => next.add(notification.id));
-      readIdsRef.current = next;
-      return next;
+  const markAllAsRead = useCallback(async () => {
+    setNotifications((prev) => prev.map((item) => ({ ...item, isRead: true })));
+    await fetch("/api/notifications/actions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "mark_all_read" }),
     });
+  }, []);
 
-    setNotifications((prev) => prev.map((notification) => ({ ...notification, isRead: true })));
+  const deleteNotification = useCallback(async (id: string) => {
+    setNotifications((prev) => prev.filter((item) => item.id !== id));
+    await fetch("/api/notifications/actions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "archive_selected", ids: [id] }),
+    });
+  }, []);
 
-    if (userId && notifications.length > 0) {
-      void supabase.from("user_notification_states").upsert(
-        notifications.map((notification) => ({ user_id: userId, notification_id: notification.id, is_read: true })),
-        { onConflict: "user_id,notification_id" }
-      );
-    }
-  }, [notifications, userId]);
-
-  const deleteNotification = useCallback((id: string) => {
-    setDismissedIds((prev) => new Set(prev).add(id));
-    setNotifications((prev) => prev.filter((notification) => notification.id !== id));
-
-    if (userId) {
-      void supabase
-        .from("user_notification_states")
-        .upsert({ user_id: userId, notification_id: id, is_dismissed: true }, { onConflict: "user_id,notification_id" });
-    }
-  }, [userId]);
-
-  const unreadCount = useMemo(() => notifications.filter((notification) => !notification.isRead).length, [notifications]);
+  const unreadCount = useMemo(() => notifications.filter((item) => !item.isRead).length, [notifications]);
 
   const value = useMemo(
     () => ({ notifications, unreadCount, loading, error, markAsRead, markAllAsRead, deleteNotification, refreshNotifications }),
-    [deleteNotification, error, loading, markAllAsRead, markAsRead, notifications, refreshNotifications, unreadCount]
+    [notifications, unreadCount, loading, error, markAsRead, markAllAsRead, deleteNotification, refreshNotifications]
   );
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
