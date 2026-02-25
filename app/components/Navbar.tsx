@@ -88,22 +88,22 @@ const NAV_ITEMS = [
 ];
 
 function getNotificationTypeClasses(type: string) {
-  if (type === "mentions") return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-200";
-  if (type === "comments") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200";
-  if (type === "follows") return "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-200";
-  return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200";
+  if (type === "mentions") return "bg-[var(--color-info-light)] text-[var(--color-info)]";
+  if (type === "comments") return "bg-[var(--color-success-light)] text-[var(--color-success)]";
+  if (type === "follows") return "bg-[var(--color-warning-light)] text-[var(--color-warning)]";
+  return "bg-[var(--color-info-light)] text-[var(--color-info)]";
 }
 
 function getRoleBadge(role?: string | null) {
   if (role === "admin") {
-    return { label: "Admin", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" };
+    return { label: "Admin", className: "bg-[var(--color-error-light)] text-[var(--color-error)]" };
   }
 
   if (role === "moderator") {
-    return { label: "Moderator", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" };
+    return { label: "Moderator", className: "bg-[var(--color-warning-light)] text-[var(--color-warning)]" };
   }
 
-  return { label: "User", className: "bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300" };
+  return { label: "User", className: "bg-[var(--color-surface-sunken)] text-[var(--color-ink-secondary)]" };
 }
 
 function getDisplayName(
@@ -276,7 +276,7 @@ function NavDropdown({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-64 py-2 bg-white rounded-2xl shadow-xl border border-[var(--color-border-light)] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-full left-0 mt-2 w-64 py-2 bg-[var(--color-surface-raised)] rounded-2xl shadow-xl border border-[var(--color-border-light)] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           {item.children?.map((child) => {
             const ChildIcon = child.icon;
             const isChildActive = pathname === child.href || pathname.startsWith(child.href + "/");
@@ -292,8 +292,8 @@ function NavDropdown({
                   ${child.accent 
                     ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 my-2" 
                     : isChildActive
-                      ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                      : "text-neutral-600 dark:text-slate-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+                      ? "bg-[var(--color-surface-sunken)] text-[var(--color-ink)]"
+                      : "text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-sunken)]"
                   }
                 `}
               >
@@ -301,7 +301,7 @@ function NavDropdown({
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm">{child.label}</div>
                   {child.description && (
-                    <div className={`text-xs truncate ${child.accent ? "text-blue-100" : "text-slate-400"}`}>
+                    <div className={`text-xs truncate ${child.accent ? "text-blue-100" : "text-[var(--color-ink-tertiary)]"}`}>
                       {child.description}
                     </div>
                   )}
@@ -329,7 +329,7 @@ function MobileBottomNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 z-50 safe-area-inset-bottom">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--color-surface)]/90 backdrop-blur-xl border-t border-[var(--color-border-light)] z-50 safe-area-inset-bottom">
       <div className="h-16 overflow-x-auto scrollbar-hide">
         <div className="flex items-center gap-1 min-w-max px-2 h-full">
         {mobileItems.map((item) => {
@@ -346,8 +346,8 @@ function MobileBottomNav() {
                 flex items-center justify-center gap-2 h-11 px-4 rounded-xl shrink-0
                 transition-all duration-200
                 ${isActive 
-                  ? "text-blue-600 dark:text-blue-400" 
-                  : "text-slate-500 dark:text-slate-500"
+                  ? "text-[var(--color-primary)]" 
+                  : "text-[var(--color-ink-tertiary)] "
                 }
               `}
             >
@@ -397,14 +397,14 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
       />
       
       {/* Sheet */}
-      <div className="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white dark:bg-neutral-900 shadow-2xl animate-in slide-in-from-right duration-300">
+      <div className="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-[var(--color-surface-raised)] shadow-2xl animate-in slide-in-from-right duration-300">
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-sky-100">
+          <div className="flex items-center justify-between p-4 border-b border-[var(--color-border-light)]">
             <span className="font-bold text-lg">Menü</span>
             <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              className="p-2 rounded-full hover:bg-[var(--color-surface-sunken)]"
             >
               <X size={20} />
             </button>
@@ -412,7 +412,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
           {/* User Info */}
           {user && (
-            <div className="p-4 border-b border-sky-100">
+            <div className="p-4 border-b border-[var(--color-border-light)]">
               <Link href="/profile" onClick={onClose} className="flex items-center gap-3">
                 <Avatar
                   src={getAvatarUrl(profile, user)}
@@ -421,7 +421,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 />
                 <div>
                   <div className="font-semibold">{displayName}</div>
-                  <div className="text-sm text-slate-500">{usernameLabel}</div>
+                  <div className="text-sm text-[var(--color-ink-tertiary)]">{usernameLabel}</div>
                   <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${roleBadge.className}`}>{roleBadge.label}</span>
                 </div>
               </Link>
@@ -440,7 +440,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                     key={item.id}
                     href={item.href!}
                     onClick={onClose}
-                    className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-sky-50"
+                    className="flex items-center gap-3 px-4 py-3 text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-sunken)]"
                   >
                     <Icon size={20} />
                     <span className="font-medium">{item.label}</span>
@@ -450,7 +450,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
               return (
                 <div key={item.id} className="py-2">
-                  <div className="px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <div className="px-4 py-2 text-xs font-semibold text-[var(--color-ink-tertiary)] uppercase tracking-wider">
                     {item.label}
                   </div>
                   {item.children?.map((child) => {
@@ -463,10 +463,10 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                         className={`
                           flex items-center gap-3 px-6 py-2.5
                           ${child.accent 
-                            ? "text-blue-600 dark:text-blue-400" 
-                            : "text-neutral-600 dark:text-slate-400"
+                            ? "text-[var(--color-primary)]" 
+                            : "text-[var(--color-ink-secondary)]"
                           }
-                          hover:bg-neutral-100 dark:hover:bg-neutral-800
+                          hover:bg-[var(--color-surface-sunken)]
                         `}
                       >
                         <ChildIcon size={18} />
@@ -480,11 +480,11 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           </div>
 
           {isAdmin && (
-            <div className="border-t border-neutral-200 dark:border-neutral-800 py-2">
+            <div className="border-t border-[var(--color-border-light)] py-2">
               <Link
                 href="/admin"
                 onClick={onClose}
-                className="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                className="flex items-center gap-3 px-4 py-3 text-[var(--color-error)] hover:bg-[var(--color-error-light)]"
               >
                 <Shield size={20} />
                 <span className="font-medium">Admin Paneli</span>
@@ -493,7 +493,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           )}
 
           {/* Footer Actions */}
-          <div className="p-4 border-t border-neutral-200 dark:border-neutral-800">
+          <div className="p-4 border-t border-[var(--color-border-light)]">
             {user ? (
               <div className="space-y-2">
                 <Link href="/ayarlar" onClick={onClose}>
@@ -775,7 +775,7 @@ export default function Navbar() {
               <div ref={searchRef} className="relative hidden sm:block">
                 <button
                   onClick={() => setSearchOpen((prev) => !prev)}
-                  className="rounded-full p-2.5 text-[var(--color-ink-secondary)] transition-colors hover:bg-white hover:text-[var(--color-ink)]"
+                  className="rounded-full p-2.5 text-[var(--color-ink-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-ink)]"
                   aria-label="Sitede ara"
                   aria-expanded={searchOpen}
                 >
@@ -783,11 +783,11 @@ export default function Navbar() {
                 </button>
 
                 {searchOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-[420px] max-w-[90vw] rounded-2xl border border-sky-100 bg-white shadow-xl z-50 overflow-hidden">
-                    <div className="p-3 border-b border-sky-100">
+                  <div className="absolute right-0 top-full mt-2 w-[420px] max-w-[90vw] rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] shadow-xl z-50 overflow-hidden">
+                    <div className="p-3 border-b border-[var(--color-border-light)]">
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
-                          <Search size={16} className="text-slate-400" />
+                        <div className="flex-1 flex items-center gap-2 rounded-xl border border-[var(--color-border-light)] px-3 py-2">
+                          <Search size={16} className="text-[var(--color-ink-tertiary)]" />
                           <input
                             value={searchQuery}
                             onChange={(event) => setSearchQuery(event.target.value)}
@@ -814,24 +814,24 @@ export default function Navbar() {
 
                     <div className="max-h-[340px] overflow-y-auto">
                       {searchLoading ? (
-                        <p className="p-4 text-sm text-slate-500">Aranıyor...</p>
+                        <p className="p-4 text-sm text-[var(--color-ink-tertiary)]">Aranıyor...</p>
                       ) : searchQuery.trim().length < 2 ? (
-                        <p className="p-4 text-sm text-slate-500">Aramaya başlamak için en az 2 karakter girin.</p>
+                        <p className="p-4 text-sm text-[var(--color-ink-tertiary)]">Aramaya başlamak için en az 2 karakter girin.</p>
                       ) : searchResults.length === 0 ? (
-                        <p className="p-4 text-sm text-slate-500">Sonuç bulunamadı.</p>
+                        <p className="p-4 text-sm text-[var(--color-ink-tertiary)]">Sonuç bulunamadı.</p>
                       ) : (
                         searchResults.map((item) => (
                           <Link
                             key={item.id}
                             href={item.href}
                             onClick={() => setSearchOpen(false)}
-                            className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 hover:bg-sky-50"
+                            className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[var(--color-border-light)] hover:bg-[var(--color-surface-sunken)]"
                           >
                             <div className="min-w-0">
-                              <p className="text-sm font-medium text-slate-800 truncate">{item.title}</p>
-                              <p className="text-xs text-slate-500 truncate">{item.subtitle || "Detaylar için tıklayın"}</p>
+                              <p className="text-sm font-medium text-[var(--color-ink)] truncate">{item.title}</p>
+                              <p className="text-xs text-[var(--color-ink-tertiary)] truncate">{item.subtitle || "Detaylar için tıklayın"}</p>
                             </div>
-                            <span className="text-[10px] px-2 py-1 rounded-full bg-slate-100 text-slate-600 font-medium">
+                            <span className="text-[10px] px-2 py-1 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-secondary)] font-medium">
                               {SEARCH_TYPE_LABELS[item.type]}
                             </span>
                           </Link>
@@ -857,7 +857,7 @@ export default function Navbar() {
                           void refreshNotifications();
                         }
                       }}
-                      className="flex p-2.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-sky-50 transition-colors relative"
+                      className="flex p-2.5 rounded-full text-[var(--color-ink-tertiary)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)] transition-colors relative"
                       aria-label="Bildirim panelini aç"
                       aria-expanded={notificationPanelOpen}
                     >
@@ -870,18 +870,18 @@ export default function Navbar() {
                     </button>
 
                     {notificationPanelOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-[380px] max-w-[86vw] bg-white rounded-2xl shadow-xl border border-sky-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
-                        <div className="px-4 py-3 border-b border-sky-100 flex items-center justify-between">
+                      <div className="absolute right-0 top-full mt-2 w-[380px] max-w-[86vw] bg-[var(--color-surface-raised)] rounded-2xl shadow-xl border border-[var(--color-border-light)] z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-[var(--color-border-light)] flex items-center justify-between">
                           <div>
-                            <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Bildirimler</h3>
-                            <p className="text-xs text-slate-500">{unreadCount > 0 ? `${unreadCount} okunmamış bildirim` : "Tüm bildirimler okundu"}</p>
+                            <h3 className="font-semibold text-[var(--color-ink)]">Bildirimler</h3>
+                            <p className="text-xs text-[var(--color-ink-tertiary)]">{unreadCount > 0 ? `${unreadCount} okunmamış bildirim` : "Tüm bildirimler okundu"}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => {
                               markAllAsRead();
                             }}
-                              className="text-xs font-medium text-slate-500 hover:text-slate-900"
+                              className="text-xs font-medium text-[var(--color-ink-tertiary)] hover:text-[var(--color-ink)]"
                             >
                               Tümünü okundu yap
                             </button>
@@ -897,11 +897,11 @@ export default function Navbar() {
 
                         <div className="max-h-[420px] overflow-y-auto">
                           {notificationLoading ? (
-                            <div className="p-6 text-sm text-slate-500">Bildirimler yükleniyor...</div>
+                            <div className="p-6 text-sm text-[var(--color-ink-tertiary)]">Bildirimler yükleniyor...</div>
                           ) : latestNotifications.length === 0 ? (
                             <div className="p-8 text-center">
-                              <Bell className="w-10 h-10 mx-auto mb-3 text-neutral-300 dark:text-neutral-600" />
-                              <p className="text-sm text-slate-500">Yeni bildirimin yok.</p>
+                              <Bell className="w-10 h-10 mx-auto mb-3 text-[var(--color-ink-faint)]" />
+                              <p className="text-sm text-[var(--color-ink-tertiary)]">Yeni bildirimin yok.</p>
                             </div>
                           ) : (
                             latestNotifications.map((notification) => (
@@ -912,7 +912,7 @@ export default function Navbar() {
                                   markAsRead(notification.id);
                                   setNotificationPanelOpen(false);
                                 }}
-                                className={`flex items-start gap-3 px-4 py-3 border-b border-sky-100 hover:bg-sky-50 transition-colors ${
+                                className={`flex items-start gap-3 px-4 py-3 border-b border-[var(--color-border-light)] hover:bg-[var(--color-surface-sunken)] transition-colors ${
                                   !notification.isRead ? "bg-sky-50" : ""
                                 }`}
                               >
@@ -922,13 +922,13 @@ export default function Navbar() {
                                   size="sm"
                                 />
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-sm leading-5 text-slate-700">
+                                  <p className="text-sm leading-5 text-[var(--color-ink-secondary)]">
                                     <span className="font-semibold">{notification.user.name}</span> {notification.message}
                                   </p>
                                   {notification.content && (
-                                    <p className="text-xs text-slate-500 truncate mt-0.5">{notification.content}</p>
+                                    <p className="text-xs text-[var(--color-ink-tertiary)] truncate mt-0.5">{notification.content}</p>
                                   )}
-                                  <p className="text-xs text-slate-400 mt-1" suppressHydrationWarning>
+                                  <p className="text-xs text-[var(--color-ink-tertiary)] mt-1" suppressHydrationWarning>
                                     {timeHydrated ? getTimeAgo(notification.createdAt) : "..."}
                                   </p>
                                 </div>
@@ -953,7 +953,7 @@ export default function Navbar() {
                         void refreshMessagePreviews();
                       }
                     }}
-                      className="flex p-2.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-sky-50 transition-colors relative"
+                      className="flex p-2.5 rounded-full text-[var(--color-ink-tertiary)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)] transition-colors relative"
                       aria-label="Mesajlar"
                     >
                       <MessageSquare size={20} />
@@ -965,11 +965,11 @@ export default function Navbar() {
                     </button>
 
                     {messagesOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-[370px] max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-sky-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
-                        <div className="px-4 py-3 border-b border-sky-100 flex items-center justify-between">
+                      <div className="absolute right-0 top-full mt-2 w-[370px] max-w-[90vw] bg-[var(--color-surface-raised)] rounded-2xl shadow-2xl border border-[var(--color-border-light)] z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-[var(--color-border-light)] flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Mesajlar</p>
-                            <p className="text-xs text-slate-500">{totalUnreadMessages} okunmamış mesaj</p>
+                            <p className="text-sm font-semibold text-[var(--color-ink)]">Mesajlar</p>
+                            <p className="text-xs text-[var(--color-ink-tertiary)]">{totalUnreadMessages} okunmamış mesaj</p>
                           </div>
                           <Link
                             href="/messages"
@@ -982,11 +982,11 @@ export default function Navbar() {
 
                         <div className="max-h-[420px] overflow-y-auto">
                           {messagesLoading ? (
-                            <div className="p-4 text-sm text-slate-500">Mesajlar yükleniyor...</div>
+                            <div className="p-4 text-sm text-[var(--color-ink-tertiary)]">Mesajlar yükleniyor...</div>
                           ) : messagesError ? (
                             <div className="p-4 text-sm text-red-500">{messagesError}</div>
                           ) : messagePreviews.length === 0 ? (
-                            <div className="p-4 text-sm text-slate-500">Henüz bir mesajınız yok.</div>
+                            <div className="p-4 text-sm text-[var(--color-ink-tertiary)]">Henüz bir mesajınız yok.</div>
                           ) : (
                             messagePreviews.slice(0, 8).map((conversation) => (
                               <button
@@ -1012,7 +1012,7 @@ export default function Navbar() {
                                   }
                                   router.push(`/messages?conversation=${conversation.conversationId}`);
                                 }}
-                                className="w-full px-4 py-3 flex items-start gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/70 transition-colors text-left border-b last:border-b-0 border-neutral-100 dark:border-neutral-800"
+                                className="w-full px-4 py-3 flex items-start gap-3 hover:bg-[var(--color-surface-sunken)] transition-colors text-left border-b last:border-b-0 border-[var(--color-border-light)]"
                               >
                                 <Avatar
                                   src={conversation.otherUserAvatar || undefined}
@@ -1021,15 +1021,15 @@ export default function Navbar() {
                                 />
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between gap-2 mb-1">
-                                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">
+                                    <p className="text-sm font-semibold text-[var(--color-ink)] truncate">
                                       {conversation.otherUserName}
                                     </p>
-                                    <span className="text-xs text-slate-500 flex-shrink-0">
+                                    <span className="text-xs text-[var(--color-ink-tertiary)] flex-shrink-0">
                                       <span suppressHydrationWarning>{timeHydrated ? formatMessageTime(conversation.lastMessageCreatedAt) : "..."}</span>
                                     </span>
                                   </div>
                                   <div className="flex items-center justify-between gap-2">
-                                    <p className="text-sm text-neutral-600 dark:text-slate-400 truncate">
+                                    <p className="text-sm text-[var(--color-ink-secondary)] truncate">
                                       {conversation.lastMessageText}
                                     </p>
                                     {conversation.unreadCount > 0 && (
@@ -1051,7 +1051,7 @@ export default function Navbar() {
                   <div ref={userMenuRef} className="relative hidden md:block">
                     <button
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
-                      className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 rounded-full border border-transparent hover:border-sky-200 hover:bg-sky-50 transition-colors"
+                      className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 rounded-full border border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] transition-colors"
                     >
                       <Avatar
                         src={getAvatarUrl(profile, user)}
@@ -1059,23 +1059,23 @@ export default function Navbar() {
                         size="sm"
                       />
                       <div className="text-left max-w-[140px]">
-                        <div className="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">{usernameLabel}</div>
+                        <div className="text-sm font-medium text-[var(--color-ink)] truncate">{usernameLabel}</div>
                       </div>
                       <ChevronDown size={14} className={`transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
                     </button>
 
                     {userMenuOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-56 py-2 bg-white rounded-2xl shadow-xl border border-sky-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="px-4 py-3 border-b border-sky-100">
+                      <div className="absolute right-0 top-full mt-2 w-56 py-2 bg-[var(--color-surface-raised)] rounded-2xl shadow-xl border border-[var(--color-border-light)] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="px-4 py-3 border-b border-[var(--color-border-light)]">
                           <div className="font-semibold truncate">{displayName}</div>
-                          <div className="text-sm text-slate-500 truncate">{usernameLabel}</div>
+                          <div className="text-sm text-[var(--color-ink-tertiary)] truncate">{usernameLabel}</div>
                           <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${roleBadge.className}`}>{roleBadge.label}</span>
                         </div>
                         <div className="py-1">
                           <Link
                             href="/profile"
                             onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-slate-700 hover:bg-sky-50"
+                            className="flex items-center gap-3 px-4 py-2.5 text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-sunken)]"
                           >
                             <User size={18} />
                             Profilim
@@ -1083,7 +1083,7 @@ export default function Navbar() {
                           <Link
                             href="/ayarlar"
                             onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-slate-700 hover:bg-sky-50"
+                            className="flex items-center gap-3 px-4 py-2.5 text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-sunken)]"
                           >
                             <Settings size={18} />
                             Ayarlar
@@ -1092,17 +1092,17 @@ export default function Navbar() {
                             <Link
                               href="/admin"
                               onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              className="flex items-center gap-3 px-4 py-2.5 text-[var(--color-error)] hover:bg-[var(--color-error-light)]"
                             >
                               <Shield size={18} />
                               Admin Paneli
                             </Link>
                           )}
                         </div>
-                        <div className="pt-1 border-t border-sky-100">
+                        <div className="pt-1 border-t border-[var(--color-border-light)]">
                           <button
                             onClick={handleSignOut}
-                            className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-[var(--color-error)] hover:bg-[var(--color-error-light)]"
                           >
                             <LogOut size={18} />
                             Çıkış Yap
@@ -1115,7 +1115,7 @@ export default function Navbar() {
                   {/* Mobile Menu Button */}
                   <button
                     onClick={() => setMobileMenuOpen(true)}
-                    className="md:hidden p-2.5 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-neutral-800"
+                    className="md:hidden p-2.5 rounded-full text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)]"
                   >
                     <Menu size={20} />
                   </button>
@@ -1123,7 +1123,7 @@ export default function Navbar() {
               ) : (
                 <>
                   <Link href="/login" className="hidden sm:block">
-                    <Button variant="ghost" size="sm" className="rounded-full border border-[#D9CDC3] bg-white px-5 text-[var(--color-ink)] hover:bg-white">
+                    <Button variant="ghost" size="sm" className="rounded-full border border-[#D9CDC3] bg-[var(--color-surface-raised)] px-5 text-[var(--color-ink)] hover:bg-[var(--color-surface-raised)]">
                       Giriş Yap
                     </Button>
                   </Link>
@@ -1134,7 +1134,7 @@ export default function Navbar() {
                   </Link>
                   <button
                     onClick={() => setMobileMenuOpen(true)}
-                    className="sm:hidden p-2.5 rounded-full text-neutral-600 hover:bg-neutral-100 dark:text-slate-400 dark:hover:bg-neutral-800"
+                    className="sm:hidden p-2.5 rounded-full text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-sunken)]"
                   >
                     <Menu size={20} />
                   </button>
