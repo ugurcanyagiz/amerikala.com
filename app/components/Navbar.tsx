@@ -87,9 +87,11 @@ const NAV_ITEMS = [
   },
 ];
 
-function getNotificationTypeClasses(type: "likes" | "comments" | "events") {
+function getNotificationTypeClasses(type: "likes" | "comments" | "events" | "friends" | "groups") {
   if (type === "likes") return "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-200";
   if (type === "comments") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200";
+  if (type === "friends") return "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-200";
+  if (type === "groups") return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200";
   return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200";
 }
 
@@ -932,7 +934,7 @@ export default function Navbar() {
                                   </p>
                                 </div>
                                 <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${getNotificationTypeClasses(notification.type)}`}>
-                                  {notification.type === "likes" ? "Beğeni" : notification.type === "comments" ? "Yorum" : "Etkinlik"}
+                                  {notification.type === "likes" ? "Beğeni" : notification.type === "comments" ? "Yorum" : notification.type === "friends" ? "Arkadaşlık" : notification.type === "groups" ? "Grup" : "Etkinlik"}
                                 </span>
                               </Link>
                             ))
