@@ -874,7 +874,6 @@ export default function Navbar() {
                             <button
                               onClick={() => {
                               markAllAsRead();
-                              void refreshNotifications();
                             }}
                               className="text-xs font-medium text-slate-500 hover:text-slate-900"
                             >
@@ -905,7 +904,6 @@ export default function Navbar() {
                                 href={notification.actionUrl || "/notifications"}
                                 onClick={() => {
                                   markAsRead(notification.id);
-                                  void refreshNotifications();
                                   setNotificationPanelOpen(false);
                                 }}
                                 className={`flex items-start gap-3 px-4 py-3 border-b border-sky-100 hover:bg-sky-50 transition-colors ${

@@ -71,7 +71,6 @@ export default function NotificationsPage() {
                 size="sm"
                 onClick={() => {
                   markAllAsRead();
-                  void refreshNotifications();
                 }}
                 className="gap-2"
                 disabled={notifications.length === 0}
