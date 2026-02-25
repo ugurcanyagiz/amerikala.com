@@ -1,10 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { 
-  Zap, Search, MapPin, Calendar, Users, Clock, Plus, Star, 
-  TrendingUp, Heart, MessageCircle, Share2, ChevronRight, Sparkles
+import {
+  Zap,
+  Search,
+  MapPin,
+  Users,
+  Clock,
+  Plus,
+  TrendingUp,
+  Heart,
+  MessageCircle,
+  Share2,
+  Sparkles,
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import { Button } from "../components/ui/Button";
@@ -15,6 +23,7 @@ import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
 import { Textarea } from "../components/ui/Textarea";
 import { Modal } from "../components/ui/Modal";
+import { PageHero, ResponsiveCardGrid, StickyFilterBar } from "../components/ui/SectionPrimitives";
 
 type Category = "all" | "coffee" | "food" | "sports" | "culture" | "networking";
 
@@ -37,156 +46,144 @@ export default function YakalaPage() {
       <div className="flex">
         <Sidebar />
 
-        <main className="flex-1">
-          {/* HERO */}
-          <section className="relative overflow-hidden bg-gradient-to-r from-amber-500 to-orange-600 text-white">
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0 bg-[url('/pattern.svg')]" />
-            </div>
-            
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-                    <Zap className="h-10 w-10" />
-                    Yakala
-                  </h1>
-                  <p className="text-amber-100 text-lg">
-                    Anlık buluşmalar oluştur, yakınındaki insanlarla tanış
-                  </p>
-                </div>
-                <Button 
-                  variant="secondary" 
-                  size="lg" 
-                  className="gap-2 shadow-xl"
-                  onClick={() => setIsModalOpen(true)}
-                >
-                  <Plus className="h-5 w-5" />
-                  Yakala Oluştur
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+        <main className="flex-1 bg-[var(--color-surface)] text-[var(--color-ink)]">
+          <PageHero
+            title={(
+              <span className="flex items-center gap-3">
+                <Zap className="h-9 w-9" /> Yakala
+              </span>
+            )}
+            description="Anlık buluşmalar oluştur, yakınındaki insanlarla tanış"
+            className="from-amber-500 to-orange-600"
+            descriptionClassName="text-amber-100"
+            actions={(
+              <Button
+                variant="secondary"
+                size="lg"
+                className="w-full gap-2 shadow-xl sm:w-auto"
+                onClick={() => setIsModalOpen(true)}
+              >
+                <Plus className="h-5 w-5" />
+                Yakala Oluştur
+              </Button>
+            )}
+            stats={(
+              <ResponsiveCardGrid cols="compact">
+                <div className="rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
                   <div className="text-3xl font-bold">{YAKALAS.length * 8}</div>
                   <div className="text-sm text-amber-100">Aktif Yakala</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
                   <div className="text-3xl font-bold">45</div>
                   <div className="text-sm text-amber-100">Şehir</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
                   <div className="text-3xl font-bold">1.2K</div>
                   <div className="text-sm text-amber-100">Bu Hafta</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
                   <div className="text-3xl font-bold">15 dk</div>
                   <div className="text-sm text-amber-100">Ort. Yanıt</div>
                 </div>
-              </div>
-            </div>
-          </section>
+              </ResponsiveCardGrid>
+            )}
+          />
 
-          {/* HOW IT WORKS */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
-            <Card className="glass">
+          <section className="relative z-10 mx-auto -mt-6 w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+            <Card className="glass border border-[var(--color-border-light)] bg-[var(--color-surface-raised)]">
               <CardContent className="p-6">
-                <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+                <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
                   <Sparkles className="h-5 w-5 text-amber-500" />
                   Nasıl Çalışır?
                 </h2>
-                <div className="grid md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-2">
-                      <span className="text-xl font-bold text-amber-600">1</span>
+                <div className="grid gap-4 md:grid-cols-4">
+                  {["Yakala Oluştur", "Konum Ekle", "Yakındakiler Görsün", "Buluşun!"].map((step, idx) => (
+                    <div key={step} className="text-center">
+                      <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+                        <span className="text-xl font-bold text-amber-600">{idx + 1}</span>
+                      </div>
+                      <p className="text-sm font-medium">{step}</p>
+                      <p className="text-xs text-[var(--color-ink-tertiary)]">
+                        {idx === 0 && "Ne yapmak istediğini yaz"}
+                        {idx === 1 && "Nerede olduğunu belirt"}
+                        {idx === 2 && "Çevrendeki insanlar görür"}
+                        {idx === 3 && "Gerçek hayatta tanışın"}
+                      </p>
                     </div>
-                    <p className="text-sm font-medium">Yakala Oluştur</p>
-                    <p className="text-xs text-neutral-500">Ne yapmak istediğini yaz</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-2">
-                      <span className="text-xl font-bold text-amber-600">2</span>
-                    </div>
-                    <p className="text-sm font-medium">Konum Ekle</p>
-                    <p className="text-xs text-neutral-500">Nerede olduğunu belirt</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-2">
-                      <span className="text-xl font-bold text-amber-600">3</span>
-                    </div>
-                    <p className="text-sm font-medium">Yakındakiler Görsün</p>
-                    <p className="text-xs text-neutral-500">Çevrendeki insanlar görür</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-2">
-                      <span className="text-xl font-bold text-amber-600">4</span>
-                    </div>
-                    <p className="text-sm font-medium">Buluşun!</p>
-                    <p className="text-xs text-neutral-500">Gerçek hayatta tanışın</p>
-                  </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           </section>
 
-          {/* FILTERS */}
-          <section className="sticky top-16 z-40 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-lg border-b border-neutral-200 dark:border-neutral-800 shadow-sm mt-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex flex-col lg:flex-row gap-4">
-                <div className="flex-1">
-                  <Input placeholder="Aktivite ara..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} icon={<Search size={18} />} />
-                </div>
-                <Select options={[
+          <StickyFilterBar className="mt-6">
+            <div className="flex flex-col gap-4 lg:flex-row">
+              <div className="flex-1">
+                <Input
+                  placeholder="Aktivite ara..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  icon={<Search size={18} />}
+                />
+              </div>
+              <Select
+                options={[
                   { value: "all", label: "Tüm Şehirler" },
                   { value: "nyc", label: "New York" },
                   { value: "la", label: "Los Angeles" },
                   { value: "sf", label: "San Francisco" },
-                ]} />
-              </div>
-
-              <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
-                {categories.map((cat) => (
-                  <button
-                    key={cat.value}
-                    onClick={() => setSelectedCategory(cat.value as Category)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-smooth whitespace-nowrap ${
-                      selectedCategory === cat.value
-                        ? "bg-amber-500 text-white shadow-lg"
-                        : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
-                    }`}
-                  >
-                    <span>{cat.icon}</span>
-                    <span>{cat.label}</span>
-                  </button>
-                ))}
-              </div>
+                ]}
+              />
             </div>
-          </section>
 
-          {/* YAKALAS */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex items-center gap-2 mb-6">
+            <div className="scrollbar-hide mt-4 flex gap-2 overflow-x-auto pb-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat.value}
+                  onClick={() => setSelectedCategory(cat.value as Category)}
+                  className={`h-10 whitespace-nowrap rounded-full px-4 text-sm font-medium transition-smooth flex items-center gap-2 ${
+                    selectedCategory === cat.value
+                      ? "bg-[var(--color-primary)] text-white shadow-lg"
+                      : "border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] text-[var(--color-ink-secondary)]"
+                  }`}
+                >
+                  <span>{cat.icon}</span>
+                  <span>{cat.label}</span>
+                </button>
+              ))}
+            </div>
+          </StickyFilterBar>
+
+          <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+            <div className="mb-6 flex items-center gap-2">
               <TrendingUp className="h-6 w-6 text-amber-500" />
               <h2 className="text-2xl font-bold">Aktif Yakalalar</h2>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <ResponsiveCardGrid>
               {YAKALAS.map((yakala) => (
                 <YakalaCard key={yakala.id} yakala={yakala} />
               ))}
-            </div>
+            </ResponsiveCardGrid>
           </section>
 
-          {/* CREATE MODAL */}
-          <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)} title="Yakala Oluştur" description="Ne yapmak istediğini paylaş" size="md">
+          <Modal
+            open={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            title="Yakala Oluştur"
+            description="Ne yapmak istediğini paylaş"
+            size="md"
+          >
             <div className="space-y-4">
-              <Select label="Kategori" options={categories.slice(1).map(c => ({ value: c.value, label: `${c.icon} ${c.label}` }))} />
+              <Select label="Kategori" options={categories.slice(1).map((c) => ({ value: c.value, label: `${c.icon} ${c.label}` }))} />
               <Input label="Başlık" placeholder="örn: Kahve içmeye var mı?" />
               <Textarea label="Açıklama" placeholder="Detayları yaz..." rows={3} />
               <Input label="Konum" placeholder="Buluşma yeri" icon={<MapPin size={18} />} />
               <Input label="Zaman" type="datetime-local" icon={<Clock size={18} />} />
               <div className="flex justify-end gap-3 pt-4">
-                <Button variant="outline" onClick={() => setIsModalOpen(false)}>İptal</Button>
+                <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+                  İptal
+                </Button>
                 <Button variant="primary">Yakala Oluştur</Button>
               </div>
             </div>
@@ -201,49 +198,55 @@ function YakalaCard({ yakala }: { yakala: typeof YAKALAS[0] }) {
   const [interested, setInterested] = useState(false);
 
   return (
-    <Card className="glass hover:shadow-lg transition-smooth">
+    <Card className="glass border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] transition-smooth hover:shadow-lg">
       <CardContent className="p-5">
-        <div className="flex items-start justify-between mb-3">
+        <div className="mb-3 flex items-start justify-between">
           <div className="flex items-center gap-3">
             <Avatar src={yakala.creator.avatar} fallback={yakala.creator.name} size="md" status="online" />
             <div>
               <p className="font-semibold">{yakala.creator.name}</p>
-              <p className="text-xs text-neutral-500">{yakala.timeAgo}</p>
+              <p className="text-xs text-[var(--color-ink-tertiary)]">{yakala.timeAgo}</p>
             </div>
           </div>
-          <Badge variant="warning" size="sm">{yakala.category}</Badge>
+          <Badge variant="warning" size="sm">
+            {yakala.category}
+          </Badge>
         </div>
 
-        <h3 className="font-bold text-lg mb-2">{yakala.title}</h3>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">{yakala.description}</p>
+        <h3 className="mb-2 text-lg font-bold">{yakala.title}</h3>
+        <p className="mb-4 text-sm text-[var(--color-ink-secondary)]">{yakala.description}</p>
 
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+        <div className="mb-4 space-y-2">
+          <div className="flex items-center gap-2 text-sm text-[var(--color-ink-secondary)]">
             <MapPin size={16} className="text-amber-500" />
             <span>{yakala.location}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+          <div className="flex items-center gap-2 text-sm text-[var(--color-ink-secondary)]">
             <Clock size={16} className="text-amber-500" />
             <span>{yakala.time}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+          <div className="flex items-center gap-2 text-sm text-[var(--color-ink-secondary)]">
             <Users size={16} className="text-amber-500" />
             <span>{yakala.interested} kişi ilgileniyor</span>
           </div>
         </div>
 
         <div className="flex gap-2">
-          <Button 
-            variant={interested ? "outline" : "primary"} 
-            size="sm" 
+          <Button
+            variant={interested ? "outline" : "primary"}
+            size="sm"
             className="flex-1 gap-1"
             onClick={() => setInterested(!interested)}
           >
             <Heart size={16} className={interested ? "fill-current" : ""} />
-            {interested ? "İlgileniyorum" : "İlgileniyorum"}
+            İlgileniyorum
           </Button>
-          <Button variant="outline" size="sm"><MessageCircle size={16} /></Button>
-          <Button variant="ghost" size="sm"><Share2 size={16} /></Button>
+          <Button variant="outline" size="sm">
+            <MessageCircle size={16} />
+          </Button>
+          <Button variant="ghost" size="sm">
+            <Share2 size={16} />
+          </Button>
         </div>
       </CardContent>
     </Card>

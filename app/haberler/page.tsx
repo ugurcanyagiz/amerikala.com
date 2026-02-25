@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { 
-  Newspaper, Search, Clock, User, Eye, MessageCircle, Share2, 
-  Bookmark, TrendingUp, Star, ChevronRight, Calendar, Tag
+  Search, Clock, Eye, Share2,
+  Bookmark, Star, ChevronRight
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import { Button } from "../components/ui/Button";
@@ -12,6 +11,7 @@ import { Card, CardContent } from "../components/ui/Card";
 import { Avatar } from "../components/ui/Avatar";
 import { Badge } from "../components/ui/Badge";
 import { Input } from "../components/ui/Input";
+import { PageHero, ResponsiveCardGrid, StickyFilterBar } from "../components/ui/SectionPrimitives";
 
 type Category = "all" | "news" | "guide" | "community" | "events";
 
@@ -37,23 +37,11 @@ export default function HaberlerPage() {
         <Sidebar />
 
         <main className="flex-1 bg-[var(--color-surface)] text-[var(--color-ink)]">
-          {/* HERO */}
-          <section className="relative overflow-hidden bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-hover)] text-white">
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0 bg-[url('/pattern.svg')]" />
-            </div>
-            
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-4xl font-bold mb-2">Haberler & Rehberler</h1>
-                  <p className="text-white/80 text-lg">
-                    Amerika&apos;daki Türk topluluğu için güncel haberler ve yararlı bilgiler
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+          <PageHero
+            title="Haberler & Rehberler"
+            description="Amerika&apos;daki Türk topluluğu için güncel haberler ve yararlı bilgiler"
+            stats={(
+              <ResponsiveCardGrid cols="compact">
                 <div className="bg-[color:var(--color-surface-raised)]/20 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                   <div className="text-3xl font-bold">{NEWS.length * 10}</div>
                   <div className="text-sm text-white/80">Makale</div>
@@ -70,13 +58,11 @@ export default function HaberlerPage() {
                   <div className="text-3xl font-bold">Haftalık</div>
                   <div className="text-sm text-white/80">Güncelleme</div>
                 </div>
-              </div>
-            </div>
-          </section>
+              </ResponsiveCardGrid>
+            )}
+          />
 
-          {/* FILTERS */}
-          <section className="sticky top-16 z-40 bg-[var(--color-surface)]/90 backdrop-blur-lg border-b border-[var(--color-border-light)] shadow-sm">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <StickyFilterBar>
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1">
                   <Input
@@ -93,7 +79,7 @@ export default function HaberlerPage() {
                   <button
                     key={cat.value}
                     onClick={() => setSelectedCategory(cat.value as Category)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-smooth whitespace-nowrap ${
+                    className={`h-10 flex items-center gap-2 px-4 rounded-full font-medium text-sm transition-smooth whitespace-nowrap ${
                       selectedCategory === cat.value
                         ? "bg-[var(--color-primary)] text-white shadow-lg"
                         : "bg-[var(--color-surface-raised)] text-[var(--color-ink-secondary)] border border-[var(--color-border-light)]"
@@ -104,11 +90,10 @@ export default function HaberlerPage() {
                   </button>
                 ))}
               </div>
-            </div>
-          </section>
+          </StickyFilterBar>
 
           {/* FEATURED ARTICLE */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div className="flex items-center gap-2 mb-6">
               <Star className="h-6 w-6 text-amber-500" />
               <h2 className="text-2xl font-bold">Öne Çıkan</h2>
@@ -142,11 +127,11 @@ export default function HaberlerPage() {
               {selectedCategory === "all" ? "Son Haberler" : categories.find(c => c.value === selectedCategory)?.label}
             </h2>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <ResponsiveCardGrid>
               {filteredNews.map((news) => (
                 <NewsCard key={news.id} news={news} />
               ))}
-            </div>
+            </ResponsiveCardGrid>
           </section>
         </main>
       </div>
