@@ -75,6 +75,8 @@ export default function AlisverisIlanVerPage() {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const fieldClassName = "h-11 rounded-xl border-neutral-200 bg-white hover:border-neutral-300 focus:border-orange-400 focus:ring-orange-500/20 dark:border-neutral-700 dark:bg-neutral-900";
+
   // Redirect if not logged in
   useEffect(() => {
     if (!authLoading && !user) {
@@ -222,7 +224,8 @@ export default function AlisverisIlanVerPage() {
         <Sidebar />
 
         <main className="flex-1">
-          <div className="app-page-container max-w-3xl py-8">
+          <div className="app-page-container py-6 md:py-10">
+            <div className="mx-auto w-full max-w-4xl">
             {/* Header */}
             <div className="flex items-center gap-4 mb-8">
               <Link href="/alisveris">
@@ -239,8 +242,12 @@ export default function AlisverisIlanVerPage() {
               </div>
             </div>
 
-            <Card>
-              <CardContent className="p-6 space-y-6">
+            <Card className="overflow-hidden rounded-3xl border border-neutral-200/80 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:border-neutral-800 dark:bg-neutral-950">
+              <CardContent className="space-y-8 p-5 sm:p-8">
+                <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
+                  <h2 className="text-base font-semibold">Ürün Bilgileri</h2>
+                  <p className="mt-1 text-sm text-neutral-500">İlanınızı öne çıkaracak temel bilgileri ekleyin.</p>
+                </div>
                 {/* Category Selection */}
                 <div>
                   <label className="block text-sm font-medium mb-3">Kategori</label>
@@ -277,6 +284,7 @@ export default function AlisverisIlanVerPage() {
                     placeholder="Örn: iPhone 14 Pro Max - 256GB"
                     error={errors.title}
                     maxLength={100}
+                    className={fieldClassName}
                   />
                 </div>
 
@@ -289,17 +297,21 @@ export default function AlisverisIlanVerPage() {
                     placeholder="Ürün hakkında detaylı bilgi..."
                     rows={4}
                     maxLength={2000}
+                    className="min-h-[132px] rounded-xl border-neutral-200 bg-white hover:border-neutral-300 focus:border-orange-400 focus:ring-orange-500/20 dark:border-neutral-700 dark:bg-neutral-900"
                   />
                 </div>
 
                 {/* Condition & Price */}
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
+                  <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-neutral-500"><DollarSign size={16} /> Fiyat</h3>
+                  <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">Durumu</label>
                     <Select
                       value={formData.condition}
                       onChange={(e) => handleChange("condition", e.target.value)}
                       options={Object.entries(MARKETPLACE_CONDITION_LABELS).map(([value, label]) => ({ value, label }))}
+                      className={fieldClassName}
                     />
                   </div>
 
@@ -314,11 +326,12 @@ export default function AlisverisIlanVerPage() {
                         value={formData.price}
                         onChange={(e) => handleChange("price", e.target.value)}
                         placeholder="0"
-                        className="pl-10"
+                        className={`pl-10 ${fieldClassName}`}
                         error={errors.price}
                       />
                     </div>
                     {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
+                  </div>
                   </div>
                 </div>
 
@@ -329,7 +342,7 @@ export default function AlisverisIlanVerPage() {
                     id="negotiable"
                     checked={formData.is_negotiable}
                     onChange={(e) => handleChange("is_negotiable", e.target.checked)}
-                    className="w-5 h-5 rounded border-neutral-300 text-orange-500 focus:ring-orange-500"
+                    className="h-5 w-5 rounded border-neutral-300 text-orange-500 focus:ring-orange-500"
                   />
                   <label htmlFor="negotiable" className="font-medium">
                     Fiyat pazarlığa açık
@@ -337,7 +350,9 @@ export default function AlisverisIlanVerPage() {
                 </div>
 
                 {/* Location */}
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
+                  <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-neutral-500"><MapPin size={16} /> Teslimat / Konum</h3>
+                  <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       Şehir <span className="text-red-500">*</span>
@@ -348,6 +363,7 @@ export default function AlisverisIlanVerPage() {
                       onChange={(e) => handleChange("city", e.target.value)}
                       placeholder="Örn: New York"
                       error={errors.city}
+                      className={fieldClassName}
                     />
                   </div>
 
@@ -358,8 +374,8 @@ export default function AlisverisIlanVerPage() {
                     <select
                       value={formData.state}
                       onChange={(e) => handleChange("state", e.target.value)}
-                      className={`w-full px-4 py-3 rounded-xl border ${
-                        errors.state ? "border-red-500" : "border-neutral-200 dark:border-neutral-700"
+                      className={`h-11 w-full rounded-xl border px-4 text-sm ${
+                        errors.state ? "border-red-500" : "border-neutral-300 bg-gradient-to-b from-white to-neutral-50 dark:border-neutral-700 dark:from-neutral-950 dark:to-neutral-900"
                       } bg-white dark:bg-neutral-900`}
                     >
                       <option value="">Eyalet Seçin</option>
@@ -369,10 +385,11 @@ export default function AlisverisIlanVerPage() {
                     </select>
                     {errors.state && <p className="text-red-500 text-sm mt-1">{errors.state}</p>}
                   </div>
+                  </div>
                 </div>
 
                 {/* Images */}
-                <div>
+                <div className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
                   <label className="block text-sm font-medium mb-2">Fotoğraflar</label>
                   <div
                     onDragOver={(e) => {
@@ -385,10 +402,10 @@ export default function AlisverisIlanVerPage() {
                       setIsDragOver(false);
                       addImageFiles(e.dataTransfer.files);
                     }}
-                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors mb-4 ${
+                    className={`rounded-2xl border-2 border-dashed p-8 text-center transition-all mb-4 ${
                       isDragOver
                         ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
-                        : "border-neutral-200 dark:border-neutral-700"
+                        : "border-neutral-300 bg-gradient-to-b from-white to-neutral-50 dark:border-neutral-700 dark:from-neutral-950 dark:to-neutral-900"
                     }`}
                   >
                     <input
@@ -445,7 +462,7 @@ export default function AlisverisIlanVerPage() {
                 </div>
 
                 {/* Contact */}
-                <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-4">
+                <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 dark:border-neutral-800 dark:bg-neutral-900/50 space-y-4">
                   <h3 className="font-semibold">İletişim Bilgileri</h3>
                   
                   <div className="grid sm:grid-cols-2 gap-4">
@@ -458,7 +475,7 @@ export default function AlisverisIlanVerPage() {
                           value={formData.contact_email}
                           onChange={(e) => handleChange("contact_email", e.target.value)}
                           placeholder="ornek@email.com"
-                          className="pl-10"
+                          className={`pl-10 ${fieldClassName}`}
                         />
                       </div>
                     </div>
@@ -472,7 +489,7 @@ export default function AlisverisIlanVerPage() {
                           value={formData.contact_phone}
                           onChange={(e) => handleChange("contact_phone", e.target.value)}
                           placeholder="+1 (555) 123-4567"
-                          className="pl-10"
+                          className={`pl-10 ${fieldClassName}`}
                         />
                       </div>
                     </div>
@@ -516,6 +533,7 @@ export default function AlisverisIlanVerPage() {
                 </div>
               </CardContent>
             </Card>
+            </div>
           </div>
         </main>
       </div>
