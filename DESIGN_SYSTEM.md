@@ -8,9 +8,27 @@ Bu doküman, `app/globals.css` içinde tanımlı design token'ların ve `app/com
 
 Aşağıdaki isimlendirme doğrudan `app/globals.css` ile birebir uyumludur.
 
+### Core Semantic Tokens (Yeni sözlük)
+
+- `--color-bg`: Warm Neutral ana zemin (page/app background).
+- `--color-surface`: Solid surface (temel yüzey).
+- `--color-ink`: Calm Navy birincil metin tonu.
+- `--color-muted`: Soft Gray yardımcı metin tonu (`--color-ink-secondary` ile map).
+- `--color-primary` / `--color-primary-hover`: birincil CTA ve hover.
+- `--color-trust`: Calm Navy trust tonu (`--color-ink` ile map).
+- `--color-border`: Soft Gray border tonu.
+- `--shadow-soft`: Trust tabanlı yumuşak elevasyon gölgesi.
+
+Kısa kullanım örnekleri:
+
+- Page shell: `className="bg-[var(--color-bg)] text-[var(--color-ink)]"`
+- Card surface: `className="bg-[var(--color-surface)] shadow-[var(--shadow-soft)]"`
+- Primary CTA: `className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)]"`
+
 ### Page Tokens
 
-- `--color-surface`: Uygulama/page arka planı (body, page shell)
+- `--color-bg`: Uygulama/page ana zemin tonu
+- `--color-surface`: Uygulama/page yüzeyi
 - `--color-surface-overlay`: Overlay/backdrop tonu
 
 ### Surface Tokens
@@ -21,6 +39,7 @@ Aşağıdaki isimlendirme doğrudan `app/globals.css` ile birebir uyumludur.
 ### Text Tokens
 
 - `--color-ink`: Birincil metin
+- `--color-muted`: Yardımcı metin (`--color-ink-secondary`)
 - `--color-ink-secondary`: İkincil metin
 - `--color-ink-tertiary`: Yardımcı/placeholder metin
 - `--color-ink-inverse`: Ters kontrast metin
@@ -45,6 +64,30 @@ Aşağıdaki isimlendirme doğrudan `app/globals.css` ile birebir uyumludur.
 - `--color-primary-light`: Aksiyonun açık tonu (selection/highlight)
 - `--color-primary-subtle`: Çok düşük kontrast aksiyon zemini
 - `--color-primary-50` ... `--color-primary-900`: Ton skalası
+- `--color-trust`: Secondary/trust aksiyon tonu
+
+
+### Tailwind Semantic Utility Helpers
+
+`@layer utilities` altında semantic helper sınıflar:
+
+- `.bg-primary` → `background-color: var(--color-primary)`
+- `.bg-trust` → `background-color: var(--color-trust)`
+- `.text-ink` → `color: var(--color-ink)`
+- `.border-border` → `border-color: var(--color-border)`
+- `.ring-primary` → `--tw-ring-color: var(--color-primary)`
+
+### Mevcut Bileşenlerle Eşleştirme
+
+- `Button`:
+  - `variant="primary"` → `--color-primary` / `--color-primary-hover`
+  - `variant="secondary"` veya trust odaklı aksiyonlar → `--color-trust`
+- `Card`:
+  - `variant="default"|"elevated"` → `--color-surface`, `--color-border`, `--shadow-soft`
+- `Input` / `Select` / `Textarea`:
+  - Surface: `--color-surface-raised`
+  - Border: `--color-border` / hover `--color-border-strong`
+  - Focus ring: `--color-primary` (`ring-primary` ile hizalı)
 
 ---
 
@@ -84,6 +127,7 @@ Bu bölümdeki değerler, kodda tanımlı gerçek değerlerle birebir verilmişt
 - `--shadow-sm: 0 8px 18px rgba(17, 17, 17, 0.08)`
 - `--shadow-md: 0 14px 28px rgba(17, 17, 17, 0.10)`
 - `--shadow-lg: 0 18px 38px rgba(17, 17, 17, 0.12)`
+- `--shadow-soft: 0 12px 32px rgba(var(--color-trust-rgb), 0.08)`
 - `--shadow-xl: 0 24px 52px rgba(17, 17, 17, 0.14)`
 
 ### Container Width Standard
