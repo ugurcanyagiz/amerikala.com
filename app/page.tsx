@@ -477,7 +477,7 @@ export default function Home() {
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative flex min-h-[calc(100vh-64px)] overflow-hidden border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
+          <section className="relative flex overflow-hidden border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
             <div
               className="pointer-events-none absolute inset-0"
               aria-hidden="true"
