@@ -409,7 +409,7 @@ function FeaturedEventCard({ event }: { event: Event }) {
               />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(var(--color-trust-rgb),0.6)] to-transparent" />
           
           {/* Date Badge */}
           <div className="absolute top-3 left-3 bg-white dark:bg-neutral-900 rounded-lg px-2 py-1 text-center shadow-lg">

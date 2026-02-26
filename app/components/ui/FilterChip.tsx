@@ -27,7 +27,7 @@ export function FilterChip({ active = false, onClick, onRemove, children, classN
             e.stopPropagation();
             onRemove();
           }}
-          className="rounded-full p-0.5 hover:bg-black/5 dark:hover:bg-white/10"
+          className="rounded-full p-0.5 hover:bg-[rgba(var(--color-trust-rgb),0.05)] dark:hover:bg-white/10"
           aria-label="Filtreyi kaldır"
         >
           ×

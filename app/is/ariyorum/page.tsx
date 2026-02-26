@@ -426,7 +426,7 @@ export default function IsAriyorumPage() {
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(var(--color-trust-rgb),0.5)]">
           <Card variant="elevated" className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <CardHeader className="flex flex-row items-center justify-between p-6 border-b border-[var(--color-border-light)]">
               <CardTitle>İş Arayan Profili Oluştur</CardTitle>

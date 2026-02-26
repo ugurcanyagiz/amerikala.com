@@ -609,7 +609,7 @@ export default function Home() {
                         <Button
                           variant="ghost"
                           size="lg"
-                          className="h-11 rounded-xl border border-black bg-transparent px-7 text-sm font-bold uppercase tracking-[0.08em] text-black shadow-none hover:bg-black/5"
+                          className="h-11 rounded-xl border border-[var(--color-ink)] bg-transparent px-7 text-sm font-bold uppercase tracking-[0.08em] text-[var(--color-ink)] shadow-none hover:bg-[rgba(var(--color-trust-rgb),0.05)]"
                         >
                           GİRİŞ YAP
                         </Button>
@@ -619,7 +619,7 @@ export default function Home() {
                       <Button
                         variant="primary"
                         size="lg"
-                        className="h-11 rounded-xl bg-black px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_-18px_rgba(17,17,17,0.45)] hover:bg-black/90 hover:text-white focus-visible:ring-black/20"
+                        className="h-11 rounded-xl bg-[var(--color-ink)] px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_-18px_rgba(17,17,17,0.45)] hover:bg-[rgba(var(--color-trust-rgb),0.9)] hover:text-white focus-visible:ring-[rgba(var(--color-trust-rgb),0.2)]"
                       >
                         PAYLAŞIMLARI GÖR →
                       </Button>

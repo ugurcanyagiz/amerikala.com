@@ -335,7 +335,7 @@ function GroupCard({ group }: { group: Group }) {
               <span className="text-4xl opacity-50">{GROUP_CATEGORY_ICONS[group.category]}</span>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(var(--color-trust-rgb),0.6)] to-transparent" />
           
           {/* Avatar */}
           <div className="absolute -bottom-6 left-4">

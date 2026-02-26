@@ -356,7 +356,7 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-[rgba(var(--color-trust-rgb),0.5)] backdrop-blur-sm"
         onClick={onClose}
       />
       
