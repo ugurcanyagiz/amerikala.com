@@ -472,7 +472,7 @@ export default function Home() {
   );
 
   return (
-    <div className="relative min-h-[calc(100vh-64px)] overflow-x-clip bg-[var(--color-surface)]" style={{ backgroundColor: HOME_THEME.bg, color: HOME_THEME.text }}>
+    <div className="relative overflow-x-clip bg-[var(--color-surface)]" style={{ backgroundColor: HOME_THEME.bg, color: HOME_THEME.text }}>
       <div className="flex">
         <Sidebar />
 
@@ -487,7 +487,7 @@ export default function Home() {
               }}
             />
 
-            <div className="app-page-container relative py-8 sm:py-10 lg:py-14">
+            <div className="app-page-container relative py-10 lg:py-12">
               <div className="mx-auto w-full max-w-[760px]">
                 <div>
                   <HeroTitleMotion />
