@@ -12,6 +12,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import Sidebar from "./components/Sidebar";
+import HeroTitleMotion from "./components/HeroTitleMotion";
 import { Button } from "./components/ui/Button";
 import { Modal } from "./components/ui/Modal";
 import { publicSupabase } from "@/lib/supabase/publicClient";
@@ -486,15 +487,10 @@ export default function Home() {
               }}
             />
 
-            <div className="app-page-container relative flex w-full items-center justify-center py-16 sm:py-20">
+            <div className="app-page-container relative py-8 sm:py-10 lg:py-14">
               <div className="mx-auto w-full max-w-[760px]">
                 <div>
-                  <h1
-                    className="w-fit bg-[linear-gradient(110deg,#B9444D_0%,#1A1921_52%,#162C4F_100%)] bg-[length:200%_200%] bg-clip-text pb-2 text-[clamp(2.625rem,10vw,5.75rem)] font-semibold uppercase leading-[0.95] tracking-tight text-transparent [animation:heroTitleEnter_0.8s_cubic-bezier(0.16,1,0.3,1)_both]"
-                    style={{ WebkitTextFillColor: "transparent" }}
-                  >
-                    AMERIKALA
-                  </h1>
+                  <HeroTitleMotion />
                   <p className="mt-6 max-w-[680px] text-lg text-[var(--color-ink-secondary)] opacity-90">
                     Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
                   </p>
