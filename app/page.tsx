@@ -655,7 +655,7 @@ export default function Home() {
           </Modal>
 
           <section className="app-page-container py-12">
-            <div className="rounded-3xl border border-[var(--color-border-light)] bg-[#F8F3EE] p-4 shadow-[0_22px_45px_-40px_rgba(15,23,42,0.55)] sm:p-6">
+            <div className="rounded-3xl border border-[var(--color-border-light)] bg-white p-4 shadow-[0_22px_45px_-40px_rgba(15,23,42,0.55)] sm:p-6">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
                   const config = CATEGORY_CONFIG[key];
@@ -671,7 +671,7 @@ export default function Home() {
                       onFocus={() => setActiveCategoryPreview(key)}
                       className={`group rounded-2xl border px-3 py-4 text-center transition-all sm:px-4 sm:py-5 ${
                         isActive
-                          ? "border-[#E9D5C8] bg-[#FDF6F2] shadow-[0_22px_36px_-30px_rgba(17,17,17,0.35)]"
+                          ? "border-[#E9D5C8] bg-white shadow-[0_22px_36px_-30px_rgba(17,17,17,0.35)]"
                           : "border-[var(--color-border-light)] bg-white hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-30px_rgba(17,17,17,0.35)]"
                       }`}
                     >
@@ -684,7 +684,7 @@ export default function Home() {
                 })}
               </div>
 
-              <div className="mt-5 rounded-3xl border border-[var(--color-border-light)] bg-[#FBF7F3] p-4 sm:p-5">
+              <div className="mt-5 rounded-3xl border border-[var(--color-border-light)] bg-white p-4 sm:p-5">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-base font-semibold text-[var(--color-ink)]">{CATEGORY_CONFIG[activeCategoryPreview].title} - Popüler Gönderiler</h3>
                   <Link
