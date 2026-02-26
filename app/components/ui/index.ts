@@ -25,4 +25,7 @@ export type { AvatarProps } from './Avatar';
 export { Modal } from './Modal';
 export type { ModalProps } from './Modal';
 
+export { SelectionPicker } from './SelectionPicker';
+export type { SelectionOption } from './SelectionPicker';
+
 export { PageHero, StickyFilterBar, ResponsiveCardGrid } from './SectionPrimitives';
