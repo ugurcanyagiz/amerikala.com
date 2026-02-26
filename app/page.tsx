@@ -12,6 +12,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import Sidebar from "./components/Sidebar";
+import HeroTitleMotion from "./components/HeroTitleMotion";
 import { Button } from "./components/ui/Button";
 import { Modal } from "./components/ui/Modal";
 import { publicSupabase } from "@/lib/supabase/publicClient";
@@ -471,7 +472,7 @@ export default function Home() {
   );
 
   return (
-    <div className="relative min-h-[calc(100vh-64px)] overflow-x-clip bg-[var(--color-surface)]" style={{ backgroundColor: HOME_THEME.bg, color: HOME_THEME.text }}>
+    <div className="relative overflow-x-clip bg-[var(--color-surface)]" style={{ backgroundColor: HOME_THEME.bg, color: HOME_THEME.text }}>
       <div className="flex">
         <Sidebar />
 
@@ -486,21 +487,10 @@ export default function Home() {
               }}
             />
 
-            <div className="app-page-container relative pt-14 pb-12 sm:pb-14">
-              <div className="max-w-[760px]">
+            <div className="app-page-container relative pt-10 pb-6 lg:pt-12 lg:pb-8">
+              <div className="mx-auto w-full max-w-[760px]">
                 <div>
-                  <h1 className="text-[54px] font-black uppercase leading-[0.9] tracking-[-0.03em] text-[#0A0B13] sm:text-[64px] lg:text-[76px]">
-                    <span className="block">SENİ</span>
-                    <span className="block">BEKLEYENLER</span>
-                    <span
-                      className="relative mt-1 block w-fit bg-gradient-to-r from-[#D3172B] via-[#6A234A] to-[#0F3B88] bg-clip-text pb-4 text-transparent [text-shadow:0_7px_24px_rgba(17,24,39,0.18)]"
-                      style={{ WebkitTextFillColor: "transparent" }}
-                    >
-                      BURADA.
-                      <span className="absolute bottom-0 left-0 h-[2px] w-[46%] rounded-full bg-gradient-to-r from-[#D3172B] to-[#A72A3D]" aria-hidden="true" />
-                      <span className="absolute bottom-0 right-0 h-[2px] w-[46%] rounded-full bg-gradient-to-r from-[#34538F] to-[#0D316E]" aria-hidden="true" />
-                    </span>
-                  </h1>
+                  <HeroTitleMotion />
                   <p className="mt-6 max-w-[680px] text-lg text-[var(--color-ink-secondary)] opacity-90">
                     Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
                   </p>
@@ -662,7 +652,7 @@ export default function Home() {
             </div>
           </Modal>
 
-          <section className="app-page-container py-12">
+          <section className="app-page-container pt-4 pb-10 lg:pt-6 lg:pb-12">
             <div className="rounded-3xl border border-[var(--color-border-light)] bg-white p-4 shadow-[0_22px_45px_-40px_rgba(15,23,42,0.55)] sm:p-6">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
