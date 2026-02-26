@@ -104,6 +104,6 @@ set label = excluded.label,
 insert into public.listing_amenities (listing_id, amenity_id)
 select l.id, c.id
 from public.listings l
-cross join lateral unnest(coalesce(l.amenities, '{}')) amenity_key
-join public.amenity_catalog c on c.amenity_key = amenity_key
+cross join lateral jsonb_array_elements_text(coalesce(to_jsonb(l.amenities), '[]'::jsonb)) as amenity_key(value)
+join public.amenity_catalog c on c.amenity_key = amenity_key.value
 on conflict do nothing;

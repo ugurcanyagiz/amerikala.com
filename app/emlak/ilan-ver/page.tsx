@@ -789,8 +789,9 @@ export default function IlanVerPage() {
                   onChange={(value) => handleChange("amenities", value as string[])}
                   multiple
                   mobileTitle="Olanakları seçin"
-                  mobileDescription="Evcil hayvan, otopark ve çamaşırhane dahil tüm imkanları işaretleyin."
+                  mobileDescription="İlanınıza uygun olanakları seçin."
                   desktopColumnsClass="grid-cols-2 sm:grid-cols-3"
+                  mobileGridColumnsClass="grid-cols-2"
                 />
               </div>
             )}

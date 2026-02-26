@@ -21,6 +21,7 @@ interface SelectionPickerProps {
   mobileTitle?: string;
   mobileDescription?: string;
   desktopColumnsClass?: string;
+  mobileGridColumnsClass?: string;
 }
 
 const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
@@ -43,6 +44,7 @@ export function SelectionPicker({
   mobileTitle,
   mobileDescription,
   desktopColumnsClass = "grid-cols-2 sm:grid-cols-4",
+  mobileGridColumnsClass = "grid-cols-1",
 }: SelectionPickerProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -227,7 +229,7 @@ export function SelectionPicker({
               </Button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            <div className={`flex-1 overflow-y-auto p-4 grid ${mobileGridColumnsClass} gap-2 content-start`}>
               {options.map((option, index) => (
                 <button
                   key={option.value}
