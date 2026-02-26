@@ -211,7 +211,7 @@ export function SelectionPicker({
             aria-modal="true"
             aria-labelledby={dialogId}
             aria-describedby={mobileDescription ? descriptionId : undefined}
-            className="absolute inset-0 bg-white dark:bg-neutral-950 flex flex-col"
+            className="absolute left-3 right-3 top-4 bg-white dark:bg-neutral-950 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 flex flex-col max-h-[86vh]"
           >
             <div className="px-4 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
               <div>
@@ -229,7 +229,7 @@ export function SelectionPicker({
               </Button>
             </div>
 
-            <div className={`flex-1 overflow-y-auto p-4 grid ${mobileGridColumnsClass} gap-2 content-start`}>
+            <div className={`overflow-y-auto p-4 grid ${mobileGridColumnsClass} gap-2 content-start max-h-[60vh]`}>
               {options.map((option, index) => (
                 <button
                   key={option.value}

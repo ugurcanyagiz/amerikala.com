@@ -484,6 +484,7 @@ export const AMENITIES_LIST = [
   { value: 'storage', label: 'Depo', icon: '📦' },
   { value: 'garage', label: 'Garaj', icon: '🚗' },
   { value: 'pet_friendly', label: 'Evcil Hayvan OK', icon: '🐾' },
+  { value: 'smoke_free', label: 'Sigara Yasak', icon: '🚭' },
 ];
 
 // Pet policy options
