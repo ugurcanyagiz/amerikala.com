@@ -381,7 +381,7 @@ export default function AlisverisPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 rounded-2xl border border-black/10 bg-white p-5 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:grid-cols-2 md:grid-cols-12">
-              <div className="sm:col-span-2 md:col-span-6">
+              <div className="sm:col-span-2 md:col-span-4">
                 <Input
                   placeholder="Ara"
                   value={searchQuery}
@@ -389,6 +389,15 @@ export default function AlisverisPage() {
                   icon={<Search size={16} className="text-black/40" />}
                   aria-label="İlanlarda ara"
                   className="h-11 border-black/10 bg-neutral-50 hover:bg-neutral-50 focus:border-black/10 focus:ring-2 focus:ring-red-500/20"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Select
+                  options={CATEGORY_OPTIONS}
+                  value={selectedCategory}
+                  onChange={(e) => applyFilters({ ...buildFilterState(), category: e.target.value as MarketplaceCategory | "all" })}
+                  aria-label="Kategori filtresi"
+                  className="h-11 border-black/10 bg-white hover:bg-black/[0.02] focus:border-black/10 focus:ring-2 focus:ring-red-500/20"
                 />
               </div>
               <div className="md:col-span-2">
