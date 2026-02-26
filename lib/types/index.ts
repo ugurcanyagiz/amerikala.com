@@ -473,24 +473,17 @@ export const LISTING_STATUS_COLORS: Record<ListingStatus, string> = {
 
 // Amenities list
 export const AMENITIES_LIST = [
-  { value: 'ac', label: 'Klima', icon: '❄️' },
-  { value: 'heating', label: 'Isıtma', icon: '🔥' },
+  { value: 'gas_heating', label: 'Gas Isınma', icon: '🔥' },
+  { value: 'ac_window_unit', label: 'Klima / window Unit', icon: '❄️' },
   { value: 'washer', label: 'Çamaşır Makinesi', icon: '🧺' },
   { value: 'dryer', label: 'Kurutma Makinesi', icon: '👕' },
   { value: 'dishwasher', label: 'Bulaşık Makinesi', icon: '🍽️' },
-  { value: 'wifi', label: 'WiFi', icon: '📶' },
-  { value: 'parking', label: 'Otopark', icon: '🅿️' },
-  { value: 'gym', label: 'Spor Salonu', icon: '🏋️' },
+  { value: 'wifi', label: 'Wifi', icon: '📶' },
+  { value: 'gym', label: 'Gym', icon: '🏋️' },
   { value: 'pool', label: 'Havuz', icon: '🏊' },
-  { value: 'balcony', label: 'Balkon', icon: '🌅' },
-  { value: 'garden', label: 'Bahçe', icon: '🌳' },
-  { value: 'elevator', label: 'Asansör', icon: '🛗' },
-  { value: 'doorman', label: 'Kapıcı', icon: '🚪' },
-  { value: 'furnished', label: 'Eşyalı', icon: '🛋️' },
   { value: 'storage', label: 'Depo', icon: '📦' },
+  { value: 'garage', label: 'Garaj', icon: '🚗' },
   { value: 'pet_friendly', label: 'Evcil Hayvan OK', icon: '🐾' },
-  { value: 'smoke_free', label: 'Sigara Yasak', icon: '🚭' },
-  { value: 'security', label: 'Güvenlik', icon: '🔒' },
 ];
 
 // Pet policy options
