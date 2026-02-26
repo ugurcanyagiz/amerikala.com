@@ -487,7 +487,7 @@ export default function Home() {
               }}
             />
 
-            <div className="app-page-container relative py-10 lg:py-12">
+            <div className="app-page-container relative pt-10 pb-6 lg:pt-12 lg:pb-8">
               <div className="mx-auto w-full max-w-[760px]">
                 <div>
                   <HeroTitleMotion />
@@ -652,7 +652,7 @@ export default function Home() {
             </div>
           </Modal>
 
-          <section className="app-page-container py-12">
+          <section className="app-page-container pt-4 pb-10 lg:pt-6 lg:pb-12">
             <div className="rounded-3xl border border-[var(--color-border-light)] bg-white p-4 shadow-[0_22px_45px_-40px_rgba(15,23,42,0.55)] sm:p-6">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
