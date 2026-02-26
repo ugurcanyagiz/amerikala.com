@@ -13,10 +13,10 @@ export function FilterChip({ active = false, onClick, onRemove, children, classN
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
+      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 active:translate-y-px ${
         active
-          ? "border-orange-500 bg-orange-50 text-orange-700 dark:border-orange-400 dark:bg-orange-900/25 dark:text-orange-200"
-          : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+          ? "border-[var(--color-primary-300)] bg-[var(--color-primary-subtle)] text-[var(--color-primary-hover)] hover:-translate-y-0.5 hover:border-[var(--color-primary)]"
+          : "border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-ink-secondary)] hover:-translate-y-0.5 hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink)]"
       } ${className}`}
     >
       <span>{children}</span>

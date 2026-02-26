@@ -324,6 +324,8 @@ function NavDropdown({
 
 const POPOVER_PANEL_CLASSNAME = "absolute right-0 top-full mt-2 z-50 overflow-hidden border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] rounded-[var(--radius-card)] shadow-[var(--shadow-raised)] animate-in fade-in slide-in-from-top-2 duration-200";
 
+const NAV_ACTION_ICON_BUTTON_CLASSNAME = "rounded-full p-2.5 text-[var(--color-ink-secondary)] transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2";
+
 function SearchPanel({ children }: { children: ReactNode }) {
   return <div className={`${POPOVER_PANEL_CLASSNAME} w-[420px] max-w-[90vw]`}>{children}</div>;
 }
@@ -372,7 +374,7 @@ function MobileBottomNav() {
                 transition-all duration-200
                 ${isActive 
                   ? "text-[var(--color-primary)]" 
-                  : "text-[var(--color-ink-tertiary)] "
+                  : "text-[var(--color-muted)] "
                 }
               `}
             >
@@ -804,7 +806,7 @@ export default function Navbar() {
               <div ref={searchRef} className="relative hidden sm:block">
                 <button
                   onClick={() => setSearchOpen((prev) => !prev)}
-                  className="rounded-full p-2.5 text-[var(--color-ink-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-ink)]"
+                  className={NAV_ACTION_ICON_BUTTON_CLASSNAME}
                   aria-label="Sitede ara"
                   aria-expanded={searchOpen}
                 >
@@ -885,7 +887,7 @@ export default function Navbar() {
                           void refreshNotifications();
                         }
                       }}
-                      className="flex p-2.5 rounded-full text-[var(--color-ink-tertiary)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)] transition-colors relative"
+                      className={`${NAV_ACTION_ICON_BUTTON_CLASSNAME} relative flex p-2.5 text-[var(--color-ink-tertiary)]`}
                       aria-label="Bildirim panelini aç"
                       aria-expanded={notificationPanelOpen}
                     >
@@ -984,7 +986,7 @@ export default function Navbar() {
                         void refreshMessagePreviews();
                       }
                     }}
-                      className="flex p-2.5 rounded-full text-[var(--color-ink-tertiary)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)] transition-colors relative"
+                      className={`${NAV_ACTION_ICON_BUTTON_CLASSNAME} relative flex p-2.5 text-[var(--color-ink-tertiary)]`}
                       aria-label="Mesajlar"
                     >
                       <MessageSquare size={20} />
@@ -1146,7 +1148,7 @@ export default function Navbar() {
                   {/* Mobile Menu Button */}
                   <button
                     onClick={() => setMobileMenuOpen(true)}
-                    className="md:hidden p-2.5 rounded-full text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)]"
+                    className={NAV_ACTION_ICON_BUTTON_CLASSNAME}
                   >
                     <Menu size={20} />
                   </button>
@@ -1154,18 +1156,18 @@ export default function Navbar() {
               ) : (
                 <>
                   <Link href="/login" className="hidden sm:block">
-                    <Button variant="ghost" size="sm" className="h-10 rounded-lg border border-[#D9CDC3] bg-[var(--color-surface-raised)] px-4 text-[var(--color-ink)] hover:bg-[var(--color-surface-raised)]">
+                    <Button variant="ghost" size="sm" className="h-10 rounded-lg px-4">
                       Giriş Yap
                     </Button>
                   </Link>
                   <Link href="/#son-ilanlar" className="hidden sm:block">
-                    <Button variant="primary" size="sm" className="h-10 rounded-lg bg-[var(--color-primary)] px-4 text-white hover:bg-[var(--color-primary-hover)]">
+                    <Button variant="primary" size="sm" className="h-10 rounded-lg px-4">
                       Paylaşımları Gör
                     </Button>
                   </Link>
                   <button
                     onClick={() => setMobileMenuOpen(true)}
-                    className="sm:hidden p-2.5 rounded-full text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-sunken)]"
+                    className={NAV_ACTION_ICON_BUTTON_CLASSNAME}
                   >
                     <Menu size={20} />
                   </button>
