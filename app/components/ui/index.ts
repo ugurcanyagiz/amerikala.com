@@ -28,4 +28,7 @@ export type { ModalProps } from './Modal';
 export { SelectionPicker } from './SelectionPicker';
 export type { SelectionOption } from './SelectionPicker';
 
+export { Sheet } from './Sheet';
+export { FilterChip } from './FilterChip';
+
 export { PageHero, StickyFilterBar, ResponsiveCardGrid } from './SectionPrimitives';

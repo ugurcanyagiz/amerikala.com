@@ -18,6 +18,8 @@ import { Card, CardContent } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
+import { Sheet } from "../components/ui/Sheet";
+import { FilterChip } from "../components/ui/FilterChip";
 import {
   Search,
   MapPin,
@@ -26,6 +28,7 @@ import {
   Loader2,
   X,
   CalendarDays,
+  SlidersHorizontal,
 } from "lucide-react";
 
 const CATEGORIES: { value: MarketplaceCategory | "all"; label: string }[] = [
@@ -360,6 +363,25 @@ export default function AlisverisPage() {
     return () => observer.disconnect();
   }, [page, hasMore, loading, isLoadingMore, errorMessage, fetchListingsPage]);
 
+  const activeFilterCount = [
+    selectedCategory !== "all",
+    selectedState !== "all",
+    selectedCity.trim().length > 0,
+    minPrice.length > 0,
+    maxPrice.length > 0,
+    selectedCondition !== "all",
+    sortBy !== "newest",
+  ].filter(Boolean).length;
+
+  const activeFilterTags = [
+    selectedCategory !== "all" ? { key: "category", label: MARKETPLACE_CATEGORY_LABELS[selectedCategory] } : null,
+    selectedState !== "all" ? { key: "state", label: US_STATES_MAP[selectedState] || selectedState } : null,
+    selectedCity.trim() ? { key: "city", label: selectedCity.trim() } : null,
+    selectedCondition !== "all" ? { key: "condition", label: MARKETPLACE_CONDITION_LABELS[selectedCondition as keyof typeof MARKETPLACE_CONDITION_LABELS] || selectedCondition } : null,
+    minPrice ? { key: "min", label: `Min $${minPrice}` } : null,
+    maxPrice ? { key: "max", label: `Max $${maxPrice}` } : null,
+  ].filter(Boolean) as { key: string; label: string }[];
+
   return (
     <div className="ak-page pb-20 md:pb-0">
       <section className="relative py-8 md:py-10 bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-950/20">
@@ -380,7 +402,7 @@ export default function AlisverisPage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 rounded-2xl border border-black/10 bg-white p-5 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:grid-cols-2 md:grid-cols-12">
+            <div className="grid grid-cols-1 gap-4 rounded-3xl border border-black/10 bg-white/95 p-4 shadow-[0_12px_32px_rgba(0,0,0,0.08)] backdrop-blur sm:grid-cols-2 md:grid-cols-12 md:p-5">
               <div className="sm:col-span-2 md:col-span-4">
                 <Input
                   placeholder="Ara"
@@ -446,6 +468,24 @@ export default function AlisverisPage() {
                 </div>
               </div>
 
+              <div className="md:hidden">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="h-11 w-full justify-between rounded-xl border-black/10"
+                  onClick={() => {
+                    setMobileDraft(buildFilterState());
+                    setIsMobileFiltersOpen(true);
+                  }}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <SlidersHorizontal size={16} />
+                    Filtrele
+                  </span>
+                  {activeFilterCount > 0 && <span className="rounded-full bg-orange-500 px-2 py-0.5 text-xs text-white">{activeFilterCount}</span>}
+                </Button>
+              </div>
+
               <div className="hidden" aria-hidden="true">
                 <Input
                   placeholder="Şehir"
@@ -484,6 +524,28 @@ export default function AlisverisPage() {
                 </button>
               ))}
             </div>
+
+            {activeFilterTags.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {activeFilterTags.map((tag) => (
+                  <FilterChip
+                    key={tag.key}
+                    active
+                    onRemove={() => {
+                      const state = buildFilterState();
+                      if (tag.key === "category") applyFilters({ ...state, category: "all" });
+                      if (tag.key === "state") applyFilters({ ...state, state: "all" });
+                      if (tag.key === "city") applyFilters({ ...state, city: "" });
+                      if (tag.key === "condition") applyFilters({ ...state, condition: "all" });
+                      if (tag.key === "min") applyFilters({ ...state, minPrice: "" });
+                      if (tag.key === "max") applyFilters({ ...state, maxPrice: "" });
+                    }}
+                  >
+                    {tag.label}
+                  </FilterChip>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -549,138 +611,136 @@ export default function AlisverisPage() {
         )}
       </section>
 
-      {isMobileFiltersOpen && mobileDraft && (
-        <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Mobil filtreler">
-          <button
+      <Sheet
+        isOpen={isMobileFiltersOpen && !!mobileDraft}
+        onClose={() => {
+          setIsMobileFiltersOpen(false);
+          setMobileDraft(null);
+        }}
+        title="Filtrele"
+        rightAction={
+          <>
+            <button
+              type="button"
+              className="rounded-lg px-2 py-1 text-xs font-medium text-neutral-500"
+              onClick={() => {
+                const cleared = resetFilters();
+                setMobileDraft(cleared);
+              }}
+            >
+              Sıfırla
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsMobileFiltersOpen(false);
+                setMobileDraft(null);
+              }}
+              className="rounded-lg p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              aria-label="Filtreleri kapat"
+            >
+              <X size={18} />
+            </button>
+          </>
+        }
+        footer={
+          <Button
             type="button"
-            aria-label="Kapat"
-            className="absolute inset-0 bg-black/40"
-            onClick={() => {
-              setIsMobileFiltersOpen(false);
-              setMobileDraft(null);
-            }}
-          />
-          <div className="absolute bottom-0 left-0 right-0 rounded-t-2xl border-t border-neutral-200 bg-white p-5 shadow-2xl dark:border-neutral-800 dark:bg-neutral-950">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Filtreler</h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMobileFiltersOpen(false);
-                  setMobileDraft(null);
-                }}
-                className="rounded-lg p-2 hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 dark:hover:bg-neutral-800"
-                aria-label="Filtreleri kapat"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="space-y-3">
-              <Select
-                options={CATEGORY_OPTIONS}
-                value={mobileDraft.category}
-                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, category: e.target.value as MarketplaceCategory | "all" } : prev)}
-                aria-label="Kategori filtresi"
-              />
-              <Select
-                options={STATE_OPTIONS}
-                value={mobileDraft.state}
-                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, state: e.target.value } : prev)}
-                aria-label="Eyalet filtresi"
-              />
-              <Input
-                placeholder="Şehir"
-                value={mobileDraft.city}
-                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, city: e.target.value } : prev)}
-                aria-label="Şehir filtresi"
+            variant="primary"
+            className="h-12 w-full rounded-xl bg-orange-500 hover:bg-orange-600"
+            onClick={() => mobileDraft && applyFilters(mobileDraft, true)}
+          >
+            Uygula ({[
+              mobileDraft?.category !== "all",
+              mobileDraft?.state !== "all",
+              !!mobileDraft?.city,
+              !!mobileDraft?.minPrice,
+              !!mobileDraft?.maxPrice,
+              mobileDraft?.condition !== "all",
+              mobileDraft?.sort !== "newest",
+            ].filter(Boolean).length})
+          </Button>
+        }
+      >
+        {mobileDraft && (
+          <div className="space-y-6">
+            <section className="space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Kategori</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {CATEGORY_OPTIONS.map((option) => (
+                  <FilterChip
+                    key={option.value}
+                    active={mobileDraft.category === option.value}
+                    onClick={() => setMobileDraft((prev) => (prev ? { ...prev, category: option.value as MarketplaceCategory | "all" } : prev))}
+                    className="justify-center py-2 text-sm"
+                  >
+                    {option.label}
+                  </FilterChip>
+                ))}
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Fiyat Aralığı</h4>
+              <input
+                type="range"
+                min={0}
+                max={10000}
+                step={100}
+                value={Number(mobileDraft.maxPrice || mobileDraft.minPrice || 0)}
+                onChange={(e) => setMobileDraft((prev) => (prev ? { ...prev, maxPrice: e.target.value } : prev))}
+                className="h-2 w-full cursor-pointer appearance-none rounded-full bg-neutral-200 accent-orange-500"
               />
               <div className="grid grid-cols-2 gap-2">
-                <Input
-                  type="number"
-                  placeholder="Min $"
-                  value={mobileDraft.minPrice}
-                  onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, minPrice: e.target.value } : prev)}
-                  aria-label="Minimum fiyat"
-                />
-                <Input
-                  type="number"
-                  placeholder="Max $"
-                  value={mobileDraft.maxPrice}
-                  onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, maxPrice: e.target.value } : prev)}
-                  aria-label="Maksimum fiyat"
-                />
+                <Input type="number" placeholder="Min $" value={mobileDraft.minPrice} onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, minPrice: e.target.value } : prev)} className="h-11" />
+                <Input type="number" placeholder="Max $" value={mobileDraft.maxPrice} onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, maxPrice: e.target.value } : prev)} className="h-11" />
               </div>
-              <Select
-                options={CONDITION_OPTIONS}
-                value={mobileDraft.condition}
-                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, condition: e.target.value } : prev)}
-                aria-label="Durum filtresi"
-              />
-              <Select
-                options={SORT_OPTIONS}
-                value={mobileDraft.sort}
-                onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, sort: e.target.value } : prev)}
-                aria-label="Sıralama"
-              />
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="rounded-xl"
-                  onClick={() => {
-                    const cleared = resetFilters();
-                    setMobileDraft(cleared);
-                    applyFilters(cleared, true);
-                  }}
-                >
-                  Temizle
-                </Button>
-                <Button
-                  type="button"
-                  variant="primary"
-                  className="rounded-xl bg-orange-500 hover:bg-orange-600 focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
-                  onClick={() => applyFilters(mobileDraft, true)}
-                >
-                  Uygula
-                </Button>
+            </section>
+
+            <section className="space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Durum</h4>
+              <div className="space-y-2 rounded-2xl border border-neutral-200 p-2 dark:border-neutral-800">
+                {CONDITION_OPTIONS.map((option) => (
+                  <label key={option.value} className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-900">
+                    <span className="text-sm">{option.label}</span>
+                    <input
+                      type="radio"
+                      name="mobileCondition"
+                      checked={mobileDraft.condition === option.value}
+                      onChange={() => setMobileDraft((prev) => (prev ? { ...prev, condition: option.value } : prev))}
+                      className="h-4 w-4 accent-orange-500"
+                    />
+                  </label>
+                ))}
               </div>
-              <Select
-                options={SORT_OPTIONS}
-                value={sortBy}
-                onChange={(e) => {
-                  setSortBy(e.target.value);
-                  syncUrl({ sort: e.target.value, page: "1" });
-                }}
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                onClick={() => {
-                  setSelectedState("all");
-                  setSelectedCity("");
-                  setSelectedCondition("all");
-                  setMinPrice("");
-                  setMaxPrice("");
-                  setSortBy("newest");
-                  setPage("1");
-                  syncUrl({
-                    state: "all",
-                    city: "",
-                    condition: "all",
-                    minPrice: "",
-                    maxPrice: "",
-                    sort: "newest",
-                    page: "1",
-                  });
-                }}
-              >
-                Filtreleri Temizle
-              </Button>
-            </div>
+            </section>
+
+            <section className="space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Teslimat / Konum</h4>
+              <Select options={STATE_OPTIONS} value={mobileDraft.state} onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, state: e.target.value } : prev)} />
+              <Input placeholder="Şehir" value={mobileDraft.city} onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, city: e.target.value } : prev)} className="h-11" />
+            </section>
+
+            <section className="space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Sıralama</h4>
+              <div className="space-y-2 rounded-2xl border border-neutral-200 p-2 dark:border-neutral-800">
+                {SORT_OPTIONS.map((option) => (
+                  <label key={option.value} className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-900">
+                    <span className="text-sm">{option.label}</span>
+                    <input
+                      type="radio"
+                      name="mobileSort"
+                      checked={mobileDraft.sort === option.value}
+                      onChange={() => setMobileDraft((prev) => (prev ? { ...prev, sort: option.value } : prev))}
+                      className="h-4 w-4 accent-orange-500"
+                    />
+                  </label>
+                ))}
+              </div>
+            </section>
           </div>
-        </div>
-      )}
+        )}
+      </Sheet>
     </div>
   );
 }
