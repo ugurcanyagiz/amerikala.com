@@ -962,7 +962,7 @@ export default function IlanVerPage() {
                             <X size={14} />
                           </button>
                           {idx === 0 && (
-                            <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/60 text-white text-xs">
+                            <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-[rgba(var(--color-trust-rgb),0.6)] text-white text-xs">
                               Kapak
                             </span>
                           )}

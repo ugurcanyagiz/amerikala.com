@@ -235,7 +235,7 @@ function NavDropdown({
         href={item.href!}
         className={`
           group relative flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold uppercase tracking-wide
-          transition-colors duration-200 hover:bg-black/5
+          transition-colors duration-200 hover:bg-[rgba(var(--color-trust-rgb),0.05)]
           ${isActive
             ? "text-[var(--color-ink)]"
             : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
@@ -260,7 +260,7 @@ function NavDropdown({
         onClick={onToggle}
         className={`
           group relative flex h-10 items-center gap-1 rounded-lg px-3 text-sm font-semibold uppercase tracking-wide
-          transition-colors duration-200 hover:bg-black/5
+          transition-colors duration-200 hover:bg-[rgba(var(--color-trust-rgb),0.05)]
           ${isActive || isOpen
             ? "text-[var(--color-ink)]"
             : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
@@ -417,7 +417,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     <div className="fixed inset-0 z-50 md:hidden">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-[rgba(var(--color-trust-rgb),0.5)] backdrop-blur-sm"
         onClick={onClose}
       />
       
@@ -765,7 +765,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="hidden md:block sticky top-0 z-40 w-full h-16 border-b border-black/10 bg-[var(--color-surface)]/95 backdrop-blur-xl">
+      <header className="hidden md:block sticky top-0 z-40 w-full h-16 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl">
         <div className="mx-auto h-full max-w-7xl px-6">
           <div className="flex h-full items-center">
             <div className="flex flex-1 items-center justify-start">

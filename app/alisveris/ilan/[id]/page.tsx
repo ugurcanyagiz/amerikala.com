@@ -208,13 +208,13 @@ export default function MarketplaceDetailPage() {
                           <>
                             <button
                               onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+                              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[rgba(var(--color-trust-rgb),0.5)] text-white flex items-center justify-center hover:bg-[rgba(var(--color-trust-rgb),0.7)] transition-colors"
                             >
                               <ChevronLeft size={24} />
                             </button>
                             <button
                               onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
-                              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+                              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[rgba(var(--color-trust-rgb),0.5)] text-white flex items-center justify-center hover:bg-[rgba(var(--color-trust-rgb),0.7)] transition-colors"
                             >
                               <ChevronRight size={24} />
                             </button>

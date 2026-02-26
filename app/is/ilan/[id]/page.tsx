@@ -642,7 +642,7 @@ export default function JobListingDetailPage() {
       </div>
 
       {showReportModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-[rgba(var(--color-trust-rgb),0.5)] flex items-center justify-center p-4">
           <Card className="w-full max-w-lg">
             <CardContent className="p-6">
               <div className="flex items-start justify-between gap-3 mb-4">

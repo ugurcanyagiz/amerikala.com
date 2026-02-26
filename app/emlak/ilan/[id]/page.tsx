@@ -596,7 +596,7 @@ export default function ListingDetailPage() {
                             </button>
                           </>
                         )}
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/60 text-white text-sm font-semibold">
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[rgba(var(--color-trust-rgb),0.6)] text-white text-sm font-semibold">
                           {currentImageIndex + 1} / {images.length}
                         </div>
                       </>

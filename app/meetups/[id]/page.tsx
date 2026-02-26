@@ -866,7 +866,7 @@ export default function EventDetailPage() {
             <img src="/logo.png" alt="No picture" className="h-28 w-28 object-contain opacity-90" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(var(--color-trust-rgb),0.6)] to-transparent" />
         
         {/* Back Button */}
         <div className="absolute top-4 left-4">

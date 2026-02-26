@@ -204,7 +204,7 @@ export function SelectionPicker({
 
       {isMobileOpen && (
         <div className="sm:hidden fixed inset-0 z-50" role="presentation">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setIsMobileOpen(false)} aria-hidden="true" />
+          <div className="absolute inset-0 bg-[rgba(var(--color-trust-rgb),0.5)]" onClick={() => setIsMobileOpen(false)} aria-hidden="true" />
           <div
             ref={modalRef}
             role="dialog"

@@ -399,7 +399,7 @@ function ListingGridCard({ listing }: { listing: Listing }) {
               <Home className="w-12 h-12 text-neutral-400" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(var(--color-trust-rgb),0.6)] via-transparent to-transparent" />
           
           {/* Property Type Badge */}
           <div className="absolute top-3 left-3">
@@ -423,7 +423,7 @@ function ListingGridCard({ listing }: { listing: Listing }) {
 
           {/* Image Count */}
           {listing.images && listing.images.length > 1 && (
-            <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded">
+            <div className="absolute bottom-3 right-3 bg-[rgba(var(--color-trust-rgb),0.6)] text-white text-xs px-2 py-1 rounded">
               +{listing.images.length - 1} foto
             </div>
           )}
@@ -505,7 +505,7 @@ function ListingListCard({ listing }: { listing: Listing }) {
               
               {/* Image Count */}
               {listing.images && listing.images.length > 1 && (
-                <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                <div className="absolute bottom-2 right-2 bg-[rgba(var(--color-trust-rgb),0.6)] text-white text-xs px-2 py-1 rounded">
                   +{listing.images.length - 1}
                 </div>
               )}

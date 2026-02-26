@@ -367,7 +367,7 @@ export default function EventDetailPage() {
                         <span className="text-8xl">{EVENT_CATEGORY_ICONS[event.category]}</span>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[rgba(var(--color-trust-rgb),0.6)] to-transparent" />
 
                     {/* Floating Actions */}
                     <div className="absolute top-4 right-4 flex gap-2">

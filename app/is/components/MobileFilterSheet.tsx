@@ -90,7 +90,7 @@ export default function MobileFilterSheet({
       <button
         type="button"
         aria-label="Filtre panelini kapat"
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-[rgba(var(--color-trust-rgb),0.5)]"
         onClick={onClose}
       />
 

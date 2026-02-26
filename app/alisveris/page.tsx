@@ -402,15 +402,15 @@ export default function AlisverisPage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 rounded-3xl border border-black/10 bg-white/95 p-4 shadow-[0_12px_32px_rgba(0,0,0,0.08)] backdrop-blur sm:grid-cols-2 md:grid-cols-12 md:p-5">
+            <div className="grid grid-cols-1 gap-4 rounded-3xl border border-[var(--color-border)] bg-white/95 p-4 shadow-[0_12px_32px_rgba(var(--color-trust-rgb),0.08)] backdrop-blur sm:grid-cols-2 md:grid-cols-12 md:p-5">
               <div className="sm:col-span-2 md:col-span-4">
                 <Input
                   placeholder="Ara"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  icon={<Search size={16} className="text-black/40" />}
+                  icon={<Search size={16} className="text-[var(--color-muted)]" />}
                   aria-label="İlanlarda ara"
-                  className="h-11 border-black/10 bg-neutral-50 hover:bg-neutral-50 focus:border-black/10 focus:ring-2 focus:ring-red-500/20"
+                  className="h-11 border-[var(--color-border)] bg-neutral-50 hover:bg-neutral-50 focus:border-[var(--color-border)] focus:ring-2 focus:ring-red-500/20"
                 />
               </div>
               <div className="md:col-span-2">
@@ -419,7 +419,7 @@ export default function AlisverisPage() {
                   value={selectedCategory}
                   onChange={(e) => applyFilters({ ...buildFilterState(), category: e.target.value as MarketplaceCategory | "all" })}
                   aria-label="Kategori filtresi"
-                  className="h-11 border-black/10 bg-white hover:bg-black/[0.02] focus:border-black/10 focus:ring-2 focus:ring-red-500/20"
+                  className="h-11 border-[var(--color-border)] bg-white hover:bg-[rgba(var(--color-trust-rgb),0.02)] focus:border-[var(--color-border)] focus:ring-2 focus:ring-red-500/20"
                 />
               </div>
               <div className="md:col-span-2">
@@ -428,29 +428,29 @@ export default function AlisverisPage() {
                   value={selectedState}
                   onChange={(e) => applyFilters({ ...buildFilterState(), state: e.target.value })}
                   aria-label="Eyalet filtresi"
-                  className="h-11 border-black/10 bg-white hover:bg-black/[0.02] focus:border-black/10 focus:ring-2 focus:ring-red-500/20"
+                  className="h-11 border-[var(--color-border)] bg-white hover:bg-[rgba(var(--color-trust-rgb),0.02)] focus:border-[var(--color-border)] focus:ring-2 focus:ring-red-500/20"
                 />
               </div>
               <div className="order-4 sm:col-span-2 md:order-3 md:col-span-3">
-                <div className="rounded-xl border border-black/10 bg-neutral-50/90 px-3 py-2">
-                  <p className="mb-1 text-xs text-black/50">Fiyat Aralığı</p>
-                  <div className="flex items-center overflow-hidden rounded-lg border border-black/10 bg-white">
+                <div className="rounded-xl border border-[var(--color-border)] bg-neutral-50/90 px-3 py-2">
+                  <p className="mb-1 text-xs text-[var(--color-muted)]">Fiyat Aralığı</p>
+                  <div className="flex items-center overflow-hidden rounded-lg border border-[var(--color-border)] bg-white">
                     <input
                       type="number"
                       placeholder="Min"
                       value={minPrice}
                       onChange={(e) => applyFilters({ ...buildFilterState(), minPrice: e.target.value })}
                       aria-label="Minimum fiyat"
-                      className="h-11 w-1/2 border-0 bg-transparent px-3 text-sm text-black placeholder:text-black/40 focus:outline-none focus:ring-0"
+                      className="h-11 w-1/2 border-0 bg-transparent px-3 text-sm text-[var(--color-ink)] placeholder:text-[var(--color-muted)] focus:outline-none focus:ring-0"
                     />
-                    <div className="h-6 w-px bg-black/10" />
+                    <div className="h-6 w-px bg-[var(--color-ink)]/10" />
                     <input
                       type="number"
                       placeholder="Max"
                       value={maxPrice}
                       onChange={(e) => applyFilters({ ...buildFilterState(), maxPrice: e.target.value })}
                       aria-label="Maksimum fiyat"
-                      className="h-11 w-1/2 border-0 bg-transparent px-3 text-sm text-black placeholder:text-black/40 focus:outline-none focus:ring-0"
+                      className="h-11 w-1/2 border-0 bg-transparent px-3 text-sm text-[var(--color-ink)] placeholder:text-[var(--color-muted)] focus:outline-none focus:ring-0"
                     />
                   </div>
                 </div>
@@ -462,9 +462,9 @@ export default function AlisverisPage() {
                     value={sortBy}
                     onChange={(e) => applyFilters({ ...buildFilterState(), sort: e.target.value })}
                     aria-label="Sıralama"
-                    className="h-11 rounded-xl border-black/10 bg-white text-transparent hover:bg-black/5 focus:border-black/10 focus:ring-2 focus:ring-red-500/20"
+                    className="h-11 rounded-xl border-[var(--color-border)] bg-white text-transparent hover:bg-[rgba(var(--color-trust-rgb),0.05)] focus:border-[var(--color-border)] focus:ring-2 focus:ring-red-500/20"
                   />
-                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-black">Sirala</span>
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-[var(--color-ink)]">Sirala</span>
                 </div>
               </div>
 
@@ -472,7 +472,7 @@ export default function AlisverisPage() {
                 <Button
                   type="button"
                   variant="secondary"
-                  className="h-11 w-full justify-between rounded-xl border-black/10"
+                  className="h-11 w-full justify-between rounded-xl border-[var(--color-border)]"
                   onClick={() => {
                     setMobileDraft(buildFilterState());
                     setIsMobileFiltersOpen(true);
