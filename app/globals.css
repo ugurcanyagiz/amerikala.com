@@ -42,13 +42,13 @@
     /* ─────────────────────────────────────────
        SURFACE COLORS (Backgrounds)
        ───────────────────────────────────────── */
+    --color-bg: #F7F2EC;
     --color-surface: #F4EFEA;
     --color-surface-raised: #FBF7F3;
     --color-surface-sunken: #EEE7E1;
-    --color-bg: #F7F2EC;
-    --color-muted: #6B7280;
-    --color-trust: #2B3F5C;
-    --color-trust-rgb: 43, 63, 92;
+    --color-muted: var(--color-ink-secondary);
+    --color-trust: var(--color-ink);
+    --color-trust-rgb: 29, 53, 87;
     --color-surface-overlay: rgba(var(--color-trust-rgb), 0.4);
 
     /* ─────────────────────────────────────────
@@ -198,10 +198,10 @@
 
     --color-ink: #F5F5F5;
     --color-bg: #0F1724;
-    --color-muted: #94A3B8;
-    --color-trust: #8FA9D6;
-    --color-trust-rgb: 143, 169, 214;
     --color-ink-secondary: #A8A8A8;
+    --color-muted: var(--color-ink-secondary);
+    --color-trust: var(--color-ink);
+    --color-trust-rgb: 245, 245, 245;
     --color-ink-tertiary: #6B6B6B;
     --color-ink-inverse: #1A1A1A;
 
@@ -323,6 +323,10 @@
     color: var(--color-primary);
   }
 
+  .text-ink {
+    color: var(--color-ink);
+  }
+
   .text-secondary {
     color: var(--color-ink-secondary);
   }
@@ -348,6 +352,22 @@
 
   .surface-sunken {
     background-color: var(--color-surface-sunken);
+  }
+
+  .bg-primary {
+    background-color: var(--color-primary);
+  }
+
+  .bg-trust {
+    background-color: var(--color-trust);
+  }
+
+  .border-border {
+    border-color: var(--color-border);
+  }
+
+  .ring-primary {
+    --tw-ring-color: var(--color-primary);
   }
 
   /* ─────────────────────────────────────────
