@@ -14,7 +14,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       font-semibold tracking-tight
       rounded-[var(--radius-xl)]
       transition-all duration-150 ease-out
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 focus-visible:ring-offset-2
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2
       disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
       active:translate-y-px
     `;
@@ -26,14 +26,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         shadow-[var(--shadow-sm)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]
       `,
       secondary: `
-        bg-[var(--color-surface-raised)] text-[var(--color-ink)]
-        border border-[var(--color-border)]
+        bg-[rgba(var(--color-trust-rgb),0.08)] text-[var(--color-trust)]
+        border border-[rgba(var(--color-trust-rgb),0.22)]
         shadow-[var(--shadow-xs)]
-        hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] hover:border-[var(--color-border-strong)]
+        hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] hover:bg-[rgba(var(--color-trust-rgb),0.14)] hover:border-[rgba(var(--color-trust-rgb),0.3)]
       `,
       ghost: `
         bg-transparent text-[var(--color-ink-secondary)]
-        hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink)]
+        hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink)] hover:-translate-y-0.5
       `,
       outline: `
         bg-[var(--color-surface)] text-[var(--color-ink)]

@@ -113,7 +113,7 @@ const CATEGORY_CONFIG: Record<
     icon: Building2,
     badgeClass: "bg-[#FCE8E7] text-[var(--color-primary-hover)]",
     cardClass: "from-[#F8EDE7] via-[#FFF8F6] to-[#FCEBE8]",
-    iconCircleClass: "bg-[var(--color-ink)] text-white",
+    iconCircleClass: "bg-[var(--color-surface-raised)] text-[var(--color-trust)] border border-[rgba(var(--color-trust-rgb),0.16)]",
   },
   jobs: {
     title: "İş",
@@ -129,7 +129,7 @@ const CATEGORY_CONFIG: Record<
     icon: ShoppingBag,
     badgeClass: "bg-[#FCE8E7] text-[var(--color-primary-hover)]",
     cardClass: "from-[#F9ECE6] via-[#FFF8F6] to-[#FDEAE6]",
-    iconCircleClass: "bg-[var(--color-ink)] text-white",
+    iconCircleClass: "bg-[var(--color-surface-raised)] text-[var(--color-trust)] border border-[rgba(var(--color-trust-rgb),0.16)]",
   },
 };
 
@@ -597,9 +597,9 @@ export default function Home() {
                   <div className="mt-5 flex flex-wrap items-center gap-3">
                     {user ? (
                       <Button
-                        variant="primary"
+                        variant="secondary"
                         size="lg"
-                        className="h-11 rounded-xl bg-[var(--color-ink)] px-7 text-sm font-semibold tracking-wide text-white shadow-[0_14px_26px_-18px_rgba(17,17,17,0.9)]"
+                        className="h-11 rounded-xl px-7 text-sm font-semibold tracking-wide"
                         onClick={() => setIsPostListingModalOpen(true)}
                       >
                         İlan Ver
@@ -619,7 +619,7 @@ export default function Home() {
                       <Button
                         variant="primary"
                         size="lg"
-                        className="h-11 rounded-xl bg-[var(--color-ink)] px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_-18px_rgba(17,17,17,0.45)] hover:bg-[rgba(var(--color-trust-rgb),0.9)] hover:text-white focus-visible:ring-[rgba(var(--color-trust-rgb),0.2)]"
+                        className="h-11 rounded-xl bg-[var(--color-primary)] px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[var(--shadow-sm)] hover:bg-[var(--color-primary-hover)] focus-visible:ring-[var(--color-primary)]/30"
                       >
                         PAYLAŞIMLARI GÖR →
                       </Button>
