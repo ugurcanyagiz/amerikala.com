@@ -476,7 +476,7 @@ export default function Home() {
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative overflow-hidden border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
+          <section className="relative flex min-h-[calc(100vh-64px)] overflow-hidden border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
             <div
               className="pointer-events-none absolute inset-0"
               aria-hidden="true"
@@ -486,20 +486,14 @@ export default function Home() {
               }}
             />
 
-            <div className="app-page-container relative pt-14 pb-12 sm:pb-14">
-              <div className="max-w-[760px]">
+            <div className="app-page-container relative flex w-full items-center justify-center py-16 sm:py-20">
+              <div className="mx-auto w-full max-w-[760px]">
                 <div>
-                  <h1 className="text-[54px] font-black uppercase leading-[0.9] tracking-[-0.03em] text-[#0A0B13] sm:text-[64px] lg:text-[76px]">
-                    <span className="block">SENİ</span>
-                    <span className="block">BEKLEYENLER</span>
-                    <span
-                      className="relative mt-1 block w-fit bg-gradient-to-r from-[#D3172B] via-[#6A234A] to-[#0F3B88] bg-clip-text pb-4 text-transparent [text-shadow:0_7px_24px_rgba(17,24,39,0.18)]"
-                      style={{ WebkitTextFillColor: "transparent" }}
-                    >
-                      BURADA.
-                      <span className="absolute bottom-0 left-0 h-[2px] w-[46%] rounded-full bg-gradient-to-r from-[#D3172B] to-[#A72A3D]" aria-hidden="true" />
-                      <span className="absolute bottom-0 right-0 h-[2px] w-[46%] rounded-full bg-gradient-to-r from-[#34538F] to-[#0D316E]" aria-hidden="true" />
-                    </span>
+                  <h1
+                    className="w-fit bg-[linear-gradient(110deg,#B9444D_0%,#1A1921_52%,#162C4F_100%)] bg-[length:200%_200%] bg-clip-text pb-2 text-[clamp(2.625rem,10vw,5.75rem)] font-semibold uppercase leading-[0.95] tracking-tight text-transparent [animation:heroTitleEnter_0.8s_cubic-bezier(0.16,1,0.3,1)_both]"
+                    style={{ WebkitTextFillColor: "transparent" }}
+                  >
+                    AMERIKALA
                   </h1>
                   <p className="mt-6 max-w-[680px] text-lg text-[var(--color-ink-secondary)] opacity-90">
                     Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
