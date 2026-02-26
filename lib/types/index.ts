@@ -489,6 +489,13 @@ export const AMENITIES_LIST = [
   { value: 'furnished', label: 'Eşyalı', icon: '🛋️' },
   { value: 'storage', label: 'Depo', icon: '📦' },
   { value: 'pet_friendly', label: 'Evcil Hayvan OK', icon: '🐾' },
+  { value: 'pets_cats_only', label: 'Sadece Kedi', icon: '🐱' },
+  { value: 'pets_dogs_only', label: 'Sadece Köpek', icon: '🐶' },
+  { value: 'parking_street', label: 'Sokak Otoparkı', icon: '🛣️' },
+  { value: 'parking_garage', label: 'Garaj', icon: '🚗' },
+  { value: 'laundry_in_unit', label: 'Daire İçi Çamaşır', icon: '🧺' },
+  { value: 'laundry_in_building', label: 'Binada Çamaşır', icon: '🏢' },
+  { value: 'laundry_nearby', label: 'Yakın Çamaşırhane', icon: '🧼' },
   { value: 'smoke_free', label: 'Sigara Yasak', icon: '🚭' },
   { value: 'security', label: 'Güvenlik', icon: '🔒' },
 ];
