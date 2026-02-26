@@ -827,7 +827,7 @@ export default function Navbar() {
                               }
                             }}
                             placeholder="Sitede ara..."
-                            className="w-full border-none bg-transparent text-sm outline-none"
+                            className="w-full border-none bg-[var(--color-surface-raised)] text-sm outline-none"
                             autoFocus
                           />
                         </div>

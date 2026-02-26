@@ -692,7 +692,7 @@ export default function GroupDetailPage() {
                           <textarea
                             value={newPost}
                             onChange={(e) => setNewPost(e.target.value)}
-                            className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent p-3"
+                            className="w-full rounded-lg border border-border bg-[var(--color-surface-raised)] p-3 shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20"
                             rows={3}
                             placeholder="Grup duvarında paylaşım yap..."
                           />
@@ -751,7 +751,7 @@ export default function GroupDetailPage() {
                                 <input
                                   value={commentDrafts[post.id] || ""}
                                   onChange={(e) => setCommentDrafts((prev) => ({ ...prev, [post.id]: e.target.value }))}
-                                  className="flex-1 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm"
+                                  className="flex-1 rounded-lg border border-border bg-[var(--color-surface-raised)] px-3 py-2 text-sm shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20"
                                   placeholder="Yorum yaz..."
                                 />
                                 <Button type="submit" size="sm" disabled={commentingPostId === post.id || !(commentDrafts[post.id] || "").trim()}>
@@ -774,11 +774,11 @@ export default function GroupDetailPage() {
                       <CardHeader><CardTitle className="text-base">Hızlı Etkinlik Oluştur (Tüm Gruba Davet)</CardTitle></CardHeader>
                       <CardContent>
                         <form onSubmit={handleCreateEvent} className="grid sm:grid-cols-2 gap-3">
-                          <input className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2" placeholder="Etkinlik başlığı" value={eventForm.title} onChange={(e)=>setEventForm((p)=>({...p,title:e.target.value}))} required />
-                          <input className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2" placeholder="Mekan" value={eventForm.location_name} onChange={(e)=>setEventForm((p)=>({...p,location_name:e.target.value}))} required />
-                          <input type="date" className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2" value={eventForm.event_date} onChange={(e)=>setEventForm((p)=>({...p,event_date:e.target.value}))} required />
-                          <input type="time" className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2" value={eventForm.start_time} onChange={(e)=>setEventForm((p)=>({...p,start_time:e.target.value}))} required />
-                          <textarea className="sm:col-span-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2" placeholder="Açıklama" rows={3} value={eventForm.description} onChange={(e)=>setEventForm((p)=>({...p,description:e.target.value}))} />
+                          <input className="rounded-lg border border-border bg-[var(--color-surface-raised)] px-3 py-2 shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20" placeholder="Etkinlik başlığı" value={eventForm.title} onChange={(e)=>setEventForm((p)=>({...p,title:e.target.value}))} required />
+                          <input className="rounded-lg border border-border bg-[var(--color-surface-raised)] px-3 py-2 shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20" placeholder="Mekan" value={eventForm.location_name} onChange={(e)=>setEventForm((p)=>({...p,location_name:e.target.value}))} required />
+                          <input type="date" className="rounded-lg border border-border bg-[var(--color-surface-raised)] px-3 py-2 shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20" value={eventForm.event_date} onChange={(e)=>setEventForm((p)=>({...p,event_date:e.target.value}))} required />
+                          <input type="time" className="rounded-lg border border-border bg-[var(--color-surface-raised)] px-3 py-2 shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20" value={eventForm.start_time} onChange={(e)=>setEventForm((p)=>({...p,start_time:e.target.value}))} required />
+                          <textarea className="sm:col-span-2 rounded-lg border border-border bg-[var(--color-surface-raised)] px-3 py-2 shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20" placeholder="Açıklama" rows={3} value={eventForm.description} onChange={(e)=>setEventForm((p)=>({...p,description:e.target.value}))} />
                           <Button type="submit" disabled={creatingEvent || !eventForm.title || !eventForm.location_name || !eventForm.event_date || !eventForm.start_time} className="sm:col-span-2 gap-2">
                             {creatingEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : <Megaphone size={15} />} Etkinlik Yayınla
                           </Button>
@@ -887,14 +887,14 @@ export default function GroupDetailPage() {
                         <input
                           value={groupForm.name}
                           onChange={(e) => setGroupForm((prev) => ({ ...prev, name: e.target.value }))}
-                          className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2"
+                          className="w-full rounded-lg border border-border bg-[var(--color-surface-raised)] px-3 py-2 shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20"
                           placeholder="Grup adı"
                           required
                         />
                         <textarea
                           value={groupForm.description}
                           onChange={(e) => setGroupForm((prev) => ({ ...prev, description: e.target.value }))}
-                          className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2"
+                          className="w-full rounded-lg border border-border bg-[var(--color-surface-raised)] px-3 py-2 shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20"
                           rows={4}
                           placeholder="Grup açıklaması"
                           required
@@ -903,13 +903,13 @@ export default function GroupDetailPage() {
                           <input
                             value={groupForm.city}
                             onChange={(e) => setGroupForm((prev) => ({ ...prev, city: e.target.value }))}
-                            className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2"
+                            className="w-full rounded-lg border border-border bg-[var(--color-surface-raised)] px-3 py-2 shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20"
                             placeholder="Şehir"
                           />
                           <input
                             value={groupForm.state}
                             onChange={(e) => setGroupForm((prev) => ({ ...prev, state: e.target.value }))}
-                            className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2"
+                            className="w-full rounded-lg border border-border bg-[var(--color-surface-raised)] px-3 py-2 shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20"
                             placeholder="Eyalet"
                           />
                         </div>
@@ -944,7 +944,7 @@ export default function GroupDetailPage() {
                         <textarea
                           value={applicationQuestionDraft}
                           onChange={(e) => setApplicationQuestionDraft(e.target.value)}
-                          className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent px-3 py-2"
+                          className="w-full rounded-lg border border-border bg-[var(--color-surface-raised)] px-3 py-2 shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20"
                           rows={2}
                           placeholder="Opsiyonel başvuru sorusu"
                         />
