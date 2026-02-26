@@ -410,7 +410,7 @@ export default function AlisverisPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   icon={<Search size={16} className="text-[var(--color-muted)]" />}
                   aria-label="İlanlarda ara"
-                  className="h-11 border-[var(--color-border)] bg-neutral-50 hover:bg-neutral-50 focus:border-[var(--color-border)] focus:ring-2 focus:ring-red-500/20"
+                  className="h-11 border-border bg-surface-raised shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] hover:bg-surface-raised focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               <div className="md:col-span-2">
@@ -419,7 +419,7 @@ export default function AlisverisPage() {
                   value={selectedCategory}
                   onChange={(e) => applyFilters({ ...buildFilterState(), category: e.target.value as MarketplaceCategory | "all" })}
                   aria-label="Kategori filtresi"
-                  className="h-11 border-[var(--color-border)] bg-white hover:bg-[rgba(var(--color-trust-rgb),0.02)] focus:border-[var(--color-border)] focus:ring-2 focus:ring-red-500/20"
+                  className="h-11 border-border bg-surface-raised shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] hover:bg-[var(--color-surface-raised)] focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               <div className="md:col-span-2">
@@ -428,7 +428,7 @@ export default function AlisverisPage() {
                   value={selectedState}
                   onChange={(e) => applyFilters({ ...buildFilterState(), state: e.target.value })}
                   aria-label="Eyalet filtresi"
-                  className="h-11 border-[var(--color-border)] bg-white hover:bg-[rgba(var(--color-trust-rgb),0.02)] focus:border-[var(--color-border)] focus:ring-2 focus:ring-red-500/20"
+                  className="h-11 border-border bg-surface-raised shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] hover:bg-[var(--color-surface-raised)] focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               <div className="order-4 sm:col-span-2 md:order-3 md:col-span-3">
@@ -441,7 +441,7 @@ export default function AlisverisPage() {
                       value={minPrice}
                       onChange={(e) => applyFilters({ ...buildFilterState(), minPrice: e.target.value })}
                       aria-label="Minimum fiyat"
-                      className="h-11 w-1/2 border-0 bg-transparent px-3 text-sm text-[var(--color-ink)] placeholder:text-[var(--color-muted)] focus:outline-none focus:ring-0"
+                      className="h-11 w-1/2 border-0 bg-[var(--color-surface-raised)] px-3 text-sm text-[var(--color-ink)] placeholder:text-[var(--color-muted)] shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                     <div className="h-6 w-px bg-[var(--color-ink)]/10" />
                     <input
@@ -450,7 +450,7 @@ export default function AlisverisPage() {
                       value={maxPrice}
                       onChange={(e) => applyFilters({ ...buildFilterState(), maxPrice: e.target.value })}
                       aria-label="Maksimum fiyat"
-                      className="h-11 w-1/2 border-0 bg-transparent px-3 text-sm text-[var(--color-ink)] placeholder:text-[var(--color-muted)] focus:outline-none focus:ring-0"
+                      className="h-11 w-1/2 border-0 bg-[var(--color-surface-raised)] px-3 text-sm text-[var(--color-ink)] placeholder:text-[var(--color-muted)] shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                 </div>
@@ -462,7 +462,7 @@ export default function AlisverisPage() {
                     value={sortBy}
                     onChange={(e) => applyFilters({ ...buildFilterState(), sort: e.target.value })}
                     aria-label="Sıralama"
-                    className="h-11 rounded-xl border-[var(--color-border)] bg-white text-transparent hover:bg-[rgba(var(--color-trust-rgb),0.05)] focus:border-[var(--color-border)] focus:ring-2 focus:ring-red-500/20"
+                    className="h-11 rounded-xl border-border bg-surface-raised text-transparent shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] hover:bg-[var(--color-surface-raised)] focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                   <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-[var(--color-ink)]">Sirala</span>
                 </div>

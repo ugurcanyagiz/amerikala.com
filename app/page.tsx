@@ -499,7 +499,7 @@ export default function Home() {
                     ref={searchBoxRef}
                     className="relative mt-8 w-full max-w-[710px] rounded-2xl border border-[#E2D5C8] bg-white p-2 shadow-[0_12px_28px_-24px_rgba(17,17,17,0.55)] md:border-[#DECFC0] md:p-1.5"
                   >
-                    <div className="grid min-h-12 grid-cols-[1fr_auto] items-center gap-2 rounded-[14px] bg-[#FFFCF8] px-3 py-2 md:min-h-14 md:grid-cols-[1fr_116px] md:gap-0 md:bg-transparent md:px-0 md:py-0">
+                    <div className="grid min-h-12 grid-cols-[1fr_auto] items-center gap-2 rounded-[14px] bg-[#FFFCF8] px-3 py-2 md:min-h-14 md:grid-cols-[1fr_116px] md:gap-0 md:bg-[var(--color-surface-raised)] md:px-0 md:py-0">
                       <div className="flex items-center gap-2.5 px-1 md:gap-3 md:px-5">
                         <Search className="h-[18px] w-[18px] text-[#B58C57] md:h-5 md:w-5 md:text-[#C49A5C]" />
                         <input
@@ -533,7 +533,7 @@ export default function Home() {
                               onSearchSubmit();
                             }
                           }}
-                          className="w-full border-none bg-transparent text-[15px] text-[var(--color-ink)] outline-none placeholder:text-[#B9966A] md:text-base md:placeholder:text-[#BE9C72]"
+                          className="w-full border-none bg-[var(--color-surface-raised)] text-[15px] text-[var(--color-ink)] outline-none placeholder:text-[#B9966A] md:text-base md:placeholder:text-[#BE9C72]"
                           placeholder="Etkinlik, ilan, kişi ara..."
                           aria-label="Site içi arama"
                         />
