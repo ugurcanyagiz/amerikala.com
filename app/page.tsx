@@ -510,7 +510,7 @@ export default function Home() {
                     className="relative mt-8 w-full max-w-[710px] rounded-2xl border border-[#DECFC0] bg-white p-1.5 shadow-[0_10px_24px_-20px_rgba(17,17,17,0.4)]"
                   >
                     <div className="grid min-h-14 gap-0 md:grid-cols-[1fr_116px]">
-                      <div className="flex items-center gap-3 px-5">
+                      <div className="relative flex items-center gap-3 px-5">
                         <Search className="h-5 w-5 text-[#C49A5C]" />
                         <input
                           value={searchQuery}
@@ -543,14 +543,24 @@ export default function Home() {
                               onSearchSubmit();
                             }
                           }}
-                          className="w-full border-none bg-transparent text-base text-[var(--color-ink)] outline-none placeholder:text-[#BE9C72]"
+                          className="w-full border-none bg-transparent pr-11 text-base text-[var(--color-ink)] outline-none placeholder:text-[#BE9C72] md:pr-0"
                           placeholder="Etkinlik, ilan, kişi ara..."
                           aria-label="Site içi arama"
                         />
+
+                        <Button
+                          type="button"
+                          variant="primary"
+                          className="absolute right-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary)] p-0 hover:bg-[var(--color-primary-hover)] md:hidden"
+                          onClick={onSearchSubmit}
+                          aria-label={searching ? "Aranıyor" : "Ara"}
+                        >
+                          <Search className="h-4 w-4" />
+                        </Button>
                       </div>
                       <Button
                         variant="primary"
-                        className="h-full min-h-14 rounded-[14px] bg-[var(--color-primary)] px-8 text-base font-bold uppercase tracking-wide hover:bg-[var(--color-primary-hover)]"
+                        className="hidden h-full min-h-14 rounded-[14px] bg-[var(--color-primary)] px-8 text-base font-bold uppercase tracking-wide hover:bg-[var(--color-primary-hover)] md:inline-flex"
                         onClick={onSearchSubmit}
                       >
                         {searching ? "Aranıyor..." : "ARA"}
