@@ -556,7 +556,7 @@ export default function IsAriyorumPage() {
                   <div className="flex gap-3 pt-4">
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="secondary"
                       onClick={() => setShowCreateModal(false)}
                       className="flex-1"
                     >
@@ -896,7 +896,7 @@ function SeekerCard({ listing }: { listing: JobListing }) {
               <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-[var(--color-border-light)]">
                 {listing.contact_email && (
                   <a href={`mailto:${listing.contact_email}`}>
-                    <Button variant="outline" size="sm" className="gap-2">
+                    <Button variant="secondary" size="sm" className="gap-2">
                       <Mail size={15} />
                       E-posta
                     </Button>
@@ -904,7 +904,7 @@ function SeekerCard({ listing }: { listing: JobListing }) {
                 )}
                 {listing.contact_phone && (
                   <a href={`tel:${listing.contact_phone}`}>
-                    <Button variant="outline" size="sm" className="gap-2">
+                    <Button variant="secondary" size="sm" className="gap-2">
                       <Phone size={15} />
                       Ara
                     </Button>
@@ -912,7 +912,7 @@ function SeekerCard({ listing }: { listing: JobListing }) {
                 )}
 
                 <Button
-                  variant={relationshipStatus === "following" ? "outline" : "primary"}
+                  variant={relationshipStatus === "following" ? "secondary" : "primary"}
                   size="sm"
                   className="gap-2"
                   onClick={handleToggleFollow}
@@ -923,7 +923,7 @@ function SeekerCard({ listing }: { listing: JobListing }) {
                 </Button>
 
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   className="gap-2"
                   onClick={handleSendMessage}
@@ -934,14 +934,14 @@ function SeekerCard({ listing }: { listing: JobListing }) {
                 </Button>
 
                 <Link href={listingUser?.id ? `/profile/${listingUser.id}` : "#"}>
-                  <Button variant="outline" size="sm" className="gap-2" disabled={!listingUser?.id}>
+                  <Button variant="secondary" size="sm" className="gap-2" disabled={!listingUser?.id}>
                     <ExternalLink size={15} />
                     Profili Görüntüle
                   </Button>
                 </Link>
 
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   className="gap-2"
                   onClick={() => router.push(user ? "/groups/create" : "/login")}

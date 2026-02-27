@@ -422,7 +422,7 @@ export default function AlisverisIlanVerPage() {
                     </p>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="secondary"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploadingImages}
                     >

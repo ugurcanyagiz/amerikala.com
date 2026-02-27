@@ -616,7 +616,7 @@ export default function ProfilePage() {
           <p className="mt-2 text-neutral-500">Profil yükleniyor...</p>
           <div className="flex gap-2 justify-center mt-4">
             <Button 
-              variant="outline" 
+              variant="secondary" 
               size="sm" 
               onClick={() => refreshProfile()}
               className="gap-2"
@@ -703,7 +703,7 @@ export default function ProfilePage() {
 
                       <div className="flex gap-2">
                         <Button 
-                          variant="outline" 
+                          variant="secondary" 
                           size="sm"
                           className="gap-2"
                           onClick={() => setIsEditModalOpen(true)}

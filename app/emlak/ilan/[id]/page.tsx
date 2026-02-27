@@ -994,7 +994,7 @@ export default function ListingDetailPage() {
                     <div className="space-y-3">
                       {(user?.id === listing.user_id || isAdmin) && (
                         <Button
-                          variant="outline"
+                          variant="secondary"
                           className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50"
                           onClick={handleDeleteListing}
                           disabled={deletingListing}
@@ -1037,7 +1037,7 @@ export default function ListingDetailPage() {
                             className="w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                           />
                           <Button
-                            variant="outline"
+                            variant="secondary"
                             className="w-full gap-2"
                             onClick={handleSendMessage}
                             disabled={dmSending || !dmText.trim()}
@@ -1050,7 +1050,7 @@ export default function ListingDetailPage() {
 
                       {!user && (
                         <Link href="/login" className="block">
-                          <Button variant="outline" className="w-full gap-2">
+                          <Button variant="secondary" className="w-full gap-2">
                             <MessageCircle size={18} />
                             Mesaj göndermek için giriş yap
                           </Button>

@@ -43,12 +43,12 @@ export function GroupsList({ items, loading, hasMore, onLoadMore }: GroupsListPr
             <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1"><Users size={12} /> {group.member_count || 0} üye</p>
           </div>
           <Link href={`/groups/${group.slug || group.id}`}>
-            <Button variant={group.isMember ? "outline" : "primary"} size="sm">{group.isMember ? "Üye" : "Katıl"}</Button>
+            <Button variant={group.isMember ? "secondary" : "primary"} size="sm">{group.isMember ? "Üye" : "Katıl"}</Button>
           </Link>
         </div>
       ))}
       {hasMore && (
-        <Button variant="outline" onClick={onLoadMore} className="w-full">Daha Fazla Yükle</Button>
+        <Button variant="secondary" onClick={onLoadMore} className="w-full">Daha Fazla Yükle</Button>
       )}
     </div>
   );

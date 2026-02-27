@@ -190,7 +190,7 @@ export default function EventsPage() {
                 </Link>
               ) : (
                 <Link href="/login">
-                  <Button variant="outline" className="gap-2">
+                  <Button variant="secondary" className="gap-2">
                     Etkinlik oluşturmak için giriş yapın
                   </Button>
                 </Link>
@@ -212,7 +212,7 @@ export default function EventsPage() {
                   />
                 </div>
                 <Button 
-                  variant="outline" 
+                  variant="secondary" 
                   size="lg"
                   onClick={() => setShowFilters(!showFilters)}
                   className="gap-2"

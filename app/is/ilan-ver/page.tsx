@@ -376,7 +376,7 @@ export default function IsIlanVerPage() {
                   <div className="flex gap-2 mb-2">
                     <Input type="text" value={newSkill} onChange={(e) => setNewSkill(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())} placeholder="Yetenek ekle" className="flex-1" />
-                    <Button type="button" variant="outline" onClick={addSkill}><Plus size={18} /></Button>
+                    <Button type="button" variant="secondary" onClick={addSkill}><Plus size={18} /></Button>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {formData.skills.map((skill) => (
@@ -436,7 +436,7 @@ export default function IsIlanVerPage() {
 
             <div className="flex justify-between mt-8 pt-6 border-t">
               {step > 1 ? (
-                <Button variant="outline" onClick={prevStep}><ArrowLeft size={18} className="mr-2" />Geri</Button>
+                <Button variant="secondary" onClick={prevStep}><ArrowLeft size={18} className="mr-2" />Geri</Button>
               ) : <div />}
               
               {step < 3 ? (

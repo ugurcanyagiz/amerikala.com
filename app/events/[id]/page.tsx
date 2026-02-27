@@ -591,7 +591,7 @@ export default function EventDetailPage() {
                       </div>
 
                       <Button
-                        variant={isAttending || isPendingRequest ? "outline" : "primary"}
+                        variant={isAttending || isPendingRequest ? "secondary" : "primary"}
                         className="w-full mt-4"
                         size="lg"
                         onClick={handleJoin}
@@ -661,7 +661,7 @@ export default function EventDetailPage() {
 
                     <div className="space-y-2">
                       <Link href={`/profile/${organizer?.username || organizer?.id}`}>
-                        <Button variant="outline" className="w-full gap-2" size="sm">
+                        <Button variant="secondary" className="w-full gap-2" size="sm">
                           <Users size={16} />
                           Profili Görüntüle
                         </Button>

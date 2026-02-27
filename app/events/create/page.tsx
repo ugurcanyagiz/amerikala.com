@@ -493,7 +493,7 @@ export default function CreateEventPage() {
 
                   <div className="flex gap-3">
                     <Link href="/events" className="flex-1">
-                      <Button variant="outline" className="w-full" disabled={loading}>
+                      <Button variant="secondary" className="w-full" disabled={loading}>
                         İptal
                       </Button>
                     </Link>

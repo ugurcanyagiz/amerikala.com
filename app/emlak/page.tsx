@@ -208,7 +208,7 @@ export default function EmlakPage() {
             </div>
             <div className="flex gap-3">
               <Link href="/emlak/ilanlarim">
-                <Button variant="outline">İlanlarım</Button>
+                <Button variant="secondary">İlanlarım</Button>
               </Link>
               <Link href="/emlak/ilan-ver">
                 <Button variant="primary" className="bg-emerald-500 hover:bg-emerald-600">Yeni İlan</Button>

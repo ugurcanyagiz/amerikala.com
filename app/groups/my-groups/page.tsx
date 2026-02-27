@@ -273,7 +273,7 @@ export default function MyGroupsPage() {
                   </Button>
                 </Link>
                 <Link href="/groups">
-                  <Button variant="outline">
+                  <Button variant="secondary">
                     Grupları Keşfet
                   </Button>
                 </Link>
@@ -431,7 +431,7 @@ function GroupCard({
             {/* Actions */}
             <div className="flex flex-wrap gap-2">
               <Link href={`/groups/${group.slug}`}>
-                <Button variant="outline" size="sm" className="gap-1">
+                <Button variant="secondary" size="sm" className="gap-1">
                   <Eye size={16} />
                   Görüntüle
                 </Button>

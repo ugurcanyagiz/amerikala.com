@@ -491,7 +491,7 @@ export default function CreateGroupPage() {
                   <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-2">
                     Avatar görselini sürükleyin veya seçin
                   </p>
-                  <Button type="button" variant="outline" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar}>
+                  <Button type="button" variant="secondary" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar}>
                     {uploadingAvatar ? "Yükleniyor..." : "Avatar Seç"}
                   </Button>
                   <p className="text-xs text-neutral-500 mt-2">Kare format önerilir (örn: 200x200)</p>
@@ -529,7 +529,7 @@ export default function CreateGroupPage() {
                   <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-2">
                     Kapak görselini sürükleyin veya seçin
                   </p>
-                  <Button type="button" variant="outline" onClick={() => coverInputRef.current?.click()} disabled={uploadingCover}>
+                  <Button type="button" variant="secondary" onClick={() => coverInputRef.current?.click()} disabled={uploadingCover}>
                     {uploadingCover ? "Yükleniyor..." : "Kapak Görseli Seç"}
                   </Button>
                   <p className="text-xs text-neutral-500 mt-2">Geniş format önerilir (örn: 1200x400)</p>

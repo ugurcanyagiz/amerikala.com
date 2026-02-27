@@ -244,12 +244,12 @@ function PersonCard({ person }: { person: typeof PEOPLE[0] }) {
         </div>
 
         <div className="flex gap-2 mt-4 pt-4 border-t border-[var(--color-border-light)]">
-          <Button variant="outline" size="sm" className="flex-1 gap-1">
+          <Button variant="secondary" size="sm" className="flex-1 gap-1">
             <MessageCircle size={16} />
             Mesaj
           </Button>
           <Button 
-            variant={following ? "outline" : "primary"} 
+            variant={following ? "secondary" : "primary"} 
             size="sm" 
             className="flex-1 gap-1"
             onClick={() => setFollowing(!following)}
