@@ -104,32 +104,32 @@ const CATEGORY_CONFIG: Record<
     title: "Etkinlikler",
     href: "/meetups",
     icon: CalendarDays,
-    badgeClass: "bg-[#FCE8E7] text-[var(--color-primary-hover)]",
-    cardClass: "from-[#FBEDE6] via-[#FFF8F6] to-[#FDEAE8]",
+    badgeClass: "bg-white/70 text-[#4F5965] border border-white/60 backdrop-blur-sm",
+    cardClass: "from-[#F7F9FC] via-[#EEF3F8] to-[#E8EDF5]",
     iconCircleClass: "bg-[var(--color-primary)] text-white",
   },
   realEstate: {
     title: "Emlak",
     href: "/emlak",
     icon: Building2,
-    badgeClass: "bg-[#FCE8E7] text-[var(--color-primary-hover)]",
-    cardClass: "from-[#F8EDE7] via-[#FFF8F6] to-[#FCEBE8]",
+    badgeClass: "bg-white/70 text-[#55616E] border border-white/60 backdrop-blur-sm",
+    cardClass: "from-[#F6F8FB] via-[#EEF2F7] to-[#E7ECF3]",
     iconCircleClass: "bg-[var(--color-surface-raised)] text-[var(--color-trust)] border border-[rgba(var(--color-trust-rgb),0.16)]",
   },
   jobs: {
     title: "İş",
     href: "/is",
     icon: BriefcaseBusiness,
-    badgeClass: "bg-[#FCE8E7] text-[var(--color-primary-hover)]",
-    cardClass: "from-[#F9EAE8] via-[#FFF8F6] to-[#FDEDEA]",
+    badgeClass: "bg-white/70 text-[#4A5764] border border-white/60 backdrop-blur-sm",
+    cardClass: "from-[#F7FAFC] via-[#EEF4F8] to-[#E8EEF4]",
     iconCircleClass: "bg-[var(--color-primary)] text-white",
   },
   marketplace: {
     title: "Alışveriş",
     href: "/alisveris",
     icon: ShoppingBag,
-    badgeClass: "bg-[#FCE8E7] text-[var(--color-primary-hover)]",
-    cardClass: "from-[#F9ECE6] via-[#FFF8F6] to-[#FDEAE6]",
+    badgeClass: "bg-white/70 text-[#53606E] border border-white/60 backdrop-blur-sm",
+    cardClass: "from-[#F6F9FB] via-[#EEF3F7] to-[#E7EDF3]",
     iconCircleClass: "bg-[var(--color-surface-raised)] text-[var(--color-trust)] border border-[rgba(var(--color-trust-rgb),0.16)]",
   },
 };
@@ -858,7 +858,7 @@ function AdsGrid({ items, loading, latestMobileGrid = false }: { items: UnifiedA
                 <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
               </div>
             ) : (
-              <div className={`h-28 bg-gradient-to-r ${meta.cardClass} p-4`}>
+              <div className={`h-28 bg-gradient-to-br ${meta.cardClass} p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]`}>
                 <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${meta.badgeClass}`}>{meta.title}</span>
               </div>
             )}
