@@ -638,32 +638,38 @@
   .nav-pill {
     border-radius: 9999px;
     color: var(--color-ink-secondary);
-    transition: background-color var(--duration-fast) var(--ease-default), color var(--duration-fast) var(--ease-default);
+    border: 1px solid transparent;
+    transition: background-color var(--duration-fast) var(--ease-default), color var(--duration-fast) var(--ease-default), border-color var(--duration-fast) var(--ease-default);
   }
 
   .nav-pill:hover {
-    background-color: rgba(var(--color-trust-rgb), 0.05);
+    background-color: rgba(var(--color-trust-rgb), 0.08);
+    border-color: rgba(var(--color-trust-rgb), 0.18);
     color: var(--color-ink);
   }
 
   .nav-pill-active {
-    background-color: var(--color-surface-sunken);
+    background-color: rgba(var(--color-trust-rgb), 0.12);
+    border-color: rgba(var(--color-trust-rgb), 0.26);
     color: var(--color-ink);
   }
 
   .list-row {
-    border-radius: 0.75rem;
+    border-radius: 0.9rem;
     color: var(--color-ink-secondary);
-    transition: background-color var(--duration-fast) var(--ease-default), color var(--duration-fast) var(--ease-default);
+    border: 1px solid transparent;
+    transition: background-color var(--duration-fast) var(--ease-default), color var(--duration-fast) var(--ease-default), border-color var(--duration-fast) var(--ease-default);
   }
 
   .list-row:hover {
-    background-color: var(--color-surface-sunken);
+    background-color: rgba(var(--color-trust-rgb), 0.07);
+    border-color: rgba(var(--color-trust-rgb), 0.18);
     color: var(--color-ink);
   }
 
   .list-row-active {
-    background-color: var(--color-surface-sunken);
+    background-color: rgba(var(--color-trust-rgb), 0.12);
+    border-color: rgba(var(--color-trust-rgb), 0.26);
     color: var(--color-ink);
     font-weight: 600;
   }

@@ -306,11 +306,11 @@ export default function Sidebar() {
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        className={`list-row flex items-center gap-3 px-3 py-2.5 text-sm transition-[width,opacity,transform,color,background-color] duration-200 ${active ? "list-row-active" : ""} ${!isExpanded ? "justify-center" : ""}`}
+                        className={`list-row group flex items-center gap-3 px-3 py-2.5 text-sm transition-[width,opacity,transform,color,background-color] duration-200 ${active ? "list-row-active" : ""} ${!isExpanded ? "justify-center" : ""}`}
                         title={!isExpanded ? label : undefined}
                         aria-label={!isExpanded ? label : undefined}
                       >
-                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${active ? "bg-white/80" : "group-hover:bg-white/70"}`}><Icon className="h-[18px] w-[18px] shrink-0" /></span>
                         <span className={`flex-1 truncate overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ${isExpanded ? "w-auto opacity-100" : "w-0 opacity-0 sr-only"}`}>
                           {label}
                         </span>
@@ -325,11 +325,11 @@ export default function Sidebar() {
                     <li key={item.labelKey}>
                       <button
                         onClick={item.onClick}
-                        className={`list-row flex w-full items-center gap-3 px-3 py-2.5 text-sm transition-[width,opacity,transform,color,background-color] duration-200 hover:bg-red-50 hover:text-red-600 ${!isExpanded ? "justify-center" : ""}`}
+                        className={`list-row group flex w-full items-center gap-3 px-3 py-2.5 text-sm transition-[width,opacity,transform,color,background-color] duration-200 hover:bg-red-50 hover:text-red-600 ${!isExpanded ? "justify-center" : ""}`}
                         title={!isExpanded ? label : undefined}
                         aria-label={!isExpanded ? label : undefined}
                       >
-                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${"group-hover:bg-white/70"}`}><Icon className="h-[18px] w-[18px] shrink-0" /></span>
                         <span className={`flex-1 overflow-hidden whitespace-nowrap text-left transition-[width,opacity] duration-200 ${isExpanded ? "w-auto opacity-100" : "w-0 opacity-0 sr-only"}`}>
                           {label}
                         </span>
@@ -345,11 +345,11 @@ export default function Sidebar() {
                   <li key={item.labelKey}>
                     <button
                       onClick={() => toggleGroup(item.labelKey)}
-                      className={`list-row flex w-full items-center gap-3 px-3 py-2.5 text-sm transition-[width,opacity,transform,color,background-color] duration-200 ${hasActiveChild ? "list-row-active" : ""} ${!isExpanded ? "justify-center" : ""}`}
+                      className={`list-row group flex w-full items-center gap-3 px-3 py-2.5 text-sm transition-[width,opacity,transform,color,background-color] duration-200 ${hasActiveChild ? "list-row-active" : ""} ${!isExpanded ? "justify-center" : ""}`}
                       title={!isExpanded ? label : undefined}
                       aria-label={!isExpanded ? label : undefined}
                     >
-                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${hasActiveChild ? "bg-white/80" : "group-hover:bg-white/70"}`}><Icon className="h-[18px] w-[18px] shrink-0" /></span>
                       <span className={`flex-1 overflow-hidden whitespace-nowrap text-left transition-[width,opacity] duration-200 ${isExpanded ? "w-auto opacity-100" : "w-0 opacity-0 sr-only"}`}>
                         {label}
                       </span>
@@ -428,11 +428,13 @@ function SidebarItem({
   return (
     <Link
       href={href}
-      className={`nav-pill flex items-center px-3 py-2.5 text-base transition-[width,opacity,transform,color,background-color] duration-200 ${active ? "nav-pill-active font-semibold" : ""} ${collapsed ? "justify-center gap-0" : "gap-3"}`}
+      className={`nav-pill group flex items-center px-3 py-2.5 text-base transition-[width,opacity,transform,color,background-color,border-color] duration-200 ${active ? "nav-pill-active font-semibold" : ""} ${collapsed ? "justify-center gap-0" : "gap-3"}`}
       title={collapsed ? label : undefined}
       aria-label={collapsed ? label : undefined}
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${active ? "bg-white/80" : "group-hover:bg-white/70"}`}>
+        <Icon className="h-[18px] w-[18px] shrink-0" />
+      </span>
       <span className={`overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ${collapsed ? "w-0 opacity-0 sr-only" : "w-auto opacity-100"}`}>{label}</span>
     </Link>
   );
