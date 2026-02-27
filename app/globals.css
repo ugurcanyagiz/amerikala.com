@@ -14,49 +14,54 @@
   :root {
     /* ─────────────────────────────────────────
        PRIMARY COLORS
-       Sıcak Terracotta - Türk Kilimi İlhamı
+       CTA odaklı kırmızı skala
        ───────────────────────────────────────── */
-    --color-primary: #E53935;
-    --color-primary-hover: #C62828;
-    --color-primary-light: #F7DAD8;
-    --color-primary-subtle: #FDF3F2;
-    --color-primary-50: #FDF3F2;
-    --color-primary-100: #FBE7E6;
-    --color-primary-200: #F7DAD8;
-    --color-primary-300: #F0B8B4;
-    --color-primary-400: #EA8780;
-    --color-primary-500: #E53935;
-    --color-primary-600: #C62828;
-    --color-primary-700: #A11D20;
-    --color-primary-800: #81191B;
-    --color-primary-900: #631416;
+    --color-primary: #C43737;
+    --color-primary-hover: #AA2E2E;
+    --color-primary-light: #F7D9D9;
+    --color-primary-subtle: #FDF3EF;
+    --color-primary-50: #FDF3EF;
+    --color-primary-100: #FBE5E5;
+    --color-primary-200: #F6CACA;
+    --color-primary-300: #EEA0A0;
+    --color-primary-400: #DF6C6C;
+    --color-primary-500: #C43737;
+    --color-primary-600: #AA2E2E;
+    --color-primary-700: #8F2525;
+    --color-primary-800: #742020;
+    --color-primary-900: #5D1D1D;
+    --color-action: #2563EB;
+    --color-action-hover: #1D4ED8;
+    --color-action-light: #DBEAFE;
 
     /* ─────────────────────────────────────────
        INK COLORS (Text)
        ───────────────────────────────────────── */
-    --color-ink: #1D3557;
-    --color-ink-secondary: #666666;
-    --color-ink-tertiary: #9B9B9B;
+    --color-ink: #0B1220;
+    --color-ink-secondary: #2F4B6E;
+    --color-ink-tertiary: #5A6780;
     --color-ink-inverse: #FFFFFF;
+    --color-navy: #1E2A38;
+    --color-soft-blue: #2F4B6E;
 
     /* ─────────────────────────────────────────
        SURFACE COLORS (Backgrounds)
        ───────────────────────────────────────── */
-    --color-bg: #F7F2EC;
-    --color-surface: #F4EFEA;
-    --color-surface-raised: #FBF7F3;
-    --color-surface-sunken: #EEE7E1;
+    --color-bg: #F7F8FA;
+    --color-surface: #FFFFFF;
+    --color-surface-raised: #FFFFFF;
+    --color-surface-sunken: #EFF3F8;
     --color-muted: var(--color-ink-secondary);
     --color-trust: var(--color-ink);
-    --color-trust-rgb: 29, 53, 87;
+    --color-trust-rgb: 11, 18, 32;
     --color-surface-overlay: rgba(var(--color-trust-rgb), 0.4);
 
     /* ─────────────────────────────────────────
        BORDER COLORS
        ───────────────────────────────────────── */
-    --color-border: #E2D6CC;
-    --color-border-light: #ECE1D8;
-    --color-border-strong: #CFBFB2;
+    --color-border: #D8E0EA;
+    --color-border-light: #E7EDF4;
+    --color-border-strong: #B8C4D3;
 
     /* ─────────────────────────────────────────
        SEMANTIC COLORS
@@ -67,8 +72,8 @@
     --color-warning-light: #FDF8E8;
     --color-error: #C74A4A;
     --color-error-light: #FAF0F0;
-    --color-info: #4A7CC7;
-    --color-info-light: #F0F5FA;
+    --color-info: #2563EB;
+    --color-info-light: #DBEAFE;
 
     /* ─────────────────────────────────────────
        NEUTRAL SCALE (Tailwind compatible)
@@ -102,6 +107,16 @@
     --text-4xl: 2.25rem;
     --text-5xl: 3rem;
     --text-6xl: 3.75rem;
+
+    /* Semantic type tokens */
+    --text-heading-1: var(--text-5xl);
+    --text-heading-2: var(--text-4xl);
+    --text-heading-3: var(--text-3xl);
+    --text-heading-4: var(--text-2xl);
+    --text-body-lg: var(--text-lg);
+    --text-body: var(--text-base);
+    --text-body-sm: var(--text-sm);
+    --text-caption: var(--text-xs);
 
     /* Letter Spacing */
     --tracking-tighter: -0.03em;
@@ -137,6 +152,12 @@
     --space-24: 6rem;
     --space-32: 8rem;
 
+    /* Semantic spacing tokens */
+    --space-section-y: var(--space-16);
+    --space-section-y-sm: var(--space-12);
+    --space-content-gap: var(--space-6);
+    --space-content-gap-sm: var(--space-4);
+
     /* ─────────────────────────────────────────
        BORDER RADIUS
        ───────────────────────────────────────── */
@@ -151,12 +172,12 @@
     /* ─────────────────────────────────────────
        SHADOWS (Subtle, Layered)
        ───────────────────────────────────────── */
-    --shadow-xs: 0 1px 2px rgba(17, 17, 17, 0.05);
-    --shadow-sm: 0 8px 18px rgba(17, 17, 17, 0.08);
-    --shadow-md: 0 14px 28px rgba(17, 17, 17, 0.10);
-    --shadow-lg: 0 18px 38px rgba(17, 17, 17, 0.12);
-    --shadow-xl: 0 24px 52px rgba(17, 17, 17, 0.14);
-    --shadow-soft: 0 12px 32px rgba(var(--color-trust-rgb), 0.08);
+    --shadow-xs: 0 1px 2px rgba(11, 18, 32, 0.04);
+    --shadow-sm: 0 6px 16px rgba(11, 18, 32, 0.08);
+    --shadow-md: 0 12px 24px rgba(11, 18, 32, 0.1);
+    --shadow-lg: 0 18px 36px rgba(11, 18, 32, 0.12);
+    --shadow-xl: 0 24px 48px rgba(11, 18, 32, 0.14);
+    --shadow-soft: 0 10px 30px rgba(var(--color-trust-rgb), 0.08);
 
     /* ─────────────────────────────────────────
        ANIMATION
@@ -195,6 +216,9 @@
     --color-primary-hover: #E0968A;
     --color-primary-light: #3D2925;
     --color-primary-subtle: #1F1714;
+    --color-action: #60A5FA;
+    --color-action-hover: #3B82F6;
+    --color-action-light: #1A232E;
 
     --color-ink: #F5F5F5;
     --color-bg: #0F1724;

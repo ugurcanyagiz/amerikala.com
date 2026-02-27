@@ -501,11 +501,11 @@ export default function Home() {
 
                   <div
                     ref={searchBoxRef}
-                    className="relative mt-8 w-full max-w-[710px] rounded-2xl border border-[#DECFC0] bg-[var(--color-surface-raised)] p-2 shadow-[0_12px_28px_-24px_rgba(17,17,17,0.55)] md:p-1.5"
+                    className="relative mt-8 w-full max-w-[710px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-2 shadow-[var(--shadow-soft)] md:p-1.5"
                   >
                     <div className="grid min-h-12 grid-cols-[1fr_auto] items-center gap-2 rounded-[14px] bg-[var(--color-surface-raised)] px-3 py-2 md:min-h-14 md:grid-cols-[1fr_116px] md:gap-0 md:px-0 md:py-0">
                       <div className="flex items-center gap-2.5 px-1 md:gap-3 md:px-5">
-                        <Search className="h-[18px] w-[18px] text-[#B58C57] md:h-5 md:w-5 md:text-[#C49A5C]" />
+                        <Search className="h-[18px] w-[18px] text-[var(--color-soft-blue)] md:h-5 md:w-5 md:text-[var(--color-navy)]" />
                         <input
                           value={searchQuery}
                           onChange={(event) => {
@@ -537,14 +537,14 @@ export default function Home() {
                               onSearchSubmit();
                             }
                           }}
-                          className="w-full rounded-lg border border-[#DCC7AF] bg-white shadow-[0_6px_14px_-12px_rgba(17,17,17,0.45)] text-[15px] text-[var(--color-ink)] outline-none placeholder:text-[#B9966A] md:text-base md:placeholder:text-[#BE9C72]"
+                          className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-xs)] text-[15px] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-tertiary)] focus:border-[var(--color-action)] focus:ring-2 focus:ring-[var(--color-action-light)] md:text-base"
                           placeholder="Etkinlik, ilan, kişi ara..."
                           aria-label="Site içi arama"
                         />
                       </div>
                       <button
                         type="button"
-                        className="inline-flex h-9 items-center justify-center rounded-lg border border-[#DCC7AF] bg-white px-4 text-sm font-semibold tracking-[0.01em] text-[#3F2D1D] transition-colors hover:bg-[#FAF4EC] md:hidden"
+                        className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm font-semibold tracking-[0.01em] text-[var(--color-navy)] transition-colors hover:bg-[var(--color-surface-sunken)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-light)] md:hidden disabled:cursor-not-allowed disabled:opacity-60"
                         onClick={onSearchSubmit}
                         aria-label={searching ? "Aranıyor" : "Ara"}
                       >
@@ -552,7 +552,7 @@ export default function Home() {
                       </button>
                       <button
                         type="button"
-                        className="hidden h-full min-h-14 items-center justify-center rounded-[14px] bg-[var(--color-primary)] px-8 text-base font-bold uppercase tracking-wide text-white transition-colors hover:bg-[var(--color-primary-hover)] md:inline-flex"
+                        className="hidden h-full min-h-14 items-center justify-center rounded-[14px] bg-[var(--color-primary)] px-8 text-base font-bold uppercase tracking-wide text-white transition-colors hover:bg-[var(--color-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
                         onClick={onSearchSubmit}
                       >
                         {searching ? "Aranıyor..." : "ARA"}
@@ -580,12 +580,12 @@ export default function Home() {
                                       setSearchOpen(false);
                                     }}
                                     className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition ${
-                                      isActive ? "bg-[#FDF3EF]" : "hover:bg-[#FDF3EF]"
+                                      isActive ? "bg-[var(--color-primary-subtle)]" : "hover:bg-[var(--color-primary-subtle)]"
                                     }`}
                                   >
                                     <div className="min-w-0">
                                       <p className="truncate text-sm font-semibold text-[var(--color-ink)]">{item.title}</p>
-                                      <p className="truncate text-xs text-[#6C645E]">{item.location}</p>
+                                      <p className="truncate text-xs text-[var(--color-ink-secondary)]">{item.location}</p>
                                     </div>
                                     <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${meta.badgeClass}`}>{meta.title}</span>
                                   </button>
@@ -647,10 +647,10 @@ export default function Home() {
                   key={category.id}
                   type="button"
                   onClick={() => handlePostListingCategorySelect(category.href)}
-                  className="w-full rounded-2xl border border-[var(--color-border-light)] bg-white px-4 py-3 text-left transition hover:border-[#D7B8A7] hover:bg-[#FDF5EF]"
+                  className="w-full rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] px-4 py-3 text-left transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-primary-subtle)]"
                 >
                   <p className="text-sm font-semibold text-[var(--color-ink)]">{category.label}</p>
-                  <p className="mt-1 text-xs text-[#6C645E]">{category.description}</p>
+                  <p className="mt-1 text-xs text-[var(--color-ink-secondary)]">{category.description}</p>
                 </button>
               ))}
             </div>
@@ -673,23 +673,23 @@ export default function Home() {
                       onFocus={() => setActiveCategoryPreview(key)}
                       className={`group rounded-2xl border px-3 py-4 text-center transition-all duration-300 sm:px-4 sm:py-5 ${
                         isActive
-                          ? "border-[#E8D8CE] bg-[#FCF8F5] shadow-[0_20px_34px_-30px_rgba(123,89,67,0.4)]"
-                          : "border-[var(--color-border-light)] bg-white hover:-translate-y-0.5 hover:border-[#E2CDC1] hover:bg-[#FDF9F7] hover:shadow-[0_24px_40px_-34px_rgba(17,17,17,0.28)]"
+                          ? "border-[var(--color-border-strong)] bg-[var(--color-primary-subtle)] shadow-[var(--shadow-sm)]"
+                          : "border-[var(--color-border-light)] bg-[var(--color-surface)] hover:-translate-y-0.5 hover:border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] hover:shadow-[var(--shadow-sm)]"
                       }`}
                       aria-pressed={isActive}
                     >
                       <span
                         className={`mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300 sm:h-14 sm:w-14 ${
                           isActive
-                            ? "bg-white text-[#B1653D]"
-                            : `${config.iconCircleClass} group-hover:bg-[#F2E5DE] group-hover:text-[#B1653D]`
+                            ? "bg-[var(--color-surface)] text-[var(--color-primary)]"
+                            : `${config.iconCircleClass} group-hover:bg-[var(--color-primary-subtle)] group-hover:text-[var(--color-primary)]`
                         }`}
                       >
                         <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
                       </span>
                       <h3
                         className={`mt-3 text-sm font-semibold transition-colors duration-300 sm:text-lg ${
-                          isActive ? "text-[#7A4A33]" : "text-[var(--color-ink)] group-hover:text-[#8A563B]"
+                          isActive ? "text-[var(--color-primary-hover)]" : "text-[var(--color-ink)] group-hover:text-[var(--color-primary)]"
                         }`}
                       >
                         {config.title}
@@ -704,14 +704,14 @@ export default function Home() {
                   <h3 className="text-base font-semibold text-[var(--color-ink)]">{CATEGORY_CONFIG[activeCategoryPreview].title} - Popüler Gönderiler</h3>
                   <Link
                     href={CATEGORY_CONFIG[activeCategoryPreview].href}
-                    className="rounded-full border border-[var(--color-border-light)] bg-white px-3 py-1.5 text-sm font-semibold text-[var(--color-primary-hover)] transition hover:border-[#D8B7A6] hover:text-[#A52020]"
+                    className="rounded-full border border-[var(--color-border-light)] bg-[var(--color-surface)] px-3 py-1.5 text-sm font-semibold text-[var(--color-primary-hover)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-primary)]"
                   >
                     Tümü
                   </Link>
                 </div>
 
                 {categoryPreviewItems[activeCategoryPreview].length === 0 ? (
-                  <p className="rounded-xl border border-dashed border-[#DCCFC3] bg-white p-6 text-center text-sm text-[#6C645E]">
+                  <p className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-center text-sm text-[var(--color-ink-secondary)]">
                     Bu kategori için henüz gönderi bulunmuyor.
                   </p>
                 ) : (
@@ -720,7 +720,7 @@ export default function Home() {
                       <Link
                         key={`preview-${item.id}`}
                         href={item.href}
-                        className={`relative overflow-hidden rounded-2xl border border-[var(--color-border-light)] transition hover:border-[#D9B9A7] hover:shadow-sm ${
+                        className={`relative overflow-hidden rounded-2xl border border-[var(--color-border-light)] transition hover:border-[var(--color-border-strong)] hover:shadow-sm ${
                           item.imageUrl ? "bg-[var(--color-ink)]" : "bg-white"
                         }`}
                       >
@@ -771,7 +771,7 @@ export default function Home() {
               </div>
               <AdsGrid items={latestFilteredAds} loading={loading} latestMobileGrid />
               <div ref={latestAdsLoadTriggerRef} className="h-2" aria-hidden="true" />
-              {loadingMoreLatestAds && <p className="mt-4 text-center text-sm text-[#6C645E]">Daha fazla ilan yükleniyor...</p>}
+              {loadingMoreLatestAds && <p className="mt-4 text-center text-sm text-[var(--color-ink-secondary)]">Daha fazla ilan yükleniyor...</p>}
             </div>
           </section>
         </main>
@@ -796,7 +796,7 @@ function AdsSection({
       <div className="app-page-container py-0">
         <div className="mb-7 text-center">
           <h2 className="text-3xl font-bold text-[var(--color-ink)]">{title}</h2>
-          {subtitle && <p className="mt-1 text-[#6C645E]">{subtitle}</p>}
+          {subtitle && <p className="mt-1 text-[var(--color-ink-secondary)]">{subtitle}</p>}
         </div>
         <AdsGrid items={items} loading={loading} />
       </div>
@@ -818,7 +818,7 @@ function CategoryFilterButton({
       type="button"
       onClick={onClick}
       className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
-        isActive ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white" : "border-[#D8C9BE] bg-white text-[#5F5852] hover:border-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
+        isActive ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white" : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
       }`}
     >
       {children}
@@ -833,14 +833,14 @@ function AdsGrid({ items, loading, latestMobileGrid = false }: { items: UnifiedA
     return (
       <div className={gridClassName}>
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-60 animate-pulse rounded-2xl border border-[var(--color-border-light)] bg-[#EFE4DB]" />
+          <div key={index} className="h-60 animate-pulse rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-sunken)]" />
         ))}
       </div>
     );
   }
 
   if (items.length === 0) {
-    return <p className="rounded-xl border border-dashed border-[#D8C9BE] bg-white p-8 text-center text-[#6C645E]">Henüz listelenecek ilan bulunamadı.</p>;
+    return <p className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center text-[var(--color-ink-secondary)]">Henüz listelenecek ilan bulunamadı.</p>;
   }
 
   return (
@@ -854,7 +854,7 @@ function AdsGrid({ items, loading, latestMobileGrid = false }: { items: UnifiedA
             className="group overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white transition hover:-translate-y-0.5 hover:shadow-md"
           >
             {item.imageUrl ? (
-              <div className="h-28 bg-[#F6EEE8]">
+              <div className="h-28 bg-[var(--color-surface-sunken)]">
                 <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
               </div>
             ) : (
@@ -868,9 +868,9 @@ function AdsGrid({ items, loading, latestMobileGrid = false }: { items: UnifiedA
                 <MapPin className="h-4 w-4" />
                 {item.location}
               </p>
-              <div className="flex items-center justify-between border-t border-[#F0E5DC] pt-3">
+              <div className="flex items-center justify-between border-t border-[var(--color-border-light)] pt-3">
                 <span className="text-sm font-semibold text-slate-700">{item.priceLabel ?? "Detaylı bilgi"}</span>
-                <span className="text-xs text-[#6C645E]">İlana git</span>
+                <span className="text-xs text-[var(--color-ink-secondary)]">İlana git</span>
               </div>
             </div>
           </Link>

@@ -77,7 +77,7 @@ export default function RootLayout({
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=5"
         />
-        <meta name="theme-color" content="#C45C4A" />
+        <meta name="theme-color" content="#C43737" />
       </head>
       <body
         className={`${inter.variable} ${jakarta.variable} font-sans min-h-screen antialiased`}
