@@ -8,7 +8,7 @@ import { Avatar } from "@/app/components/ui/Avatar";
 import { Modal } from "@/app/components/ui/Modal";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { supabase } from "@/lib/supabase/client";
-import { MessageCircle, UserCheck, UserPlus, UserX, ExternalLink, Users } from "lucide-react";
+import { MessageCircle, UserCheck, UserPlus, ExternalLink, Users } from "lucide-react";
 
 export type UserProfileCardData = {
   id: string;
@@ -31,7 +31,7 @@ export default function UserProfileCardModal({ profile, open, onClose }: Props) 
   const { user } = useAuth();
 
   const [relationshipStatus, setRelationshipStatus] = useState<
-    "guest" | "self" | "none" | "pending_sent" | "pending_received" | "following"
+    "guest" | "self" | "none" | "following"
   >("guest");
   const [followLoading, setFollowLoading] = useState(false);
   const [dmLoading, setDmLoading] = useState(false);
@@ -76,32 +76,6 @@ export default function UserProfileCardModal({ profile, open, onClose }: Props) 
           }
           break;
         }
-      }
-
-      const { data: outgoing, error: outgoingError } = await supabase
-        .from("friend_requests")
-        .select("status")
-        .eq("requester_id", user.id)
-        .eq("receiver_id", profile.id)
-        .limit(1)
-        .maybeSingle();
-
-      if (!outgoingError && outgoing?.status === "pending") {
-        setRelationshipStatus("pending_sent");
-        return;
-      }
-
-      const { data: incoming, error: incomingError } = await supabase
-        .from("friend_requests")
-        .select("status")
-        .eq("requester_id", profile.id)
-        .eq("receiver_id", user.id)
-        .limit(1)
-        .maybeSingle();
-
-      if (!incomingError && incoming?.status === "pending") {
-        setRelationshipStatus("pending_received");
-        return;
       }
 
       setRelationshipStatus("none");
@@ -157,45 +131,6 @@ export default function UserProfileCardModal({ profile, open, onClose }: Props) 
       if (relationshipStatus === "following") {
         const deleted = await followDelete(profile.id);
         if (deleted) setRelationshipStatus("none");
-        return;
-      }
-
-      if (relationshipStatus === "pending_sent") {
-        const { error } = await supabase
-          .from("friend_requests")
-          .delete()
-          .eq("requester_id", user.id)
-          .eq("receiver_id", profile.id)
-          .eq("status", "pending");
-
-        if (!error) setRelationshipStatus("none");
-        return;
-      }
-
-      if (relationshipStatus === "pending_received") {
-        const { error } = await supabase
-          .from("friend_requests")
-          .update({ status: "accepted", responded_at: new Date().toISOString() })
-          .eq("requester_id", profile.id)
-          .eq("receiver_id", user.id)
-          .eq("status", "pending");
-
-        if (!error) {
-          await followInsert(profile.id);
-          setRelationshipStatus("following");
-        }
-        return;
-      }
-
-      const { error: requestError } = await supabase
-        .from("friend_requests")
-        .upsert(
-          { requester_id: user.id, receiver_id: profile.id, status: "pending" },
-          { onConflict: "requester_id,receiver_id" }
-        );
-
-      if (!requestError) {
-        setRelationshipStatus("pending_sent");
         return;
       }
 
@@ -279,17 +214,11 @@ export default function UserProfileCardModal({ profile, open, onClose }: Props) 
 
   const followLabel = relationshipStatus === "following"
     ? "Takiptesin"
-    : relationshipStatus === "pending_sent"
-      ? "İstek Gönderildi"
-      : relationshipStatus === "pending_received"
-        ? "İsteği Kabul Et"
-        : "Arkadaşlık İsteği Gönder";
+    : "Takip Et";
 
   const followIcon = relationshipStatus === "following"
     ? <UserCheck size={16} />
-    : relationshipStatus === "pending_sent"
-      ? <UserX size={16} />
-      : <UserPlus size={16} />;
+    : <UserPlus size={16} />;
 
   return (
     <Modal
