@@ -667,16 +667,29 @@ export default function Home() {
                       onClick={() => handleCategoryCardClick(key)}
                       onMouseEnter={() => setActiveCategoryPreview(key)}
                       onFocus={() => setActiveCategoryPreview(key)}
-                      className={`group rounded-2xl border px-3 py-4 text-center transition-all sm:px-4 sm:py-5 ${
+                      className={`group rounded-2xl border px-3 py-4 text-center transition-all duration-200 sm:px-4 sm:py-5 ${
                         isActive
-                          ? "border-[#E9D5C8] bg-white shadow-[0_22px_36px_-30px_rgba(17,17,17,0.35)]"
-                          : "border-[var(--color-border-light)] bg-white hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-30px_rgba(17,17,17,0.35)]"
+                          ? "border-[var(--color-primary)] bg-[var(--color-primary)] shadow-[0_22px_36px_-30px_rgba(165,32,32,0.55)]"
+                          : "border-[var(--color-border-light)] bg-white hover:-translate-y-0.5 hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-hover)]/6 hover:shadow-[0_24px_40px_-30px_rgba(17,17,17,0.35)]"
                       }`}
+                      aria-pressed={isActive}
                     >
-                      <span className={`mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full ${config.iconCircleClass} sm:h-14 sm:w-14`}>
+                      <span
+                        className={`mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors sm:h-14 sm:w-14 ${
+                          isActive
+                            ? "bg-white text-[var(--color-primary)]"
+                            : `${config.iconCircleClass} group-hover:bg-[var(--color-primary)] group-hover:text-white`
+                        }`}
+                      >
                         <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
                       </span>
-                      <h3 className="mt-3 text-sm font-semibold text-[var(--color-ink)] sm:text-lg">{config.title}</h3>
+                      <h3
+                        className={`mt-3 text-sm font-semibold transition-colors sm:text-lg ${
+                          isActive ? "text-white" : "text-[var(--color-ink)] group-hover:text-[var(--color-primary-hover)]"
+                        }`}
+                      >
+                        {config.title}
+                      </h3>
                     </button>
                   );
                 })}
