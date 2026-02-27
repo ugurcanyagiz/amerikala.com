@@ -435,22 +435,22 @@ export default function AlisverisPage() {
                 <div className="rounded-xl border border-[var(--color-border)] bg-neutral-50/90 px-3 py-2">
                   <p className="mb-1 text-xs text-[var(--color-muted)]">Fiyat Aralığı</p>
                   <div className="flex items-center overflow-hidden rounded-lg border border-[var(--color-border)] bg-white">
-                    <input
+                    <Input
                       type="number"
                       placeholder="Min"
                       value={minPrice}
                       onChange={(e) => applyFilters({ ...buildFilterState(), minPrice: e.target.value })}
                       aria-label="Minimum fiyat"
-                      className="h-11 w-1/2 border-0 bg-[var(--color-surface-raised)] px-3 text-sm text-[var(--color-ink)] placeholder:text-[var(--color-muted)] shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      className="h-11 w-1/2 rounded-none border-0 shadow-none focus:ring-0"
                     />
                     <div className="h-6 w-px bg-[var(--color-ink)]/10" />
-                    <input
+                    <Input
                       type="number"
                       placeholder="Max"
                       value={maxPrice}
                       onChange={(e) => applyFilters({ ...buildFilterState(), maxPrice: e.target.value })}
                       aria-label="Maksimum fiyat"
-                      className="h-11 w-1/2 border-0 bg-[var(--color-surface-raised)] px-3 text-sm text-[var(--color-ink)] placeholder:text-[var(--color-muted)] shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      className="h-11 w-1/2 rounded-none border-0 shadow-none focus:ring-0"
                     />
                   </div>
                 </div>

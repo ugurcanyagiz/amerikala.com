@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Search, Loader2, ArrowUpRight } from "lucide-react";
 import AppShell from "../components/AppShell";
+import { Input } from "../components/ui/Input";
 import { searchSiteContent, type SiteSearchResult } from "@/lib/siteSearch";
 
 const TYPE_LABELS: Record<SiteSearchResult["type"], string> = {
@@ -87,9 +88,8 @@ export default function SearchPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-[var(--color-ink)]">Arama Yap</h1>
 
             <div className="mt-5 flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-ink-tertiary)]" />
-                <input
+              <div className="flex-1">
+                <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(event) => {
@@ -99,7 +99,8 @@ export default function SearchPage() {
                     }
                   }}
                   placeholder="Örn: New York, yazılım, kiralık..."
-                  className="w-full h-11 rounded-xl border border-[var(--color-border)] pl-9 pr-3 text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                  icon={<Search className="h-4 w-4" />}
+                  className="pl-9"
                 />
               </div>
               <button

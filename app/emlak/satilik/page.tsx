@@ -16,6 +16,8 @@ import {
 import Sidebar from "@/app/components/Sidebar";
 import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent } from "@/app/components/ui/Card";
+import { Input } from "@/app/components/ui/Input";
+import { Select } from "@/app/components/ui/Select";
 import { Badge } from "@/app/components/ui/Badge";
 import { 
   Plus, 
@@ -156,27 +158,26 @@ export default function SatilikPage() {
             <Card className="glass mb-6">
               <CardContent className="p-4">
                 <div className="flex flex-col lg:flex-row gap-4">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={20} />
-                    <input
+                  <div className="flex-1">
+                    <Input
                       type="text"
                       placeholder="Adres, şehir veya mahalle ara..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      icon={<Search size={20} />}
+                      className="pl-10"
                     />
                   </div>
 
-                  <select
+                  <Select
                     value={selectedState}
                     onChange={(e) => setSelectedState(e.target.value)}
-                    className="px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-green-500 min-w-[160px]"
-                  >
-                    <option value="all">Tüm Eyaletler</option>
-                    {US_STATES.map(state => (
-                      <option key={state.value} value={state.value}>{state.label}</option>
-                    ))}
-                  </select>
+                    className="min-w-[160px]"
+                    options={[
+                      { value: "all", label: "Tüm Eyaletler" },
+                      ...US_STATES.map((state) => ({ value: state.value, label: state.label })),
+                    ]}
+                  />
 
                   <Button variant="secondary" onClick={() => setShowFilters(!showFilters)} className="gap-2">
                     <SlidersHorizontal size={18} />
@@ -205,37 +206,36 @@ export default function SatilikPage() {
                     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Emlak Tipi</label>
-                        <select
+                        <Select
                           value={selectedPropertyType}
                           onChange={(e) => setSelectedPropertyType(e.target.value as any)}
-                          className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                        >
-                          <option value="all">Tümü</option>
-                          {Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => (
-                            <option key={value} value={value}>{PROPERTY_TYPE_ICONS[value as PropertyType]} {label}</option>
-                          ))}
-                        </select>
+                          className="text-sm"
+                          options={[
+                            { value: "all", label: "Tümü" },
+                            ...Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => ({ value, label: `${PROPERTY_TYPE_ICONS[value as PropertyType]} ${label}` })),
+                          ]}
+                        />
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Fiyat Aralığı</label>
                         <div className="flex items-center gap-2">
-                          <input type="number" placeholder="Min" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" />
+                          <Input type="number" placeholder="Min" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} className="text-sm" />
                           <span className="text-neutral-400">-</span>
-                          <input type="number" placeholder="Max" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm" />
+                          <Input type="number" placeholder="Max" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} className="text-sm" />
                         </div>
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Min. Yatak Odası</label>
-                        <select value={bedroomsMin} onChange={(e) => setBedroomsMin(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
-                          <option value="">Farketmez</option>
-                          <option value="1">1+</option>
-                          <option value="2">2+</option>
-                          <option value="3">3+</option>
-                          <option value="4">4+</option>
-                          <option value="5">5+</option>
-                        </select>
+                        <Select value={bedroomsMin} onChange={(e) => setBedroomsMin(e.target.value)} className="text-sm" options={[
+                          { value: "", label: "Farketmez" },
+                          { value: "1", label: "1+" },
+                          { value: "2", label: "2+" },
+                          { value: "3", label: "3+" },
+                          { value: "4", label: "4+" },
+                          { value: "5", label: "5+" },
+                        ]} />
                       </div>
 
                       <div className="flex items-end">

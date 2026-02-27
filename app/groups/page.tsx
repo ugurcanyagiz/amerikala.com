@@ -17,6 +17,8 @@ import {
 import Sidebar from "../components/Sidebar";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
+import { Input } from "../components/ui/Input";
+import { Select } from "../components/ui/Select";
 import { Badge } from "../components/ui/Badge";
 import { 
   Plus, 
@@ -158,30 +160,27 @@ export default function GroupsPage() {
               <CardContent className="p-4">
                 <div className="flex flex-col lg:flex-row gap-4">
                   {/* Search */}
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={20} />
-                    <input
+                  <div className="flex-1">
+                    <Input
                       type="text"
                       placeholder="Grup ara..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      icon={<Search size={20} />}
+                      className="pl-10"
                     />
                   </div>
 
                   {/* State Filter */}
-                  <select
+                  <Select
                     value={selectedState}
                     onChange={(e) => setSelectedState(e.target.value)}
-                    className="px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px]"
-                  >
-                    <option value="all">Tüm Eyaletler</option>
-                    {US_STATES.map(state => (
-                      <option key={state.value} value={state.value}>
-                        {state.label}
-                      </option>
-                    ))}
-                  </select>
+                    className="min-w-[180px]"
+                    options={[
+                      { value: "all", label: "Tüm Eyaletler" },
+                      ...US_STATES.map((state) => ({ value: state.value, label: state.label })),
+                    ]}
+                  />
 
                   {/* View Mode */}
                   <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1">

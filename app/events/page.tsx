@@ -17,6 +17,8 @@ import {
 import Sidebar from "../components/Sidebar";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
+import { Input } from "../components/ui/Input";
+import { Select } from "../components/ui/Select";
 import { Avatar } from "../components/ui/Avatar";
 import { Badge } from "../components/ui/Badge";
 import { 
@@ -201,14 +203,14 @@ export default function EventsPage() {
             <div className="mb-6 space-y-4">
               {/* Search Bar */}
               <div className="flex gap-3">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={20} />
-                  <input
+                <div className="flex-1">
+                  <Input
                     type="text"
                     placeholder="Etkinlik, konum veya organizatör ara..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-red-500 text-lg"
+                    icon={<Search size={20} />}
+                    className="h-[50px] pl-12 text-lg"
                   />
                 </div>
                 <Button 
@@ -252,34 +254,27 @@ export default function EventsPage() {
                       {/* State Filter */}
                       <div>
                         <label className="block text-sm font-medium mb-2">Eyalet</label>
-                        <select
+                        <Select
                           value={selectedState}
                           onChange={(e) => setSelectedState(e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        >
-                          <option value="all">Tüm Eyaletler</option>
-                          {US_STATES.map(state => (
-                            <option key={state.value} value={state.value}>
-                              {state.label}
-                            </option>
-                          ))}
-                        </select>
+                          options={[
+                            { value: "all", label: "Tüm Eyaletler" },
+                            ...US_STATES.map((state) => ({ value: state.value, label: state.label }))
+                          ]}
+                        />
                       </div>
 
                       {/* Category Filter */}
                       <div>
                         <label className="block text-sm font-medium mb-2">Kategori</label>
-                        <select
+                        <Select
                           value={selectedCategory}
                           onChange={(e) => setSelectedCategory(e.target.value as EventCategory | "all")}
-                          className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        >
-                          {categories.map(cat => (
-                            <option key={cat.value} value={cat.value}>
-                              {cat.icon} {cat.label}
-                            </option>
-                          ))}
-                        </select>
+                          options={categories.map((cat) => ({
+                            value: cat.value,
+                            label: `${cat.icon} ${cat.label}`
+                          }))}
+                        />
                       </div>
                     </div>
                   </CardContent>
