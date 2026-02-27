@@ -12,7 +12,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyles = `
       inline-flex items-center justify-center gap-2
       font-semibold tracking-tight
-      rounded-[var(--radius-xl)]
+      rounded-2xl
       transition-all duration-150 ease-out
       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/25 focus-visible:ring-offset-2
       disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
@@ -21,14 +21,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
       primary: `
-        bg-[var(--color-primary)] text-white
-        hover:bg-[var(--color-primary-hover)]
-        shadow-[var(--shadow-sm)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]
+        bg-[#C43737] text-white
+        hover:bg-[#AE2E2E]
+        shadow-[0_14px_30px_-20px_rgba(123,28,28,0.8)] hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-22px_rgba(123,28,28,0.8)]
       `,
       secondary: `
-        border border-[var(--color-border)] bg-white text-[var(--color-ink)]
-        shadow-[var(--shadow-xs)]
-        hover:-translate-y-0.5 hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-raised)] hover:shadow-[var(--shadow-sm)]
+        border border-[rgba(148,163,184,0.45)] bg-white text-[var(--color-ink)]
+        shadow-[0_10px_24px_-22px_rgba(15,23,42,0.7)]
+        hover:-translate-y-0.5 hover:border-[rgba(100,116,139,0.55)] hover:bg-[#F8FAFC] hover:shadow-[0_16px_30px_-24px_rgba(15,23,42,0.75)]
       `,
       ghost: `
         bg-transparent text-[var(--color-ink-secondary)]
@@ -41,10 +41,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizes: Record<string, string> = {
-      sm: "h-9 px-4 text-sm",
-      md: "h-10 px-5 text-sm",
-      lg: "h-12 px-6 text-base",
-      icon: "h-10 w-10 p-0",
+      sm: "h-10 px-4 text-sm",
+      md: "h-12 px-6 text-sm",
+      lg: "h-12 px-7 text-base",
+      icon: "h-12 w-12 p-0",
     };
 
     const sizeClass = variant === "link" ? "text-sm" : sizes[size];
