@@ -671,25 +671,25 @@ export default function Home() {
                       onClick={() => handleCategoryCardClick(key)}
                       onMouseEnter={() => setActiveCategoryPreview(key)}
                       onFocus={() => setActiveCategoryPreview(key)}
-                      className={`group rounded-2xl border px-3 py-4 text-center transition-all duration-200 sm:px-4 sm:py-5 ${
+                      className={`group rounded-2xl border px-3 py-4 text-center transition-all duration-300 sm:px-4 sm:py-5 ${
                         isActive
-                          ? "border-[var(--color-primary)] bg-[var(--color-primary)] shadow-[0_22px_36px_-30px_rgba(165,32,32,0.55)]"
-                          : "border-[var(--color-border-light)] bg-white hover:-translate-y-0.5 hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-hover)]/6 hover:shadow-[0_24px_40px_-30px_rgba(17,17,17,0.35)]"
+                          ? "border-[#E8D8CE] bg-[#FCF8F5] shadow-[0_20px_34px_-30px_rgba(123,89,67,0.4)]"
+                          : "border-[var(--color-border-light)] bg-white hover:-translate-y-0.5 hover:border-[#E2CDC1] hover:bg-[#FDF9F7] hover:shadow-[0_24px_40px_-34px_rgba(17,17,17,0.28)]"
                       }`}
                       aria-pressed={isActive}
                     >
                       <span
-                        className={`mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors sm:h-14 sm:w-14 ${
+                        className={`mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300 sm:h-14 sm:w-14 ${
                           isActive
-                            ? "bg-white text-[var(--color-primary)]"
-                            : `${config.iconCircleClass} group-hover:bg-[var(--color-primary)] group-hover:text-white`
+                            ? "bg-white text-[#B1653D]"
+                            : `${config.iconCircleClass} group-hover:bg-[#F2E5DE] group-hover:text-[#B1653D]`
                         }`}
                       >
                         <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
                       </span>
                       <h3
-                        className={`mt-3 text-sm font-semibold transition-colors sm:text-lg ${
-                          isActive ? "text-white" : "text-[var(--color-ink)] group-hover:text-[var(--color-primary-hover)]"
+                        className={`mt-3 text-sm font-semibold transition-colors duration-300 sm:text-lg ${
+                          isActive ? "text-[#7A4A33]" : "text-[var(--color-ink)] group-hover:text-[#8A563B]"
                         }`}
                       >
                         {config.title}
