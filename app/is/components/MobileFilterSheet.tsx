@@ -115,7 +115,7 @@ export default function MobileFilterSheet({
         <div className="flex-1 overflow-y-auto px-4 py-4">{children}</div>
 
         <div className="grid grid-cols-2 gap-3 border-t border-[var(--color-border-light)] px-4 py-3">
-          <Button type="button" variant="outline" onClick={onClear}>
+          <Button type="button" variant="secondary" onClick={onClear}>
             Temizle
           </Button>
           <Button type="button" variant="primary" onClick={onApply}>

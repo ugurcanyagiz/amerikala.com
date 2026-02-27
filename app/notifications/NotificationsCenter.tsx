@@ -146,10 +146,10 @@ export default function NotificationsCenter({ initialData }: { initialData: Noti
               <p className="text-sm text-neutral-500 mt-1">{unreadCount} okunmamış · toplam {total}</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => void runAction("mark_all_read")} disabled={loading || items.length === 0}>
+              <Button variant="secondary" onClick={() => void runAction("mark_all_read")} disabled={loading || items.length === 0}>
                 <CheckCheck className="w-4 h-4 mr-2" /> Tümünü okundu yap
               </Button>
-              <Button variant="outline" onClick={() => void runAction("archive_selected", Array.from(selected))} disabled={loading || selected.size === 0}>
+              <Button variant="secondary" onClick={() => void runAction("archive_selected", Array.from(selected))} disabled={loading || selected.size === 0}>
                 <Archive className="w-4 h-4 mr-2" /> Seçilenleri arşivle
               </Button>
             </div>
@@ -231,8 +231,8 @@ export default function NotificationsCenter({ initialData }: { initialData: Noti
                         {!item.isRead && <Badge variant="primary">Yeni</Badge>}
                       </div>
                       <div className="mt-3 flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => void runAction("mark_read", [item.id])} disabled={item.isRead || loading}>Okundu yap</Button>
-                        <Button size="sm" variant="outline" onClick={() => void runAction("archive_selected", [item.id])} disabled={loading}>Arşivle</Button>
+                        <Button size="sm" variant="secondary" onClick={() => void runAction("mark_read", [item.id])} disabled={item.isRead || loading}>Okundu yap</Button>
+                        <Button size="sm" variant="secondary" onClick={() => void runAction("archive_selected", [item.id])} disabled={loading}>Arşivle</Button>
                         {hasFriendRequestAction ? (
                           <button
                             type="button"
@@ -256,7 +256,7 @@ export default function NotificationsCenter({ initialData }: { initialData: Noti
 
       {hasMore && (
         <div className="flex justify-center">
-          <Button variant="outline" onClick={() => void loadPage(items.length, true)} disabled={loading}>
+          <Button variant="secondary" onClick={() => void loadPage(items.length, true)} disabled={loading}>
             {loading ? "Yükleniyor..." : "Daha fazla yükle"}
           </Button>
         </div>
@@ -290,7 +290,7 @@ export default function NotificationsCenter({ initialData }: { initialData: Noti
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               onClick={() => void respondFriendRequest("reject")}
               loading={friendRequestLoading}
             >

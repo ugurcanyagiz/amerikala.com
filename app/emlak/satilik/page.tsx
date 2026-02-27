@@ -178,7 +178,7 @@ export default function SatilikPage() {
                     ))}
                   </select>
 
-                  <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="gap-2">
+                  <Button variant="secondary" onClick={() => setShowFilters(!showFilters)} className="gap-2">
                     <SlidersHorizontal size={18} />
                     Filtreler
                     {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-green-500" />}
@@ -266,7 +266,7 @@ export default function SatilikPage() {
                     {hasActiveFilters ? "Arama kriterlerinize uygun ilan bulunamadı." : "Henüz satılık ilan eklenmemiş."}
                   </p>
                   {hasActiveFilters && (
-                    <Button variant="outline" onClick={clearFilters} className="gap-2">
+                    <Button variant="secondary" onClick={clearFilters} className="gap-2">
                       <X size={16} />
                       Filtreleri Temizle
                     </Button>

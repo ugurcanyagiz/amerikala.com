@@ -300,7 +300,7 @@ export default function MyEventsPage() {
                       {/* Actions */}
                       <div className="flex flex-wrap gap-2">
                         <Link href={`/meetups/${event.id}`}>
-                          <Button variant="outline" size="sm" className="gap-1">
+                          <Button variant="secondary" size="sm" className="gap-1">
                             <Eye size={16} />
                             Görüntüle
                           </Button>

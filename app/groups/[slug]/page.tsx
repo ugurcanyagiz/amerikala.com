@@ -641,16 +641,16 @@ export default function GroupDetailPage() {
 
               <div className="flex flex-wrap gap-2">
                 {membershipStatus === "pending" ? (
-                  <Button variant="outline" disabled>Başvuru Beklemede</Button>
+                  <Button variant="secondary" disabled>Başvuru Beklemede</Button>
                 ) : isApprovedMember ? (
-                  <Button variant="outline" disabled>Üyesiniz</Button>
+                  <Button variant="secondary" disabled>Üyesiniz</Button>
                 ) : (
                   <Button onClick={handleJoinGroup} disabled={membershipLoading} className="gap-2">
                     {membershipLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus size={16} />}
                     {group.requires_approval || group.is_private ? "Katılım Başvurusu" : "Katıl"}
                   </Button>
                 )}
-                <Button variant="outline" onClick={copyLink} className="gap-2"><Copy size={16} /> Paylaş</Button>
+                <Button variant="secondary" onClick={copyLink} className="gap-2"><Copy size={16} /> Paylaş</Button>
               </div>
             </div>
           </CardContent>
@@ -832,7 +832,7 @@ export default function GroupDetailPage() {
                             <div className="flex items-center gap-2">
                               {isAdmin && (
                                 <Button
-                                  variant="outline"
+                                  variant="secondary"
                                   size="sm"
                                   disabled={roleLoading}
                                   onClick={() => handleRoleChange(member.user_id, member.role === "moderator" ? "member" : "moderator")}
@@ -843,7 +843,7 @@ export default function GroupDetailPage() {
                                 </Button>
                               )}
                               <Button
-                                variant="outline"
+                                variant="secondary"
                                 size="sm"
                                 disabled={removeLoading}
                                 onClick={() => handleRemoveMember(member.user_id)}
@@ -996,7 +996,7 @@ export default function GroupDetailPage() {
                                 </Button>
                                 <Button
                                   size="sm"
-                                  variant="outline"
+                                  variant="secondary"
                                   className="gap-1 text-red-600"
                                   disabled={approveLoading || rejectLoading}
                                   onClick={() => handleRequestDecision(request, "rejected")}
@@ -1039,7 +1039,7 @@ export default function GroupDetailPage() {
               </Card>
 
               <Link href="/groups">
-                <Button variant="outline" className="w-full"><MessageSquare size={16} className="mr-2" />Tüm Gruplara Dön</Button>
+                <Button variant="secondary" className="w-full"><MessageSquare size={16} className="mr-2" />Tüm Gruplara Dön</Button>
               </Link>
             </div>
           </div>

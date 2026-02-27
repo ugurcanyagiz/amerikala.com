@@ -48,7 +48,7 @@ export function GroupsList({ items, loading, hasMore, onLoadMore }: GroupsListPr
         </div>
       ))}
       {hasMore && (
-        <Button variant="outline" onClick={onLoadMore} className="w-full">Daha Fazla Yükle</Button>
+        <Button variant="secondary" onClick={onLoadMore} className="w-full">Daha Fazla Yükle</Button>
       )}
     </div>
   );

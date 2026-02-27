@@ -323,7 +323,7 @@ export default function UserProfileCardModal({ profile, open, onClose }: Props) 
             </Button>
 
             <Button
-              variant="outline"
+              variant="secondary"
               onClick={handleSendMessage}
               disabled={dmLoading || relationshipStatus === "self"}
               className="gap-2"
@@ -333,14 +333,14 @@ export default function UserProfileCardModal({ profile, open, onClose }: Props) 
             </Button>
 
             <Link href={`/profile/${profile.id}`} className="sm:col-span-2" onClick={onClose}>
-              <Button variant="outline" className="w-full gap-2">
+              <Button variant="secondary" className="w-full gap-2">
                 <ExternalLink size={16} />
                 Profili Görüntüle
               </Button>
             </Link>
 
             <Button
-              variant="outline"
+              variant="secondary"
               className="w-full gap-2 sm:col-span-2"
               onClick={() => {
                 onClose();

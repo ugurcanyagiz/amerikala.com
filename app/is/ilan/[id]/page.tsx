@@ -536,7 +536,7 @@ export default function JobListingDetailPage() {
                     <div className="space-y-3">
                       {canManageListing && (
                         <Button
-                          variant="outline"
+                          variant="secondary"
                           className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50"
                           onClick={handleDeleteListing}
                           loading={deletingListing}
@@ -683,7 +683,7 @@ export default function JobListingDetailPage() {
 
                 <div className="flex gap-3 pt-2">
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     className="flex-1 min-w-0"
                     onClick={() => setShowReportModal(false)}
                     disabled={reportSending}
