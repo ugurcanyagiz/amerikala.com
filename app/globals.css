@@ -659,13 +659,13 @@
 
 @keyframes heroFlagFlow {
   0% {
-    background-position: 0% 50%, 0% 50%;
+    background-position: 0% 50%, -18% 50%;
   }
   50% {
-    background-position: 200% 50%, 120% 50%;
+    background-position: 165% 50%, 90% 50%;
   }
   100% {
-    background-position: 0% 50%, 0% 50%;
+    background-position: 0% 50%, -18% 50%;
   }
 }
 
@@ -675,7 +675,7 @@
     background-position: 0% 50%, -20% 50%;
   }
   50% {
-    background-position: 200% 50%, 120% 50%;
+    background-position: 165% 50%, 92% 50%;
   }
 }
 
@@ -698,9 +698,9 @@
   background-position: 0% 50%, -20% 50%;
   background-repeat: repeat;
   animation:
-    heroFlagFlow 13s linear infinite,
-    heroHighlightSweep 7s ease-in-out infinite,
-    heroHuePulse 7s ease-in-out infinite;
+    heroFlagFlow 18s cubic-bezier(0.42, 0, 0.2, 1) infinite,
+    heroHighlightSweep 11s cubic-bezier(0.45, 0.05, 0.2, 1) infinite,
+    heroHuePulse 11s ease-in-out infinite;
 }
 
 /* ============================================
