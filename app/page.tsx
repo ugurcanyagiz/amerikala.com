@@ -527,7 +527,7 @@ export default function Home() {
 
                       <div
                         ref={searchBoxRef}
-                        className="relative mt-10 w-full max-w-[780px] rounded-[18px] border border-[#D6DEE9] bg-white p-2 shadow-[0_22px_45px_-30px_rgba(15,23,42,0.45)]"
+                        className="relative mx-auto mt-10 w-full max-w-[780px] rounded-[18px] border border-[#D6DEE9] bg-white p-2 shadow-[0_22px_45px_-30px_rgba(15,23,42,0.45)]"
                       >
                         <div className="grid min-h-12 grid-cols-[1fr_auto] items-center gap-2 rounded-[14px] bg-white px-2 py-1 md:min-h-[52px] md:grid-cols-[1fr_124px] md:gap-0 md:px-1 md:py-0">
                           <div className="flex items-center gap-2.5 px-2 md:gap-3 md:px-4">
@@ -624,12 +624,12 @@ export default function Home() {
                         )}
                       </div>
 
-                      <div className="mt-8 flex flex-wrap items-center gap-3 md:mt-9 md:gap-4">
+                      <div className="mx-auto mt-8 flex w-full max-w-[780px] items-center justify-end gap-2 md:mt-9 md:gap-3">
                         {user ? (
                           <Button
                             variant="primary"
                             size="lg"
-                            className="h-12 rounded-[14px] bg-[#B23B46] px-8 text-base font-semibold text-white shadow-[0_16px_30px_-20px_rgba(126,33,42,0.72)] hover:bg-[#9E323D]"
+                            className="h-10 whitespace-nowrap rounded-[12px] bg-[#B23B46] px-5 text-sm font-semibold text-white shadow-[0_16px_30px_-20px_rgba(126,33,42,0.72)] hover:bg-[#9E323D] md:h-11 md:px-6"
                             onClick={() => setIsPostListingModalOpen(true)}
                           >
                             İlan Ver
@@ -639,7 +639,7 @@ export default function Home() {
                             <Button
                               variant="primary"
                               size="lg"
-                              className="h-12 rounded-[14px] bg-[#B23B46] px-8 text-base font-semibold text-white shadow-[0_16px_30px_-20px_rgba(126,33,42,0.72)] hover:bg-[#9E323D]"
+                              className="h-10 whitespace-nowrap rounded-[12px] bg-[#B23B46] px-5 text-sm font-semibold text-white shadow-[0_16px_30px_-20px_rgba(126,33,42,0.72)] hover:bg-[#9E323D] md:h-11 md:px-6"
                             >
                               Giriş Yap
                             </Button>
@@ -649,7 +649,7 @@ export default function Home() {
                           <Button
                             variant="secondary"
                             size="lg"
-                            className="h-12 rounded-[14px] border border-[#D5DEE9] bg-[#F8FAFC] px-8 text-base font-medium text-[#334155] shadow-[0_12px_24px_-20px_rgba(15,23,42,0.38)] hover:bg-white"
+                            className="h-10 whitespace-nowrap rounded-[12px] border border-[#D5DEE9] bg-[#F8FAFC] px-5 text-sm font-medium text-[#334155] shadow-[0_12px_24px_-20px_rgba(15,23,42,0.38)] hover:bg-white md:h-11 md:px-6"
                           >
                             Paylaşımları Gör
                           </Button>
