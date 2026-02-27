@@ -478,7 +478,7 @@ export default function Home() {
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative mt-4 flex min-h-[520px] overflow-hidden border-b border-[#1E3352] bg-gradient-to-br from-[#1A2740] via-[#223B5A] to-[#4B6E9D] lg:mt-5 lg:min-h-[560px]">
+          <section className="relative mt-4 flex min-h-[520px] items-center justify-center overflow-hidden border-b border-[#1E3352] bg-gradient-to-br from-[#1A2740] via-[#223B5A] to-[#4B6E9D] lg:mt-5 lg:min-h-[560px]">
             <div
               className="pointer-events-none absolute inset-0"
               aria-hidden="true"
@@ -515,7 +515,7 @@ export default function Home() {
               }}
             />
 
-            <div className="app-page-container relative py-10 lg:py-12">
+            <div className="app-page-container relative w-full">
               <div className="mx-auto w-full max-w-[1140px]">
                 <div className="relative">
                   <div
