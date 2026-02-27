@@ -478,13 +478,13 @@ export default function Home() {
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative flex overflow-hidden border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
+          <section className="relative flex overflow-hidden border-b border-[#243b5b] bg-gradient-to-br from-[#0A1630] via-[#10274A] to-[#4F78AB] text-white">
             <div
               className="pointer-events-none absolute inset-0"
               aria-hidden="true"
               style={{
                 background:
-                  "radial-gradient(120% 90% at 15% 12%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 60%), radial-gradient(95% 70% at 85% 8%, rgba(244,236,226,0.38) 0%, rgba(244,236,226,0) 72%)",
+                  "linear-gradient(120deg, rgba(255,255,255,0.07) 10%, rgba(255,255,255,0) 45%), radial-gradient(80% 55% at 12% 8%, rgba(173,216,255,0.3) 0%, rgba(173,216,255,0) 68%), radial-gradient(75% 60% at 90% 12%, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 72%)",
               }}
             />
 
@@ -495,15 +495,15 @@ export default function Home() {
                     <Image src="/logo.png" alt="" width={56} height={56} className="h-14 w-14 object-contain" />
                   </div>
                   <HeroTitleMotion />
-                  <p className="mt-6 max-w-[680px] text-lg text-[var(--color-ink-secondary)] opacity-90">
+                  <p className="mt-6 max-w-[680px] text-lg text-[#E7EFFB] opacity-95">
                     Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
                   </p>
 
                   <div
                     ref={searchBoxRef}
-                    className="relative mt-8 w-full max-w-[710px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-2 shadow-[var(--shadow-soft)] md:p-1.5"
+                    className="relative mt-8 w-full max-w-[710px] rounded-2xl bg-white p-2 shadow-[0_20px_42px_-28px_rgba(15,23,42,0.8)] md:p-1.5"
                   >
-                    <div className="grid min-h-12 grid-cols-[1fr_auto] items-center gap-2 rounded-[14px] bg-[var(--color-surface-raised)] px-3 py-2 md:min-h-14 md:grid-cols-[1fr_116px] md:gap-0 md:px-0 md:py-0">
+                    <div className="grid min-h-12 grid-cols-[1fr_auto] items-center gap-2 rounded-[14px] bg-white px-3 py-2 md:min-h-14 md:grid-cols-[1fr_116px] md:gap-0 md:px-0 md:py-0">
                       <div className="flex items-center gap-2.5 px-1 md:gap-3 md:px-5">
                         <Search className="h-[18px] w-[18px] text-[var(--color-soft-blue)] md:h-5 md:w-5 md:text-[var(--color-navy)]" />
                         <input
@@ -537,14 +537,14 @@ export default function Home() {
                               onSearchSubmit();
                             }
                           }}
-                          className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-xs)] text-[15px] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-tertiary)] focus:border-[var(--color-action)] focus:ring-2 focus:ring-[var(--color-action-light)] md:text-base"
+                          className="w-full rounded-lg border border-[#D6E1F2] bg-white text-[15px] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-tertiary)] focus:border-[var(--color-action)] focus:ring-2 focus:ring-[var(--color-action-light)] md:text-base"
                           placeholder="Etkinlik, ilan, kişi ara..."
                           aria-label="Site içi arama"
                         />
                       </div>
                       <button
                         type="button"
-                        className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm font-semibold tracking-[0.01em] text-[var(--color-navy)] transition-colors hover:bg-[var(--color-surface-sunken)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-light)] md:hidden disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-9 items-center justify-center rounded-lg border border-[#D6E1F2] bg-[#EAF2FF] px-4 text-sm font-semibold tracking-[0.01em] text-[#1F4A80] transition-colors hover:bg-[#DCE9FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-light)] md:hidden disabled:cursor-not-allowed disabled:opacity-60"
                         onClick={onSearchSubmit}
                         aria-label={searching ? "Aranıyor" : "Ara"}
                       >
@@ -552,7 +552,7 @@ export default function Home() {
                       </button>
                       <button
                         type="button"
-                        className="hidden h-full min-h-14 items-center justify-center rounded-[14px] bg-[var(--color-primary)] px-8 text-base font-bold uppercase tracking-wide text-white transition-colors hover:bg-[var(--color-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
+                        className="hidden h-full min-h-14 items-center justify-center rounded-[14px] bg-[#2E5F97] px-8 text-base font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#274F7D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-light)] disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
                         onClick={onSearchSubmit}
                       >
                         {searching ? "Aranıyor..." : "ARA"}
@@ -580,7 +580,7 @@ export default function Home() {
                                       setSearchOpen(false);
                                     }}
                                     className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition ${
-                                      isActive ? "bg-[var(--color-primary-subtle)]" : "hover:bg-[var(--color-primary-subtle)]"
+                                      isActive ? "bg-[#EAF2FF]" : "hover:bg-[#F2F7FF]"
                                     }`}
                                   >
                                     <div className="min-w-0">
@@ -603,7 +603,7 @@ export default function Home() {
                       <Button
                         variant="secondary"
                         size="lg"
-                        className="h-11 rounded-xl px-7 text-sm font-semibold tracking-wide"
+                        className="h-11 rounded-xl border border-[#C7D9F3] bg-[#EEF4FF] px-7 text-sm font-semibold tracking-wide text-[#1F4A80] hover:bg-[#E1ECFF]"
                         onClick={() => setIsPostListingModalOpen(true)}
                       >
                         İlan Ver
@@ -613,7 +613,7 @@ export default function Home() {
                         <Button
                           variant="ghost"
                           size="lg"
-                          className="h-11 rounded-xl border border-[var(--color-ink)] bg-transparent px-7 text-sm font-bold uppercase tracking-[0.08em] text-[var(--color-ink)] shadow-none hover:bg-[rgba(var(--color-trust-rgb),0.05)]"
+                          className="h-11 rounded-xl border border-[#D6E1F2] bg-[#EEF4FF] px-7 text-sm font-bold uppercase tracking-[0.08em] text-[#1F4A80] shadow-none hover:bg-[#E1ECFF]"
                         >
                           GİRİŞ YAP
                         </Button>
@@ -623,7 +623,7 @@ export default function Home() {
                       <Button
                         variant="primary"
                         size="lg"
-                        className="h-11 rounded-xl bg-[var(--color-primary)] px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[var(--shadow-sm)] hover:bg-[var(--color-primary-hover)] focus-visible:ring-[var(--color-primary)]/30"
+                        className="h-11 rounded-xl bg-[#8B2E36] px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[0_14px_24px_-16px_rgba(67,20,24,0.8)] hover:bg-[#78272E] focus-visible:ring-[#8B2E36]/35"
                       >
                         PAYLAŞIMLARI GÖR →
                       </Button>
