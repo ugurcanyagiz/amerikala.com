@@ -473,12 +473,12 @@ export default function Home() {
   );
 
   return (
-    <div className="relative overflow-x-clip bg-[var(--color-surface)]" style={{ backgroundColor: HOME_THEME.bg, color: HOME_THEME.text }}>
+    <div className="relative overflow-x-clip bg-[#F7F8FA]" style={{ color: HOME_THEME.text }}>
       <div className="flex">
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative flex overflow-hidden border-b border-[#243b5b] bg-gradient-to-br from-[#0A1630] via-[#10274A] to-[#4F78AB] text-white">
+          <section className="relative mt-4 flex overflow-hidden border-b border-[#1E3352] bg-gradient-to-br from-[#08142D] via-[#132D56] to-[#6E95C6] text-white lg:mt-5">
             <div
               className="pointer-events-none absolute inset-0"
               aria-hidden="true"
@@ -488,20 +488,24 @@ export default function Home() {
               }}
             />
 
-            <div className="app-page-container relative pt-10 pb-6 lg:pt-12 lg:pb-8">
+            <div className="app-page-container relative pt-12 pb-8 lg:pt-14 lg:pb-10">
               <div className="mx-auto w-full max-w-[760px]">
-                <div>
+                <div className="relative">
+                  <div aria-hidden="true" className="pointer-events-none absolute -left-8 top-5 h-[84%] w-full rounded-[30px] border border-white/20 bg-white/10 shadow-[0_40px_90px_-60px_rgba(8,20,45,0.95)] backdrop-blur-sm" />
+                  <div aria-hidden="true" className="pointer-events-none absolute -right-6 top-12 h-[80%] w-full rounded-[32px] border border-white/15 bg-white/10 opacity-80 shadow-[0_36px_80px_-58px_rgba(8,20,45,0.95)]" />
+                  <div aria-hidden="true" className="pointer-events-none absolute left-3 top-20 h-[78%] w-full rounded-[32px] border border-white/15 bg-white/5 opacity-80" />
+                  <div className="relative rounded-[24px] border border-white/30 bg-white/88 p-6 text-[var(--color-ink)] shadow-[0_34px_72px_-42px_rgba(8,20,45,0.95)] backdrop-blur-md md:p-8">
                   <div className="mb-4 flex justify-center md:hidden" aria-hidden="true">
                     <Image src="/logo.png" alt="" width={56} height={56} className="h-14 w-14 object-contain" />
                   </div>
                   <HeroTitleMotion />
-                  <p className="mt-6 max-w-[680px] text-lg text-[#E7EFFB] opacity-95">
+                  <p className="mt-6 max-w-[680px] text-lg text-[#42526B]">
                     Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
                   </p>
 
                   <div
                     ref={searchBoxRef}
-                    className="relative mt-8 w-full max-w-[710px] rounded-2xl bg-white p-2 shadow-[0_20px_42px_-28px_rgba(15,23,42,0.8)] md:p-1.5"
+                    className="relative mt-8 w-full max-w-[710px] rounded-2xl border border-[rgba(148,163,184,0.35)] bg-white p-2 shadow-[0_24px_42px_-30px_rgba(15,23,42,0.8)] md:p-1.5"
                   >
                     <div className="grid min-h-12 grid-cols-[1fr_auto] items-center gap-2 rounded-[14px] bg-white px-3 py-2 md:min-h-14 md:grid-cols-[1fr_116px] md:gap-0 md:px-0 md:py-0">
                       <div className="flex items-center gap-2.5 px-1 md:gap-3 md:px-5">
@@ -537,14 +541,14 @@ export default function Home() {
                               onSearchSubmit();
                             }
                           }}
-                          className="w-full rounded-lg border border-[#D6E1F2] bg-white text-[15px] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-tertiary)] focus:border-[var(--color-action)] focus:ring-2 focus:ring-[var(--color-action-light)] md:text-base"
+                          className="h-12 w-full rounded-xl border border-[#D7DCE4] bg-white px-3 text-[15px] text-[var(--color-ink)] shadow-[0_8px_24px_-22px_rgba(15,23,42,0.7)] outline-none placeholder:text-[var(--color-ink-tertiary)] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/25 md:text-base"
                           placeholder="Etkinlik, ilan, kişi ara..."
                           aria-label="Site içi arama"
                         />
                       </div>
                       <button
                         type="button"
-                        className="inline-flex h-9 items-center justify-center rounded-lg border border-[#D6E1F2] bg-[#EAF2FF] px-4 text-sm font-semibold tracking-[0.01em] text-[#1F4A80] transition-colors hover:bg-[#DCE9FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-light)] md:hidden disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-12 items-center justify-center rounded-xl bg-[#2563EB] px-4 text-sm font-semibold tracking-[0.01em] text-white transition-colors hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/35 md:hidden disabled:cursor-not-allowed disabled:opacity-60"
                         onClick={onSearchSubmit}
                         aria-label={searching ? "Aranıyor" : "Ara"}
                       >
@@ -552,7 +556,7 @@ export default function Home() {
                       </button>
                       <button
                         type="button"
-                        className="hidden h-full min-h-14 items-center justify-center rounded-[14px] bg-[#2E5F97] px-8 text-base font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#274F7D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-light)] disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
+                        className="hidden h-full min-h-12 items-center justify-center rounded-[14px] bg-[#2563EB] px-8 text-base font-bold tracking-wide text-white transition-colors hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/35 disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
                         onClick={onSearchSubmit}
                       >
                         {searching ? "Aranıyor..." : "ARA"}
@@ -598,12 +602,12 @@ export default function Home() {
                     )}
                   </div>
 
-                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <div className="mt-6 flex flex-wrap items-center gap-3">
                     {user ? (
                       <Button
                         variant="secondary"
                         size="lg"
-                        className="h-11 rounded-xl border border-[#C7D9F3] bg-[#EEF4FF] px-7 text-sm font-semibold tracking-wide text-[#1F4A80] hover:bg-[#E1ECFF]"
+                        className="h-12 rounded-2xl bg-[#C43737] px-7 text-sm font-semibold text-white hover:bg-[#AE2E2E]"
                         onClick={() => setIsPostListingModalOpen(true)}
                       >
                         İlan Ver
@@ -613,7 +617,7 @@ export default function Home() {
                         <Button
                           variant="ghost"
                           size="lg"
-                          className="h-11 rounded-xl border border-[#D6E1F2] bg-[#EEF4FF] px-7 text-sm font-bold uppercase tracking-[0.08em] text-[#1F4A80] shadow-none hover:bg-[#E1ECFF]"
+                          className="h-12 rounded-2xl border border-[rgba(148,163,184,0.45)] bg-white px-7 text-sm font-semibold text-[var(--color-ink)] shadow-[0_12px_24px_-22px_rgba(15,23,42,0.7)] hover:bg-[#F8FAFC]"
                         >
                           GİRİŞ YAP
                         </Button>
@@ -623,11 +627,12 @@ export default function Home() {
                       <Button
                         variant="primary"
                         size="lg"
-                        className="h-11 rounded-xl bg-[#8B2E36] px-7 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[0_14px_24px_-16px_rgba(67,20,24,0.8)] hover:bg-[#78272E] focus-visible:ring-[#8B2E36]/35"
+                        className="h-12 rounded-2xl border border-[rgba(148,163,184,0.45)] bg-white px-7 text-sm font-semibold text-[var(--color-ink)] shadow-[0_12px_24px_-22px_rgba(15,23,42,0.7)] hover:bg-[#F8FAFC]"
                       >
-                        PAYLAŞIMLARI GÖR →
+                        PAYLAŞIMLARI GÖR
                       </Button>
                     </Link>
+                  </div>
                   </div>
                 </div>
               </div>
@@ -656,8 +661,8 @@ export default function Home() {
             </div>
           </Modal>
 
-          <section className="app-page-container pt-4 pb-10 lg:pt-6 lg:pb-12">
-            <div className="rounded-3xl border border-[var(--color-border-light)] bg-white p-4 shadow-[0_22px_45px_-40px_rgba(15,23,42,0.55)] sm:p-6">
+          <section className="app-page-container bg-[#F7F8FA] pt-8 pb-12 lg:pt-10 lg:pb-14">
+            <div className="rounded-3xl border border-[rgba(148,163,184,0.24)] bg-white p-5 shadow-[0_26px_54px_-40px_rgba(15,23,42,0.55)] sm:p-7">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
                   const config = CATEGORY_CONFIG[key];
@@ -671,10 +676,10 @@ export default function Home() {
                       onClick={() => handleCategoryCardClick(key)}
                       onMouseEnter={() => setActiveCategoryPreview(key)}
                       onFocus={() => setActiveCategoryPreview(key)}
-                      className={`group rounded-2xl border px-3 py-4 text-center transition-all duration-300 sm:px-4 sm:py-5 ${
+                      className={`group rounded-2xl border px-3 py-5 text-center transition-all duration-300 sm:px-4 sm:py-5 ${
                         isActive
-                          ? "border-[var(--color-border-strong)] bg-[var(--color-primary-subtle)] shadow-[var(--shadow-sm)]"
-                          : "border-[var(--color-border-light)] bg-[var(--color-surface)] hover:-translate-y-0.5 hover:border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] hover:shadow-[var(--shadow-sm)]"
+                          ? "border-[rgba(100,116,139,0.35)] bg-[#F3F7FE] shadow-[0_18px_34px_-28px_rgba(15,23,42,0.6)]"
+                          : "border-[rgba(148,163,184,0.24)] bg-white hover:-translate-y-0.5 hover:border-[rgba(100,116,139,0.35)] hover:bg-[#FAFBFD] hover:shadow-[0_18px_34px_-28px_rgba(15,23,42,0.6)]"
                       }`}
                       aria-pressed={isActive}
                     >
@@ -699,7 +704,7 @@ export default function Home() {
                 })}
               </div>
 
-              <div className="mt-5 rounded-3xl border border-[var(--color-border-light)] bg-white p-4 sm:p-5">
+              <div className="mt-6 rounded-3xl border border-[rgba(148,163,184,0.24)] bg-white p-5 shadow-[0_22px_42px_-34px_rgba(15,23,42,0.55)] sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-base font-semibold text-[var(--color-ink)]">{CATEGORY_CONFIG[activeCategoryPreview].title} - Popüler Gönderiler</h3>
                   <Link
@@ -792,7 +797,7 @@ function AdsSection({
   loading: boolean;
 }) {
   return (
-    <section className="bg-[var(--color-surface)] py-14">
+    <section className="bg-[#F7F8FA] py-14">
       <div className="app-page-container py-0">
         <div className="mb-7 text-center">
           <h2 className="text-3xl font-bold text-[var(--color-ink)]">{title}</h2>
@@ -833,14 +838,14 @@ function AdsGrid({ items, loading, latestMobileGrid = false }: { items: UnifiedA
     return (
       <div className={gridClassName}>
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-60 animate-pulse rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-sunken)]" />
+          <div key={index} className="h-60 animate-pulse rounded-2xl border border-[rgba(148,163,184,0.24)] bg-[#EEF1F5]" />
         ))}
       </div>
     );
   }
 
   if (items.length === 0) {
-    return <p className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center text-[var(--color-ink-secondary)]">Henüz listelenecek ilan bulunamadı.</p>;
+    return <p className="rounded-2xl border border-dashed border-[rgba(148,163,184,0.38)] bg-white p-8 text-center text-[var(--color-ink-secondary)]">Henüz listelenecek ilan bulunamadı.</p>;
   }
 
   return (
@@ -851,7 +856,7 @@ function AdsGrid({ items, loading, latestMobileGrid = false }: { items: UnifiedA
           <Link
             key={item.id}
             href={item.href}
-            className="group overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white transition hover:-translate-y-0.5 hover:shadow-md"
+            className="group overflow-hidden rounded-2xl border border-[rgba(148,163,184,0.24)] bg-white shadow-[0_16px_30px_-26px_rgba(15,23,42,0.6)] transition hover:-translate-y-0.5 hover:border-[rgba(100,116,139,0.35)] hover:shadow-[0_24px_40px_-28px_rgba(15,23,42,0.65)]"
           >
             {item.imageUrl ? (
               <div className="h-28 bg-[var(--color-surface-sunken)]">

@@ -32,17 +32,17 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             ref={ref}
             className={`
-              h-11 w-full rounded-[var(--radius-xl)] border px-4
+              h-12 w-full rounded-2xl border px-4
               ${icon ? "pl-10" : ""}
               bg-white text-sm text-[var(--color-ink)]
               placeholder:text-[var(--color-ink-tertiary)]
-              transition-colors duration-150
-              focus:outline-none focus:ring-2
+              transition-[border-color,box-shadow] duration-150 shadow-[0_10px_28px_-24px_rgba(15,23,42,0.65)]
+              focus:outline-none focus:ring-2 focus:ring-offset-0
               disabled:cursor-not-allowed disabled:bg-white disabled:text-[var(--color-ink-tertiary)] disabled:opacity-60
               ${
                 error
                   ? "border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[var(--color-error)]/20"
-                  : "border-[var(--color-border)] hover:border-[var(--color-border-strong)] focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)]/20"
+                  : "border-[rgba(148,163,184,0.38)] bg-white hover:border-[rgba(100,116,139,0.52)] focus:border-[#2563EB] focus:ring-[#2563EB]/25"
               }
               ${className}
             `}

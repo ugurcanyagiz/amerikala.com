@@ -11,28 +11,28 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     const variants: Record<string, string> = {
       default: `
         bg-white
-        border border-[var(--color-border)]
-        shadow-[var(--shadow-sm)]
+        border border-[rgba(148,163,184,0.24)]
+        shadow-[0_16px_36px_-30px_rgba(15,23,42,0.5)]
       `,
       elevated: `
         bg-white
-        border border-[var(--color-border-light)]
-        shadow-[var(--shadow-md)]
+        border border-[rgba(148,163,184,0.2)]
+        shadow-[0_24px_48px_-34px_rgba(15,23,42,0.55)]
       `,
       interactive: `
         bg-white
-        border border-[var(--color-border)]
-        shadow-[var(--shadow-sm)]
-        hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]
-        hover:border-[var(--color-border-strong)]
+        border border-[rgba(148,163,184,0.25)]
+        shadow-[0_16px_36px_-30px_rgba(15,23,42,0.5)]
+        hover:-translate-y-0.5 hover:shadow-[0_24px_44px_-30px_rgba(15,23,42,0.55)]
+        hover:border-[rgba(100,116,139,0.38)]
         transition-all duration-200 ease-out
         cursor-pointer
       `,
       glass: `
-        bg-white/95
+        bg-white/92
         backdrop-blur-md
-        border border-[var(--color-border-light)]
-        shadow-[var(--shadow-sm)]
+        border border-[rgba(255,255,255,0.45)]
+        shadow-[0_24px_46px_-30px_rgba(15,23,42,0.55)]
       `,
     };
 
