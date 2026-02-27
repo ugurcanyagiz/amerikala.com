@@ -478,7 +478,7 @@ export default function Home() {
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative mt-4 flex min-h-[540px] overflow-hidden border-b border-[#1E3352] bg-gradient-to-br from-[#1A2740] via-[#223B5A] to-[#4B6E9D] lg:mt-5 lg:min-h-[600px]">
+          <section className="relative mt-4 flex min-h-[520px] overflow-hidden border-b border-[#1E3352] bg-gradient-to-br from-[#1A2740] via-[#223B5A] to-[#4B6E9D] lg:mt-5 lg:min-h-[560px]">
             <div
               className="pointer-events-none absolute inset-0"
               aria-hidden="true"
@@ -489,36 +489,46 @@ export default function Home() {
             />
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 opacity-30 mix-blend-soft-light"
+              className="pointer-events-none absolute inset-0 opacity-[0.14] mix-blend-soft-light"
               style={{
                 backgroundImage:
-                  "repeating-linear-gradient(137deg, rgba(255,255,255,0.14) 0, rgba(255,255,255,0.14) 1px, transparent 1px, transparent 140px)",
+                  "repeating-linear-gradient(137deg, rgba(255,255,255,0.12) 0, rgba(255,255,255,0.12) 1px, transparent 1px, transparent 180px)",
               }}
             />
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 opacity-[0.045]"
+              className="pointer-events-none absolute inset-0 opacity-[0.038]"
               style={{
                 backgroundImage:
                   "radial-gradient(circle at 25% 30%, rgba(255,255,255,0.9) 0.5px, transparent 1px), radial-gradient(circle at 72% 68%, rgba(255,255,255,0.85) 0.5px, transparent 1px)",
                 backgroundSize: "3px 3px, 4px 4px",
               }}
             />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 opacity-[0.04]"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle, rgba(255,255,255,0.65) 0.45px, transparent 0.8px), radial-gradient(circle, rgba(17,24,39,0.22) 0.45px, transparent 0.9px)",
+                backgroundSize: "2.8px 2.8px, 3.4px 3.4px",
+                backgroundPosition: "0 0, 1px 1.5px",
+              }}
+            />
 
-            <div className="app-page-container relative py-14 lg:py-20">
+            <div className="app-page-container relative py-10 lg:py-12">
               <div className="mx-auto w-full max-w-[1140px]">
                 <div className="relative">
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 z-0 translate-x-4 -translate-y-4 rounded-[24px] border border-white/35 bg-[rgba(255,255,255,0.18)] backdrop-blur-[40px] md:translate-x-8 md:-translate-y-6"
+                    className="pointer-events-none absolute inset-0 z-0 translate-x-4 -translate-y-4 rounded-[24px] border border-white/20 bg-[rgba(255,255,255,0.1)] shadow-[0_22px_60px_-52px_rgba(8,20,45,0.6)] backdrop-blur-[48px] md:translate-x-8 md:-translate-y-6"
                   />
 
-                  <div className="relative z-10 overflow-hidden rounded-[24px] border border-[rgba(255,255,255,0.6)] bg-[rgba(255,255,255,0.65)] px-6 py-9 text-[var(--color-ink)] shadow-[0_40px_95px_-42px_rgba(8,20,45,0.68)] backdrop-blur-[30px] md:px-10 md:py-12 lg:px-14 lg:py-[64px] xl:px-16">
-                    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 border border-white/45" />
+                  <div className="relative z-10 overflow-hidden rounded-[24px] border border-[rgba(255,255,255,0.54)] bg-[rgba(255,255,255,0.62)] px-6 py-7 text-[var(--color-ink)] shadow-[0_35px_90px_-48px_rgba(8,20,45,0.62)] backdrop-blur-[32px] md:px-10 md:py-9 lg:px-14 lg:py-10 xl:px-16">
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 border border-white/35" />
                     <div
                       aria-hidden="true"
-                      className="pointer-events-none absolute right-[-10%] top-[-16%] z-0 h-[240px] w-[240px] rounded-full"
-                      style={{ background: "radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.14) 34%, rgba(255,255,255,0) 74%)" }}
+                      className="pointer-events-none absolute right-[-8%] top-[-24%] z-0 h-[260px] w-[260px] rounded-full"
+                      style={{ background: "radial-gradient(circle, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.12) 32%, rgba(255,255,255,0) 72%)" }}
                     />
 
                     <div className="relative z-20">
@@ -530,14 +540,14 @@ export default function Home() {
                         <div className="flex justify-center">
                           <HeroTitleMotion />
                         </div>
-                        <p className="mx-auto mt-5 max-w-[700px] text-[16px] leading-relaxed text-slate-600 md:text-lg">
+                        <p className="mx-auto mt-3.5 max-w-[700px] text-[16px] leading-relaxed text-slate-600 md:mt-4 md:text-lg">
                           Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
                         </p>
                       </div>
 
                       <div
                         ref={searchBoxRef}
-                        className="relative mx-auto mt-10 w-full max-w-[780px] rounded-[18px] border border-[#D6DEE9] bg-white p-2 shadow-[0_22px_45px_-30px_rgba(15,23,42,0.45)]"
+                        className="relative mx-auto mt-7 w-full max-w-[780px] rounded-[18px] border border-[#D6DEE9] bg-white p-2 shadow-[0_22px_45px_-30px_rgba(15,23,42,0.45)] md:mt-8"
                       >
                         <div className="grid min-h-12 grid-cols-[1fr_auto] items-center gap-2 rounded-[14px] bg-white px-2 py-1 md:min-h-[52px] md:grid-cols-[1fr_124px] md:gap-0 md:px-1 md:py-0">
                           <div className="flex items-center gap-2.5 px-2 md:gap-3 md:px-4">
@@ -634,7 +644,7 @@ export default function Home() {
                         )}
                       </div>
 
-                      <div className="mx-auto mt-9 flex w-full max-w-[780px] flex-wrap items-center justify-center gap-2.5 md:mt-10 md:gap-3">
+                      <div className="mx-auto mt-6 flex w-full max-w-[780px] flex-wrap items-center justify-center gap-2.5 md:mt-7 md:gap-3">
                         {user ? (
                           <Button
                             variant="primary"
