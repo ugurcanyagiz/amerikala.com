@@ -233,7 +233,7 @@ function NavDropdown({
     return (
       <Link
         href={item.href!}
-        className={`nav-pill flex h-10 items-center gap-2 px-4 text-sm font-semibold uppercase tracking-wide ${isActive ? "nav-pill-active" : ""}`}
+        className={`nav-pill flex h-10 items-center gap-2 px-4 text-sm font-semibold tracking-[0.02em] ${isActive ? "nav-pill-active" : ""}`}
       >
         <Icon size={16} className="hidden xl:block" />
         <span className="inline">{item.label}</span>
@@ -245,7 +245,7 @@ function NavDropdown({
     <div ref={dropdownRef} className="relative">
       <button
         onClick={onToggle}
-        className={`nav-pill flex h-10 items-center gap-1 px-4 text-sm font-semibold uppercase tracking-wide ${isActive || isOpen ? "nav-pill-active" : ""}`}
+        className={`nav-pill flex h-10 items-center gap-1 px-4 text-sm font-semibold tracking-[0.02em] ${isActive || isOpen ? "nav-pill-active" : ""}`}
       >
         <Icon size={16} className="hidden xl:block" />
         <span className="inline">{item.label}</span>
@@ -293,7 +293,7 @@ function NavDropdown({
 
 const POPOVER_PANEL_CLASSNAME = "absolute right-0 top-full mt-2 z-50 overflow-hidden border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] rounded-[var(--radius-card)] shadow-[var(--shadow-raised)] animate-in fade-in slide-in-from-top-2 duration-200";
 
-const NAV_ACTION_ICON_BUTTON_CLASSNAME = "rounded-full p-2.5 text-[var(--color-ink-secondary)] transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2";
+const NAV_ACTION_ICON_BUTTON_CLASSNAME = "rounded-full border border-[var(--color-border-light)] bg-[var(--color-surface-raised)]/80 p-2.5 text-[var(--color-ink-secondary)] shadow-[0_8px_24px_rgba(15,23,42,0.08)] transition-all duration-150 ease-out hover:-translate-y-0.5 hover:border-[var(--color-border)] hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2";
 
 function SearchPanel({ children }: { children: ReactNode }) {
   return <div className={`${POPOVER_PANEL_CLASSNAME} w-[420px] max-w-[90vw]`}>{children}</div>;
@@ -729,27 +729,27 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="hidden md:block sticky top-0 z-40 w-full h-16 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl">
-        <div className="app-container h-full">
-          <div className="flex h-full items-center">
+      <header className="hidden md:block sticky top-0 z-40 w-full bg-[var(--color-surface)]/70 py-3 backdrop-blur-xl">
+        <div className="app-container">
+          <div className="flex h-16 items-center rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)]/90 px-4 shadow-[0_18px_42px_rgba(15,23,42,0.12)]">
             <div className="flex flex-1 items-center justify-start">
               {/* Logo */}
-              <Link href="/" className="flex items-center gap-2 flex-shrink-0" aria-label="Amerikala ana sayfa">
+              <Link href="/" className="flex items-center gap-2.5 flex-shrink-0" aria-label="Amerikala ana sayfa">
                 <Image
                   src="/logo.png"
                   alt="Amerikala logosu"
                   width={36}
                   height={36}
                   priority
-                  className="h-9 w-9"
+                  className="h-9 w-9 rounded-xl"
                 />
-                <span className="text-lg font-bold tracking-[0.12em] text-[var(--color-ink)] uppercase">amerikala</span>
+                <span className="text-base font-bold tracking-[0.18em] text-[var(--color-ink)] uppercase">amerikala</span>
               </Link>
             </div>
 
             {/* Desktop Navigation */}
             <div className="hidden flex-1 items-center justify-center md:flex">
-              <nav className="flex items-center gap-2 lg:gap-4">
+              <nav className="flex items-center gap-1 rounded-full border border-[var(--color-border-light)] bg-[var(--color-surface)]/90 p-1.5 lg:gap-2">
                 {desktopNavItems.map((item) => (
                   <NavDropdown
                     key={item.id}
@@ -1122,9 +1122,9 @@ export default function Navbar() {
                       Giriş Yap
                     </Button>
                   </Link>
-                  <Link href="/#son-ilanlar" className="hidden sm:block">
-                    <Button variant="primary" size="sm" className="h-10 rounded-lg px-4">
-                      Paylaşımları Gör
+                  <Link href="/register" className="hidden sm:block">
+                    <Button variant="primary" size="sm" className="h-10 rounded-xl px-5 shadow-[0_10px_24px_rgba(190,39,47,0.34)]">
+                      Kayıt Ol
                     </Button>
                   </Link>
                   <button
