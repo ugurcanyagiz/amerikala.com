@@ -106,7 +106,7 @@ const CATEGORY_CONFIG: Record<
     icon: CalendarDays,
     badgeClass: "bg-white/70 text-[#4F5965] border border-white/60 backdrop-blur-sm",
     cardClass: "from-[#F7F9FC] via-[#EEF3F8] to-[#E8EDF5]",
-    iconCircleClass: "bg-[var(--color-primary)] text-white",
+    iconCircleClass: "bg-[var(--color-surface-raised)] text-[var(--color-trust)] border border-[rgba(var(--color-trust-rgb),0.16)]",
   },
   realEstate: {
     title: "Emlak",
@@ -122,7 +122,7 @@ const CATEGORY_CONFIG: Record<
     icon: BriefcaseBusiness,
     badgeClass: "bg-white/70 text-[#4A5764] border border-white/60 backdrop-blur-sm",
     cardClass: "from-[#F7FAFC] via-[#EEF4F8] to-[#E8EEF4]",
-    iconCircleClass: "bg-[var(--color-primary)] text-white",
+    iconCircleClass: "bg-[var(--color-surface-raised)] text-[var(--color-trust)] border border-[rgba(var(--color-trust-rgb),0.16)]",
   },
   marketplace: {
     title: "Alışveriş",
