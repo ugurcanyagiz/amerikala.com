@@ -478,13 +478,13 @@ export default function Home() {
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative mt-4 flex min-h-[540px] overflow-hidden border-b border-[#1E3352] bg-gradient-to-br from-[#1E2A38] to-[#2F4B6E] lg:mt-5 lg:min-h-[600px]">
+          <section className="relative mt-4 flex min-h-[540px] overflow-hidden border-b border-[#1E3352] bg-gradient-to-br from-[#1A2740] via-[#223B5A] to-[#4B6E9D] lg:mt-5 lg:min-h-[600px]">
             <div
               className="pointer-events-none absolute inset-0"
               aria-hidden="true"
               style={{
                 background:
-                  "linear-gradient(128deg, rgba(255,255,255,0.07) 8%, rgba(255,255,255,0) 34%), linear-gradient(136deg, rgba(255,255,255,0.06) 15%, rgba(255,255,255,0) 42%), radial-gradient(72% 58% at 6% 10%, rgba(153,193,247,0.2) 0%, rgba(153,193,247,0) 70%), radial-gradient(70% 60% at 90% 12%, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)",
+                  "linear-gradient(128deg, rgba(255,255,255,0.05) 8%, rgba(255,255,255,0) 34%), linear-gradient(136deg, rgba(255,255,255,0.04) 15%, rgba(255,255,255,0) 42%), radial-gradient(72% 58% at 6% 10%, rgba(153,193,247,0.16) 0%, rgba(153,193,247,0) 70%), radial-gradient(70% 60% at 90% 12%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%)",
               }}
             />
             <div
@@ -497,163 +497,164 @@ export default function Home() {
             />
 
             <div className="app-page-container relative py-14 lg:py-20">
-              <div className="mx-auto w-full max-w-[1100px]">
+              <div className="mx-auto w-full max-w-[1140px]">
                 <div className="relative">
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 -z-10 translate-x-2 translate-y-4 rounded-[24px] border border-white/24 bg-white/18 opacity-70 shadow-[0_24px_50px_-34px_rgba(8,20,45,0.7)] backdrop-blur-sm md:translate-x-4 md:translate-y-5"
+                    className="pointer-events-none absolute inset-0 -z-20 translate-x-4 -translate-y-4 rounded-[24px] border border-white/25 bg-white/25 shadow-[0_18px_36px_-30px_rgba(8,20,45,0.45)] backdrop-blur-[2px] md:translate-x-8 md:-translate-y-5"
                   />
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 -z-20 translate-x-5 translate-y-8 rounded-[24px] border border-white/20 bg-white/14 opacity-55 shadow-[0_26px_55px_-40px_rgba(8,20,45,0.7)] backdrop-blur-sm md:translate-x-8 md:translate-y-10"
+                    className="pointer-events-none absolute inset-0 -z-30 -translate-x-4 translate-y-5 rounded-[24px] border border-white/18 bg-white/16 shadow-[0_16px_32px_-30px_rgba(8,20,45,0.36)] backdrop-blur-[1px] md:-translate-x-7 md:translate-y-8"
                   />
-                  <div className="relative overflow-hidden rounded-[24px] border border-white/25 bg-gradient-to-b from-white/95 to-white/90 px-6 py-8 text-[var(--color-ink)] shadow-[0_34px_80px_-44px_rgba(8,20,45,0.78)] backdrop-blur-md md:px-10 md:py-12 lg:px-14 lg:py-[60px] xl:px-16">
-                    <div className="mb-4 flex justify-center md:hidden" aria-hidden="true">
-                      <Image src="/logo.png" alt="" width={56} height={56} className="h-14 w-14 object-contain" />
-                    </div>
 
-                    <div aria-hidden="true" className="pointer-events-none absolute inset-x-4 top-8 z-0 opacity-[0.08]">
-                      <HeroTitleMotion />
-                    </div>
+                  <div className="relative overflow-hidden rounded-[24px] border border-white/30 bg-white/60 px-6 py-9 text-[var(--color-ink)] shadow-[0_28px_64px_-40px_rgba(8,20,45,0.58)] md:px-10 md:py-12 lg:px-14 lg:py-[64px] xl:px-16">
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 bg-[rgba(248,252,255,0.38)] backdrop-blur-md" />
 
-                    <div className="relative z-10 max-w-[720px]">
-                      <h1 className="text-[clamp(1.85rem,4vw,3.45rem)] font-bold leading-[1.2] tracking-[-0.01em] text-[#1B2A3B]">
-                        Amerika&apos;daki Türk topluluğu için güvenilir ilan ve paylaşım platformu.
-                      </h1>
-                      <p className="mt-5 max-w-[640px] text-[15px] leading-relaxed text-slate-600 md:text-lg">
-                        Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
-                      </p>
-                    </div>
+                    <div className="relative z-10">
+                      <div className="mb-4 flex justify-center md:hidden" aria-hidden="true">
+                        <Image src="/logo.png" alt="" width={56} height={56} className="h-14 w-14 object-contain" />
+                      </div>
 
-                    <div
-                      ref={searchBoxRef}
-                      className="relative mt-8 w-full max-w-[760px] rounded-2xl border border-[rgba(148,163,184,0.35)] bg-white p-2 shadow-[0_26px_48px_-34px_rgba(15,23,42,0.48)] md:mt-9"
-                    >
-                      <div className="grid min-h-12 grid-cols-[1fr_auto] items-center gap-2 rounded-[14px] bg-white px-2 py-1 md:min-h-[52px] md:grid-cols-[1fr_124px] md:gap-0 md:px-1 md:py-0">
-                        <div className="flex items-center gap-2.5 px-2 md:gap-3 md:px-4">
-                          <Search className="h-[18px] w-[18px] text-[var(--color-soft-blue)] md:h-5 md:w-5 md:text-[var(--color-navy)]" />
-                          <input
-                            value={searchQuery}
-                            onChange={(event) => {
-                              setSearchQuery(event.target.value);
-                              setSearchOpen(true);
-                            }}
-                            onFocus={() => setSearchOpen(true)}
-                            onKeyDown={(event) => {
-                              if (!suggestions.length) {
+                      <div className="mx-auto max-w-[820px] text-center">
+                        <div className="flex justify-center">
+                          <HeroTitleMotion />
+                        </div>
+                        <p className="mx-auto mt-5 max-w-[700px] text-[16px] leading-relaxed text-slate-600 md:text-lg">
+                          Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
+                        </p>
+                      </div>
+
+                      <div
+                        ref={searchBoxRef}
+                        className="relative mt-10 w-full max-w-[780px] rounded-[18px] border border-[#D6DEE9] bg-white p-2 shadow-[0_22px_45px_-30px_rgba(15,23,42,0.45)]"
+                      >
+                        <div className="grid min-h-12 grid-cols-[1fr_auto] items-center gap-2 rounded-[14px] bg-white px-2 py-1 md:min-h-[52px] md:grid-cols-[1fr_124px] md:gap-0 md:px-1 md:py-0">
+                          <div className="flex items-center gap-2.5 px-2 md:gap-3 md:px-4">
+                            <Search className="h-[18px] w-[18px] text-[var(--color-soft-blue)] md:h-5 md:w-5 md:text-[var(--color-navy)]" />
+                            <input
+                              value={searchQuery}
+                              onChange={(event) => {
+                                setSearchQuery(event.target.value);
+                                setSearchOpen(true);
+                              }}
+                              onFocus={() => setSearchOpen(true)}
+                              onKeyDown={(event) => {
+                                if (!suggestions.length) {
+                                  if (event.key === "Enter") {
+                                    event.preventDefault();
+                                    onSearchSubmit();
+                                  }
+                                  return;
+                                }
+
+                                if (event.key === "ArrowDown") {
+                                  event.preventDefault();
+                                  setActiveSuggestionIndex((prev) => (prev + 1) % suggestions.length);
+                                }
+
+                                if (event.key === "ArrowUp") {
+                                  event.preventDefault();
+                                  setActiveSuggestionIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1));
+                                }
+
                                 if (event.key === "Enter") {
                                   event.preventDefault();
                                   onSearchSubmit();
                                 }
-                                return;
-                              }
-
-                              if (event.key === "ArrowDown") {
-                                event.preventDefault();
-                                setActiveSuggestionIndex((prev) => (prev + 1) % suggestions.length);
-                              }
-
-                              if (event.key === "ArrowUp") {
-                                event.preventDefault();
-                                setActiveSuggestionIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1));
-                              }
-
-                              if (event.key === "Enter") {
-                                event.preventDefault();
-                                onSearchSubmit();
-                              }
-                            }}
-                            className="h-12 w-full rounded-xl border border-[#D7DCE4] bg-white px-3 text-[15px] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-tertiary)] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30 md:h-[52px] md:text-base"
-                            placeholder="Etkinlik, ilan, kişi ara..."
-                            aria-label="Site içi arama"
-                          />
+                              }}
+                              className="h-12 w-full rounded-xl border border-[#D7DCE4] bg-white px-3 text-[15px] text-[var(--color-ink)] outline-none placeholder:text-[#76849B] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30 md:h-[52px] md:text-base"
+                              placeholder="Ne arıyorsun? (ör: kiralık ev, iş, etkinlik)"
+                              aria-label="Site içi arama"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            className="inline-flex h-12 items-center justify-center rounded-[13px] bg-[#356DDB] px-5 text-sm font-semibold tracking-[0.01em] text-white shadow-[0_12px_24px_-14px_rgba(37,99,235,0.58)] transition-colors hover:bg-[#2B5FC5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 md:hidden disabled:cursor-not-allowed disabled:opacity-60"
+                            onClick={onSearchSubmit}
+                            aria-label={searching ? "Aranıyor" : "Ara"}
+                          >
+                            {searching ? "..." : "Ara"}
+                          </button>
+                          <button
+                            type="button"
+                            className="hidden h-[52px] items-center justify-center rounded-[14px] bg-[#356DDB] px-8 text-base font-semibold text-white shadow-[0_12px_24px_-14px_rgba(37,99,235,0.58)] transition-colors hover:bg-[#2B5FC5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
+                            onClick={onSearchSubmit}
+                          >
+                            {searching ? "Aranıyor..." : "Ara"}
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          className="inline-flex h-12 items-center justify-center rounded-[13px] bg-[#2563EB] px-5 text-sm font-semibold tracking-[0.01em] text-white transition-colors hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 md:hidden disabled:cursor-not-allowed disabled:opacity-60"
-                          onClick={onSearchSubmit}
-                          aria-label={searching ? "Aranıyor" : "Ara"}
-                        >
-                          {searching ? "..." : "Ara"}
-                        </button>
-                        <button
-                          type="button"
-                          className="hidden h-[52px] items-center justify-center rounded-r-2xl rounded-l-xl bg-[#2563EB] px-8 text-base font-bold tracking-wide text-white transition-colors hover:bg-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
-                          onClick={onSearchSubmit}
-                        >
-                          {searching ? "Aranıyor..." : "ARA"}
-                        </button>
+
+                        {searchOpen && searchQuery.trim().length >= 2 && (
+                          <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white shadow-[0_18px_40px_-30px_rgba(17,17,17,0.4)]">
+                            {searching ? (
+                              <p className="px-4 py-3 text-sm text-slate-500">Uygun ilanlar aranıyor...</p>
+                            ) : suggestions.length === 0 ? (
+                              <p className="px-4 py-3 text-sm text-slate-500">Sonuç bulunamadı. Farklı bir arama deneyin.</p>
+                            ) : (
+                              <ul className="max-h-80 overflow-y-auto py-1">
+                                {suggestions.map((item, index) => {
+                                  const meta = CATEGORY_CONFIG[item.section];
+                                  const isActive = index === activeSuggestionIndex;
+
+                                  return (
+                                    <li key={item.id}>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          router.push(item.href);
+                                          setSearchOpen(false);
+                                        }}
+                                        className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition ${
+                                          isActive ? "bg-[#EAF2FF]" : "hover:bg-[#F2F7FF]"
+                                        }`}
+                                      >
+                                        <div className="min-w-0">
+                                          <p className="truncate text-sm font-semibold text-[var(--color-ink)]">{item.title}</p>
+                                          <p className="truncate text-xs text-[var(--color-ink-secondary)]">{item.location}</p>
+                                        </div>
+                                        <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${meta.badgeClass}`}>{meta.title}</span>
+                                      </button>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
+                          </div>
+                        )}
                       </div>
 
-                      {searchOpen && searchQuery.trim().length >= 2 && (
-                        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white shadow-[0_18px_40px_-30px_rgba(17,17,17,0.4)]">
-                          {searching ? (
-                            <p className="px-4 py-3 text-sm text-slate-500">Uygun ilanlar aranıyor...</p>
-                          ) : suggestions.length === 0 ? (
-                            <p className="px-4 py-3 text-sm text-slate-500">Sonuç bulunamadı. Farklı bir arama deneyin.</p>
-                          ) : (
-                            <ul className="max-h-80 overflow-y-auto py-1">
-                              {suggestions.map((item, index) => {
-                                const meta = CATEGORY_CONFIG[item.section];
-                                const isActive = index === activeSuggestionIndex;
-
-                                return (
-                                  <li key={item.id}>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        router.push(item.href);
-                                        setSearchOpen(false);
-                                      }}
-                                      className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition ${
-                                        isActive ? "bg-[#EAF2FF]" : "hover:bg-[#F2F7FF]"
-                                      }`}
-                                    >
-                                      <div className="min-w-0">
-                                        <p className="truncate text-sm font-semibold text-[var(--color-ink)]">{item.title}</p>
-                                        <p className="truncate text-xs text-[var(--color-ink-secondary)]">{item.location}</p>
-                                      </div>
-                                      <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${meta.badgeClass}`}>{meta.title}</span>
-                                    </button>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-7 flex flex-wrap items-center gap-3 md:mt-8 md:gap-4">
-                      {user ? (
-                        <Button
-                          variant="secondary"
-                          size="lg"
-                          className="h-12 rounded-2xl bg-[#C43737] px-8 text-sm font-semibold text-white transition-shadow hover:bg-[#AE2E2E] hover:shadow-[0_12px_28px_-14px_rgba(196,55,55,0.55)]"
-                          onClick={() => setIsPostListingModalOpen(true)}
-                        >
-                          İlan Ver
-                        </Button>
-                      ) : (
-                        <Link href="/login">
+                      <div className="mt-8 flex flex-wrap items-center gap-3 md:mt-9 md:gap-4">
+                        {user ? (
                           <Button
-                            variant="ghost"
+                            variant="primary"
                             size="lg"
-                            className="h-12 rounded-2xl border border-[rgba(148,163,184,0.45)] bg-white px-8 text-sm font-semibold text-[var(--color-ink)] shadow-[0_12px_24px_-22px_rgba(15,23,42,0.65)] hover:bg-[#F8FAFC]"
+                            className="h-12 rounded-[14px] bg-[#B23B46] px-8 text-base font-semibold text-white shadow-[0_16px_30px_-20px_rgba(126,33,42,0.72)] hover:bg-[#9E323D]"
+                            onClick={() => setIsPostListingModalOpen(true)}
                           >
-                            GİRİŞ YAP
+                            İlan Ver
+                          </Button>
+                        ) : (
+                          <Link href="/login">
+                            <Button
+                              variant="primary"
+                              size="lg"
+                              className="h-12 rounded-[14px] bg-[#B23B46] px-8 text-base font-semibold text-white shadow-[0_16px_30px_-20px_rgba(126,33,42,0.72)] hover:bg-[#9E323D]"
+                            >
+                              Giriş Yap
+                            </Button>
+                          </Link>
+                        )}
+                        <Link href="#son-ilanlar">
+                          <Button
+                            variant="secondary"
+                            size="lg"
+                            className="h-12 rounded-[14px] border border-[#D5DEE9] bg-[#F8FAFC] px-8 text-base font-medium text-[#334155] shadow-[0_12px_24px_-20px_rgba(15,23,42,0.38)] hover:bg-white"
+                          >
+                            Paylaşımları Gör
                           </Button>
                         </Link>
-                      )}
-                      <Link href="#son-ilanlar">
-                        <Button
-                          variant="primary"
-                          size="lg"
-                          className="h-12 rounded-2xl border border-[rgba(148,163,184,0.45)] bg-[#F8FAFC] px-8 text-sm font-semibold text-[var(--color-ink)] shadow-[0_12px_24px_-22px_rgba(15,23,42,0.65)] hover:bg-white"
-                        >
-                          PAYLAŞIMLARI GÖR
-                        </Button>
-                      </Link>
+                      </div>
                     </div>
                   </div>
                 </div>
