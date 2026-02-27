@@ -417,7 +417,7 @@ function SidebarSection({
 }) {
   return (
     <div className="mb-8 border-b border-[var(--color-border-light)] pb-6 last:border-none">
-      <p className={`mb-3 flex items-center text-xs font-bold uppercase tracking-[0.28em] text-[#9A8C84] transition-[opacity,transform] duration-200 ${collapsed ? "justify-center gap-0" : "gap-2"}`}>
+      <p className={`mb-3 flex items-center text-xs font-bold uppercase tracking-[0.28em] text-[var(--color-ink-tertiary)] transition-[opacity,transform] duration-200 ${collapsed ? "justify-center gap-0" : "gap-2"}`}>
         <Icon className="h-3.5 w-3.5 shrink-0" />
         <span className={`overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ${collapsed ? "w-0 opacity-0 sr-only" : "w-auto opacity-100"}`}>{title}</span>
       </p>
@@ -443,7 +443,7 @@ function SidebarItem({
     <Link
       href={href}
       className={`flex items-center rounded-xl px-3 py-2.5 text-base transition-[width,opacity,transform,color,background-color] duration-200 ${
-        active ? "bg-white font-semibold text-[var(--color-ink)]" : "text-[#4A4541] hover:bg-white/70"
+        active ? "bg-[var(--color-surface)] font-semibold text-[var(--color-ink)]" : "text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-overlay)]"
       } ${collapsed ? "justify-center gap-0" : "gap-3"}`}
       title={collapsed ? label : undefined}
       aria-label={collapsed ? label : undefined}
