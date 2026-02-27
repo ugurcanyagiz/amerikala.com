@@ -489,10 +489,19 @@ export default function Home() {
             />
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 opacity-40"
+              className="pointer-events-none absolute inset-0 opacity-30 mix-blend-soft-light"
               style={{
                 backgroundImage:
-                  "repeating-linear-gradient(137deg, rgba(255,255,255,0.07) 0, rgba(255,255,255,0.07) 1px, transparent 1px, transparent 120px)",
+                  "repeating-linear-gradient(137deg, rgba(255,255,255,0.14) 0, rgba(255,255,255,0.14) 1px, transparent 1px, transparent 140px)",
+              }}
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 opacity-[0.045]"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle at 25% 30%, rgba(255,255,255,0.9) 0.5px, transparent 1px), radial-gradient(circle at 72% 68%, rgba(255,255,255,0.85) 0.5px, transparent 1px)",
+                backgroundSize: "3px 3px, 4px 4px",
               }}
             />
 
@@ -501,15 +510,20 @@ export default function Home() {
                 <div className="relative">
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 -z-20 translate-x-4 -translate-y-4 rounded-[24px] border border-white/25 bg-white/25 shadow-[0_18px_36px_-30px_rgba(8,20,45,0.45)] backdrop-blur-[2px] md:translate-x-8 md:-translate-y-5"
+                    className="pointer-events-none absolute inset-0 -z-20 translate-x-4 -translate-y-4 rounded-[24px] border border-white/30 bg-white/25 shadow-[0_24px_46px_-32px_rgba(8,20,45,0.5)] backdrop-blur-[3px] md:translate-x-8 md:-translate-y-5"
                   />
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 -z-30 -translate-x-4 translate-y-5 rounded-[24px] border border-white/18 bg-white/16 shadow-[0_16px_32px_-30px_rgba(8,20,45,0.36)] backdrop-blur-[1px] md:-translate-x-7 md:translate-y-8"
+                    className="pointer-events-none absolute inset-0 -z-30 -translate-x-4 translate-y-5 rounded-[24px] border border-white/20 bg-white/[0.18] shadow-[0_22px_42px_-34px_rgba(8,20,45,0.42)] backdrop-blur-[2px] md:-translate-x-7 md:translate-y-8"
                   />
 
                   <div className="relative overflow-hidden rounded-[24px] border border-white/30 bg-white/60 px-6 py-9 text-[var(--color-ink)] shadow-[0_28px_64px_-40px_rgba(8,20,45,0.58)] md:px-10 md:py-12 lg:px-14 lg:py-[64px] xl:px-16">
                     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 bg-[rgba(248,252,255,0.38)] backdrop-blur-md" />
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute right-[-10%] top-[-16%] z-0 h-[240px] w-[240px] rounded-full"
+                      style={{ background: "radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.14) 34%, rgba(255,255,255,0) 74%)" }}
+                    />
 
                     <div className="relative z-10">
                       <div className="mb-4 flex justify-center md:hidden" aria-hidden="true">
@@ -570,7 +584,7 @@ export default function Home() {
                           </div>
                           <button
                             type="button"
-                            className="inline-flex h-12 items-center justify-center rounded-[13px] bg-[#356DDB] px-5 text-sm font-semibold tracking-[0.01em] text-white shadow-[0_12px_24px_-14px_rgba(37,99,235,0.58)] transition-colors hover:bg-[#2B5FC5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 md:hidden disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex h-12 items-center justify-center rounded-[13px] bg-[#356DDB] px-5 text-sm font-semibold tracking-[0.01em] text-white shadow-[0_12px_24px_-14px_rgba(37,99,235,0.58)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#2B5FC5] hover:shadow-[0_16px_30px_-16px_rgba(37,99,235,0.66)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 md:hidden disabled:cursor-not-allowed disabled:opacity-60"
                             onClick={onSearchSubmit}
                             aria-label={searching ? "Aranıyor" : "Ara"}
                           >
@@ -578,7 +592,7 @@ export default function Home() {
                           </button>
                           <button
                             type="button"
-                            className="hidden h-[52px] items-center justify-center rounded-[14px] bg-[#356DDB] px-8 text-base font-semibold text-white shadow-[0_12px_24px_-14px_rgba(37,99,235,0.58)] transition-colors hover:bg-[#2B5FC5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
+                            className="hidden h-[52px] items-center justify-center rounded-[14px] bg-[#356DDB] px-8 text-base font-semibold text-white shadow-[0_12px_24px_-14px_rgba(37,99,235,0.58)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#2B5FC5] hover:shadow-[0_16px_30px_-16px_rgba(37,99,235,0.66)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
                             onClick={onSearchSubmit}
                           >
                             {searching ? "Aranıyor..." : "Ara"}
@@ -624,12 +638,12 @@ export default function Home() {
                         )}
                       </div>
 
-                      <div className="mx-auto mt-8 flex w-full max-w-[780px] items-center justify-end gap-2 md:mt-9 md:gap-3">
+                      <div className="mx-auto mt-9 flex w-full max-w-[780px] flex-wrap items-center justify-center gap-2.5 md:mt-10 md:gap-3">
                         {user ? (
                           <Button
                             variant="primary"
                             size="lg"
-                            className="h-10 whitespace-nowrap rounded-[12px] bg-[#B23B46] px-5 text-sm font-semibold text-white shadow-[0_16px_30px_-20px_rgba(126,33,42,0.72)] hover:bg-[#9E323D] md:h-11 md:px-6"
+                            className="h-10 whitespace-nowrap rounded-[12px] bg-[#B23B46] px-5 text-sm font-semibold text-white shadow-[0_16px_30px_-20px_rgba(126,33,42,0.72)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#9E323D] hover:shadow-[0_18px_34px_-18px_rgba(126,33,42,0.78)] md:h-11 md:px-6"
                             onClick={() => setIsPostListingModalOpen(true)}
                           >
                             İlan Ver
@@ -639,7 +653,7 @@ export default function Home() {
                             <Button
                               variant="primary"
                               size="lg"
-                              className="h-10 whitespace-nowrap rounded-[12px] bg-[#B23B46] px-5 text-sm font-semibold text-white shadow-[0_16px_30px_-20px_rgba(126,33,42,0.72)] hover:bg-[#9E323D] md:h-11 md:px-6"
+                              className="h-10 whitespace-nowrap rounded-[12px] bg-[#B23B46] px-5 text-sm font-semibold text-white shadow-[0_16px_30px_-20px_rgba(126,33,42,0.72)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#9E323D] hover:shadow-[0_18px_34px_-18px_rgba(126,33,42,0.78)] md:h-11 md:px-6"
                             >
                               Giriş Yap
                             </Button>
@@ -649,7 +663,7 @@ export default function Home() {
                           <Button
                             variant="secondary"
                             size="lg"
-                            className="h-10 whitespace-nowrap rounded-[12px] border border-[#D5DEE9] bg-[#F8FAFC] px-5 text-sm font-medium text-[#334155] shadow-[0_12px_24px_-20px_rgba(15,23,42,0.38)] hover:bg-white md:h-11 md:px-6"
+                            className="h-10 whitespace-nowrap rounded-[12px] border border-[#D5DEE9] bg-[#F8FAFC] px-5 text-sm font-medium text-[#334155] shadow-[0_12px_24px_-20px_rgba(15,23,42,0.38)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_16px_30px_-18px_rgba(15,23,42,0.45)] md:h-11 md:px-6"
                           >
                             Paylaşımları Gör
                           </Button>
