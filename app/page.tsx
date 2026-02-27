@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -490,6 +491,9 @@ export default function Home() {
             <div className="app-page-container relative pt-10 pb-6 lg:pt-12 lg:pb-8">
               <div className="mx-auto w-full max-w-[760px]">
                 <div>
+                  <div className="mb-4 flex justify-center md:hidden" aria-hidden="true">
+                    <Image src="/logo.png" alt="" width={56} height={56} className="h-14 w-14 object-contain" />
+                  </div>
                   <HeroTitleMotion />
                   <p className="mt-6 max-w-[680px] text-lg text-[var(--color-ink-secondary)] opacity-90">
                     Amerika&apos;nın ilk ve tek tamamen ücretsiz Türkçe paylaşım ve topluluk platformu.
