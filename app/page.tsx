@@ -510,22 +510,18 @@ export default function Home() {
                 <div className="relative">
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 -z-20 translate-x-4 -translate-y-4 rounded-[24px] border border-white/30 bg-white/25 shadow-[0_24px_46px_-32px_rgba(8,20,45,0.5)] backdrop-blur-[3px] md:translate-x-8 md:-translate-y-5"
-                  />
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 -z-30 -translate-x-4 translate-y-5 rounded-[24px] border border-white/20 bg-white/[0.18] shadow-[0_22px_42px_-34px_rgba(8,20,45,0.42)] backdrop-blur-[2px] md:-translate-x-7 md:translate-y-8"
+                    className="pointer-events-none absolute inset-0 z-0 translate-x-4 -translate-y-4 rounded-[24px] border border-white/35 bg-[rgba(255,255,255,0.18)] backdrop-blur-[40px] md:translate-x-8 md:-translate-y-6"
                   />
 
-                  <div className="relative overflow-hidden rounded-[24px] border border-white/30 bg-white/60 px-6 py-9 text-[var(--color-ink)] shadow-[0_28px_64px_-40px_rgba(8,20,45,0.58)] md:px-10 md:py-12 lg:px-14 lg:py-[64px] xl:px-16">
-                    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 bg-[rgba(248,252,255,0.38)] backdrop-blur-md" />
+                  <div className="relative z-10 overflow-hidden rounded-[24px] border border-[rgba(255,255,255,0.6)] bg-[rgba(255,255,255,0.65)] px-6 py-9 text-[var(--color-ink)] shadow-[0_40px_95px_-42px_rgba(8,20,45,0.68)] backdrop-blur-[30px] md:px-10 md:py-12 lg:px-14 lg:py-[64px] xl:px-16">
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 border border-white/45" />
                     <div
                       aria-hidden="true"
                       className="pointer-events-none absolute right-[-10%] top-[-16%] z-0 h-[240px] w-[240px] rounded-full"
                       style={{ background: "radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.14) 34%, rgba(255,255,255,0) 74%)" }}
                     />
 
-                    <div className="relative z-10">
+                    <div className="relative z-20">
                       <div className="mb-4 flex justify-center md:hidden" aria-hidden="true">
                         <Image src="/logo.png" alt="" width={56} height={56} className="h-14 w-14 object-contain" />
                       </div>
