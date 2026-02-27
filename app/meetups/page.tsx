@@ -14,6 +14,8 @@ import {
 import Sidebar from "../components/Sidebar";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
+import { Input } from "../components/ui/Input";
+import { Select } from "../components/ui/Select";
 import {
   MapPin,
   Users,
@@ -260,7 +262,7 @@ export default function MeetupsPage() {
                   <div className="flex flex-col lg:flex-row gap-4">
                     <div className="min-w-[150px] flex-1">
                       <label htmlFor="meetups-from-date" className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Başlangıç tarihi</label>
-                      <input
+                      <Input
                         type="date"
                         id="meetups-from-date"
                         aria-label="Başlangıç tarihi"
@@ -269,13 +271,13 @@ export default function MeetupsPage() {
                           setFromDate(event.target.value);
                           setQuickDate(null);
                         }}
-                        className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="text-sm"
                       />
                     </div>
 
                     <div className="min-w-[150px] flex-1">
                       <label htmlFor="meetups-to-date" className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Bitiş tarihi</label>
-                      <input
+                      <Input
                         type="date"
                         id="meetups-to-date"
                         aria-label="Bitiş tarihi"
@@ -284,57 +286,53 @@ export default function MeetupsPage() {
                           setToDate(event.target.value);
                           setQuickDate(null);
                         }}
-                        className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="text-sm"
                       />
                     </div>
 
                     <div className="min-w-[160px] flex-1">
                       <label htmlFor="meetups-city" className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Şehir</label>
-                      <select
+                      <Select
                         id="meetups-city"
                         aria-label="Şehir filtresi"
                         value={city}
                         onChange={(event) => setCity(event.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Tüm şehirler</option>
-                        {cityOptions.map((cityOption) => (
-                          <option key={cityOption} value={cityOption}>
-                            {cityOption}
-                          </option>
-                        ))}
-                      </select>
+                        className="text-sm"
+                        options={[
+                          { value: "", label: "Tüm şehirler" },
+                          ...cityOptions.map((cityOption) => ({ value: cityOption, label: cityOption })),
+                        ]}
+                      />
                     </div>
 
                     <div className="min-w-[200px] flex-[1.2]">
                       <label htmlFor="meetups-search" className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Etkinlik ara</label>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-                        <input
-                          type="text"
-                          id="meetups-search"
-                          aria-label="Etkinlik başlığında ara"
-                          value={search}
-                          onChange={(event) => setSearch(event.target.value)}
-                          placeholder="Başlık içinde ara..."
-                          className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
+                      <Input
+                        type="text"
+                        id="meetups-search"
+                        aria-label="Etkinlik başlığında ara"
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder="Başlık içinde ara..."
+                        icon={<Search className="h-4 w-4" />}
+                        className="pl-10 text-sm"
+                      />
                     </div>
 
                     <div className="min-w-[150px] sm:w-[170px]">
                       <label htmlFor="meetups-sort" className="mb-1 block text-xs font-medium text-[var(--color-ink-secondary)]">Sıralama</label>
-                      <select
+                      <Select
                         id="meetups-sort"
                         aria-label="Sıralama"
                         value={sort}
                         onChange={(event) => setSort(event.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="date_asc">Tarih (Yakın)</option>
-                        <option value="date_desc">Tarih (Uzak)</option>
-                        <option value="newest">Yeni Eklenenler</option>
-                      </select>
+                        className="text-sm"
+                        options={[
+                          { value: "date_asc", label: "Tarih (Yakın)" },
+                          { value: "date_desc", label: "Tarih (Uzak)" },
+                          { value: "newest", label: "Yeni Eklenenler" },
+                        ]}
+                      />
                     </div>
 
                     <Button variant="secondary" size="sm" className="gap-1 h-[42px] self-end" onClick={clearFilters} aria-label="Filtreleri temizle">
