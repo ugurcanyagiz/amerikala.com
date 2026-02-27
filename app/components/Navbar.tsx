@@ -544,7 +544,7 @@ function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                   <Button variant="primary" className="w-full">Giriş Yap</Button>
                 </Link>
                 <Link href="/register" onClick={onClose}>
-                  <Button variant="outline" className="w-full">Kayıt Ol</Button>
+                  <Button variant="secondary" className="w-full">Kayıt Ol</Button>
                 </Link>
               </div>
             )}

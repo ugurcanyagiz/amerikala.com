@@ -82,7 +82,7 @@ export function ProfileHeaderCard({
             {isFollowing ? "Takipten Çıkar" : "Arkadaş Ekle / Takip Et"}
           </Button>
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={onSendMessage}
             disabled={!canInteract || dmLoading}
             className="gap-2"
@@ -90,7 +90,7 @@ export function ProfileHeaderCard({
             <MessageCircle size={16} />
             Özel Mesaj Gönder
           </Button>
-          <Button variant="outline" onClick={onCopyProfile} className="gap-2">
+          <Button variant="secondary" onClick={onCopyProfile} className="gap-2">
             {copied ? <Check size={16} /> : <Copy size={16} />}
             {copied ? "Kopyalandı" : "Profil Linkini Kopyala"}
           </Button>

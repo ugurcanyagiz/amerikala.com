@@ -146,7 +146,7 @@ export default function GroupsPage() {
                 </Link>
               ) : (
                 <Link href="/login">
-                  <Button variant="outline" className="gap-2">
+                  <Button variant="secondary" className="gap-2">
                     Grup oluşturmak için giriş yapın
                   </Button>
                 </Link>
@@ -480,7 +480,7 @@ function GroupListCard({ group }: { group: Group }) {
 
             {/* Arrow & Join Button */}
             <div className="flex-shrink-0 flex items-center gap-3">
-              <Button variant="outline" size="sm" className="hidden sm:flex gap-1">
+              <Button variant="secondary" size="sm" className="hidden sm:flex gap-1">
                 <UserPlus size={16} />
                 Katıl
               </Button>

@@ -631,7 +631,7 @@ export default function IsciAriyorumPage() {
                   <div className="flex gap-3 pt-4">
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="secondary"
                       onClick={() => setShowCreateModal(false)}
                       className="flex-1"
                     >

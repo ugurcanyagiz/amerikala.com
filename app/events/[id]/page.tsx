@@ -661,7 +661,7 @@ export default function EventDetailPage() {
 
                     <div className="space-y-2">
                       <Link href={`/profile/${organizer?.username || organizer?.id}`}>
-                        <Button variant="outline" className="w-full gap-2" size="sm">
+                        <Button variant="secondary" className="w-full gap-2" size="sm">
                           <Users size={16} />
                           Profili Görüntüle
                         </Button>

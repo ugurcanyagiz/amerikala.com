@@ -59,7 +59,7 @@ export default function YasalRehberPage() {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button 
-                  variant="outline" 
+                  variant="secondary" 
                   className="flex-1 gap-2"
                   onClick={() => router.push("/")}
                 >

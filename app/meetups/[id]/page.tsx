@@ -958,7 +958,7 @@ export default function EventDetailPage() {
                   ) : isOrganizer ? (
                     <Badge variant="primary" size="lg">Bu etkinliğin organizatörüsün</Badge>
                   ) : isRequestPending ? (
-                    <Button variant="outline" size="lg" disabled className="gap-2">
+                    <Button variant="secondary" size="lg" disabled className="gap-2">
                       <Loader2 size={18} className="animate-spin" />
                       Katılım isteğin onay bekliyor
                     </Button>
@@ -989,7 +989,7 @@ export default function EventDetailPage() {
                   )}
 
                   {/* Share Buttons */}
-                  <Button variant="outline" size="lg" onClick={copyLink} className="gap-2">
+                  <Button variant="secondary" size="lg" onClick={copyLink} className="gap-2">
                     {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
                     {copied ? "Kopyalandı!" : "Link Kopyala"}
                   </Button>
@@ -1072,7 +1072,7 @@ export default function EventDetailPage() {
                                 Onayla
                               </Button>
                               <Button
-                                variant="outline"
+                                variant="secondary"
                                 size="sm"
                                 className="gap-2"
                                 disabled={disabled}
@@ -1277,28 +1277,28 @@ export default function EventDetailPage() {
               <CardContent>
                 <div className="flex gap-2">
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="icon"
                     onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(event.title)}&url=${encodeURIComponent(window.location.href)}`, "_blank")}
                   >
                     <Twitter size={18} />
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="icon"
                     onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, "_blank")}
                   >
                     <Facebook size={18} />
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="icon"
                     onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(event.title + " - " + window.location.href)}`, "_blank")}
                   >
                     <MessageCircle size={18} />
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     className="flex-1 min-w-0"
                     onClick={copyLink}
                   >
@@ -1374,7 +1374,7 @@ export default function EventDetailPage() {
               </Button>
 
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={handleSendMessage}
                 disabled={!user || user.id === selectedAttendee.id || dmLoading}
                 className="gap-2"
@@ -1384,14 +1384,14 @@ export default function EventDetailPage() {
               </Button>
 
               <Link href={`/profile/${selectedAttendee.id}`} className="sm:col-span-2">
-                <Button variant="outline" className="w-full gap-2">
+                <Button variant="secondary" className="w-full gap-2">
                   <ExternalLink size={16} />
                   Profili Görüntüle
                 </Button>
               </Link>
 
               <Link href="/groups/create" className="sm:col-span-2">
-                <Button variant="outline" className="w-full gap-2">
+                <Button variant="secondary" className="w-full gap-2">
                   <Users size={16} />
                   Birlikte Grup Oluştur
                 </Button>

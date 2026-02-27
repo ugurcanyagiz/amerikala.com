@@ -56,7 +56,7 @@ export function EventsList({ items, loading, hasMore, onLoadMore }: EventsListPr
         </div>
       ))}
       {hasMore && (
-        <Button variant="outline" onClick={onLoadMore} className="w-full">Daha Fazla Yükle</Button>
+        <Button variant="secondary" onClick={onLoadMore} className="w-full">Daha Fazla Yükle</Button>
       )}
     </div>
   );

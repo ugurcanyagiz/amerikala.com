@@ -48,7 +48,7 @@ export function FollowingList({ items, loading, hasMore, search, onSearchChange,
             </Link>
           ))}
           {hasMore && (
-            <Button variant="outline" onClick={onLoadMore} className="w-full">Daha Fazla Yükle</Button>
+            <Button variant="secondary" onClick={onLoadMore} className="w-full">Daha Fazla Yükle</Button>
           )}
         </div>
       )}
