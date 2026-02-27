@@ -233,23 +233,10 @@ function NavDropdown({
     return (
       <Link
         href={item.href!}
-        className={`
-          group relative flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold uppercase tracking-wide
-          transition-colors duration-200 hover:bg-[rgba(var(--color-trust-rgb),0.05)]
-          ${isActive
-            ? "text-[var(--color-ink)]"
-            : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
-          }
-        `}
+        className={`nav-pill flex h-10 items-center gap-2 px-4 text-sm font-semibold uppercase tracking-wide ${isActive ? "nav-pill-active" : ""}`}
       >
         <Icon size={16} className="hidden xl:block" />
         <span className="inline">{item.label}</span>
-        <span
-          aria-hidden="true"
-          className={`absolute bottom-0 left-3 right-3 h-0.5 origin-center rounded-full bg-[var(--color-primary)] transition-transform duration-200 ${
-            isActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-          }`}
-        />
       </Link>
     );
   }
@@ -258,26 +245,13 @@ function NavDropdown({
     <div ref={dropdownRef} className="relative">
       <button
         onClick={onToggle}
-        className={`
-          group relative flex h-10 items-center gap-1 rounded-lg px-3 text-sm font-semibold uppercase tracking-wide
-          transition-colors duration-200 hover:bg-[rgba(var(--color-trust-rgb),0.05)]
-          ${isActive || isOpen
-            ? "text-[var(--color-ink)]"
-            : "text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]"
-          }
-        `}
+        className={`nav-pill flex h-10 items-center gap-1 px-4 text-sm font-semibold uppercase tracking-wide ${isActive || isOpen ? "nav-pill-active" : ""}`}
       >
         <Icon size={16} className="hidden xl:block" />
         <span className="inline">{item.label}</span>
         <ChevronDown 
           size={14} 
           className={`hidden lg:block transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} 
-        />
-        <span
-          aria-hidden="true"
-          className={`absolute bottom-0 left-3 right-3 h-0.5 origin-center rounded-full bg-[var(--color-primary)] transition-transform duration-200 ${
-            isActive || isOpen ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-          }`}
         />
       </button>
 
@@ -293,16 +267,11 @@ function NavDropdown({
                 key={child.href}
                 href={child.href}
                 onClick={onClose}
-                className={`
-                  flex items-center gap-3 mx-2 px-3 py-2.5 rounded-xl
-                  transition-all duration-150
-                  ${child.accent 
-                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 my-2" 
-                    : isChildActive
-                      ? "bg-[var(--color-surface-sunken)] text-[var(--color-ink)]"
-                      : "text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-sunken)]"
-                  }
-                `}
+                className={`flex items-center gap-3 mx-2 px-3 py-2.5 rounded-xl transition-all duration-150 ${
+                  child.accent
+                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 my-2"
+                    : `list-row ${isChildActive ? "list-row-active" : ""}`
+                }`}
               >
                 <ChildIcon size={18} className={child.accent ? "text-white" : ""} />
                 <div className="flex-1 min-w-0">
@@ -369,14 +338,7 @@ function MobileBottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`
-                flex items-center justify-center gap-2 h-11 px-4 rounded-xl shrink-0
-                transition-all duration-200
-                ${isActive 
-                  ? "text-[var(--color-primary)]" 
-                  : "text-[var(--color-muted)] "
-                }
-              `}
+              className={`nav-pill flex items-center justify-center gap-2 h-11 px-4 shrink-0 ${isActive ? "nav-pill-active text-[var(--color-primary)]" : "text-[var(--color-muted)]"}`}
             >
               {item.isLogo ? (
                 <Image
@@ -768,7 +730,7 @@ export default function Navbar() {
   return (
     <>
       <header className="hidden md:block sticky top-0 z-40 w-full h-16 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl">
-        <div className="mx-auto h-full max-w-7xl px-6">
+        <div className="app-container h-full">
           <div className="flex h-full items-center">
             <div className="flex flex-1 items-center justify-start">
               {/* Logo */}

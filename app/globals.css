@@ -484,6 +484,25 @@
   /* ─────────────────────────────────────────
      LAYOUT UTILITIES
      ───────────────────────────────────────── */
+  .app-container {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .app-container {
+      padding-inline: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .app-container {
+      padding-inline: 3rem;
+    }
+  }
+
   .container-narrow {
     max-width: 640px;
     margin-left: auto;
@@ -576,39 +595,95 @@
 
   .app-page-container {
     width: 100%;
+    padding-block: 1.5rem;
+  }
+
+  .app-page-container,
+  .ak-shell {
     max-width: 80rem;
     margin-inline: auto;
-    padding-block: 1.5rem;
     padding-inline: 1rem;
   }
 
   @media (min-width: 640px) {
     .app-page-container {
       padding-block: 2rem;
+    }
+
+    .app-page-container,
+    .ak-shell {
       padding-inline: 2rem;
     }
   }
 
   @media (min-width: 1024px) {
+    .app-container,
     .app-page-container {
+      padding-inline: 3rem;
+    }
+
+    .ak-shell {
       padding-inline: 3rem;
     }
   }
 
   .ak-shell {
     width: min(100%, 1100px);
-    margin-inline: auto;
-    padding-inline: 1rem;
-  }
-
-  @media (min-width: 640px) {
-    .ak-shell {
-      padding-inline: 1.5rem;
-    }
   }
 
   .ak-shell-wide {
     width: min(100%, 1240px);
+  }
+
+  .nav-pill {
+    border-radius: 9999px;
+    color: var(--color-ink-secondary);
+    transition: background-color var(--duration-fast) var(--ease-default), color var(--duration-fast) var(--ease-default);
+  }
+
+  .nav-pill:hover {
+    background-color: rgba(var(--color-trust-rgb), 0.05);
+    color: var(--color-ink);
+  }
+
+  .nav-pill-active {
+    background-color: var(--color-surface-sunken);
+    color: var(--color-ink);
+  }
+
+  .list-row {
+    border-radius: 0.75rem;
+    color: var(--color-ink-secondary);
+    transition: background-color var(--duration-fast) var(--ease-default), color var(--duration-fast) var(--ease-default);
+  }
+
+  .list-row:hover {
+    background-color: var(--color-surface-sunken);
+    color: var(--color-ink);
+  }
+
+  .list-row-active {
+    background-color: var(--color-surface-sunken);
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+
+  .table-row-hover {
+    transition: background-color var(--duration-fast) var(--ease-default);
+  }
+
+  .table-row-hover:hover {
+    background-color: var(--color-surface-sunken);
+  }
+
+  .section-neutral {
+    background-color: var(--color-bg);
+  }
+
+  .section-surface {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-card);
   }
 
 }
