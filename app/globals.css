@@ -797,8 +797,8 @@
 .hero-title-flag-gradient {
   background-color: transparent;
   background-image:
-    linear-gradient(105deg, #d6e7ff 0%, #f7fbff 42%, #17345f 100%),
-    linear-gradient(120deg, rgba(255, 255, 255, 0.06) 18%, rgba(255, 255, 255, 0.34) 50%, rgba(255, 255, 255, 0.06) 82%);
+    linear-gradient(103deg, #c63245 0%, #ffffff 36%, #2456a8 72%, #cf2f45 100%),
+    linear-gradient(120deg, rgba(255, 255, 255, 0.08) 18%, rgba(255, 255, 255, 0.38) 50%, rgba(255, 255, 255, 0.08) 82%);
   background-size: 220% 220%, 240% 240%;
   background-position: 0% 50%, -20% 50%;
   background-repeat: repeat;
