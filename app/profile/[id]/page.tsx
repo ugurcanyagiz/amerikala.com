@@ -687,7 +687,7 @@ export default function PublicProfilePage() {
                 className="w-full rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
               />
               {reportFeedback && <p className={`text-sm ${reportFeedback.includes("iletildi") ? "text-green-600" : "text-red-600"}`}>{reportFeedback}</p>}
-              <Button variant="outline" className="gap-2" onClick={handleReportProfile} disabled={reportLoading}><Flag size={16} />{reportLoading ? "Gönderiliyor..." : "Profili Raporla"}</Button>
+              <Button variant="secondary" className="gap-2" onClick={handleReportProfile} disabled={reportLoading}><Flag size={16} />{reportLoading ? "Gönderiliyor..." : "Profili Raporla"}</Button>
             </CardContent>
           </Card>
         )}

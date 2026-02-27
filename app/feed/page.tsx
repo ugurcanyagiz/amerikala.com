@@ -586,7 +586,7 @@ function PostCard({
                 className="w-full min-h-[90px] p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"
               />
               <div className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={() => { setEditingPost(false); setPostDraft(post.content); }}>
+                <Button variant="secondary" size="sm" onClick={() => { setEditingPost(false); setPostDraft(post.content); }}>
                   Vazgeç
                 </Button>
                 <Button size="sm" onClick={submitPostEdit} disabled={!postDraft.trim()}>

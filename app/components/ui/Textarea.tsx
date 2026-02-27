@@ -20,17 +20,16 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           id={textareaId}
           className={`
-            min-h-[100px] w-full rounded-xl border bg-[var(--color-surface-raised)] px-4 py-3 text-sm text-[var(--color-ink)]
+            min-h-[100px] w-full rounded-[var(--radius-xl)] border bg-white px-4 py-3 text-sm text-[var(--color-ink)]
             placeholder:text-[var(--color-ink-tertiary)]
-            shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] transition-colors duration-150
+            transition-colors duration-150
             focus:outline-none focus:ring-2
-            disabled:cursor-not-allowed disabled:bg-[var(--color-surface)] disabled:text-[var(--color-ink-tertiary)]
-            hover:border-[var(--color-border-strong)]
+            disabled:cursor-not-allowed disabled:bg-white disabled:text-[var(--color-ink-tertiary)] disabled:opacity-60
             resize-none
             ${
               error
                 ? "border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[var(--color-error)]/20"
-                : "border-border hover:border-[var(--color-border-strong)] focus:border-primary focus:ring-primary/20"
+                : "border-[var(--color-border)] hover:border-[var(--color-border-strong)] focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)]/20"
             }
             ${className}
           `}

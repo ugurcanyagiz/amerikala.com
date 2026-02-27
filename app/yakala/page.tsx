@@ -181,7 +181,7 @@ export default function YakalaPage() {
               <Input label="Konum" placeholder="Buluşma yeri" icon={<MapPin size={18} />} />
               <Input label="Zaman" type="datetime-local" icon={<Clock size={18} />} />
               <div className="flex justify-end gap-3 pt-4">
-                <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+                <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
                   İptal
                 </Button>
                 <Button variant="primary">Yakala Oluştur</Button>
@@ -233,7 +233,7 @@ function YakalaCard({ yakala }: { yakala: typeof YAKALAS[0] }) {
 
         <div className="flex gap-2">
           <Button
-            variant={interested ? "outline" : "primary"}
+            variant={interested ? "secondary" : "primary"}
             size="sm"
             className="flex-1 gap-1"
             onClick={() => setInterested(!interested)}
@@ -241,7 +241,7 @@ function YakalaCard({ yakala }: { yakala: typeof YAKALAS[0] }) {
             <Heart size={16} className={interested ? "fill-current" : ""} />
             İlgileniyorum
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="secondary" size="sm">
             <MessageCircle size={16} />
           </Button>
           <Button variant="ghost" size="sm">

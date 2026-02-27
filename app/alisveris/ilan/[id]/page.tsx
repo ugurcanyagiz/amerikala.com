@@ -336,7 +336,7 @@ export default function MarketplaceDetailPage() {
                     <div className="space-y-3">
                       {canManageListing && (
                         <Button
-                          variant="outline"
+                          variant="secondary"
                           className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50"
                           onClick={handleDeleteListing}
                           disabled={deletingListing}
@@ -367,7 +367,7 @@ export default function MarketplaceDetailPage() {
                       )}
 
                       {user && user.id !== listing.user_id && (
-                        <Button variant="outline" className="w-full gap-2">
+                        <Button variant="secondary" className="w-full gap-2">
                           <MessageCircle size={20} />
                           Mesaj Gönder
                         </Button>

@@ -1,7 +1,7 @@
 import * as React from "react";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "outline" | "destructive";
+  variant?: "primary" | "secondary" | "ghost" | "link";
   size?: "sm" | "md" | "lg" | "icon";
   loading?: boolean;
   children: React.ReactNode;
@@ -14,37 +14,29 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       font-semibold tracking-tight
       rounded-[var(--radius-xl)]
       transition-all duration-150 ease-out
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/25 focus-visible:ring-offset-2
       disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
       active:translate-y-px
     `;
 
-    const variants: Record<string, string> = {
+    const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
       primary: `
         bg-[var(--color-primary)] text-white
         hover:bg-[var(--color-primary-hover)]
         shadow-[var(--shadow-sm)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]
       `,
       secondary: `
-        bg-[rgba(var(--color-trust-rgb),0.08)] text-[var(--color-trust)]
-        border border-[rgba(var(--color-trust-rgb),0.22)]
+        border border-[var(--color-border)] bg-white text-[var(--color-ink)]
         shadow-[var(--shadow-xs)]
-        hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] hover:bg-[rgba(var(--color-trust-rgb),0.14)] hover:border-[rgba(var(--color-trust-rgb),0.3)]
+        hover:-translate-y-0.5 hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-raised)] hover:shadow-[var(--shadow-sm)]
       `,
       ghost: `
         bg-transparent text-[var(--color-ink-secondary)]
         hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink)] hover:-translate-y-0.5
       `,
-      outline: `
-        bg-[var(--color-surface)] text-[var(--color-ink)]
-        border border-[var(--color-border-strong)]
-        shadow-[var(--shadow-xs)]
-        hover:-translate-y-0.5 hover:bg-[var(--color-surface-raised)] hover:shadow-[var(--shadow-sm)] hover:border-[var(--color-primary-300)]
-      `,
-      destructive: `
-        bg-[var(--color-error)] text-white
-        hover:bg-[var(--color-error)]/90
-        shadow-[var(--shadow-sm)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]
+      link: `
+        h-auto rounded-none bg-transparent px-0 py-0 text-[var(--color-primary)] shadow-none
+        underline-offset-4 hover:text-[var(--color-primary-hover)] hover:underline
       `,
     };
 
@@ -55,9 +47,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       icon: "h-10 w-10 p-0",
     };
 
+    const sizeClass = variant === "link" ? "text-sm" : sizes[size];
+
     return (
       <button
-        className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
+        className={`${baseStyles} ${variants[variant]} ${sizeClass} ${className}`}
         ref={ref}
         disabled={disabled || loading}
         {...props}

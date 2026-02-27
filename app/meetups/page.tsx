@@ -337,7 +337,7 @@ export default function MeetupsPage() {
                       </select>
                     </div>
 
-                    <Button variant="outline" size="sm" className="gap-1 h-[42px] self-end" onClick={clearFilters} aria-label="Filtreleri temizle">
+                    <Button variant="secondary" size="sm" className="gap-1 h-[42px] self-end" onClick={clearFilters} aria-label="Filtreleri temizle">
                       <X className="h-4 w-4" />
                       Temizle
                     </Button>
@@ -445,7 +445,7 @@ export default function MeetupsPage() {
                   <Card variant="default" padding="md" className="bg-white border-black/10 shadow-sm rounded-2xl">
                     <CardContent className="p-0 text-center py-8">
                       <p className="text-[var(--color-ink-secondary)]">{errorMessage}</p>
-                      <Button variant="outline" size="sm" className="mt-4" onClick={() => window.location.reload()}>
+                      <Button variant="secondary" size="sm" className="mt-4" onClick={() => window.location.reload()}>
                         Tekrar Dene
                       </Button>
                     </CardContent>
@@ -465,7 +465,7 @@ export default function MeetupsPage() {
 
                       <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
                         {hasActiveFilters && (
-                          <Button variant="outline" size="sm" onClick={clearFilters}>
+                          <Button variant="secondary" size="sm" onClick={clearFilters}>
                             Filtreleri Temizle
                           </Button>
                         )}
@@ -547,7 +547,7 @@ export default function MeetupsPage() {
                       </div>
                       <div className="flex gap-3">
                         <Link href="/meetups/my-events">
-                          <Button variant="outline" size="sm">
+                          <Button variant="secondary" size="sm">
                             Etkinliklerim
                           </Button>
                         </Link>

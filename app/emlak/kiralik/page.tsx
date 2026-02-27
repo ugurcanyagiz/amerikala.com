@@ -211,7 +211,7 @@ export default function KiralikPage() {
 
                   {/* Filters Toggle */}
                   <Button 
-                    variant="outline" 
+                    variant="secondary" 
                     onClick={() => setShowFilters(!showFilters)}
                     className="gap-2"
                   >
@@ -343,7 +343,7 @@ export default function KiralikPage() {
                       : "Henüz kiralık ilan eklenmemiş."}
                   </p>
                   {hasActiveFilters && (
-                    <Button variant="outline" onClick={clearFilters} className="gap-2">
+                    <Button variant="secondary" onClick={clearFilters} className="gap-2">
                       <X size={16} />
                       Filtreleri Temizle
                     </Button>

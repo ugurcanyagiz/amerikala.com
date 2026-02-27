@@ -251,7 +251,7 @@ export default function AlisverisIlanlarimPage() {
                           {/* Actions */}
                           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
                             <Link href={`/alisveris/ilan/${listing.id}`}>
-                              <Button variant="outline" size="sm" className="gap-1">
+                              <Button variant="secondary" size="sm" className="gap-1">
                                 <Eye size={16} />
                                 Görüntüle
                               </Button>

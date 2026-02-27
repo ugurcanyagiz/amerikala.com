@@ -51,12 +51,12 @@ export function EventsList({ items, loading, hasMore, onLoadMore }: EventsListPr
             </div>
           </div>
           <Link href={`/events/${event.id}`}>
-            <Button variant={event.joined ? "outline" : "primary"} size="sm">{event.joined ? "Katıldın" : "Detay"}</Button>
+            <Button variant={event.joined ? "secondary" : "primary"} size="sm">{event.joined ? "Katıldın" : "Detay"}</Button>
           </Link>
         </div>
       ))}
       {hasMore && (
-        <Button variant="outline" onClick={onLoadMore} className="w-full">Daha Fazla Yükle</Button>
+        <Button variant="secondary" onClick={onLoadMore} className="w-full">Daha Fazla Yükle</Button>
       )}
     </div>
   );

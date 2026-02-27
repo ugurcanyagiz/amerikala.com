@@ -29,7 +29,6 @@ const Modal: React.FC<ModalProps> = ({
     full: "max-w-6xl",
   };
 
-  // Handle escape key
   React.useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -50,14 +49,12 @@ const Modal: React.FC<ModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 animate-fade-in">
-      {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-[var(--color-surface-overlay)]"
+        className="fixed inset-0 bg-neutral-950/50 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Modal Container */}
       <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-6">
         <div
           role="dialog"
@@ -66,18 +63,16 @@ const Modal: React.FC<ModalProps> = ({
           aria-describedby={description ? "modal-description" : undefined}
           className={`
             relative w-full ${sizes[size]}
-            bg-[var(--color-surface)]
-            rounded-xl
-            shadow-[var(--shadow-xl)]
-            animate-scale-in
             max-h-[90vh] overflow-hidden
+            rounded-[28px] border border-[var(--color-border)] bg-white
+            shadow-[0_24px_60px_rgba(0,0,0,0.24)]
+            animate-scale-in
             flex flex-col
           `}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
           {(title || description) && (
-            <div className="flex items-start justify-between px-6 py-5 border-b border-[var(--color-border-light)]">
+            <div className="flex items-start justify-between border-b border-[var(--color-border)] px-6 py-5">
               <div className="flex-1 pr-4">
                 {title && (
                   <h2
@@ -100,7 +95,7 @@ const Modal: React.FC<ModalProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                className="rounded-full -mr-2 -mt-1"
+                className="-mr-2 -mt-1 rounded-full"
                 aria-label="Close modal"
               >
                 <X className="h-5 w-5" />
@@ -108,7 +103,6 @@ const Modal: React.FC<ModalProps> = ({
             </div>
           )}
 
-          {/* Content */}
           <div className="flex-1 overflow-y-auto px-6 py-5">
             {children}
           </div>
