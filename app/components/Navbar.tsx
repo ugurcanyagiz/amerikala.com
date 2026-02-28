@@ -312,8 +312,17 @@ function ProfileMenuPanel({ children }: { children: ReactNode }) {
 }
 
 // Mobile Bottom Navigation
-function MobileBottomNav() {
+function MobileBottomNav({
+  unreadNotifications,
+  unreadMessages,
+}: {
+  unreadNotifications: number;
+  unreadMessages: number;
+}) {
   const pathname = usePathname();
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const profileAlertCount = unreadNotifications + unreadMessages;
 
   const mobileItems = [
     { href: "/", icon: null, label: "amerikala", isLogo: true },
@@ -321,8 +330,22 @@ function MobileBottomNav() {
     { href: "/is", icon: Briefcase, label: "İş" },
     { href: "/alisveris", icon: ShoppingBag, label: "Market" },
     { href: "/meetups", icon: Calendar, label: "Etkinlik" },
-    { href: "/profile", icon: User, label: "Profil" },
   ];
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--color-surface)]/90 backdrop-blur-xl border-t border-[var(--color-border-light)] z-50 safe-area-inset-bottom">
@@ -355,6 +378,68 @@ function MobileBottomNav() {
             </Link>
           );
         })}
+
+        <div ref={profileMenuRef} className="relative shrink-0">
+          {profileMenuOpen && (
+            <div className="absolute bottom-[calc(100%+12px)] right-0 w-48 rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] p-2 shadow-[var(--shadow-raised)] animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <Link
+                href="/profile"
+                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:bg-[var(--color-surface)]"
+                onClick={() => setProfileMenuOpen(false)}
+              >
+                <User size={16} />
+                Profil
+              </Link>
+              <Link
+                href="/messages"
+                className="mt-1 flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:bg-[var(--color-surface)]"
+                onClick={() => setProfileMenuOpen(false)}
+              >
+                <span className="flex items-center gap-2">
+                  <MessageSquare size={16} />
+                  Mesajlar
+                </span>
+                {unreadMessages > 0 && (
+                  <span className="rounded-full bg-[var(--color-primary)] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                    {unreadMessages > 99 ? "99+" : unreadMessages}
+                  </span>
+                )}
+              </Link>
+              <Link
+                href="/notifications"
+                className="mt-1 flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:bg-[var(--color-surface)]"
+                onClick={() => setProfileMenuOpen(false)}
+              >
+                <span className="flex items-center gap-2">
+                  <Bell size={16} />
+                  Bildirimler
+                </span>
+                {unreadNotifications > 0 && (
+                  <span className="rounded-full bg-[var(--color-warning)] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                    {unreadNotifications > 99 ? "99+" : unreadNotifications}
+                  </span>
+                )}
+              </Link>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setProfileMenuOpen((prev) => !prev)}
+            className={`nav-pill relative flex items-center justify-center gap-2 h-11 px-4 ${pathname.startsWith("/profile") || pathname.startsWith("/messages") || pathname.startsWith("/notifications") || profileMenuOpen ? "nav-pill-active text-[var(--color-primary)]" : "text-[var(--color-muted)]"}`}
+            aria-expanded={profileMenuOpen}
+            aria-haspopup="menu"
+            aria-label="Profil menüsü"
+          >
+            <User size={18} strokeWidth={pathname.startsWith("/profile") || pathname.startsWith("/messages") || pathname.startsWith("/notifications") || profileMenuOpen ? 2.5 : 2} />
+            <span className="text-xs font-medium whitespace-nowrap">Profil</span>
+            {profileAlertCount > 0 && (
+              <span className="absolute -top-1.5 right-1 rounded-full bg-[var(--color-error)] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                {profileAlertCount > 99 ? "99+" : profileAlertCount}
+              </span>
+            )}
+          </button>
+        </div>
         </div>
       </div>
     </nav>
@@ -1144,7 +1229,7 @@ export default function Navbar() {
       <MobileMenuSheet isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
       {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
+      <MobileBottomNav unreadNotifications={unreadCount} unreadMessages={totalUnreadMessages} />
     </>
   );
 }
