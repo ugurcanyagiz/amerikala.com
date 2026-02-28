@@ -224,9 +224,9 @@ function NavDropdown({
       }
     };
     if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("pointerdown", handleClickOutside);
     }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("pointerdown", handleClickOutside);
   }, [isOpen, onClose]);
 
   if (!hasChildren) {
@@ -321,7 +321,7 @@ function MobileBottomNav({
 }) {
   const pathname = usePathname();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const profileMenuRef = useRef<HTMLElement>(null);
   const profileAlertCount = unreadNotifications + unreadMessages;
 
   const mobileItems = [
@@ -339,16 +339,58 @@ function MobileBottomNav({
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("pointerdown", handleClickOutside);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("pointerdown", handleClickOutside);
     };
   }, []);
 
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--color-surface)]/90 backdrop-blur-xl border-t border-[var(--color-border-light)] z-50 safe-area-inset-bottom">
+    <nav ref={profileMenuRef} className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--color-surface)]/90 backdrop-blur-xl border-t border-[var(--color-border-light)] z-50 safe-area-inset-bottom">
+      {profileMenuOpen && (
+        <div className="absolute bottom-[calc(100%+12px)] right-3 z-[60] w-48 rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] p-2 shadow-[var(--shadow-raised)] animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <Link
+            href="/profile"
+            className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:bg-[var(--color-surface)]"
+            onClick={() => setProfileMenuOpen(false)}
+          >
+            <User size={16} />
+            Profil
+          </Link>
+          <Link
+            href="/messages"
+            className="mt-1 flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:bg-[var(--color-surface)]"
+            onClick={() => setProfileMenuOpen(false)}
+          >
+            <span className="flex items-center gap-2">
+              <MessageSquare size={16} />
+              Mesajlar
+            </span>
+            {unreadMessages > 0 && (
+              <span className="rounded-full bg-[var(--color-primary)] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                {unreadMessages > 99 ? "99+" : unreadMessages}
+              </span>
+            )}
+          </Link>
+          <Link
+            href="/notifications"
+            className="mt-1 flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:bg-[var(--color-surface)]"
+            onClick={() => setProfileMenuOpen(false)}
+          >
+            <span className="flex items-center gap-2">
+              <Bell size={16} />
+              Bildirimler
+            </span>
+            {unreadNotifications > 0 && (
+              <span className="rounded-full bg-[var(--color-warning)] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                {unreadNotifications > 99 ? "99+" : unreadNotifications}
+              </span>
+            )}
+          </Link>
+        </div>
+      )}
       <div className="h-16 overflow-x-auto scrollbar-hide">
         <div className="flex items-center gap-1 min-w-max px-2 h-full">
         {mobileItems.map((item) => {
@@ -379,50 +421,7 @@ function MobileBottomNav({
           );
         })}
 
-        <div ref={profileMenuRef} className="relative shrink-0">
-          {profileMenuOpen && (
-            <div className="absolute bottom-[calc(100%+12px)] right-0 w-48 rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] p-2 shadow-[var(--shadow-raised)] animate-in fade-in slide-in-from-bottom-2 duration-200">
-              <Link
-                href="/profile"
-                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:bg-[var(--color-surface)]"
-                onClick={() => setProfileMenuOpen(false)}
-              >
-                <User size={16} />
-                Profil
-              </Link>
-              <Link
-                href="/messages"
-                className="mt-1 flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:bg-[var(--color-surface)]"
-                onClick={() => setProfileMenuOpen(false)}
-              >
-                <span className="flex items-center gap-2">
-                  <MessageSquare size={16} />
-                  Mesajlar
-                </span>
-                {unreadMessages > 0 && (
-                  <span className="rounded-full bg-[var(--color-primary)] px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                    {unreadMessages > 99 ? "99+" : unreadMessages}
-                  </span>
-                )}
-              </Link>
-              <Link
-                href="/notifications"
-                className="mt-1 flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:bg-[var(--color-surface)]"
-                onClick={() => setProfileMenuOpen(false)}
-              >
-                <span className="flex items-center gap-2">
-                  <Bell size={16} />
-                  Bildirimler
-                </span>
-                {unreadNotifications > 0 && (
-                  <span className="rounded-full bg-[var(--color-warning)] px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                    {unreadNotifications > 99 ? "99+" : unreadNotifications}
-                  </span>
-                )}
-              </Link>
-            </div>
-          )}
-
+        <div className="relative shrink-0">
           <button
             type="button"
             onClick={() => setProfileMenuOpen((prev) => !prev)}
@@ -733,8 +732,8 @@ export default function Navbar() {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("pointerdown", handleClickOutside);
+    return () => document.removeEventListener("pointerdown", handleClickOutside);
   }, []);
 
   useEffect(() => {
