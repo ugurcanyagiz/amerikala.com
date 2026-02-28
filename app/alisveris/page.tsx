@@ -431,7 +431,7 @@ export default function AlisverisPage() {
                   className="h-11 border-border bg-surface-raised shadow-[0_4px_16px_-14px_rgba(15,23,42,0.35)] hover:bg-[var(--color-surface-raised)] focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
-              <div className="order-4 sm:col-span-2 md:order-3 md:col-span-3">
+              <div className="hidden md:order-3 md:col-span-3 md:block">
                 <div className="rounded-xl border border-[var(--color-border)] bg-neutral-50/90 px-3 py-2">
                   <p className="mb-1 text-xs text-[var(--color-muted)]">Fiyat Aralığı</p>
                   <div className="flex items-center overflow-hidden rounded-lg border border-[var(--color-border)] bg-white">
@@ -455,7 +455,7 @@ export default function AlisverisPage() {
                   </div>
                 </div>
               </div>
-              <div className="order-3 md:order-4 md:col-span-1">
+              <div className="hidden md:order-4 md:col-span-1 md:block">
                 <div className="relative">
                   <Select
                     options={SORT_OPTIONS}
