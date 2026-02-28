@@ -118,6 +118,27 @@ export default function IsPage() {
       {/* Quick Links */}
       <section className="ak-shell py-8">
         <div className="grid md:grid-cols-2 gap-4">
+          <Link href="/is/isci-ariyorum" className="group">
+            <Card className="h-full hover:shadow-lg transition-all border-2 border-transparent hover:border-green-200 dark:hover:border-green-800">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <Users className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold mb-1 group-hover:text-green-600 transition-colors">
+                      İş İlanları
+                    </h3>
+                    <p className="text-sm text-neutral-500">
+                      İş ilanı paylaşın veya iş ilanı bulun.
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-neutral-300 group-hover:text-green-600 group-hover:translate-x-1 transition-all" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
           <Link href="/is/ariyorum" className="group">
             <Card className="h-full hover:shadow-lg transition-all border-2 border-transparent hover:border-blue-200 dark:hover:border-blue-800">
               <CardContent className="p-6">
@@ -134,27 +155,6 @@ export default function IsPage() {
                     </p>
                   </div>
                   <ArrowRight className="h-5 w-5 text-neutral-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/is/isci-ariyorum" className="group">
-            <Card className="h-full hover:shadow-lg transition-all border-2 border-transparent hover:border-green-200 dark:hover:border-green-800">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                    <Users className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold mb-1 group-hover:text-green-600 transition-colors">
-                      İşçi Arıyorum
-                    </h3>
-                    <p className="text-sm text-neutral-500">
-                      İş ilanı verin, yetenekleri bulun.
-                    </p>
-                  </div>
-                  <ArrowRight className="h-5 w-5 text-neutral-300 group-hover:text-green-600 group-hover:translate-x-1 transition-all" />
                 </div>
               </CardContent>
             </Card>
