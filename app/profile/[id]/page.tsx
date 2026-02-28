@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Flag, Loader2, ShieldAlert, Users, Heart } from "lucide-react";
+import { Loader2, Users, Heart } from "lucide-react";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/app/components/ui/Button";
@@ -14,7 +14,7 @@ import { FollowingList } from "./components/FollowingList";
 import { GroupRow, GroupsList } from "./components/GroupsList";
 import { ProfileHeaderCard } from "./components/ProfileHeaderCard";
 import { ProfileTabs } from "./components/ProfileTabs";
-import { ProfileStats, ProfileTab, PublicProfile, UserListItem, getDisplayName } from "./components/types";
+import { ProfileStats, ProfileTab, PublicProfile, UserListItem } from "./components/types";
 
 const PAGE_SIZE = 8;
 const FOLLOW_COLUMNS = { from: "follower_id", to: "following_id" } as const;
@@ -51,10 +51,6 @@ export default function PublicProfilePage() {
   const [followLoading, setFollowLoading] = useState(false);
   const [dmLoading, setDmLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [reportReason, setReportReason] = useState("");
-  const [reportDetails, setReportDetails] = useState("");
-  const [reportLoading, setReportLoading] = useState(false);
-  const [reportFeedback, setReportFeedback] = useState<string | null>(null);
   const [stats, setStats] = useState<ProfileStats>({ followers: 0, following: 0, groups: 0, events: 0 });
   const [mutuals, setMutuals] = useState({ groups: 0, events: 0 });
   const [blockedByOwner, setBlockedByOwner] = useState(false);
@@ -501,51 +497,6 @@ export default function PublicProfilePage() {
     }
   };
 
-  const handleReportProfile = async () => {
-    if (!profile || !user || user.id === profile.id) return;
-    const reason = reportReason.trim();
-    const details = reportDetails.trim();
-    if (!reason) {
-      setReportFeedback("Lütfen rapor sebebini yazın.");
-      return;
-    }
-
-    setReportLoading(true);
-    setReportFeedback(null);
-    try {
-      const { data: adminRows, error: adminsError } = await supabase.from("profiles").select("id").eq("role", "admin").limit(20);
-      if (adminsError) throw adminsError;
-      const adminIds = ((adminRows as Array<{ id: string }> | null) || []).map((row) => row.id).filter((adminId) => adminId && adminId !== user.id);
-      if (adminIds.length === 0) throw new Error("Aktif admin bulunamadı.");
-
-      const profileUrl = typeof window !== "undefined" ? `${window.location.origin}/profile/${profile.id}` : `/profile/${profile.id}`;
-      const reportMessage = [
-        "🚨 Profil raporu",
-        `Raporlanan kullanıcı: ${getDisplayName(profile)} (@${profile.username || "kullanici"})`,
-        `Profil ID: ${profile.id}`,
-        `Profil linki: ${profileUrl}`,
-        `Raporlayan kullanıcı: ${user.email || user.id}`,
-        `Sebep: ${reason}`,
-        details ? `Detay: ${details}` : null,
-      ].filter(Boolean).join("\n");
-
-      for (const adminId of adminIds) {
-        const conversationId = await findOrCreateConversationWith(adminId);
-        const { error: messageError } = await supabase.from("messages").insert({ conversation_id: conversationId, sender_id: user.id, content: reportMessage });
-        if (messageError) throw messageError;
-      }
-
-      setReportReason("");
-      setReportDetails("");
-      setReportFeedback("Rapor admin ekibine iletildi.");
-    } catch (error) {
-      console.error("Error reporting profile:", error);
-      setReportFeedback("Rapor gönderilemedi. Lütfen tekrar deneyin.");
-    } finally {
-      setReportLoading(false);
-    }
-  };
-
   const handleCopyProfile = async () => {
     if (typeof window === "undefined") return;
     await navigator.clipboard.writeText(window.location.href);
@@ -576,7 +527,6 @@ export default function PublicProfilePage() {
     return (
       <div className="ak-page overflow-x-hidden">
         <div className="app-page-container max-w-3xl space-y-5 py-8">
-          <Link href="/people" className="inline-flex"><Button variant="secondary" size="sm" className="gap-2"><ArrowLeft size={16} />Kişilere Geri Dön</Button></Link>
           <Card className="glass">
             <CardContent className="p-6 text-center space-y-3">
               <p className="font-semibold">Bu profil şu anda görüntülenemiyor.</p>
@@ -591,10 +541,6 @@ export default function PublicProfilePage() {
   return (
     <div className="ak-page overflow-x-hidden">
       <div className="app-page-container max-w-3xl space-y-5 py-8">
-        <Link href="/people" className="inline-flex">
-          <Button variant="secondary" size="sm" className="gap-2"><ArrowLeft size={16} />Kişilere Geri Dön</Button>
-        </Link>
-
         <ProfileHeaderCard
           profile={profile}
           stats={stats}
@@ -668,29 +614,6 @@ export default function PublicProfilePage() {
             {activeTab === "events" && <EventsList items={events} loading={eventsLoading} hasMore={eventsHasMore} onLoadMore={() => fetchEventsPage(eventsOffset, false)} />}
           </CardContent>
         </Card>
-
-        {user && user.id !== profile.id && (
-          <Card className="glass border-red-200/80 dark:border-red-900/50">
-            <CardHeader><CardTitle className="text-red-700 dark:text-red-300 flex items-center gap-2"><ShieldAlert size={16} />Admin&apos;e Profil Raporla</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <input
-                value={reportReason}
-                onChange={(event) => setReportReason(event.target.value)}
-                placeholder="Rapor sebebi (zorunlu)"
-                className="w-full rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
-              />
-              <textarea
-                value={reportDetails}
-                onChange={(event) => setReportDetails(event.target.value)}
-                placeholder="Detaylar (opsiyonel)"
-                rows={3}
-                className="w-full rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
-              />
-              {reportFeedback && <p className={`text-sm ${reportFeedback.includes("iletildi") ? "text-green-600" : "text-red-600"}`}>{reportFeedback}</p>}
-              <Button variant="secondary" className="gap-2" onClick={handleReportProfile} disabled={reportLoading}><Flag size={16} />{reportLoading ? "Gönderiliyor..." : "Profili Raporla"}</Button>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );
