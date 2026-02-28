@@ -121,8 +121,8 @@ export default function IsIlanVerPage() {
     switch (currentStep) {
       case 1:
         if (!formData.listing_type) newErrors.listing_type = "İlan türü seçiniz";
-        if (!formData.title || formData.title.length < 5) newErrors.title = "Başlık en az 5 karakter olmalı";
-        if (!formData.description || formData.description.length < 30) newErrors.description = "Açıklama en az 30 karakter olmalı";
+        if (!formData.title.trim()) newErrors.title = "Başlık zorunludur";
+        if (!formData.description.trim()) newErrors.description = "Açıklama zorunludur";
         break;
       case 2:
         if (!formData.city) newErrors.city = "Şehir zorunludur";
