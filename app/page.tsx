@@ -706,7 +706,7 @@ export default function Home() {
 
           <section className="app-page-container bg-[#F7F8FA] pt-8 pb-12 lg:pt-10 lg:pb-14">
             <div className="rounded-3xl border border-[rgba(148,163,184,0.24)] bg-white p-5 shadow-[0_26px_54px_-40px_rgba(15,23,42,0.55)] sm:p-7">
-              <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
                   const config = CATEGORY_CONFIG[key];
                   const Icon = config.icon;
@@ -719,7 +719,7 @@ export default function Home() {
                       onClick={() => handleCategoryCardClick(key)}
                       onMouseEnter={() => setActiveCategoryPreview(key)}
                       onFocus={() => setActiveCategoryPreview(key)}
-                      className={`group flex min-h-[128px] flex-col items-center justify-center rounded-2xl border px-2.5 py-4 text-center transition-all duration-300 sm:min-h-[156px] sm:px-4 sm:py-5 ${
+                      className={`group flex min-h-[132px] flex-col items-center justify-center rounded-2xl border px-3 py-4 text-center transition-all duration-300 sm:min-h-[156px] sm:px-4 sm:py-5 ${
                         isActive
                           ? "border-[rgba(100,116,139,0.35)] bg-[#F3F7FE] shadow-[0_18px_34px_-28px_rgba(15,23,42,0.6)]"
                           : "border-[rgba(148,163,184,0.24)] bg-white hover:-translate-y-0.5 hover:border-[rgba(100,116,139,0.35)] hover:bg-[#FAFBFD] hover:shadow-[0_18px_34px_-28px_rgba(15,23,42,0.6)]"
@@ -727,16 +727,16 @@ export default function Home() {
                       aria-pressed={isActive}
                     >
                       <span
-                        className={`mx-auto inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-300 sm:h-14 sm:w-14 ${
+                        className={`mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300 sm:h-14 sm:w-14 ${
                           isActive
                             ? "bg-[var(--color-surface)] text-[var(--color-primary)]"
                             : `${config.iconCircleClass} group-hover:bg-[var(--color-primary-subtle)] group-hover:text-[var(--color-primary)]`
                         }`}
                       >
-                        <Icon className="h-[18px] w-[18px] sm:h-7 sm:w-7" />
+                        <Icon className="h-[19px] w-[19px] sm:h-7 sm:w-7" />
                       </span>
                       <h3
-                        className={`mt-2 line-clamp-2 text-[13px] font-semibold leading-[1.35] tracking-[-0.01em] transition-colors duration-300 sm:mt-3 sm:text-lg sm:leading-tight ${
+                        className={`mt-2.5 max-w-[10ch] line-clamp-2 text-[14px] font-semibold leading-[1.3] tracking-[-0.01em] transition-colors duration-300 sm:mt-3 sm:max-w-none sm:text-lg sm:leading-tight ${
                           isActive ? "text-[var(--color-primary-hover)]" : "text-[var(--color-ink)] group-hover:text-[var(--color-primary)]"
                         }`}
                       >
