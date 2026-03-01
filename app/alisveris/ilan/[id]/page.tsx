@@ -18,14 +18,14 @@ import { Card, CardContent } from "@/app/components/ui/Card";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
 import UserProfileCardModal, { UserProfileCardData } from "@/app/components/UserProfileCardModal";
+import { FavoriteButton } from "@/app/components/listings/FavoriteButton";
+import { ShareButton } from "@/app/components/listings/ShareButton";
 import {
   ArrowLeft,
   MapPin,
   ShoppingBag,
   Phone,
   Mail,
-  Heart,
-  Share2,
   Flag,
   Loader2,
   ChevronLeft,
@@ -240,12 +240,12 @@ export default function MarketplaceDetailPage() {
 
                     {/* Actions */}
                     <div className="absolute top-4 right-4 flex gap-2">
-                      <button className="w-10 h-10 rounded-full bg-white/90 text-neutral-600 flex items-center justify-center hover:bg-white transition-colors">
-                        <Heart size={20} />
-                      </button>
-                      <button className="w-10 h-10 rounded-full bg-white/90 text-neutral-600 flex items-center justify-center hover:bg-white transition-colors">
-                        <Share2 size={20} />
-                      </button>
+                      <FavoriteButton targetType="alisveris" targetId={listingId} />
+                      <ShareButton
+                        url={typeof window !== "undefined" ? window.location.href : `${process.env.NEXT_PUBLIC_SITE_URL || ""}/alisveris/ilan/${listingId}`}
+                        title={listing.title || "Amerikala Alışveriş İlanı"}
+                        text={listing.description?.slice(0, 120) || "Bu ilanı inceleyin."}
+                      />
                     </div>
                   </div>
                 </Card>

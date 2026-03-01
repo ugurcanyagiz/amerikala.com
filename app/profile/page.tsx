@@ -17,6 +17,7 @@ import { FollowingList } from "./[id]/components/FollowingList";
 import { GroupsList, GroupRow } from "./[id]/components/GroupsList";
 import { EventsList, EventRow } from "./[id]/components/EventsList";
 import { UserListItem, ProfileTab } from "./[id]/components/types";
+import { FollowedListingsSection } from "./[id]/components/FollowedListingsSection";
 import { 
   Settings,
   MapPin,
@@ -760,6 +761,17 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
+            {user?.id && (
+              <Card className="glass mb-6">
+                <CardHeader className="pb-3">
+                  <CardTitle>Takip Edilenler</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <FollowedListingsSection userId={user.id} />
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="glass mb-6">
               <CardHeader className="pb-3">
                 <CardTitle>Bağlantılar</CardTitle>
@@ -807,6 +819,8 @@ export default function ProfilePage() {
                     onLoadMore={() => fetchEventsPage(eventsOffset, false)}
                   />
                 )}
+
+
               </CardContent>
             </Card>
 
