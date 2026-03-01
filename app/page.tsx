@@ -483,7 +483,7 @@ export default function Home() {
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative mt-4 flex min-h-[500px] items-center justify-center overflow-hidden border-b border-[#1E3352] lg:mt-5 lg:min-h-[540px]">
+          <section className="relative mt-4 flex min-h-[500px] items-center justify-center overflow-hidden lg:mt-5 lg:min-h-[540px]">
             <div
               className="pointer-events-none absolute inset-0"
               aria-hidden="true"
