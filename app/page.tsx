@@ -721,8 +721,8 @@ export default function Home() {
                       onFocus={() => setActiveCategoryPreview(key)}
                       className={`group flex min-h-[132px] flex-col items-center justify-center rounded-2xl border px-3 py-4 text-center transition-all duration-300 sm:min-h-[156px] sm:px-4 sm:py-5 ${
                         isActive
-                          ? "border-[rgba(100,116,139,0.35)] bg-[#F3F7FE] shadow-[0_18px_34px_-28px_rgba(15,23,42,0.6)]"
-                          : "border-[rgba(148,163,184,0.24)] bg-white hover:-translate-y-0.5 hover:border-[rgba(100,116,139,0.35)] hover:bg-[#FAFBFD] hover:shadow-[0_18px_34px_-28px_rgba(15,23,42,0.6)]"
+                          ? "border-[rgba(148,163,184,0.55)] bg-[#0B1E3B] shadow-[0_18px_34px_-28px_rgba(15,23,42,0.75)]"
+                          : "border-[rgba(148,163,184,0.32)] bg-[#10284D] hover:-translate-y-0.5 hover:border-[rgba(191,219,254,0.75)] hover:bg-[#16345F] hover:shadow-[0_18px_34px_-28px_rgba(15,23,42,0.75)]"
                       }`}
                       aria-pressed={isActive}
                     >
@@ -737,7 +737,7 @@ export default function Home() {
                       </span>
                       <h3
                         className={`mt-2.5 max-w-[10ch] line-clamp-2 text-[14px] font-semibold leading-[1.3] tracking-[-0.01em] transition-colors duration-300 sm:mt-3 sm:max-w-none sm:text-lg sm:leading-tight ${
-                          isActive ? "text-[var(--color-primary-hover)]" : "text-[var(--color-ink)] group-hover:text-[var(--color-primary)]"
+                          isActive ? "text-white" : "text-blue-100 group-hover:text-white"
                         }`}
                       >
                         {config.title}
