@@ -483,13 +483,13 @@ export default function Home() {
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative mt-4 flex min-h-[500px] items-center justify-center overflow-hidden border-b border-[#1E3352] bg-gradient-to-br from-[#1A2740] via-[#223B5A] to-[#4B6E9D] lg:mt-5 lg:min-h-[540px]">
+          <section className="relative mt-4 flex min-h-[500px] items-center justify-center overflow-hidden border-b border-[#1E3352] lg:mt-5 lg:min-h-[540px]">
             <div
               className="pointer-events-none absolute inset-0"
               aria-hidden="true"
               style={{
-                background:
-                  "linear-gradient(128deg, rgba(255,255,255,0.05) 8%, rgba(255,255,255,0) 34%), linear-gradient(136deg, rgba(255,255,255,0.04) 15%, rgba(255,255,255,0) 42%), radial-gradient(72% 58% at 6% 10%, rgba(153,193,247,0.16) 0%, rgba(153,193,247,0) 70%), radial-gradient(70% 60% at 90% 12%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%)",
+                backgroundImage:
+                  "radial-gradient(118% 96% at 8% 12%, rgba(156,48,62,0.34) 0%, rgba(156,48,62,0.2) 24%, rgba(156,48,62,0.08) 48%, rgba(156,48,62,0) 74%), radial-gradient(124% 108% at 92% 88%, rgba(25,49,94,0.4) 0%, rgba(25,49,94,0.24) 28%, rgba(25,49,94,0.09) 52%, rgba(25,49,94,0) 78%), radial-gradient(145% 114% at 50% 50%, rgba(7,14,28,0) 44%, rgba(5,10,21,0.34) 76%, rgba(4,8,18,0.55) 100%), linear-gradient(132deg, rgba(255,255,255,0.05) 4%, rgba(255,255,255,0) 36%)",
               }}
             />
             <div
@@ -503,17 +503,10 @@ export default function Home() {
             />
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute right-[-12%] top-[8%] h-[340px] w-[340px] rounded-full opacity-[0.2] blur-[70px]"
-              style={{
-                backgroundImage:
-                  "radial-gradient(circle, rgba(168,34,52,0.4) 0%, rgba(26,39,64,0.28) 52%, rgba(26,39,64,0) 76%)",
-              }}
-            />
-            <div
-              aria-hidden="true"
               className="pointer-events-none absolute inset-0"
               style={{
-                background: "radial-gradient(120% 85% at 50% 45%, rgba(0,0,0,0) 48%, rgba(7,16,30,0.32) 100%)",
+                backgroundImage:
+                  "radial-gradient(120% 90% at 50% 44%, rgba(0,0,0,0) 46%, rgba(6,12,24,0.3) 76%, rgba(4,9,18,0.42) 100%)",
               }}
             />
 
