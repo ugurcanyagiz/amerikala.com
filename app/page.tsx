@@ -8,6 +8,8 @@ import {
   Building2,
   BriefcaseBusiness,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   MapPin,
   Search,
   ShoppingBag,
@@ -88,6 +90,9 @@ const HOME_THEME = {
   text: "var(--color-ink)",
   textSecondary: "var(--color-ink-secondary)",
 };
+
+const FEATURED_CAROUSEL_AUTO_ADVANCE_MS = 11_000;
+const FEATURED_CAROUSEL_EASING = "cubic-bezier(0.16,1,0.3,1)";
 
 const CATEGORY_CONFIG: Record<
   HomeCategoryKey,
@@ -848,9 +853,276 @@ function AdsSection({
           <h2 className="text-3xl font-bold text-[var(--color-ink)]">{title}</h2>
           {subtitle && <p className="mt-1 text-[var(--color-ink-secondary)]">{subtitle}</p>}
         </div>
-        <AdsGrid items={items} loading={loading} />
+        <FeaturedAdsCarousel items={items} loading={loading} />
       </div>
     </section>
+  );
+}
+
+function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: boolean }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFocusedWithin, setIsFocusedWithin] = useState(false);
+  const [isUserInteracting, setIsUserInteracting] = useState(false);
+  const [isDocumentVisible, setIsDocumentVisible] = useState(true);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [slideWidth, setSlideWidth] = useState(0);
+  const [gap, setGap] = useState(0);
+  const [dragOffset, setDragOffset] = useState(0);
+
+  const dragStartX = useRef(0);
+  const dragStartTime = useRef(0);
+  const isDragging = useRef(false);
+  const [isDraggingState, setIsDraggingState] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setPrefersReducedMotion(mediaQuery.matches);
+    sync();
+
+    mediaQuery.addEventListener("change", sync);
+    return () => mediaQuery.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      setIsDocumentVisible(document.visibilityState === "visible");
+    };
+
+    onVisibilityChange();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || items.length === 0) return;
+
+    const updateSizes = () => {
+      const firstSlide = container.querySelector<HTMLElement>("[data-featured-slide]");
+      if (!firstSlide) return;
+      const computed = window.getComputedStyle(container);
+      const gapValue = Number.parseFloat(computed.columnGap || computed.gap || "0");
+      setSlideWidth(firstSlide.getBoundingClientRect().width);
+      setGap(Number.isFinite(gapValue) ? gapValue : 0);
+    };
+
+    updateSizes();
+    const observer = new ResizeObserver(updateSizes);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [items.length]);
+
+
+  const normalizedActiveIndex = items.length ? activeIndex % items.length : 0;
+
+  const goTo = useCallback(
+    (nextIndex: number) => {
+      if (items.length === 0) return;
+      const normalized = (nextIndex + items.length) % items.length;
+      setActiveIndex(normalized);
+    },
+    [items.length],
+  );
+
+  const goToNext = useCallback(() => goTo(normalizedActiveIndex + 1), [normalizedActiveIndex, goTo]);
+  const goToPrevious = useCallback(() => goTo(normalizedActiveIndex - 1), [normalizedActiveIndex, goTo]);
+
+  useEffect(() => {
+    if (items.length <= 1 || prefersReducedMotion || isHovered || isFocusedWithin || isUserInteracting || !isDocumentVisible) return;
+
+    const timer = window.setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % items.length);
+    }, FEATURED_CAROUSEL_AUTO_ADVANCE_MS);
+
+    return () => window.clearInterval(timer);
+  }, [isDocumentVisible, isFocusedWithin, isHovered, isUserInteracting, items.length, prefersReducedMotion]);
+
+  const baseTranslate = (slideWidth + gap) * normalizedActiveIndex;
+  const translateX = -(baseTranslate - dragOffset);
+
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (items.length <= 1) return;
+    isDragging.current = true;
+    setIsDraggingState(true);
+    setIsUserInteracting(true);
+    dragStartX.current = event.clientX;
+    dragStartTime.current = performance.now();
+    setDragOffset(0);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+    const delta = event.clientX - dragStartX.current;
+    setDragOffset(delta);
+  };
+
+  const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+
+    const delta = event.clientX - dragStartX.current;
+    const elapsed = Math.max(1, performance.now() - dragStartTime.current);
+    const velocity = Math.abs(delta / elapsed);
+    const threshold = Math.max(36, slideWidth * 0.18);
+
+    if (delta <= -threshold || (delta < -20 && velocity > 0.35)) {
+      goToNext();
+    } else if (delta >= threshold || (delta > 20 && velocity > 0.35)) {
+      goToPrevious();
+    }
+
+    isDragging.current = false;
+    setIsDraggingState(false);
+    setDragOffset(0);
+    setIsUserInteracting(false);
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+
+  if (loading) {
+    return <div className="h-[19rem] animate-pulse rounded-[28px] border border-[rgba(148,163,184,0.24)] bg-[#EEF1F5]" aria-hidden="true" />;
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="h-[19rem] rounded-[28px] border border-dashed border-[rgba(148,163,184,0.38)] bg-white p-6 text-center text-[var(--color-ink-secondary)]">
+        <div className="h-full animate-pulse rounded-2xl bg-[#EEF1F5]" aria-hidden="true" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="group relative"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocusCapture={() => setIsFocusedWithin(true)}
+      onBlurCapture={(event) => {
+        if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+        setIsFocusedWithin(false);
+      }}
+    >
+      <div
+        role="region"
+        aria-label="Öne çıkan ilanlar karuseli"
+        tabIndex={0}
+        className="rounded-[28px] border border-[rgba(148,163,184,0.26)] bg-white/95 p-2.5 shadow-[0_22px_44px_-34px_rgba(15,23,42,0.62)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] md:p-3"
+        onKeyDown={(event) => {
+          if (event.key === "ArrowRight") {
+            event.preventDefault();
+            goToNext();
+          }
+          if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            goToPrevious();
+          }
+        }}
+      >
+        <div className="overflow-hidden rounded-[22px]">
+          <div
+            ref={containerRef}
+            className="flex gap-3"
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            style={{
+              transform: `translate3d(${translateX}px, 0, 0)`,
+              transition: isDraggingState || prefersReducedMotion ? "none" : `transform 720ms ${FEATURED_CAROUSEL_EASING}`,
+              touchAction: "pan-y",
+            }}
+          >
+            {items.map((item, index) => {
+              const meta = CATEGORY_CONFIG[item.section];
+              const isActive = index === normalizedActiveIndex;
+              return (
+                <Link
+                  key={item.id}
+                  data-featured-slide
+                  href={item.href}
+                  aria-label={`${item.title} ilanına git`}
+                  aria-current={isActive ? "true" : undefined}
+                  className="relative min-w-[88%] overflow-hidden rounded-[20px] border border-[rgba(148,163,184,0.22)] bg-white shadow-[0_14px_26px_-22px_rgba(15,23,42,0.65)] md:min-w-full"
+                >
+                  <div className="grid min-h-[18rem] md:min-h-[19rem] md:grid-cols-[0.92fr_1.08fr]">
+                    {item.imageUrl ? (
+                      <div className="h-full min-h-[9.5rem] md:min-h-full">
+                        <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className={`h-full min-h-[9.5rem] bg-gradient-to-br ${meta.cardClass} p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] md:min-h-full`}>
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badgeClass}`}>{meta.title}</span>
+                      </div>
+                    )}
+                    <div className="flex flex-col justify-between p-5 md:p-7">
+                      <div>
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badgeClass}`}>{meta.title}</span>
+                        <h3 className="mt-3 line-clamp-2 text-xl font-semibold text-slate-900">{item.title}</h3>
+                        <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
+                          <MapPin className="h-4 w-4" />
+                          {item.location}
+                        </p>
+                      </div>
+                      <div className="mt-4 border-t border-[var(--color-border-light)] pt-4">
+                        <p className="text-base font-semibold text-slate-800">{item.priceLabel ?? "Detaylı bilgi"}</p>
+                        <p className="mt-1 text-xs text-[var(--color-ink-secondary)]">İlan detayını görüntüle</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                    style={{ opacity: isActive ? 1 : 0, transition: prefersReducedMotion ? "none" : `opacity 520ms ${FEATURED_CAROUSEL_EASING}` }}
+                    aria-hidden="true"
+                  />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {items.length > 1 && (
+        <>
+          <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-8 rounded-r-[22px] bg-gradient-to-l from-[#F7F8FA] to-transparent md:block" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={goToPrevious}
+            className="absolute left-2 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(148,163,184,0.45)] bg-white/90 text-slate-600 shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] md:flex"
+            aria-label="Önceki ilan"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={goToNext}
+            className="absolute right-2 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(148,163,184,0.45)] bg-white/90 text-slate-600 shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] md:flex"
+            aria-label="Sonraki ilan"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <div className="mt-3 flex items-center justify-center gap-2">
+            {items.map((item, index) => {
+              const isActive = index === normalizedActiveIndex;
+              return (
+                <button
+                  key={`${item.id}-dot`}
+                  type="button"
+                  onClick={() => goTo(index)}
+                  className="group/dot relative h-2.5 w-2.5 rounded-full bg-slate-300 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                  aria-label={`${index + 1}. ilana git`}
+                  aria-current={isActive ? "true" : undefined}
+                >
+                  <span className={`absolute inset-0 rounded-full bg-[var(--color-primary)] ${isActive ? "opacity-100" : "opacity-0"}`} />
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
