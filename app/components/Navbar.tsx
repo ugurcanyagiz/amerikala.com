@@ -43,12 +43,6 @@ const NAV_ITEMS = [
     icon: Home,
   },
   {
-    id: "yardimlasma",
-    label: "Yardımlaşma",
-    href: "/yardimlasma",
-    icon: HandHelping,
-  },
-  {
     id: "meetups",
     label: "Etkinlikler",
     icon: Calendar,
@@ -90,6 +84,12 @@ const NAV_ITEMS = [
       { href: "/alisveris/ilan-ver", label: "İlan Ver", icon: Plus, accent: true },
       { href: "/alisveris/ilanlarim", label: "İlanlarım", icon: List },
     ],
+  },
+  {
+    id: "yardimlasma",
+    label: "Yardımlaşma",
+    href: "/yardimlasma",
+    icon: HandHelping,
   },
 ];
 
@@ -320,9 +320,11 @@ function ProfileMenuPanel({ children }: { children: ReactNode }) {
 function MobileBottomNav({
   unreadNotifications,
   unreadMessages,
+  isAdmin,
 }: {
   unreadNotifications: number;
   unreadMessages: number;
+  isAdmin: boolean;
 }) {
   const pathname = usePathname();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -332,12 +334,13 @@ function MobileBottomNav({
   const profileAlertCount = unreadNotifications + unreadMessages;
 
   const mobileItems = [
-    { href: "/", icon: null, label: "amerikala", isLogo: true },
+    { href: "/", icon: Home, label: "Anasayfa" },
+    { href: "/meetups", icon: Calendar, label: "Etkinlikler" },
     { href: "/emlak", icon: Building2, label: "Emlak" },
     { href: "/is", icon: Briefcase, label: "İş" },
-    { href: "/alisveris", icon: ShoppingBag, label: "Market" },
+    { href: "/alisveris", icon: ShoppingBag, label: "Alışveriş" },
     { href: "/yardimlasma", icon: HandHelping, label: "Yardımlaşma" },
-    { href: "/meetups", icon: Calendar, label: "Etkinlik" },
+    ...(isAdmin ? [{ href: "/admin", icon: Shield, label: "Admin Paneli" }] : []),
   ];
 
   useEffect(() => {
@@ -460,15 +463,7 @@ function MobileBottomNav({
               href={item.href}
               className={`nav-pill flex items-center justify-center gap-2 h-11 px-4 shrink-0 ${isActive ? "nav-pill-active text-[var(--color-primary)]" : "text-[var(--color-muted)]"}`}
             >
-              {item.isLogo ? (
-                <Image
-                  src="/logo.png"
-                  alt="Amerikala"
-                  width={18}
-                  height={18}
-                  className="h-[18px] w-auto"
-                />
-              ) : Icon ? (
+              {Icon ? (
                 <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
               ) : null}
               <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>
@@ -1111,7 +1106,7 @@ export default function Navbar() {
       </header>
 
       {/* Mobile Bottom Navigation */}
-      <MobileBottomNav unreadNotifications={unreadCount} unreadMessages={totalUnreadMessages} />
+      <MobileBottomNav unreadNotifications={unreadCount} unreadMessages={totalUnreadMessages} isAdmin={isAdmin} />
     </>
   );
 }
