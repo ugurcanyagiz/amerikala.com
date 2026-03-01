@@ -39,7 +39,8 @@ import {
   Copy,
   Twitter,
   Facebook,
-  MessageCircle
+  MessageCircle,
+  Trash2
 } from "lucide-react";
 
 type BasicProfile = {
@@ -76,7 +77,7 @@ export default function EventDetailPage() {
   const router = useRouter();
   const params = useParams();
   const eventId = params.id as string;
-  const { user, profile: authProfile } = useAuth();
+  const { user, profile: authProfile, role } = useAuth();
 
   const [event, setEvent] = useState<MeetupEventDetail | null>(null);
   const [attendees, setAttendees] = useState<EventAttendee[]>([]);
@@ -91,7 +92,9 @@ export default function EventDetailPage() {
   const [comments, setComments] = useState<EventComment[]>([]);
   const [commentInput, setCommentInput] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
+  const [commentDeleteLoadingId, setCommentDeleteLoadingId] = useState<string | null>(null);
   const [commentError, setCommentError] = useState<string | null>(null);
+  const [deleteEventLoading, setDeleteEventLoading] = useState(false);
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
   const [attendanceNotice, setAttendanceNotice] = useState<string | null>(null);
   const [pendingAttendees, setPendingAttendees] = useState<EventAttendee[]>([]);
@@ -804,6 +807,73 @@ export default function EventDetailPage() {
     }
   };
 
+  const handleDeleteComment = async (commentId: string) => {
+    if (!user || !commentId) return;
+
+    const targetComment = comments.find((comment) => comment.id === commentId);
+    if (!targetComment) return;
+
+    const canDeleteComment = targetComment.user_id === user.id || role === "admin";
+    if (!canDeleteComment) return;
+
+    const confirmed = window.confirm("Bu yorumu silmek istediğinize emin misiniz?");
+    if (!confirmed) return;
+
+    setCommentDeleteLoadingId(commentId);
+    setCommentError(null);
+
+    try {
+      const { error } = await supabase
+        .from("event_comments")
+        .delete()
+        .eq("id", commentId);
+
+      if (error) {
+        throw error;
+      }
+
+      setComments((prev) => prev.filter((comment) => comment.id !== commentId));
+    } catch (error) {
+      if (!isAbortLikeError(error)) {
+        setCommentError("Yorum silinirken bir sorun oluştu.");
+      }
+    } finally {
+      setCommentDeleteLoadingId(null);
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!user || !event) return;
+
+    const canDeleteEvent = event.organizer_id === user.id || role === "admin";
+    if (!canDeleteEvent) return;
+
+    const confirmed = window.confirm("Bu etkinliği kalıcı olarak silmek istediğinize emin misiniz?");
+    if (!confirmed) return;
+
+    setDeleteEventLoading(true);
+    setAttendanceError(null);
+
+    try {
+      const { error } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", event.id);
+
+      if (error) {
+        throw error;
+      }
+
+      router.push("/meetups");
+    } catch (error) {
+      if (!isAbortLikeError(error)) {
+        setAttendanceError("Etkinlik silinirken bir sorun oluştu.");
+      }
+    } finally {
+      setDeleteEventLoading(false);
+    }
+  };
+
   // Copy link
   const copyLink = async () => {
     await navigator.clipboard.writeText(window.location.href);
@@ -847,6 +917,8 @@ export default function EventDetailPage() {
   const organizer = (event.organizer as BasicProfile | null | undefined) || null;
   const isOrganizer = Boolean(user && event.organizer_id === user.id);
   const canOpenComments = attending || isOrganizer;
+  const isAdmin = role === "admin";
+  const canDeleteEvent = Boolean(user && (isOrganizer || isAdmin));
   const isRequestPending = myAttendanceStatus === "pending";
   const isFull = event.max_attendees && event.current_attendees >= event.max_attendees;
   const isPast = new Date(event.event_date) < new Date(new Date().toDateString());
@@ -993,6 +1065,19 @@ export default function EventDetailPage() {
                     {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
                     {copied ? "Kopyalandı!" : "Link Kopyala"}
                   </Button>
+
+                  {canDeleteEvent && (
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      onClick={handleDeleteEvent}
+                      disabled={deleteEventLoading}
+                      className="gap-2 text-red-600 hover:text-red-700"
+                    >
+                      {deleteEventLoading ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                      Etkinliği Sil
+                    </Button>
+                  )}
                 </div>
                 {attendanceError && (
                   <p className="mt-3 text-sm text-red-500">{attendanceError}</p>
@@ -1185,6 +1270,8 @@ export default function EventDetailPage() {
                   ) : (
                     comments.map((comment) => {
                       const commentProfile = getProfileRecord(comment.profile);
+                      const canDeleteComment = Boolean(user && (comment.user_id === user.id || isAdmin));
+                      const isDeletingComment = commentDeleteLoadingId === comment.id;
                       return (
                         <div key={comment.id} className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-3">
                           <div className="flex items-center justify-between mb-2">
@@ -1211,6 +1298,19 @@ export default function EventDetailPage() {
                             </button>
                           </div>
                           <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">{comment.content}</p>
+                          {canDeleteComment && (
+                            <div className="mt-2 flex justify-end">
+                              <button
+                                type="button"
+                                className="text-xs text-red-600 hover:underline inline-flex items-center gap-1 disabled:opacity-60"
+                                onClick={() => handleDeleteComment(comment.id)}
+                                disabled={isDeletingComment}
+                              >
+                                {isDeletingComment ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                                Sil
+                              </button>
+                            </div>
+                          )}
                         </div>
                       );
                     })
