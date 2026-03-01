@@ -23,6 +23,7 @@ import {
   Bell,
   Scale,
   Star,
+  HandHelping,
 } from "lucide-react";
 
 type NavLink = {
@@ -51,6 +52,7 @@ type NavItem = NavLink | NavGroup | NavAction;
 const LABELS: Record<string, string> = {
   "sidebar.home": "Anasayfa",
   "sidebar.meetups": "Buluşmalar",
+  "sidebar.help": "Yardımlaşma",
   "sidebar.events": "Etkinlikler",
   "sidebar.groups": "Gruplar",
   "sidebar.myEvents": "Etkinliklerim",
@@ -146,6 +148,7 @@ export default function Sidebar() {
 
   const navItems = useMemo<NavItem[]>(() => [
     { type: "link", href: "/", labelKey: "sidebar.home", icon: Home },
+    { type: "link", href: "/yardimlasma", labelKey: "sidebar.help", icon: HandHelping },
     {
       type: "group",
       labelKey: "sidebar.meetups",
@@ -250,6 +253,7 @@ export default function Sidebar() {
             <SidebarSection title="Topluluk" icon={Home} collapsed={!isExpanded}>
               <SidebarItem href="/meetups" label="Buluşmalar" icon={Calendar} active={isActive("/meetups")} collapsed={!isExpanded} />
               <SidebarItem href="/messages" label="Mesajlar" icon={MessageSquare} active={isActive("/messages")} collapsed={!isExpanded} />
+              <SidebarItem href="/yardimlasma" label="Yardımlaşma" icon={HandHelping} active={isActive("/yardimlasma")} collapsed={!isExpanded} />
               <SidebarItem href="/notifications" label="Bildirimler" icon={Bell} active={isActive("/notifications")} collapsed={!isExpanded} />
             </SidebarSection>
 

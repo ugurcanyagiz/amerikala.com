@@ -31,6 +31,7 @@ import {
   Users,
   Shield,
   Package,
+  HandHelping,
 } from "lucide-react";
 
 // Navigation structure
@@ -40,6 +41,12 @@ const NAV_ITEMS = [
     label: "Anasayfa",
     href: "/",
     icon: Home,
+  },
+  {
+    id: "yardimlasma",
+    label: "Yardımlaşma",
+    href: "/yardimlasma",
+    icon: HandHelping,
   },
   {
     id: "meetups",
@@ -329,6 +336,7 @@ function MobileBottomNav({
     { href: "/emlak", icon: Building2, label: "Emlak" },
     { href: "/is", icon: Briefcase, label: "İş" },
     { href: "/alisveris", icon: ShoppingBag, label: "Market" },
+    { href: "/yardimlasma", icon: HandHelping, label: "Yardımlaşma" },
     { href: "/meetups", icon: Calendar, label: "Etkinlik" },
   ];
 
