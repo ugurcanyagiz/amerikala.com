@@ -1,4 +1,4 @@
-export type ProfileTab = "followers" | "following" | "groups" | "events";
+export type ProfileTab = "followers" | "following" | "groups" | "events" | "favorites";
 
 export type PublicProfile = {
   id: string;
@@ -35,6 +35,7 @@ export const PROFILE_TABS: { key: ProfileTab; label: string }[] = [
   { key: "following", label: "Takip" },
   { key: "groups", label: "Gruplar" },
   { key: "events", label: "Etkinlikler" },
+  { key: "favorites", label: "Takip Edilenler" },
 ];
 
 export const getDisplayName = (profile: Pick<UserListItem, "full_name" | "first_name" | "last_name" | "username"> | null) => {
