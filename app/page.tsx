@@ -996,7 +996,7 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
 
   return (
     <div
-      className="group relative"
+      className="group relative w-full max-w-full min-w-0"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onFocusCapture={() => setIsFocusedWithin(true)}
@@ -1009,7 +1009,7 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
         role="region"
         aria-label="Öne çıkan ilanlar karuseli"
         tabIndex={0}
-        className="rounded-[28px] border border-[rgba(148,163,184,0.26)] bg-white/95 p-2.5 shadow-[0_22px_44px_-34px_rgba(15,23,42,0.62)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] md:p-3"
+        className="w-full max-w-full min-w-0 overflow-hidden rounded-[28px] border border-[rgba(148,163,184,0.26)] bg-white/95 p-2.5 shadow-[0_22px_44px_-34px_rgba(15,23,42,0.62)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] md:p-3"
         onKeyDown={(event) => {
           if (event.key === "ArrowRight") {
             event.preventDefault();
@@ -1021,10 +1021,10 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
           }
         }}
       >
-        <div className="overflow-hidden rounded-[22px]">
+        <div className="w-full max-w-full min-w-0 overflow-hidden rounded-[22px]">
           <div
             ref={containerRef}
-            className="flex gap-3"
+            className="flex w-full max-w-full min-w-0 gap-3"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -1045,11 +1045,11 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
                   href={item.href}
                   aria-label={`${item.title} ilanına git`}
                   aria-current={isActive ? "true" : undefined}
-                  className="relative min-w-[88%] overflow-hidden rounded-[20px] border border-[rgba(148,163,184,0.22)] bg-white shadow-[0_14px_26px_-22px_rgba(15,23,42,0.65)] md:min-w-full"
+                  className="relative w-full max-w-full min-w-0 flex-[0_0_100%] overflow-hidden rounded-[20px] border border-[rgba(148,163,184,0.22)] bg-white shadow-[0_14px_26px_-22px_rgba(15,23,42,0.65)]"
                 >
-                  <div className="grid min-h-[18rem] md:min-h-[19rem] md:grid-cols-[0.92fr_1.08fr]">
+                  <div className="grid min-h-[18rem] min-w-0 md:min-h-[19rem] md:grid-cols-[0.92fr_1.08fr]">
                     {item.imageUrl ? (
-                      <div className="h-full min-h-[9.5rem] md:min-h-full">
+                      <div className="h-52 min-h-[9.5rem] w-full min-w-0 overflow-hidden md:h-full md:min-h-full">
                         <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
                       </div>
                     ) : (
@@ -1057,7 +1057,7 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
                         <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badgeClass}`}>{meta.title}</span>
                       </div>
                     )}
-                    <div className="flex flex-col justify-between p-5 md:p-7">
+                    <div className="flex min-w-0 flex-col justify-between p-5 md:p-7">
                       <div>
                         <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badgeClass}`}>{meta.title}</span>
                         <h3 className="mt-3 line-clamp-2 text-xl font-semibold text-slate-900">{item.title}</h3>
