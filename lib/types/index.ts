@@ -652,6 +652,9 @@ export const US_STATES_MAP: Record<string, string> = Object.fromEntries(
   US_STATES.map(s => [s.value, s.label])
 );
 
+
+export type FavoriteTargetType = 'emlak' | 'is' | 'alisveris';
+
 // =============================================
 // JOB TYPES
 // =============================================
