@@ -860,7 +860,7 @@ function AdsSection({
 }
 
 function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: boolean }) {
-  const FEATURED_CARD_MIN_HEIGHT = "min-h-[9rem] md:min-h-[9.5rem]";
+  const FEATURED_CARD_HEIGHT = "h-[10rem] md:h-[10.5rem]";
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -985,12 +985,12 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
   };
 
   if (loading) {
-    return <div className="h-[10.5rem] animate-pulse rounded-[28px] border border-[rgba(148,163,184,0.24)] bg-[#EEF1F5] md:h-[11rem]" aria-hidden="true" />;
+    return <div className="h-[10rem] animate-pulse rounded-[28px] border border-[rgba(148,163,184,0.24)] bg-[#EEF1F5] md:h-[10.5rem]" aria-hidden="true" />;
   }
 
   if (items.length === 0) {
     return (
-      <div className="h-[10.5rem] rounded-[28px] border border-dashed border-[rgba(148,163,184,0.38)] bg-white p-6 text-center text-[var(--color-ink-secondary)] md:h-[11rem]">
+      <div className="h-[10rem] rounded-[28px] border border-dashed border-[rgba(148,163,184,0.38)] bg-white p-6 text-center text-[var(--color-ink-secondary)] md:h-[10.5rem]">
         <div className="h-full animate-pulse rounded-2xl bg-[#EEF1F5]" aria-hidden="true" />
       </div>
     );
@@ -1049,28 +1049,28 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
                   aria-current={isActive ? "true" : undefined}
                   className="relative w-full max-w-full min-w-0 flex-[0_0_100%] overflow-hidden rounded-[20px] border border-[rgba(148,163,184,0.22)] bg-white shadow-[0_14px_26px_-22px_rgba(15,23,42,0.65)]"
                 >
-                  <div className={`grid ${FEATURED_CARD_MIN_HEIGHT} min-w-0 md:grid-cols-[0.92fr_1.08fr]`}>
+                  <div className={`grid ${FEATURED_CARD_HEIGHT} min-w-0 md:grid-cols-[0.92fr_1.08fr]`}>
                     {item.imageUrl ? (
-                      <div className="h-full min-h-full w-full min-w-0 overflow-hidden">
-                        <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
+                      <div className="relative h-full min-h-0 w-full min-w-0 overflow-hidden bg-slate-50">
+                        <img src={item.imageUrl} alt={item.title} className="h-full w-full object-contain p-2 md:p-3" />
                       </div>
                     ) : (
-                      <div className={`h-full min-h-full bg-gradient-to-br ${meta.cardClass} p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] md:p-5`}>
+                      <div className={`h-full min-h-0 bg-gradient-to-br ${meta.cardClass} p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] md:p-5`}>
                         <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badgeClass}`}>{meta.title}</span>
                       </div>
                     )}
-                    <div className="flex min-w-0 flex-col justify-between p-4 md:p-5">
+                    <div className="flex min-w-0 flex-col justify-between p-3.5 md:p-4">
                       <div>
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badgeClass}`}>{meta.title}</span>
-                        <h3 className="mt-2 line-clamp-2 text-lg font-semibold text-slate-900 md:text-xl">{item.title}</h3>
-                        <p className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-500">
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta.badgeClass}`}>{meta.title}</span>
+                        <h3 className="mt-1.5 line-clamp-2 text-base font-semibold leading-snug text-slate-900 md:text-lg">{item.title}</h3>
+                        <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 md:text-sm">
                           <MapPin className="h-4 w-4" />
                           {item.location}
                         </p>
                       </div>
-                      <div className="mt-3 border-t border-[var(--color-border-light)] pt-3">
-                        <p className="text-sm font-semibold text-slate-800 md:text-base">{item.priceLabel ?? "Detaylı bilgi"}</p>
-                        <p className="mt-1 text-xs text-[var(--color-ink-secondary)]">İlan detayını görüntüle</p>
+                      <div className="mt-2 border-t border-[var(--color-border-light)] pt-2">
+                        <p className="text-sm font-semibold text-slate-800">{item.priceLabel ?? "Detaylı bilgi"}</p>
+                        <p className="mt-0.5 text-xs text-[var(--color-ink-secondary)]">İlan detayını görüntüle</p>
                       </div>
                     </div>
                   </div>
