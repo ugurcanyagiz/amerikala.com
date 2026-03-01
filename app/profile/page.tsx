@@ -644,11 +644,11 @@ export default function ProfilePage() {
 
   return (
     <div className="ak-page">
-      <div className="flex">
+      <div className="flex min-w-0">
         <Sidebar />
 
-        <main className="flex-1">
-          <div className="ak-shell lg:px-8 py-6">
+        <main className="min-w-0 flex-1">
+          <div className="ak-shell min-w-0 py-6 lg:px-8">
             {/* PROFILE */}
             <Card className="glass mb-6">
               <CardContent className="p-6 sm:p-8">
@@ -766,7 +766,7 @@ export default function ProfilePage() {
                 <CardHeader className="pb-3">
                   <CardTitle>Takip Edilenler</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="min-w-0">
                   <FollowedListingsSection userId={user.id} />
                 </CardContent>
               </Card>

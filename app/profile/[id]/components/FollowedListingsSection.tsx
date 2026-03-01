@@ -149,7 +149,7 @@ export function FollowedListingsSection({ userId }: { userId: string }) {
   };
 
   return (
-    <div className="space-y-4 w-full min-w-0 overflow-x-hidden">
+    <div className="box-border w-full max-w-full space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         {(["all", "emlak", "is", "alisveris"] as CategoryFilter[]).map((item) => (
           <button key={item} onClick={() => setCategory(item)} className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${category === item ? "bg-blue-600 text-white border-blue-600" : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300"}`}>
@@ -177,19 +177,19 @@ export function FollowedListingsSection({ userId }: { userId: string }) {
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-neutral-300 p-8 text-center text-neutral-500">Takip ettiğiniz ilan bulunmuyor.</div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid w-full max-w-full grid-cols-1 gap-3">
           {filtered.map((item) => (
-            <article key={item.favoriteId} className="w-full min-w-0 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition-shadow hover:shadow-md">
-              <div className="flex min-w-0 flex-col sm:flex-row">
-                <div className="relative h-44 w-full shrink-0 bg-neutral-100 sm:h-auto sm:w-52">
+            <article key={item.favoriteId} className="box-border w-full max-w-full overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+              <div className="flex w-full max-w-full flex-col md:flex-row">
+                <div className="relative w-full max-w-full shrink-0 overflow-hidden bg-neutral-100 md:h-auto md:w-52">
                   {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
+                    <img src={item.imageUrl} alt={item.title} className="block h-auto w-full max-w-full object-cover md:h-full" />
                   ) : (
-                    <div className="h-full w-full bg-gradient-to-br from-neutral-100 to-neutral-200" />
+                    <div className="aspect-[16/9] h-auto w-full max-w-full bg-gradient-to-br from-neutral-100 to-neutral-200 md:h-full md:aspect-auto" />
                   )}
                 </div>
 
-                <div className="min-w-0 flex-1 p-4 sm:p-5">
+                <div className="box-border w-full max-w-full flex-1 p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 space-y-1">
                       <h3 className="text-base font-semibold text-neutral-900 break-words leading-snug">{item.title}</h3>
