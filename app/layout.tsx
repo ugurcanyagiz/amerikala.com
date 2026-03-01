@@ -95,124 +95,28 @@ export default function RootLayout({
 
               {/* Footer */}
               <footer className="border-t border-[var(--color-border-light)] bg-[var(--color-surface)] mt-auto">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                    {/* Brand */}
-                    <div className="col-span-2 md:col-span-1">
-                      <div className="flex items-center gap-2 mb-4">
-                        <Image
-                          src="/logo.png"
-                          alt="amerikala logo"
-                          width={32}
-                          height={32}
-                          className="h-8 w-8"
-                        />
-                        <span className="text-lg font-semibold tracking-tight text-[var(--color-ink)] sr-only">
-                          amerikala
-                        </span>
-                      </div>
-                      <p className="text-sm text-[var(--color-ink-secondary)] leading-relaxed">
-                        Amerika&apos;daki Türk topluluğu için sosyal platform.
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+                  <div className="mx-auto w-full max-w-md rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] px-6 py-8 text-center shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+                    <div className="flex items-center justify-center gap-3">
+                      <Image
+                        src="/logo.png"
+                        alt="amerikala logo"
+                        width={40}
+                        height={40}
+                        className="h-10 w-10"
+                      />
+                      <p className="text-sm font-medium tracking-tight text-[var(--color-ink-secondary)] sm:text-base">
+                        Amerikala.com 2026 Copyright
                       </p>
                     </div>
 
-                    {/* Explore */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-[var(--color-ink)] mb-4">
-                        Keşfet
-                      </h4>
-                      <ul className="space-y-3">
-                        <li>
-                          <a
-                            href="/meetups"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            Etkinlikler
-                          </a>
-                        </li>
-                        <li>
-                          <a
-                            href="/groups"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            Gruplar
-                          </a>
-                        </li>
-                        <li>
-                          <a
-                            href="/people"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            İnsanlar
-                          </a>
-                        </li>
-                        <li>
-                          <a
-                            href="/feed"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            Akış
-                          </a>
-                        </li>
-                      </ul>
-                    </div>
-
-                    {/* Community */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-[var(--color-ink)] mb-4">
-                        Topluluk
-                      </h4>
-                      <ul className="space-y-3">
-                        <li>
-                          <a
-                            href="/meetups"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            Buluşmalar
-                          </a>
-                        </li>
-                        <li>
-                          <a
-                            href="/messages"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            Mesajlar
-                          </a>
-                        </li>
-                        <li>
-                          <a
-                            href="/notifications"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            Bildirimler
-                          </a>
-                        </li>
-                      </ul>
-                    </div>
-
-                    {/* Legal */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-[var(--color-ink)] mb-4">
-                        Yasal
-                      </h4>
-                      <ul className="space-y-3">
-                        <li>
-                          <a
-                            href="/yasal-rehber"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            Yasal Rehber
-                          </a>
-                        </li>
-                        <li>
-                          <a
-                            href="/ayarlar"
-                            className="text-sm text-[var(--color-ink-secondary)] hover:text-[var(--color-primary)] transition-colors"
-                          >
-                            Ayarlar
-                          </a>
-                        </li>
-                      </ul>
+                    <div className="mt-5 pt-5 border-t border-[var(--color-border-light)]">
+                      <a
+                        href="mailto:info@amerikala.com"
+                        className="inline-flex items-center justify-center text-sm font-medium text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-hover)]"
+                      >
+                        İletişim: info@amerikala.com
+                      </a>
                     </div>
                   </div>
                 </div>
