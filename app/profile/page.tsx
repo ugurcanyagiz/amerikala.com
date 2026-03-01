@@ -17,6 +17,7 @@ import { FollowingList } from "./[id]/components/FollowingList";
 import { GroupsList, GroupRow } from "./[id]/components/GroupsList";
 import { EventsList, EventRow } from "./[id]/components/EventsList";
 import { UserListItem, ProfileTab } from "./[id]/components/types";
+import { FollowedListingsSection } from "./[id]/components/FollowedListingsSection";
 import { 
   Settings,
   MapPin,
@@ -807,6 +808,11 @@ export default function ProfilePage() {
                     onLoadMore={() => fetchEventsPage(eventsOffset, false)}
                   />
                 )}
+
+                {activeTab === "favorites" && user?.id && (
+                  <FollowedListingsSection userId={user.id} />
+                )}
+
               </CardContent>
             </Card>
 

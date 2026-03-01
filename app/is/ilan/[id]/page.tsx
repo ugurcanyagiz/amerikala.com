@@ -20,6 +20,8 @@ import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
 import { Textarea } from "@/app/components/ui/Textarea";
 import UserProfileCardModal, { UserProfileCardData } from "@/app/components/UserProfileCardModal";
+import { FavoriteButton } from "@/app/components/listings/FavoriteButton";
+import { ShareButton } from "@/app/components/listings/ShareButton";
 import {
   ArrowLeft,
   MapPin,
@@ -407,7 +409,8 @@ export default function JobListingDetailPage() {
               <div className="lg:col-span-2 space-y-6">
                 <Card>
                   <CardContent className="p-6">
-                    <div className="flex items-start gap-4 mb-4">
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div className="flex items-start gap-4 min-w-0">
                       <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-3xl">
                         {JOB_CATEGORY_ICONS[listing.category]}
                       </div>
@@ -433,6 +436,16 @@ export default function JobListingDetailPage() {
                         )}
                       </div>
                     </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <FavoriteButton targetType="is" targetId={listingId} />
+                      <ShareButton
+                        url={typeof window !== "undefined" ? window.location.href : `${process.env.NEXT_PUBLIC_SITE_URL || ""}/is/ilan/${listingId}`}
+                        title={listing.title || "Amerikala İş İlanı"}
+                        text={listing.description?.slice(0, 120) || "Bu ilanı inceleyin."}
+                      />
+                    </div>
+                  </div>
 
                     <div className="flex flex-wrap gap-4 text-sm text-neutral-500">
                       <div className="flex items-center gap-1">

@@ -24,6 +24,8 @@ import { Card, CardContent } from "@/app/components/ui/Card";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
 import UserProfileCardModal, { UserProfileCardData } from "@/app/components/UserProfileCardModal";
+import { FavoriteButton } from "@/app/components/listings/FavoriteButton";
+import { ShareButton } from "@/app/components/listings/ShareButton";
 import {
   ArrowLeft,
   MapPin,
@@ -34,7 +36,6 @@ import {
   Phone,
   Mail,
   Heart,
-  Share2,
   Flag,
   Loader2,
   Home,
@@ -251,61 +252,6 @@ export default function ListingDetailPage() {
 
     fetchListing();
   }, [listingId, user, fetchListingComments]);
-
-  // Toggle favorite
-  const toggleFavorite = async () => {
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    try {
-      if (isFavorite) {
-        const { error: removeError } = await supabase
-          .from("listing_favorites")
-          .delete()
-          .eq("listing_id", listingId)
-          .eq("user_id", user.id);
-
-        if (removeError) throw removeError;
-        setIsFavorite(false);
-        setFavoriteCount((prev) => Math.max(0, prev - 1));
-        return;
-      }
-
-      const { error: insertError } = await supabase
-        .from("listing_favorites")
-        .insert({ listing_id: listingId, user_id: user.id });
-
-      if (insertError) throw insertError;
-      setIsFavorite(true);
-      setFavoriteCount((prev) => prev + 1);
-    } catch (favoriteError) {
-      console.error("Error toggling favorite:", favoriteError);
-    }
-  };
-
-  const handleShare = async () => {
-    if (typeof window === "undefined") return;
-    const sharePayload = {
-      title: listing?.title || "Amerikala Emlak İlanı",
-      text: listing?.description?.slice(0, 120) || "Bu ilanı inceleyin.",
-      url: window.location.href,
-    };
-
-    if (navigator.share) {
-      try {
-        await navigator.share(sharePayload);
-        return;
-      } catch {
-        // User dismissed share sheet
-      }
-    }
-
-    await navigator.clipboard.writeText(window.location.href);
-    setDmFeedback("İlan bağlantısı panoya kopyalandı.");
-    setTimeout(() => setDmFeedback(null), 2000);
-  };
 
   const handleAddComment = async () => {
     if (!user) {
@@ -618,21 +564,19 @@ export default function ListingDetailPage() {
 
                     {/* Actions */}
                     <div className="absolute top-4 right-4 flex gap-2">
-                      <button
-                        onClick={toggleFavorite}
-                        title="İlanı beğen / takip et"
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                          isFavorite ? "bg-red-500 text-white" : "bg-white/90 text-neutral-600 hover:bg-white"
-                        }`}
-                      >
-                        <Heart size={20} className={isFavorite ? "fill-current" : ""} />
-                      </button>
-                      <button
-                        onClick={handleShare}
-                        className="w-10 h-10 rounded-full bg-white/90 text-neutral-600 flex items-center justify-center hover:bg-white transition-colors"
-                      >
-                        <Share2 size={20} />
-                      </button>
+                      <FavoriteButton
+                        targetType="emlak"
+                        targetId={listingId}
+                        onFavoriteChange={(nextValue) => {
+                          setIsFavorite(nextValue);
+                          setFavoriteCount((prev) => (nextValue ? prev + 1 : Math.max(0, prev - 1)));
+                        }}
+                      />
+                      <ShareButton
+                        url={typeof window !== "undefined" ? window.location.href : `${process.env.NEXT_PUBLIC_SITE_URL || ""}/emlak/ilan/${listingId}`}
+                        title={listing.title || "Amerikala Emlak İlanı"}
+                        text={listing.description?.slice(0, 120) || "Bu ilanı inceleyin."}
+                      />
                     </div>
                   </div>
 
