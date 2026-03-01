@@ -149,7 +149,7 @@ export function FollowedListingsSection({ userId }: { userId: string }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full min-w-0 overflow-x-hidden">
       <div className="flex flex-wrap items-center gap-2">
         {(["all", "emlak", "is", "alisveris"] as CategoryFilter[]).map((item) => (
           <button key={item} onClick={() => setCategory(item)} className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${category === item ? "bg-blue-600 text-white border-blue-600" : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300"}`}>
@@ -169,29 +169,29 @@ export function FollowedListingsSection({ userId }: { userId: string }) {
       )}
 
       {loading ? (
-        <div className="grid gap-3 sm:grid-cols-2">{Array.from({ length: 4 }).map((_, idx) => <div key={idx} className="h-44 rounded-2xl border border-neutral-200 bg-neutral-100 animate-pulse" />)}</div>
+        <div className="grid w-full min-w-0 gap-3 sm:grid-cols-2">{Array.from({ length: 4 }).map((_, idx) => <div key={idx} className="h-44 rounded-2xl border border-neutral-200 bg-neutral-100 animate-pulse" />)}</div>
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-neutral-300 p-8 text-center text-neutral-500">Takip ettiğiniz ilan bulunmuyor.</div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid w-full min-w-0 gap-3 sm:grid-cols-2">
           {filtered.map((item) => (
-            <article key={item.favoriteId} className="rounded-2xl border border-neutral-200 bg-white p-3 sm:p-4 shadow-sm">
-              <div className="flex gap-3">
-                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-neutral-100">{item.imageUrl ? <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" /> : null}</div>
+            <article key={item.favoriteId} className="w-full min-w-0 rounded-2xl border border-neutral-200 bg-white p-3 sm:p-4 shadow-sm">
+              <div className="flex min-w-0 gap-3">
+                <div className="h-20 w-20 max-w-[5rem] shrink-0 overflow-hidden rounded-xl bg-neutral-100">{item.imageUrl ? <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" /> : null}</div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="line-clamp-2 text-sm font-semibold text-neutral-900">{item.title}</h3>
                     <button type="button" aria-label="Takipten çıkar" className="h-8 w-8 rounded-full border border-neutral-200 flex items-center justify-center text-neutral-500 hover:text-red-600" onClick={() => unfollow(item)}><HeartOff size={14} /></button>
                   </div>
-                  <div className="mt-1.5 flex items-center gap-2">
+                  <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-2">
                     <Badge className={`border ${CATEGORY_STYLES[item.targetType]}`}>{CATEGORY_LABELS[item.targetType]}</Badge>
-                    {item.price !== undefined && item.price !== null ? <span className="text-sm font-semibold text-neutral-900">{formatPrice(item.price)}</span> : null}
+                    {item.price !== undefined && item.price !== null ? <span className="max-w-full truncate text-sm font-semibold text-neutral-900">{formatPrice(item.price)}</span> : null}
                   </div>
-                  {item.location ? <div className="mt-1 text-xs text-neutral-500 inline-flex items-center gap-1"><MapPin size={12} />{item.location}</div> : null}
+                  {item.location ? <div className="mt-1 flex min-w-0 items-start gap-1 text-xs text-neutral-500"><MapPin size={12} className="mt-0.5 shrink-0" /><span className="break-words">{item.location}</span></div> : null}
                   <p className="mt-1 text-xs text-neutral-400">{new Date(item.createdAt).toLocaleDateString("tr-TR")}</p>
                 </div>
               </div>
-              <div className="mt-3"><Link href={item.href}><Button variant="secondary" className="w-full">İlana Git</Button></Link></div>
+              <div className="mt-3"><Link href={item.href} className="block w-full"><Button variant="secondary" className="w-full">İlana Git</Button></Link></div>
             </article>
           ))}
         </div>
