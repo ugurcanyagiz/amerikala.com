@@ -860,6 +860,8 @@ function AdsSection({
 }
 
 function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: boolean }) {
+  const FEATURED_CARD_HEIGHT = "h-[10rem] md:h-[10.5rem]";
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -873,6 +875,8 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
 
   const dragStartX = useRef(0);
   const dragStartTime = useRef(0);
+  const activePointerId = useRef<number | null>(null);
+  const didDrag = useRef(false);
   const isDragging = useRef(false);
   const [isDraggingState, setIsDraggingState] = useState(false);
 
@@ -946,49 +950,64 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (items.length <= 1) return;
-    isDragging.current = true;
-    setIsDraggingState(true);
+    activePointerId.current = event.pointerId;
+    isDragging.current = false;
+    didDrag.current = false;
     setIsUserInteracting(true);
     dragStartX.current = event.clientX;
     dragStartTime.current = performance.now();
     setDragOffset(0);
-    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging.current) return;
+    if (activePointerId.current !== event.pointerId) return;
+
     const delta = event.clientX - dragStartX.current;
+    if (!isDragging.current && Math.abs(delta) > 8) {
+      isDragging.current = true;
+      didDrag.current = true;
+      setIsDraggingState(true);
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+
+    if (!isDragging.current) return;
     setDragOffset(delta);
   };
 
   const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging.current) return;
+    if (activePointerId.current !== event.pointerId) return;
 
-    const delta = event.clientX - dragStartX.current;
-    const elapsed = Math.max(1, performance.now() - dragStartTime.current);
-    const velocity = Math.abs(delta / elapsed);
-    const threshold = Math.max(36, slideWidth * 0.18);
+    if (isDragging.current) {
+      const delta = event.clientX - dragStartX.current;
+      const elapsed = Math.max(1, performance.now() - dragStartTime.current);
+      const velocity = Math.abs(delta / elapsed);
+      const threshold = Math.max(36, slideWidth * 0.18);
 
-    if (delta <= -threshold || (delta < -20 && velocity > 0.35)) {
-      goToNext();
-    } else if (delta >= threshold || (delta > 20 && velocity > 0.35)) {
-      goToPrevious();
+      if (delta <= -threshold || (delta < -20 && velocity > 0.35)) {
+        goToNext();
+      } else if (delta >= threshold || (delta > 20 && velocity > 0.35)) {
+        goToPrevious();
+      }
     }
 
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    activePointerId.current = null;
     isDragging.current = false;
     setIsDraggingState(false);
     setDragOffset(0);
     setIsUserInteracting(false);
-    event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
   if (loading) {
-    return <div className="h-[19rem] animate-pulse rounded-[28px] border border-[rgba(148,163,184,0.24)] bg-[#EEF1F5]" aria-hidden="true" />;
+    return <div className="h-[10rem] animate-pulse rounded-[28px] border border-[rgba(148,163,184,0.24)] bg-[#EEF1F5] md:h-[10.5rem]" aria-hidden="true" />;
   }
 
   if (items.length === 0) {
     return (
-      <div className="h-[19rem] rounded-[28px] border border-dashed border-[rgba(148,163,184,0.38)] bg-white p-6 text-center text-[var(--color-ink-secondary)]">
+      <div className="h-[10rem] rounded-[28px] border border-dashed border-[rgba(148,163,184,0.38)] bg-white p-6 text-center text-[var(--color-ink-secondary)] md:h-[10.5rem]">
         <div className="h-full animate-pulse rounded-2xl bg-[#EEF1F5]" aria-hidden="true" />
       </div>
     );
@@ -1029,6 +1048,12 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
+            onClickCapture={(event) => {
+              if (!didDrag.current) return;
+              event.preventDefault();
+              event.stopPropagation();
+              didDrag.current = false;
+            }}
             style={{
               transform: `translate3d(${translateX}px, 0, 0)`,
               transition: isDraggingState || prefersReducedMotion ? "none" : `transform 720ms ${FEATURED_CAROUSEL_EASING}`,
@@ -1047,28 +1072,28 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
                   aria-current={isActive ? "true" : undefined}
                   className="relative w-full max-w-full min-w-0 flex-[0_0_100%] overflow-hidden rounded-[20px] border border-[rgba(148,163,184,0.22)] bg-white shadow-[0_14px_26px_-22px_rgba(15,23,42,0.65)]"
                 >
-                  <div className="grid min-h-[18rem] min-w-0 md:min-h-[19rem] md:grid-cols-[0.92fr_1.08fr]">
+                  <div className={`grid ${FEATURED_CARD_HEIGHT} min-w-0 md:grid-cols-[0.92fr_1.08fr]`}>
                     {item.imageUrl ? (
-                      <div className="h-52 min-h-[9.5rem] w-full min-w-0 overflow-hidden md:h-full md:min-h-full">
-                        <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
+                      <div className="relative h-full min-h-0 w-full min-w-0 overflow-hidden bg-slate-50">
+                        <img src={item.imageUrl} alt={item.title} className="h-full w-full object-contain p-2 md:p-3" />
                       </div>
                     ) : (
-                      <div className={`h-full min-h-[9.5rem] bg-gradient-to-br ${meta.cardClass} p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] md:min-h-full`}>
+                      <div className={`h-full min-h-0 bg-gradient-to-br ${meta.cardClass} p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] md:p-5`}>
                         <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badgeClass}`}>{meta.title}</span>
                       </div>
                     )}
-                    <div className="flex min-w-0 flex-col justify-between p-5 md:p-7">
+                    <div className="flex min-w-0 flex-col justify-between p-3.5 md:p-4">
                       <div>
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badgeClass}`}>{meta.title}</span>
-                        <h3 className="mt-3 line-clamp-2 text-xl font-semibold text-slate-900">{item.title}</h3>
-                        <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta.badgeClass}`}>{meta.title}</span>
+                        <h3 className="mt-1.5 line-clamp-2 text-base font-semibold leading-snug text-slate-900 md:text-lg">{item.title}</h3>
+                        <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 md:text-sm">
                           <MapPin className="h-4 w-4" />
                           {item.location}
                         </p>
                       </div>
-                      <div className="mt-4 border-t border-[var(--color-border-light)] pt-4">
-                        <p className="text-base font-semibold text-slate-800">{item.priceLabel ?? "Detaylı bilgi"}</p>
-                        <p className="mt-1 text-xs text-[var(--color-ink-secondary)]">İlan detayını görüntüle</p>
+                      <div className="mt-2 border-t border-[var(--color-border-light)] pt-2">
+                        <p className="text-sm font-semibold text-slate-800">{item.priceLabel ?? "Detaylı bilgi"}</p>
+                        <p className="mt-0.5 text-xs text-[var(--color-ink-secondary)]">İlan detayını görüntüle</p>
                       </div>
                     </div>
                   </div>
