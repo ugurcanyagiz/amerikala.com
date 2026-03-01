@@ -761,6 +761,17 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
+            {user?.id && (
+              <Card className="glass mb-6">
+                <CardHeader className="pb-3">
+                  <CardTitle>Takip Edilenler</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <FollowedListingsSection userId={user.id} />
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="glass mb-6">
               <CardHeader className="pb-3">
                 <CardTitle>Bağlantılar</CardTitle>
@@ -809,9 +820,6 @@ export default function ProfilePage() {
                   />
                 )}
 
-                {activeTab === "favorites" && user?.id && (
-                  <FollowedListingsSection userId={user.id} />
-                )}
 
               </CardContent>
             </Card>
