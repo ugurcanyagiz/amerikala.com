@@ -666,50 +666,44 @@
     .mobile-tab-swipe-hint-root::after {
       content: "";
       position: absolute;
-      top: 8px;
-      bottom: 8px;
-      width: 34px;
-      border-radius: 999px;
+      top: 50%;
+      width: 9px;
+      height: 9px;
+      border-top: 1.6px solid rgba(var(--color-trust-rgb), 0.42);
+      border-right: 1.6px solid rgba(var(--color-trust-rgb), 0.42);
       pointer-events: none;
       opacity: 0;
-      transition: opacity 280ms ease;
+      transition: opacity 240ms ease;
       z-index: 2;
-      will-change: opacity, background-position;
+      filter: drop-shadow(0 0 6px rgba(var(--color-trust-rgb), 0.16));
+      will-change: opacity, transform;
     }
 
     .mobile-tab-swipe-hint-root::before {
-      left: 0;
-      background:
-        linear-gradient(to right, rgba(var(--color-surface-rgb, 247, 248, 250), 0.95), rgba(var(--color-surface-rgb, 247, 248, 250), 0) 90%),
-        linear-gradient(110deg, transparent 20%, rgba(var(--color-trust-rgb), 0.17) 45%, transparent 70%);
-      background-size: 100% 100%, 220% 100%;
-      --swipe-shimmer-start: 130%;
-      --swipe-shimmer-end: -30%;
-      background-position: 0 0, var(--swipe-shimmer-start) 0;
+      left: 9px;
+      --swipe-arrow-rotate: -135deg;
+      --swipe-arrow-shift: -2px;
+      transform: translateY(-50%) rotate(var(--swipe-arrow-rotate));
     }
 
     .mobile-tab-swipe-hint-root::after {
-      right: 0;
-      background:
-        linear-gradient(to left, rgba(var(--color-surface-rgb, 247, 248, 250), 0.95), rgba(var(--color-surface-rgb, 247, 248, 250), 0) 90%),
-        linear-gradient(250deg, transparent 20%, rgba(var(--color-trust-rgb), 0.17) 45%, transparent 70%);
-      background-size: 100% 100%, 220% 100%;
-      --swipe-shimmer-start: -130%;
-      --swipe-shimmer-end: 30%;
-      background-position: 0 0, var(--swipe-shimmer-start) 0;
+      right: 9px;
+      --swipe-arrow-rotate: 45deg;
+      --swipe-arrow-shift: 2px;
+      transform: translateY(-50%) rotate(var(--swipe-arrow-rotate));
     }
 
     .mobile-tab-swipe-hint-root[data-hint="left"]::before,
     .mobile-tab-swipe-hint-root[data-hint="both"]::before,
     .mobile-tab-swipe-hint-root[data-hint="right"]::after,
     .mobile-tab-swipe-hint-root[data-hint="both"]::after {
-      opacity: 1;
-      animation: mobile-swipe-hint-shimmer 4s ease-in-out infinite;
+      opacity: 0.86;
+      animation: mobile-swipe-hint-arrow 3.9s ease-in-out infinite;
     }
 
     .mobile-tab-swipe-hint-root[data-hint="both"]::before,
     .mobile-tab-swipe-hint-root[data-hint="both"]::after {
-      opacity: 0.55;
+      opacity: 0.52;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -820,14 +814,21 @@
 
 
 
-@keyframes mobile-swipe-hint-shimmer {
+@keyframes mobile-swipe-hint-arrow {
   0%,
-  55%,
+  58%,
   100% {
-    background-position: 0 0, var(--swipe-shimmer-start) 0;
+    opacity: 0.28;
   }
-  20% {
-    background-position: 0 0, var(--swipe-shimmer-end) 0;
+  18% {
+    opacity: 0.9;
+  }
+  30% {
+    opacity: 0.45;
+  }
+  18%,
+  30% {
+    transform: translateY(-50%) translateX(var(--swipe-arrow-shift, 0)) rotate(var(--swipe-arrow-rotate));
   }
 }
 
