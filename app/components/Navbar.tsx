@@ -321,7 +321,9 @@ function MobileBottomNav({
 }) {
   const pathname = usePathname();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [swipeHint, setSwipeHint] = useState<"none" | "left" | "right" | "both">("none");
   const profileMenuRef = useRef<HTMLElement>(null);
+  const mobileScrollerRef = useRef<HTMLDivElement>(null);
   const profileAlertCount = unreadNotifications + unreadMessages;
 
   const mobileItems = [
@@ -343,6 +345,52 @@ function MobileBottomNav({
 
     return () => {
       document.removeEventListener("pointerdown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const scroller = mobileScrollerRef.current;
+    if (!scroller) return;
+
+    let rafId: number | null = null;
+
+    const updateHint = () => {
+      rafId = null;
+
+      const maxScrollLeft = scroller.scrollWidth - scroller.clientWidth;
+      if (maxScrollLeft <= 1) {
+        setSwipeHint("none");
+        return;
+      }
+
+      const epsilon = 2;
+      const atStart = scroller.scrollLeft <= epsilon;
+      const atEnd = scroller.scrollLeft >= maxScrollLeft - epsilon;
+
+      if (atStart) {
+        setSwipeHint("right");
+      } else if (atEnd) {
+        setSwipeHint("left");
+      } else {
+        setSwipeHint("both");
+      }
+    };
+
+    const scheduleUpdate = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(updateHint);
+    };
+
+    scheduleUpdate();
+    scroller.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+
+    return () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      scroller.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
     };
   }, []);
 
@@ -391,7 +439,8 @@ function MobileBottomNav({
           </Link>
         </div>
       )}
-      <div className="h-16 overflow-x-auto scrollbar-hide">
+      <div className="mobile-tab-swipe-hint-root" data-hint={swipeHint}>
+        <div ref={mobileScrollerRef} className="h-16 overflow-x-auto scrollbar-hide">
         <div className="flex items-center gap-1 min-w-max px-2 h-full">
         {mobileItems.map((item) => {
           const Icon = item.icon;
@@ -438,6 +487,7 @@ function MobileBottomNav({
               </span>
             )}
           </button>
+        </div>
         </div>
         </div>
       </div>
