@@ -25,8 +25,6 @@ import {
   Bell,
   MessageSquare,
   Search,
-  Menu,
-  X,
   ChevronDown,
   Plus,
   List,
@@ -495,162 +493,6 @@ function MobileBottomNav({
   );
 }
 
-// Mobile Menu Sheet
-function MobileMenuSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { user, profile, signOut, isAdmin } = useAuth();
-  const roleBadge = getRoleBadge(profile?.role);
-  const router = useRouter();
-  const displayName = getDisplayName(profile, user);
-  const usernameLabel = getUsernameLabel(profile, user);
-
-  const handleSignOut = async () => {
-    await signOut();
-    onClose();
-    router.push("/");
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 md:hidden">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-[rgba(var(--color-trust-rgb),0.5)] backdrop-blur-sm"
-        onClick={onClose}
-      />
-      
-      {/* Sheet */}
-      <div className="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-[var(--color-surface-raised)] shadow-2xl animate-in slide-in-from-right duration-300">
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-[var(--color-border-light)]">
-            <span className="font-bold text-lg">Menü</span>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-[var(--color-surface-sunken)]"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          {/* User Info */}
-          {user && (
-            <div className="p-4 border-b border-[var(--color-border-light)]">
-              <Link href="/profile" onClick={onClose} className="flex items-center gap-3">
-                <Avatar
-                  src={getAvatarUrl(profile, user)}
-                  fallback={displayName}
-                  size="lg"
-                />
-                <div>
-                  <div className="font-semibold">{displayName}</div>
-                  <div className="text-sm text-[var(--color-ink-tertiary)]">{usernameLabel}</div>
-                  <Badge variant={roleBadge.variant} size="sm" className="mt-1">{roleBadge.label}</Badge>
-                </div>
-              </Link>
-            </div>
-          )}
-
-          {/* Navigation */}
-          <div className="flex-1 overflow-y-auto py-4">
-            {NAV_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const hasChildren = 'children' in item && item.children;
-
-              if (!hasChildren) {
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href!}
-                    onClick={onClose}
-                    className="flex items-center gap-3 px-4 py-3 text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-sunken)]"
-                  >
-                    <Icon size={20} />
-                    <span className="font-medium">{item.label}</span>
-                  </Link>
-                );
-              }
-
-              return (
-                <div key={item.id} className="py-2">
-                  <div className="px-4 py-2 text-xs font-semibold text-[var(--color-ink-tertiary)] uppercase tracking-wider">
-                    {item.label}
-                  </div>
-                  {item.children?.map((child) => {
-                    const ChildIcon = child.icon;
-                    return (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        onClick={onClose}
-                        className={`
-                          flex items-center gap-3 px-6 py-2.5
-                          ${child.accent 
-                            ? "text-[var(--color-primary)]" 
-                            : "text-[var(--color-ink-secondary)]"
-                          }
-                          hover:bg-[var(--color-surface-sunken)]
-                        `}
-                      >
-                        <ChildIcon size={18} />
-                        <span>{child.label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-
-          {isAdmin && (
-            <div className="border-t border-[var(--color-border-light)] py-2">
-              <Link
-                href="/admin"
-                onClick={onClose}
-                className="flex items-center gap-3 px-4 py-3 text-[var(--color-error)] hover:bg-[var(--color-error-light)]"
-              >
-                <Shield size={20} />
-                <span className="font-medium">Admin Paneli</span>
-              </Link>
-            </div>
-          )}
-
-          {/* Footer Actions */}
-          <div className="p-4 border-t border-[var(--color-border-light)]">
-            {user ? (
-              <div className="space-y-2">
-                <Link href="/ayarlar" onClick={onClose}>
-                  <Button variant="ghost" className="w-full justify-start gap-2">
-                    <Settings size={18} />
-                    Ayarlar
-                  </Button>
-                </Link>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start gap-2 text-red-600"
-                  onClick={handleSignOut}
-                >
-                  <LogOut size={18} />
-                  Çıkış Yap
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Link href="/login" onClick={onClose}>
-                  <Button variant="primary" className="w-full">Giriş Yap</Button>
-                </Link>
-                <Link href="/register" onClick={onClose}>
-                  <Button variant="secondary" className="w-full">Kayıt Ol</Button>
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // Main Navbar Component
 export default function Navbar() {
   const router = useRouter();
@@ -662,7 +504,6 @@ export default function Navbar() {
   const usernameLabel = getUsernameLabel(profile, user);
   const { notifications, unreadCount, markAsRead, markAllAsRead, refreshNotifications, loading: notificationLoading } = useNotifications();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
@@ -1241,13 +1082,6 @@ export default function Navbar() {
                     )}
                   </div>
 
-                  {/* Mobile Menu Button */}
-                  <button
-                    onClick={() => setMobileMenuOpen(true)}
-                    className={NAV_ACTION_ICON_BUTTON_CLASSNAME}
-                  >
-                    <Menu size={20} />
-                  </button>
                 </>
               ) : (
                 <>
@@ -1261,21 +1095,12 @@ export default function Navbar() {
                       Kayıt Ol
                     </Button>
                   </Link>
-                  <button
-                    onClick={() => setMobileMenuOpen(true)}
-                    className={NAV_ACTION_ICON_BUTTON_CLASSNAME}
-                  >
-                    <Menu size={20} />
-                  </button>
                 </>
               )}
             </div>
           </div>
         </div>
       </header>
-
-      {/* Mobile Menu Sheet */}
-      <MobileMenuSheet isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav unreadNotifications={unreadCount} unreadMessages={totalUnreadMessages} />
