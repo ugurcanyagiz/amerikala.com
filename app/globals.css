@@ -656,6 +656,64 @@
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36);
   }
 
+
+  @media (max-width: 768px) {
+    .mobile-tab-swipe-hint-root {
+      position: relative;
+    }
+
+    .mobile-tab-swipe-hint-root::before,
+    .mobile-tab-swipe-hint-root::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 9px;
+      height: 9px;
+      border-top: 1.6px solid rgba(var(--color-trust-rgb), 0.42);
+      border-right: 1.6px solid rgba(var(--color-trust-rgb), 0.42);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 240ms ease;
+      z-index: 2;
+      filter: drop-shadow(0 0 6px rgba(var(--color-trust-rgb), 0.16));
+      will-change: opacity, transform;
+    }
+
+    .mobile-tab-swipe-hint-root::before {
+      left: 9px;
+      --swipe-arrow-rotate: -135deg;
+      --swipe-arrow-shift: -2px;
+      transform: translateY(-50%) rotate(var(--swipe-arrow-rotate));
+    }
+
+    .mobile-tab-swipe-hint-root::after {
+      right: 9px;
+      --swipe-arrow-rotate: 45deg;
+      --swipe-arrow-shift: 2px;
+      transform: translateY(-50%) rotate(var(--swipe-arrow-rotate));
+    }
+
+    .mobile-tab-swipe-hint-root[data-hint="left"]::before,
+    .mobile-tab-swipe-hint-root[data-hint="both"]::before,
+    .mobile-tab-swipe-hint-root[data-hint="right"]::after,
+    .mobile-tab-swipe-hint-root[data-hint="both"]::after {
+      opacity: 0.86;
+      animation: mobile-swipe-hint-arrow 3.9s ease-in-out infinite;
+    }
+
+    .mobile-tab-swipe-hint-root[data-hint="both"]::before,
+    .mobile-tab-swipe-hint-root[data-hint="both"]::after {
+      opacity: 0.52;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .mobile-tab-swipe-hint-root::before,
+      .mobile-tab-swipe-hint-root::after {
+        animation: none !important;
+      }
+    }
+  }
+
   .list-row {
     border-radius: 0.9rem;
     color: var(--color-ink-secondary);
@@ -751,6 +809,26 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+
+
+@keyframes mobile-swipe-hint-arrow {
+  0%,
+  58%,
+  100% {
+    opacity: 0.28;
+  }
+  18% {
+    opacity: 0.9;
+  }
+  30% {
+    opacity: 0.45;
+  }
+  18%,
+  30% {
+    transform: translateY(-50%) translateX(var(--swipe-arrow-shift, 0)) rotate(var(--swipe-arrow-rotate));
   }
 }
 
