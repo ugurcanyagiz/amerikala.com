@@ -875,6 +875,8 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
 
   const dragStartX = useRef(0);
   const dragStartTime = useRef(0);
+  const activePointerId = useRef<number | null>(null);
+  const didDrag = useRef(false);
   const isDragging = useRef(false);
   const [isDraggingState, setIsDraggingState] = useState(false);
 
@@ -948,40 +950,55 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (items.length <= 1) return;
-    isDragging.current = true;
-    setIsDraggingState(true);
+    activePointerId.current = event.pointerId;
+    isDragging.current = false;
+    didDrag.current = false;
     setIsUserInteracting(true);
     dragStartX.current = event.clientX;
     dragStartTime.current = performance.now();
     setDragOffset(0);
-    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging.current) return;
+    if (activePointerId.current !== event.pointerId) return;
+
     const delta = event.clientX - dragStartX.current;
+    if (!isDragging.current && Math.abs(delta) > 8) {
+      isDragging.current = true;
+      didDrag.current = true;
+      setIsDraggingState(true);
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+
+    if (!isDragging.current) return;
     setDragOffset(delta);
   };
 
   const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging.current) return;
+    if (activePointerId.current !== event.pointerId) return;
 
-    const delta = event.clientX - dragStartX.current;
-    const elapsed = Math.max(1, performance.now() - dragStartTime.current);
-    const velocity = Math.abs(delta / elapsed);
-    const threshold = Math.max(36, slideWidth * 0.18);
+    if (isDragging.current) {
+      const delta = event.clientX - dragStartX.current;
+      const elapsed = Math.max(1, performance.now() - dragStartTime.current);
+      const velocity = Math.abs(delta / elapsed);
+      const threshold = Math.max(36, slideWidth * 0.18);
 
-    if (delta <= -threshold || (delta < -20 && velocity > 0.35)) {
-      goToNext();
-    } else if (delta >= threshold || (delta > 20 && velocity > 0.35)) {
-      goToPrevious();
+      if (delta <= -threshold || (delta < -20 && velocity > 0.35)) {
+        goToNext();
+      } else if (delta >= threshold || (delta > 20 && velocity > 0.35)) {
+        goToPrevious();
+      }
     }
 
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    activePointerId.current = null;
     isDragging.current = false;
     setIsDraggingState(false);
     setDragOffset(0);
     setIsUserInteracting(false);
-    event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
   if (loading) {
@@ -1031,6 +1048,12 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
+            onClickCapture={(event) => {
+              if (!didDrag.current) return;
+              event.preventDefault();
+              event.stopPropagation();
+              didDrag.current = false;
+            }}
             style={{
               transform: `translate3d(${translateX}px, 0, 0)`,
               transition: isDraggingState || prefersReducedMotion ? "none" : `transform 720ms ${FEATURED_CAROUSEL_EASING}`,
