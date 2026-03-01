@@ -169,29 +169,62 @@ export function FollowedListingsSection({ userId }: { userId: string }) {
       )}
 
       {loading ? (
-        <div className="grid w-full min-w-0 gap-3 sm:grid-cols-2">{Array.from({ length: 4 }).map((_, idx) => <div key={idx} className="h-44 rounded-2xl border border-neutral-200 bg-neutral-100 animate-pulse" />)}</div>
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <div key={idx} className="h-32 rounded-2xl border border-neutral-200 bg-neutral-100 animate-pulse" />
+          ))}
+        </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-neutral-300 p-8 text-center text-neutral-500">Takip ettiğiniz ilan bulunmuyor.</div>
       ) : (
-        <div className="grid w-full min-w-0 gap-3 sm:grid-cols-2">
+        <div className="space-y-3">
           {filtered.map((item) => (
-            <article key={item.favoriteId} className="w-full min-w-0 rounded-2xl border border-neutral-200 bg-white p-3 sm:p-4 shadow-sm">
-              <div className="flex min-w-0 gap-3">
-                <div className="h-20 w-20 max-w-[5rem] shrink-0 overflow-hidden rounded-xl bg-neutral-100">{item.imageUrl ? <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" /> : null}</div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-semibold text-neutral-900 break-words">{item.title}</h3>
-                    <button type="button" aria-label="Takipten çıkar" className="h-8 w-8 rounded-full border border-neutral-200 flex items-center justify-center text-neutral-500 hover:text-red-600" onClick={() => unfollow(item)}><HeartOff size={14} /></button>
+            <article key={item.favoriteId} className="w-full min-w-0 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+              <div className="flex min-w-0 flex-col sm:flex-row">
+                <div className="relative h-44 w-full shrink-0 bg-neutral-100 sm:h-auto sm:w-52">
+                  {item.imageUrl ? (
+                    <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="h-full w-full bg-gradient-to-br from-neutral-100 to-neutral-200" />
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1 p-4 sm:p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-1">
+                      <h3 className="text-base font-semibold text-neutral-900 break-words leading-snug">{item.title}</h3>
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <Badge className={`border ${CATEGORY_STYLES[item.targetType]}`}>{CATEGORY_LABELS[item.targetType]}</Badge>
+                        {item.price !== undefined && item.price !== null ? <span className="text-sm font-semibold text-neutral-900 break-words">{formatPrice(item.price)}</span> : null}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="Takipten çıkar"
+                      className="h-9 w-9 shrink-0 rounded-full border border-neutral-200 flex items-center justify-center text-neutral-500 hover:text-red-600"
+                      onClick={() => unfollow(item)}
+                    >
+                      <HeartOff size={15} />
+                    </button>
                   </div>
-                  <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-2">
-                    <Badge className={`border ${CATEGORY_STYLES[item.targetType]}`}>{CATEGORY_LABELS[item.targetType]}</Badge>
-                    {item.price !== undefined && item.price !== null ? <span className="text-sm font-semibold text-neutral-900 break-words">{formatPrice(item.price)}</span> : null}
+
+                  <div className="mt-2 space-y-1.5">
+                    {item.location ? (
+                      <div className="flex min-w-0 items-start gap-1 text-sm text-neutral-500">
+                        <MapPin size={14} className="mt-0.5 shrink-0" />
+                        <span className="break-words">{item.location}</span>
+                      </div>
+                    ) : null}
+                    <p className="text-xs text-neutral-400">{new Date(item.createdAt).toLocaleDateString("tr-TR")}</p>
                   </div>
-                  {item.location ? <div className="mt-1 flex min-w-0 items-start gap-1 text-xs text-neutral-500"><MapPin size={12} className="mt-0.5 shrink-0" /><span className="break-words">{item.location}</span></div> : null}
-                  <p className="mt-1 text-xs text-neutral-400">{new Date(item.createdAt).toLocaleDateString("tr-TR")}</p>
+
+                  <div className="mt-4">
+                    <Link href={item.href} className="block w-full sm:w-auto">
+                      <Button variant="secondary" className="w-full sm:w-auto">İlana Git</Button>
+                    </Link>
+                  </div>
                 </div>
               </div>
-              <div className="mt-3"><Link href={item.href} className="block w-full"><Button variant="secondary" className="w-full">İlana Git</Button></Link></div>
             </article>
           ))}
         </div>
