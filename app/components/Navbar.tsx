@@ -321,20 +321,32 @@ function MobileBottomNav({
   unreadNotifications,
   unreadMessages,
   isAdmin,
+  user,
+  profile,
 }: {
   unreadNotifications: number;
   unreadMessages: number;
   isAdmin: boolean;
+  user: { email?: string | null; user_metadata?: unknown } | null;
+  profile: {
+    avatar_url?: string | null;
+    username?: string | null;
+    full_name?: string | null;
+    display_name?: string | null;
+  } | null;
 }) {
   const pathname = usePathname();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [swipeHint, setSwipeHint] = useState<"none" | "left" | "right" | "both">("none");
+  const [menuSheetOpen, setMenuSheetOpen] = useState(false);
+  const menuSheetRef = useRef<HTMLDivElement>(null);
+  const menuSheetStartY = useRef<number | null>(null);
   const profileMenuRef = useRef<HTMLElement>(null);
-  const mobileScrollerRef = useRef<HTMLDivElement>(null);
   const profileAlertCount = unreadNotifications + unreadMessages;
+  const profileName = profile?.username?.trim() || profile?.full_name?.trim() || profile?.display_name?.trim() || "Profil";
+  const profileAvatar = getAvatarUrl(profile, user);
+  const isLoggedIn = Boolean(user);
 
-  const mobileItems = [
-    { href: "/", icon: Home, label: "Anasayfa" },
+  const menuItems = [
     { href: "/meetups", icon: Calendar, label: "Etkinlikler" },
     { href: "/emlak", icon: Building2, label: "Emlak" },
     { href: "/is", icon: Briefcase, label: "İş" },
@@ -358,54 +370,126 @@ function MobileBottomNav({
   }, []);
 
   useEffect(() => {
-    const scroller = mobileScrollerRef.current;
-    if (!scroller) return;
+    if (!menuSheetOpen) return;
 
-    let rafId: number | null = null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
-    const updateHint = () => {
-      rafId = null;
-
-      const maxScrollLeft = scroller.scrollWidth - scroller.clientWidth;
-      if (maxScrollLeft <= 1) {
-        setSwipeHint("none");
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuSheetOpen(false);
         return;
       }
 
-      const epsilon = 2;
-      const atStart = scroller.scrollLeft <= epsilon;
-      const atEnd = scroller.scrollLeft >= maxScrollLeft - epsilon;
+      if (event.key !== "Tab") return;
 
-      if (atStart) {
-        setSwipeHint("right");
-      } else if (atEnd) {
-        setSwipeHint("left");
-      } else {
-        setSwipeHint("both");
+      const sheet = menuSheetRef.current;
+      if (!sheet) return;
+
+      const focusableElements = Array.from(
+        sheet.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+
+      if (focusableElements.length === 0) return;
+
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (!active || !sheet.contains(active)) {
+        event.preventDefault();
+        first.focus();
+        return;
+      }
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
 
-    const scheduleUpdate = () => {
-      if (rafId !== null) return;
-      rafId = window.requestAnimationFrame(updateHint);
-    };
+    document.addEventListener("keydown", handleKeyDown);
 
-    scheduleUpdate();
-    scroller.addEventListener("scroll", scheduleUpdate, { passive: true });
-    window.addEventListener("resize", scheduleUpdate);
+    const focusTimer = window.setTimeout(() => {
+      menuSheetRef.current?.querySelector<HTMLElement>("a[href], button")?.focus();
+    }, 40);
 
     return () => {
-      if (rafId !== null) {
-        window.cancelAnimationFrame(rafId);
-      }
-      scroller.removeEventListener("scroll", scheduleUpdate);
-      window.removeEventListener("resize", scheduleUpdate);
+      window.clearTimeout(focusTimer);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [menuSheetOpen]);
+
+
+  const startSheetDrag = (clientY: number) => {
+    menuSheetStartY.current = clientY;
+  };
+
+  const endSheetDrag = (clientY: number) => {
+    if (menuSheetStartY.current === null) return;
+    const delta = clientY - menuSheetStartY.current;
+    menuSheetStartY.current = null;
+
+    if (delta > 52) {
+      setMenuSheetOpen(false);
+    }
+  };
+
+  const isProfileActive = pathname.startsWith("/profile") || pathname.startsWith("/messages") || pathname.startsWith("/notifications") || profileMenuOpen;
 
 
   return (
     <nav ref={profileMenuRef} className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--color-surface)]/90 backdrop-blur-xl border-t border-[var(--color-border-light)] z-50 safe-area-inset-bottom">
+      {menuSheetOpen && (
+        <div className="fixed inset-0 z-[55] md:hidden" role="dialog" aria-modal="true" aria-label="Menü">
+          <button
+            type="button"
+            aria-label="Menüyü kapat"
+            className="absolute inset-0 bg-neutral-950/45 backdrop-blur-[2px] animate-in fade-in duration-200"
+            onClick={() => setMenuSheetOpen(false)}
+          />
+
+          <div
+            ref={menuSheetRef}
+            className="absolute inset-x-0 bottom-0 rounded-t-[24px] border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-20px_44px_rgba(15,23,42,0.24)] animate-[sheet-up_240ms_cubic-bezier(0.16,1,0.3,1)]"
+            onTouchStart={(event) => startSheetDrag(event.touches[0].clientY)}
+            onTouchEnd={(event) => endSheetDrag(event.changedTouches[0].clientY)}
+            onMouseDown={(event) => startSheetDrag(event.clientY)}
+            onMouseUp={(event) => endSheetDrag(event.clientY)}
+          >
+            <button
+              type="button"
+              className="mx-auto mb-3 block h-1.5 w-12 rounded-full bg-[var(--color-border)]"
+              onClick={() => setMenuSheetOpen(false)}
+              aria-label="Menüyü kapat"
+            />
+            <div className="space-y-1 pb-1">
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMenuSheetOpen(false)}
+                    className={`flex h-12 items-center gap-3 rounded-2xl px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 ${isActive ? "bg-[var(--color-primary)]/12 text-[var(--color-primary)]" : "text-[var(--color-ink)] hover:bg-[var(--color-surface)]"}`}
+                  >
+                    <Icon size={18} />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
       {profileMenuOpen && (
         <div className="absolute bottom-[calc(100%+12px)] right-3 z-[60] w-48 rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] p-2 shadow-[var(--shadow-raised)] animate-in fade-in slide-in-from-bottom-2 duration-200">
           <Link
@@ -448,47 +532,60 @@ function MobileBottomNav({
           </Link>
         </div>
       )}
-      <div className="mobile-tab-swipe-hint-root" data-hint={swipeHint}>
-        <div ref={mobileScrollerRef} className="h-16 overflow-x-auto scrollbar-hide">
-        <div className="flex items-center gap-1 min-w-max px-2 h-full">
-        {mobileItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = item.href === "/" 
-            ? pathname === "/" 
-            : pathname.startsWith(item.href);
-          
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`nav-pill flex items-center justify-center gap-2 h-11 px-4 shrink-0 ${isActive ? "nav-pill-active text-[var(--color-primary)]" : "text-[var(--color-muted)]"}`}
-            >
-              {Icon ? (
-                <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
-              ) : null}
-              <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>
-            </Link>
-          );
-        })}
+      <div className="h-16 px-2">
+        <div className="grid h-full grid-cols-3 items-center gap-1">
+          <Link
+            href="/"
+            className={`nav-pill flex h-11 items-center justify-center gap-2 px-3 ${pathname === "/" ? "nav-pill-active text-[var(--color-primary)]" : "text-[var(--color-muted)]"}`}
+          >
+            <Home size={18} strokeWidth={pathname === "/" ? 2.5 : 2} />
+            <span className="text-xs font-medium whitespace-nowrap">amerikala</span>
+          </Link>
 
-        <div className="relative shrink-0">
           <button
             type="button"
-            onClick={() => setProfileMenuOpen((prev) => !prev)}
-            className={`nav-pill relative flex items-center justify-center gap-2 h-11 px-4 ${pathname.startsWith("/profile") || pathname.startsWith("/messages") || pathname.startsWith("/notifications") || profileMenuOpen ? "nav-pill-active text-[var(--color-primary)]" : "text-[var(--color-muted)]"}`}
+            onClick={() => {
+              setProfileMenuOpen(false);
+              setMenuSheetOpen((prev) => !prev);
+            }}
+            className={`nav-pill flex h-11 items-center justify-center gap-2 px-3 ${menuSheetOpen ? "nav-pill-active text-[var(--color-primary)]" : "text-[var(--color-muted)]"}`}
+            aria-expanded={menuSheetOpen}
+            aria-haspopup="dialog"
+            aria-label="Menü"
+          >
+            <List size={18} strokeWidth={menuSheetOpen ? 2.5 : 2} />
+            <span className="text-xs font-medium whitespace-nowrap">Menü</span>
+          </button>
+
+          <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              setMenuSheetOpen(false);
+              setProfileMenuOpen((prev) => !prev);
+            }}
+            className={`nav-pill relative flex h-11 w-full items-center justify-center gap-1.5 px-3 ${isProfileActive ? "nav-pill-active text-[var(--color-primary)]" : "text-[var(--color-muted)]"}`}
             aria-expanded={profileMenuOpen}
             aria-haspopup="menu"
             aria-label="Profil menüsü"
           >
-            <User size={18} strokeWidth={pathname.startsWith("/profile") || pathname.startsWith("/messages") || pathname.startsWith("/notifications") || profileMenuOpen ? 2.5 : 2} />
-            <span className="text-xs font-medium whitespace-nowrap">Profil</span>
+            {isLoggedIn ? (
+              <>
+                <Avatar src={profileAvatar} alt="Profil" size="xs" className="shrink-0" />
+                <span className="max-w-[72px] truncate text-xs font-medium leading-none">{profileName}</span>
+              </>
+            ) : (
+              <>
+                <User size={18} strokeWidth={isProfileActive ? 2.5 : 2} />
+                <span className="text-xs font-medium whitespace-nowrap">Profil</span>
+              </>
+            )}
             {profileAlertCount > 0 && (
               <span className="absolute -top-1.5 right-1 rounded-full bg-[var(--color-error)] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
                 {profileAlertCount > 99 ? "99+" : profileAlertCount}
               </span>
             )}
           </button>
-        </div>
         </div>
         </div>
       </div>
@@ -1106,7 +1203,7 @@ export default function Navbar() {
       </header>
 
       {/* Mobile Bottom Navigation */}
-      <MobileBottomNav unreadNotifications={unreadCount} unreadMessages={totalUnreadMessages} isAdmin={isAdmin} />
+      <MobileBottomNav unreadNotifications={unreadCount} unreadMessages={totalUnreadMessages} isAdmin={isAdmin} user={user} profile={profile} />
     </>
   );
 }
