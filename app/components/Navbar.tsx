@@ -442,6 +442,7 @@ function MobileBottomNav({
   };
 
   const isProfileActive = pathname.startsWith("/profile") || pathname.startsWith("/messages") || pathname.startsWith("/notifications") || profileMenuOpen;
+  const isRegisterActive = pathname === "/register";
 
 
   return (
@@ -558,35 +559,41 @@ function MobileBottomNav({
           </button>
 
           <div className="relative">
-          <button
-            type="button"
-            onClick={() => {
-              setMenuSheetOpen(false);
-              setProfileMenuOpen((prev) => !prev);
-            }}
-            className={`nav-pill relative flex h-11 w-full items-center justify-center gap-1.5 px-3 ${isProfileActive ? "nav-pill-active text-[var(--color-primary)]" : "text-[var(--color-muted)]"}`}
-            aria-expanded={profileMenuOpen}
-            aria-haspopup="menu"
-            aria-label="Profil menüsü"
-          >
             {isLoggedIn ? (
-              <>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuSheetOpen(false);
+                  setProfileMenuOpen((prev) => !prev);
+                }}
+                className={`nav-pill relative flex h-11 w-full items-center justify-center gap-1.5 px-3 ${isProfileActive ? "nav-pill-active text-[var(--color-primary)]" : "text-[var(--color-muted)]"}`}
+                aria-expanded={profileMenuOpen}
+                aria-haspopup="menu"
+                aria-label="Profil menüsü"
+              >
                 <Avatar src={profileAvatar} alt="Profil" size="xs" className="shrink-0" />
                 <span className="max-w-[72px] truncate text-xs font-medium leading-none">{profileName}</span>
-              </>
+                {profileAlertCount > 0 && (
+                  <span className="absolute -top-1.5 right-1 rounded-full bg-[var(--color-error)] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    {profileAlertCount > 99 ? "99+" : profileAlertCount}
+                  </span>
+                )}
+              </button>
             ) : (
-              <>
-                <User size={18} strokeWidth={isProfileActive ? 2.5 : 2} />
-                <span className="text-xs font-medium whitespace-nowrap">Profil</span>
-              </>
+              <Link
+                href="/register"
+                onClick={() => {
+                  setMenuSheetOpen(false);
+                  setProfileMenuOpen(false);
+                }}
+                className={`nav-pill flex h-11 w-full items-center justify-center gap-1.5 px-3 ${isRegisterActive ? "nav-pill-active text-[var(--color-primary)]" : "text-[var(--color-muted)]"}`}
+                aria-label="Kayıt ol"
+              >
+                <User size={18} strokeWidth={isRegisterActive ? 2.5 : 2} />
+                <span className="text-xs font-medium whitespace-nowrap">Kayit Ol</span>
+              </Link>
             )}
-            {profileAlertCount > 0 && (
-              <span className="absolute -top-1.5 right-1 rounded-full bg-[var(--color-error)] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
-                {profileAlertCount > 99 ? "99+" : profileAlertCount}
-              </span>
-            )}
-          </button>
-        </div>
+          </div>
         </div>
       </div>
     </nav>
