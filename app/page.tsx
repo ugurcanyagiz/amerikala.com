@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import HeroTitleMotion from "./components/HeroTitleMotion";
+import YardimlasmaSpotlight, { type YardimlasmaSpotlightItem } from "./components/YardimlasmaSpotlight";
 import { Button } from "./components/ui/Button";
 import { Modal } from "./components/ui/Modal";
 import { publicSupabase } from "@/lib/supabase/publicClient";
@@ -168,6 +169,7 @@ export default function Home() {
   const [isPostListingModalOpen, setIsPostListingModalOpen] = useState(false);
   const [latestAdsCategoryFilter, setLatestAdsCategoryFilter] = useState<"all" | HomeCategoryKey>("all");
   const [activeCategoryPreview, setActiveCategoryPreview] = useState<HomeCategoryKey>("events");
+  const [yardimlasmaSpotlightItems, setYardimlasmaSpotlightItems] = useState<YardimlasmaSpotlightItem[]>([]);
   const [categoryPreviewItems, setCategoryPreviewItems] = useState<Record<HomeCategoryKey, UnifiedAd[]>>({
     events: [],
     realEstate: [],
@@ -220,7 +222,7 @@ export default function Home() {
       setLoading(latestLimit === INITIAL_LATEST_ITEMS);
       setLoadingMoreLatestAds(latestLimit > INITIAL_LATEST_ITEMS);
       try {
-        const [eventsRes, realEstateRes, jobsRes, marketplaceRes] = await Promise.all([
+        const [eventsRes, realEstateRes, jobsRes, marketplaceRes, yardimlasmaRes] = await Promise.all([
           publicSupabase
             .from("events")
             .select("id, title, city, state, current_attendees, created_at, cover_image_url")
@@ -250,12 +252,40 @@ export default function Home() {
             .order("view_count", { ascending: false })
             .order("created_at", { ascending: false })
             .limit(latestLimit),
+          publicSupabase
+            .from("help_posts")
+            .select("id, title, body, category, location_text, created_at")
+            .in("status", ["open", "solved"])
+            .order("created_at", { ascending: false })
+            .limit(10),
         ]);
 
         if (eventsRes.error) throw eventsRes.error;
         if (realEstateRes.error) throw realEstateRes.error;
         if (jobsRes.error) throw jobsRes.error;
         if (marketplaceRes.error) throw marketplaceRes.error;
+        if (yardimlasmaRes.error) throw yardimlasmaRes.error;
+
+        const sanitizeText = (value: string) => value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+        const createExcerpt = (title: string | null, body: string | null) => {
+          const preferred = sanitizeText(title || "");
+          if (preferred.length >= 20) return preferred.length > 110 ? `${preferred.slice(0, 107)}...` : preferred;
+          const source = sanitizeText(body || "");
+          return source.length > 110 ? `${source.slice(0, 107)}...` : source;
+        };
+
+        const spotlight = (yardimlasmaRes.data ?? [])
+          .map((post) => ({
+            id: post.id,
+            category: post.category || "Diğer",
+            excerpt: createExcerpt(post.title, post.body),
+            location: post.location_text,
+            createdAt: post.created_at,
+            href: `/yardimlasma?post=${post.id}`,
+          }))
+          .filter((post) => Boolean(post.id) && Boolean(post.excerpt));
+
+        setYardimlasmaSpotlightItems(spotlight);
 
         const unified: UnifiedAd[] = [
           ...(eventsRes.data ?? []).map((item) => ({
@@ -801,6 +831,8 @@ export default function Home() {
           </section>
 
           <AdsSection title="Öne Çıkan İlanlar" items={featuredAds} loading={loading} />
+
+          <YardimlasmaSpotlight items={yardimlasmaSpotlightItems} />
 
           <section id="son-ilanlar" className="bg-[var(--color-surface)] py-14 scroll-mt-24">
             <div className="app-page-container py-0">
