@@ -106,14 +106,6 @@ const CATEGORY_CONFIG: Record<
     iconCircleClass: string;
   }
 > = {
-  events: {
-    title: "Etkinlikler",
-    href: "/meetups",
-    icon: CalendarDays,
-    badgeClass: "bg-white/70 text-[#4F5965] border border-white/60 backdrop-blur-sm",
-    cardClass: "from-[#F7F9FC] via-[#EEF3F8] to-[#E8EDF5]",
-    iconCircleClass: "bg-[var(--color-surface-raised)] text-[var(--color-trust)] border border-[rgba(var(--color-trust-rgb),0.16)]",
-  },
   realEstate: {
     title: "Emlak",
     href: "/emlak",
@@ -136,6 +128,14 @@ const CATEGORY_CONFIG: Record<
     icon: ShoppingBag,
     badgeClass: "bg-white/70 text-[#53606E] border border-white/60 backdrop-blur-sm",
     cardClass: "from-[#F6F9FB] via-[#EEF3F7] to-[#E7EDF3]",
+    iconCircleClass: "bg-[var(--color-surface-raised)] text-[var(--color-trust)] border border-[rgba(var(--color-trust-rgb),0.16)]",
+  },
+  events: {
+    title: "Etkinlikler",
+    href: "/meetups",
+    icon: CalendarDays,
+    badgeClass: "bg-white/70 text-[#4F5965] border border-white/60 backdrop-blur-sm",
+    cardClass: "from-[#F7F9FC] via-[#EEF3F8] to-[#E8EDF5]",
     iconCircleClass: "bg-[var(--color-surface-raised)] text-[var(--color-trust)] border border-[rgba(var(--color-trust-rgb),0.16)]",
   },
 };
@@ -168,7 +168,7 @@ export default function Home() {
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [isPostListingModalOpen, setIsPostListingModalOpen] = useState(false);
   const [latestAdsCategoryFilter, setLatestAdsCategoryFilter] = useState<"all" | HomeCategoryKey>("all");
-  const [activeCategoryPreview, setActiveCategoryPreview] = useState<HomeCategoryKey>("events");
+  const [activeCategoryPreview, setActiveCategoryPreview] = useState<HomeCategoryKey>("realEstate");
   const [yardimlasmaSpotlightItems, setYardimlasmaSpotlightItems] = useState<YardimlasmaSpotlightItem[]>([]);
   const [categoryPreviewItems, setCategoryPreviewItems] = useState<Record<HomeCategoryKey, UnifiedAd[]>>({
     events: [],
