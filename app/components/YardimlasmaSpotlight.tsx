@@ -15,6 +15,7 @@ export type YardimlasmaSpotlightItem = {
 
 const ROTATION_INTERVAL_MS = 8_000;
 const SWITCH_ANIMATION_MS = 380;
+const MOBILE_EXCERPT_MAX_CHARS = 84;
 
 const formatTimeAgo = (value: string) => {
   const date = new Date(value);
@@ -59,6 +60,12 @@ export default function YardimlasmaSpotlight({ items }: { items: YardimlasmaSpot
 
   const safeActiveIndex = items.length === 0 ? 0 : activeIndex % items.length;
   const activeItem = items[safeActiveIndex];
+  const mobileExcerpt = useMemo(() => {
+    if (!activeItem) return "";
+    if (activeItem.excerpt.length <= MOBILE_EXCERPT_MAX_CHARS) return activeItem.excerpt;
+    const shortened = activeItem.excerpt.slice(0, MOBILE_EXCERPT_MAX_CHARS).trimEnd();
+    return `${shortened}... Devamını Oku`;
+  }, [activeItem]);
 
   const contentClassName = useMemo(
     () =>
@@ -75,7 +82,7 @@ export default function YardimlasmaSpotlight({ items }: { items: YardimlasmaSpot
   return (
     <section className="bg-[var(--color-surface)] pb-6 sm:pb-8">
       <div className="app-page-container py-0">
-        <div className="rounded-2xl border border-[rgba(148,163,184,0.28)] bg-white/95 px-4 py-3 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.55)] sm:px-5">
+        <div className="rounded-2xl border border-[rgba(148,163,184,0.28)] bg-white/95 px-3 py-3 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.55)] sm:px-5">
           <div className="flex items-center justify-between gap-2 pb-2">
             <span className="inline-flex min-h-8 items-center rounded-full border border-[rgba(var(--color-primary-rgb),0.22)] bg-[var(--color-primary-subtle)] px-2.5 text-xs font-semibold tracking-wide text-[var(--color-primary-hover)]">
               Yardımlaşma
@@ -92,18 +99,29 @@ export default function YardimlasmaSpotlight({ items }: { items: YardimlasmaSpot
             href={activeItem.href}
             className="block min-h-11 rounded-xl px-1 py-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
           >
-            <div className={`flex w-full items-center gap-2 overflow-hidden whitespace-nowrap text-sm transition-all duration-300 ease-out sm:text-[15px] ${contentClassName}`}>
-              <span className="shrink-0 rounded-md border border-[rgba(148,163,184,0.32)] bg-[#F8FAFC] px-2 py-1 text-xs font-medium text-[var(--color-ink-secondary)]">
-                {activeItem.category}
-              </span>
-              <span className="min-w-0 flex-1 truncate text-[var(--color-ink)]">{activeItem.excerpt}</span>
-              {activeItem.location ? (
-                <span className="hidden shrink-0 items-center gap-1 text-xs text-[var(--color-ink-secondary)] sm:inline-flex">
-                  <MapPin className="h-3.5 w-3.5" />
-                  <span className="max-w-[12ch] truncate">{activeItem.location}</span>
+            <div className={`w-full transition-all duration-300 ease-out ${contentClassName}`}>
+              <div className="flex w-full items-center justify-between gap-2 sm:hidden">
+                <span className="shrink-0 rounded-md border border-[rgba(148,163,184,0.32)] bg-[#F8FAFC] px-2 py-1 text-xs font-medium text-[var(--color-ink-secondary)]">
+                  {activeItem.category}
                 </span>
-              ) : null}
-              <span className="shrink-0 text-xs text-[var(--color-ink-secondary)]">{formatTimeAgo(activeItem.createdAt)}</span>
+                <span className="shrink-0 text-xs text-[var(--color-ink-secondary)]">{formatTimeAgo(activeItem.createdAt)}</span>
+              </div>
+
+              <span className="mt-1 block break-words pr-1 text-sm leading-5 text-[var(--color-ink)] sm:hidden">{mobileExcerpt}</span>
+
+              <div className="hidden w-full items-center gap-2 overflow-hidden whitespace-nowrap text-sm sm:flex sm:text-[15px]">
+                <span className="shrink-0 rounded-md border border-[rgba(148,163,184,0.32)] bg-[#F8FAFC] px-2 py-1 text-xs font-medium text-[var(--color-ink-secondary)]">
+                  {activeItem.category}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[var(--color-ink)]">{activeItem.excerpt}</span>
+                {activeItem.location ? (
+                  <span className="shrink-0 items-center gap-1 text-xs text-[var(--color-ink-secondary)] sm:inline-flex">
+                    <MapPin className="h-3.5 w-3.5" />
+                    <span className="max-w-[12ch] truncate">{activeItem.location}</span>
+                  </span>
+                ) : null}
+                <span className="shrink-0 text-xs text-[var(--color-ink-secondary)]">{formatTimeAgo(activeItem.createdAt)}</span>
+              </div>
             </div>
           </Link>
         </div>
