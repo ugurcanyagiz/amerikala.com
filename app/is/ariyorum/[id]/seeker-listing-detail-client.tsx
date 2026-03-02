@@ -26,11 +26,10 @@ import {
   MessageCircle,
   Phone,
   UserCheck,
-  UserPlus,
-  UserX,
+  UserPlus
 } from "lucide-react";
 
-type RelationshipStatus = "guest" | "self" | "none" | "pending_sent" | "pending_received" | "following";
+type RelationshipStatus = "guest" | "self" | "none" | "following";
 
 const toErrorMessage = (error: unknown, fallback: string) => {
   if (!error || typeof error !== "object") return fallback;
@@ -135,32 +134,6 @@ export default function SeekerListingDetailClient() {
         return;
       }
 
-      const { data: outgoing, error: outgoingError } = await supabase
-        .from("friend_requests")
-        .select("status")
-        .eq("requester_id", user.id)
-        .eq("receiver_id", listingUserId)
-        .limit(1)
-        .maybeSingle();
-
-      if (!outgoingError && outgoing?.status === "pending") {
-        setRelationshipStatus("pending_sent");
-        return;
-      }
-
-      const { data: incoming, error: incomingError } = await supabase
-        .from("friend_requests")
-        .select("status")
-        .eq("requester_id", listingUserId)
-        .eq("receiver_id", user.id)
-        .limit(1)
-        .maybeSingle();
-
-      if (!incomingError && incoming?.status === "pending") {
-        setRelationshipStatus("pending_received");
-        return;
-      }
-
       setRelationshipStatus("none");
     };
 
@@ -203,45 +176,6 @@ export default function SeekerListingDetailClient() {
       if (relationshipStatus === "following") {
         const removed = await deleteFollow(listingUserId);
         if (removed) setRelationshipStatus("none");
-        return;
-      }
-
-      if (relationshipStatus === "pending_sent") {
-        const { error: cancelError } = await supabase
-          .from("friend_requests")
-          .delete()
-          .eq("requester_id", user.id)
-          .eq("receiver_id", listingUserId)
-          .eq("status", "pending");
-
-        if (!cancelError) setRelationshipStatus("none");
-        return;
-      }
-
-      if (relationshipStatus === "pending_received") {
-        const { error: acceptError } = await supabase
-          .from("friend_requests")
-          .update({ status: "accepted", responded_at: new Date().toISOString() })
-          .eq("requester_id", listingUserId)
-          .eq("receiver_id", user.id)
-          .eq("status", "pending");
-
-        if (!acceptError) {
-          await upsertFollow(listingUserId);
-          setRelationshipStatus("following");
-        }
-        return;
-      }
-
-      const { error: requestError } = await supabase
-        .from("friend_requests")
-        .upsert(
-          { requester_id: user.id, receiver_id: listingUserId, status: "pending" },
-          { onConflict: "requester_id,receiver_id" }
-        );
-
-      if (!requestError) {
-        setRelationshipStatus("pending_sent");
         return;
       }
 
@@ -329,14 +263,11 @@ export default function SeekerListingDetailClient() {
 
   const getFollowButtonLabel = () => {
     if (relationshipStatus === "following") return "Takiptesin";
-    if (relationshipStatus === "pending_sent") return "İstek Gönderildi";
-    if (relationshipStatus === "pending_received") return "İsteği Kabul Et";
-    return "Arkadaşlık İsteği Gönder";
+    return "Takip Et";
   };
 
   const getFollowIcon = () => {
     if (relationshipStatus === "following") return <UserCheck size={15} />;
-    if (relationshipStatus === "pending_sent") return <UserX size={15} />;
     return <UserPlus size={15} />;
   };
 
