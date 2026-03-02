@@ -69,8 +69,8 @@ const NAV_ITEMS = [
     label: "İş",
     icon: Briefcase,
     children: [
-      { href: "/is/ariyorum", label: "İş Arayanlar", icon: User, description: "İş arayan profilleri" },
-      { href: "/is/isci-ariyorum", label: "İşçi Arayanlar", icon: Briefcase, description: "Açık pozisyonlar" },
+      { href: "/is/isci-ariyorum", label: "İş İlanları", icon: Briefcase, description: "Açık pozisyonlar" },
+      { href: "/is/ariyorum", label: "İş Arıyorum", icon: User, description: "İş arayan profilleri" },
       { href: "/is/ilan-ver", label: "İlan Ver", icon: Plus, accent: true },
       { href: "/is/ilanlarim", label: "İlanlarım", icon: List },
     ],
