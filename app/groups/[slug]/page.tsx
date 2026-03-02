@@ -33,6 +33,7 @@ import {
   Send,
   Settings,
   Shield,
+  Trash2,
   UserCog,
   UserPlus,
   UserX,
@@ -156,7 +157,7 @@ export default function GroupDetailPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
-  const { user } = useAuth();
+  const { user, isAdmin: isPlatformAdmin } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [group, setGroup] = useState<Group | null>(null);
@@ -592,6 +593,28 @@ export default function GroupDetailPage() {
     }
   };
 
+  const handleDeleteGroup = async () => {
+    if (!group || !isPlatformAdmin) return;
+
+    const confirmDelete = window.confirm("Bu grubu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.");
+    if (!confirmDelete) return;
+
+    setActionLoading(`delete-group-${group.id}`);
+    try {
+      const { error } = await supabase
+        .from("groups")
+        .delete()
+        .eq("id", group.id);
+
+      if (error) throw error;
+      router.push("/groups");
+    } catch (error) {
+      console.error("delete group error", error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const copyLink = async () => {
     await navigator.clipboard.writeText(window.location.href);
   };
@@ -651,6 +674,17 @@ export default function GroupDetailPage() {
                   </Button>
                 )}
                 <Button variant="secondary" onClick={copyLink} className="gap-2"><Copy size={16} /> Paylaş</Button>
+                {isPlatformAdmin && (
+                  <Button
+                    variant="secondary"
+                    onClick={handleDeleteGroup}
+                    disabled={actionLoading === `delete-group-${group.id}`}
+                    className="gap-2 border-red-300 text-red-700 hover:border-red-400 hover:bg-red-50"
+                  >
+                    {actionLoading === `delete-group-${group.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 size={16} />}
+                    Grubu Sil
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
