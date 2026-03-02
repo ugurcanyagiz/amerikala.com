@@ -108,12 +108,35 @@ type AuditLogItem = {
   metadata: Record<string, unknown>;
 };
 
-const KPI_CARDS = [
-  { label: "Open Reviews", value: "128", delta: "+12% vs week" },
-  { label: "Pending Approvals", value: "34", delta: "-8% vs week" },
-  { label: "Active Moderators", value: "9", delta: "+1 this month" },
-  { label: "Escalated Cases", value: "6", delta: "2 resolved today" },
-];
+type OverviewMetrics = {
+  openReviews: number;
+  pendingApprovals: number;
+  activeModerators: number;
+  escalatedCases: number;
+};
+
+type ModerationListingItem = {
+  id: string;
+  table: string;
+  category: string;
+  title: string;
+  submittedBy: string | null;
+  submittedByName: string | null;
+  createdAt: string | null;
+  status: string;
+  detail: Record<string, unknown>;
+};
+
+type ContentItem = {
+  id: string;
+  table: string;
+  text: string;
+  authorId: string | null;
+  authorName: string | null;
+  createdAt: string | null;
+  canHide: boolean;
+  hidden: boolean;
+};
 
 const STATUS_LABELS: Record<UserStatus, string> = {
   active: "Active",
@@ -179,6 +202,15 @@ export default function AdminPage() {
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [auditPage, setAuditPage] = useState(1);
   const [auditTotalPages, setAuditTotalPages] = useState(1);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [overviewMetrics, setOverviewMetrics] = useState<OverviewMetrics>({ openReviews: 0, pendingApprovals: 0, activeModerators: 0, escalatedCases: 0 });
+  const [moderationLoading, setModerationLoading] = useState(false);
+  const [moderationItems, setModerationItems] = useState<ModerationListingItem[]>([]);
+  const [moderationStatusFilter, setModerationStatusFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
+  const [selectedModerationItem, setSelectedModerationItem] = useState<ModerationListingItem | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [contentLoading, setContentLoading] = useState(false);
+  const [contentItems, setContentItems] = useState<ContentItem[]>([]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -411,6 +443,94 @@ export default function AdminPage() {
     }
   }, [auditPage]);
 
+  const loadOverviewMetrics = React.useCallback(async () => {
+    setOverviewLoading(true);
+    try {
+      const response = await fetch("/api/admin/overview", { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) throw new Error(result?.error || "Unable to load overview metrics.");
+      setOverviewMetrics(result.metrics ?? { openReviews: 0, pendingApprovals: 0, activeModerators: 0, escalatedCases: 0 });
+    } catch (error) {
+      setToast({ type: "error", message: error instanceof Error ? error.message : "Unable to load overview metrics." });
+    } finally {
+      setOverviewLoading(false);
+    }
+  }, []);
+
+  const loadModerationItems = React.useCallback(async () => {
+    setModerationLoading(true);
+    try {
+      const params = new URLSearchParams({ status: moderationStatusFilter, q: searchQuery, page: "1", pageSize: "50" });
+      const response = await fetch(`/api/admin/moderation?${params.toString()}`, { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) throw new Error(result?.error || "Unable to load moderation queue.");
+      setModerationItems(result.items ?? []);
+    } catch (error) {
+      setToast({ type: "error", message: error instanceof Error ? error.message : "Unable to load moderation queue." });
+      setModerationItems([]);
+    } finally {
+      setModerationLoading(false);
+    }
+  }, [moderationStatusFilter, searchQuery]);
+
+  async function runModerationAction(item: ModerationListingItem, action: "approve" | "reject") {
+    if (action === "reject" && !rejectionReason.trim()) {
+      setToast({ type: "error", message: "Rejection reason is required." });
+      return;
+    }
+
+    const previous = moderationItems;
+    setModerationItems((current) => current.map((entry) => (entry.id === item.id && entry.table === item.table ? { ...entry, status: action === "approve" ? "approved" : "rejected" } : entry)));
+
+    try {
+      const response = await fetch(`/api/admin/moderation/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ table: item.table, action, rejectionReason: action === "reject" ? rejectionReason : undefined }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) throw new Error(result?.error || "Action failed.");
+      setToast({ type: "success", message: action === "approve" ? "Listing approved." : "Listing rejected." });
+      setRejectionReason("");
+      await Promise.all([loadOverviewMetrics(), loadModerationItems()]);
+    } catch (error) {
+      setModerationItems(previous);
+      setToast({ type: "error", message: error instanceof Error ? error.message : "Action failed." });
+    }
+  }
+
+  const loadContentItems = React.useCallback(async () => {
+    setContentLoading(true);
+    try {
+      const params = new URLSearchParams({ q: searchQuery });
+      const response = await fetch(`/api/admin/content?${params.toString()}`, { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) throw new Error(result?.error || "Unable to load content.");
+      setContentItems(result.items ?? []);
+    } catch (error) {
+      setToast({ type: "error", message: error instanceof Error ? error.message : "Unable to load content." });
+      setContentItems([]);
+    } finally {
+      setContentLoading(false);
+    }
+  }, [searchQuery]);
+
+  async function runContentAction(item: ContentItem, action: "hide" | "unhide" | "delete") {
+    try {
+      const response = await fetch(`/api/admin/content/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ table: item.table, action }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) throw new Error(result?.error || "Action failed.");
+      setToast({ type: "success", message: `Content ${action} successful.` });
+      await Promise.all([loadContentItems(), loadOverviewMetrics()]);
+    } catch (error) {
+      setToast({ type: "error", message: error instanceof Error ? error.message : "Action failed." });
+    }
+  }
+
   const runAction = async (action: "block" | "unblock" | "role") => {
     if (!selectedUserId) return;
 
@@ -465,6 +585,24 @@ export default function AdminPage() {
     if (!user || !isAdmin) return;
     loadAuditLogs();
   }, [activeTab, isAdmin, loadAuditLogs, user]);
+
+  useEffect(() => {
+    if (activeTab !== "overview") return;
+    if (!user || !isAdmin) return;
+    loadOverviewMetrics();
+  }, [activeTab, isAdmin, loadOverviewMetrics, user]);
+
+  useEffect(() => {
+    if (activeTab !== "moderation") return;
+    if (!user || !isAdmin) return;
+    loadModerationItems();
+  }, [activeTab, isAdmin, loadModerationItems, user]);
+
+  useEffect(() => {
+    if (activeTab !== "content") return;
+    if (!user || !isAdmin) return;
+    loadContentItems();
+  }, [activeTab, isAdmin, loadContentItems, user]);
 
   useEffect(() => {
     if (!selectedUserId) return;
@@ -589,18 +727,133 @@ export default function AdminPage() {
 
             {activeTab === "overview" && (
               <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {KPI_CARDS.map((card) => (
+                {[
+                  { label: "Open Reviews", value: String(overviewMetrics.openReviews), delta: "Unresolved reports" },
+                  { label: "Pending Approvals", value: String(overviewMetrics.pendingApprovals), delta: "Across listing categories" },
+                  { label: "Active Moderators", value: String(overviewMetrics.activeModerators), delta: "Admin + moderator roles" },
+                  { label: "Escalated Cases", value: String(overviewMetrics.escalatedCases), delta: "High priority reports" },
+                ].map((card) => (
                   <Card key={card.label} className="border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium text-neutral-500">{card.label}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-3xl font-semibold tracking-tight">{card.value}</p>
+                      <p className="text-3xl font-semibold tracking-tight">{overviewLoading ? "…" : card.value}</p>
                       <p className="mt-1 text-xs text-neutral-500">{card.delta}</p>
                     </CardContent>
                   </Card>
                 ))}
               </section>
+            )}
+
+            {activeTab === "moderation" && (
+              <Card className="border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+                <CardHeader className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <CardTitle>Moderation Queue</CardTitle>
+                    <select value={moderationStatusFilter} onChange={(event) => setModerationStatusFilter(event.target.value as "all" | "pending" | "approved" | "rejected")} className="h-9 rounded-lg border border-neutral-200 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-950">
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                      <option value="all">All</option>
+                    </select>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[980px] text-sm">
+                      <thead>
+                        <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500 dark:border-neutral-800">
+                          <th className="px-2 py-3">Listing</th>
+                          <th className="px-2 py-3">Submitted By</th>
+                          <th className="px-2 py-3">Created</th>
+                          <th className="px-2 py-3">Status</th>
+                          <th className="px-2 py-3">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {moderationLoading ? (
+                          <tr><td className="px-2 py-6 text-neutral-500" colSpan={5}>Loading moderation queue...</td></tr>
+                        ) : moderationItems.length === 0 ? (
+                          <tr><td className="px-2 py-6 text-neutral-500" colSpan={5}>No listings found.</td></tr>
+                        ) : (
+                          moderationItems.map((item) => (
+                            <tr key={`${item.table}:${item.id}`} className="border-b border-neutral-100 dark:border-neutral-800/80">
+                              <td className="px-2 py-3">
+                                <button className="text-left" onClick={() => setSelectedModerationItem(item)}>
+                                  <p className="font-medium">{item.title}</p>
+                                  <p className="text-xs text-neutral-500">{item.category}</p>
+                                </button>
+                              </td>
+                              <td className="px-2 py-3 text-neutral-600">{item.submittedByName ?? item.submittedBy ?? "—"}</td>
+                              <td className="px-2 py-3 text-neutral-600">{formatDate(item.createdAt)}</td>
+                              <td className="px-2 py-3">
+                                <span className="inline-flex rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">{item.status}</span>
+                              </td>
+                              <td className="px-2 py-3">
+                                <div className="flex gap-2">
+                                  <Button variant="ghost" size="sm" onClick={() => void runModerationAction(item, "approve")}>Approve</Button>
+                                  <Button variant="ghost" size="sm" onClick={() => void runModerationAction(item, "reject")}>Reject</Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-3">
+                    <input value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} placeholder="Rejection reason (required for reject)" className="w-full h-10 rounded-lg border border-neutral-200 bg-white px-3 text-sm outline-none transition focus:border-blue-500 dark:border-neutral-700 dark:bg-neutral-950" />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {activeTab === "content" && (
+              <Card className="border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+                <CardHeader>
+                  <CardTitle>Content Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[980px] text-sm">
+                      <thead>
+                        <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500 dark:border-neutral-800">
+                          <th className="px-2 py-3">Type</th>
+                          <th className="px-2 py-3">Content</th>
+                          <th className="px-2 py-3">Author</th>
+                          <th className="px-2 py-3">Created</th>
+                          <th className="px-2 py-3">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {contentLoading ? (
+                          <tr><td className="px-2 py-6 text-neutral-500" colSpan={5}>Loading content...</td></tr>
+                        ) : contentItems.length === 0 ? (
+                          <tr><td className="px-2 py-6 text-neutral-500" colSpan={5}>No content found.</td></tr>
+                        ) : (
+                          contentItems.map((item) => (
+                            <tr key={`${item.table}:${item.id}`} className="border-b border-neutral-100 dark:border-neutral-800/80">
+                              <td className="px-2 py-3">{item.table}</td>
+                              <td className="px-2 py-3 max-w-[460px] truncate">{item.text}</td>
+                              <td className="px-2 py-3">{item.authorName ?? item.authorId ?? "—"}</td>
+                              <td className="px-2 py-3">{formatDate(item.createdAt)}</td>
+                              <td className="px-2 py-3">
+                                <div className="flex gap-2">
+                                  {item.canHide && (
+                                    <Button variant="ghost" size="sm" onClick={() => void runContentAction(item, item.hidden ? "unhide" : "hide")}>{item.hidden ? "Unhide" : "Hide"}</Button>
+                                  )}
+                                  <Button variant="ghost" size="sm" onClick={() => void runContentAction(item, "delete")}>Delete</Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {activeTab === "users" && (
@@ -1011,6 +1264,29 @@ export default function AdminPage() {
                 )}
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {selectedModerationItem && (
+        <div className="fixed inset-0 z-40 bg-neutral-900/50 backdrop-blur-sm" onClick={() => setSelectedModerationItem(null)}>
+          <div className="absolute right-0 top-0 h-full w-full max-w-xl bg-white p-6 shadow-2xl dark:bg-neutral-900 overflow-y-auto" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-semibold">Listing Details</h3>
+              <button onClick={() => setSelectedModerationItem(null)} className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-2 text-sm">
+              <p><span className="text-neutral-500">Title:</span> {selectedModerationItem.title}</p>
+              <p><span className="text-neutral-500">Category:</span> {selectedModerationItem.category}</p>
+              <p><span className="text-neutral-500">Status:</span> {selectedModerationItem.status}</p>
+              <p><span className="text-neutral-500">Submitted by:</span> {selectedModerationItem.submittedByName ?? selectedModerationItem.submittedBy ?? "—"}</p>
+              <p><span className="text-neutral-500">Created:</span> {formatDate(selectedModerationItem.createdAt)}</p>
+            </div>
+            <pre className="mt-4 rounded-lg bg-neutral-100 p-3 text-xs text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 overflow-auto">
+              {JSON.stringify(selectedModerationItem.detail, null, 2)}
+            </pre>
           </div>
         </div>
       )}
