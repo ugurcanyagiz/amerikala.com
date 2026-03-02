@@ -298,7 +298,7 @@ function NavDropdown({
 
 const POPOVER_PANEL_CLASSNAME = "absolute right-0 top-full mt-2 z-50 overflow-hidden border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] rounded-[var(--radius-card)] shadow-[var(--shadow-raised)] animate-in fade-in slide-in-from-top-2 duration-200";
 
-const NAV_ACTION_ICON_BUTTON_CLASSNAME = "rounded-full border border-[var(--color-border-light)] bg-[var(--color-surface-raised)]/80 p-2.5 text-[var(--color-ink-secondary)] shadow-[0_8px_24px_rgba(15,23,42,0.08)] transition-all duration-150 ease-out hover:-translate-y-0.5 hover:border-[var(--color-border)] hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2";
+const NAV_ACTION_ICON_BUTTON_CLASSNAME = "inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[rgba(15,23,42,0.1)] bg-[rgba(15,23,42,0.04)] text-[var(--color-ink-secondary)] transition-all duration-200 ease-out hover:-translate-y-px hover:bg-[rgba(15,23,42,0.08)] hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/25 focus-visible:ring-offset-2";
 
 function SearchPanel({ children }: { children: ReactNode }) {
   return <div className={`${POPOVER_PANEL_CLASSNAME} w-[420px] max-w-[90vw]`}>{children}</div>;
@@ -838,7 +838,7 @@ export default function Navbar() {
             </div>
 
             {/* Right Section */}
-            <div className="flex flex-1 items-center justify-end gap-2">
+            <div className="flex flex-1 items-center justify-end gap-2 sm:gap-2.5">
               {/* Search Button */}
               <div ref={searchRef} className="relative hidden sm:block">
                 <button
@@ -910,7 +910,7 @@ export default function Navbar() {
               </div>
 
               {loading ? (
-                <div className="w-9 h-9 rounded-full bg-[var(--color-surface-sunken)] animate-pulse" />
+                <div className="h-10 w-10 rounded-xl bg-[var(--color-surface-sunken)] animate-pulse" />
               ) : user ? (
                 <>
                   {/* Notifications */}
@@ -924,7 +924,7 @@ export default function Navbar() {
                           void refreshNotifications();
                         }
                       }}
-                      className={`${NAV_ACTION_ICON_BUTTON_CLASSNAME} relative flex p-2.5 text-[var(--color-ink-tertiary)]`}
+                      className={`${NAV_ACTION_ICON_BUTTON_CLASSNAME} relative text-[var(--color-ink-tertiary)]`}
                       aria-label="Bildirim panelini aç"
                       aria-expanded={notificationPanelOpen}
                     >
@@ -1023,7 +1023,7 @@ export default function Navbar() {
                         void refreshMessagePreviews();
                       }
                     }}
-                      className={`${NAV_ACTION_ICON_BUTTON_CLASSNAME} relative flex p-2.5 text-[var(--color-ink-tertiary)]`}
+                      className={`${NAV_ACTION_ICON_BUTTON_CLASSNAME} relative text-[var(--color-ink-tertiary)]`}
                       aria-label="Mesajlar"
                     >
                       <MessageSquare size={20} />
@@ -1118,15 +1118,16 @@ export default function Navbar() {
                   </div>
 
                   {/* User Menu */}
-                  <div ref={userMenuRef} className="relative hidden md:block">
+                  <div ref={userMenuRef} className="relative hidden md:block md:ml-4">
                     <button
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
-                      className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 rounded-full border border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+                      className="flex min-h-10 items-center gap-2 rounded-xl border border-[rgba(15,23,42,0.12)] bg-[rgba(15,23,42,0.03)] py-1.5 pl-1.5 pr-2.5 transition-all duration-200 ease-out hover:-translate-y-px hover:bg-[rgba(15,23,42,0.06)]"
                     >
                       <Avatar
                         src={getAvatarUrl(profile, user)}
                         fallback={displayName}
-                        size="sm"
+                        size="md"
+                        className="shrink-0"
                       />
                       <div className="text-left max-w-[140px]">
                         <div className="text-sm font-medium text-[var(--color-ink)] truncate">{usernameLabel}</div>
