@@ -90,6 +90,12 @@ const NAV_ITEMS = [
     id: "paylasimlar",
     label: "Paylaşımlar",
     href: "/yardimlasma",
+    icon: MessageSquare,
+  },
+  {
+    id: "yardimlasma",
+    label: "Yardımlaşma",
+    href: "/yardimlasma",
     icon: HandHelping,
   },
 ];
@@ -402,7 +408,8 @@ function MobileBottomNav({
     { href: "/emlak", icon: Building2, label: "Emlak" },
     { href: "/is", icon: Briefcase, label: "İş" },
     { href: "/alisveris", icon: ShoppingBag, label: "Alışveriş" },
-    { href: "/yardimlasma", icon: HandHelping, label: "Paylaşımlar" },
+    { href: "/yardimlasma", icon: MessageSquare, label: "Paylaşımlar" },
+    { href: "/yardimlasma", icon: HandHelping, label: "Yardımlaşma" },
     ...(isAdmin ? [{ href: "/admin", icon: Shield, label: "Admin Paneli" }] : []),
   ];
 
@@ -939,10 +946,10 @@ export default function Navbar() {
 
             {/* Desktop Navigation */}
             <div className="pointer-events-none absolute inset-0 z-10 hidden items-center justify-center md:flex">
-              <div className="pointer-events-auto relative w-full max-w-[620px] overflow-visible px-2">
+              <div className="pointer-events-auto relative w-full max-w-[680px] lg:max-w-[840px] xl:max-w-[980px] overflow-visible px-2">
                 <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                  <div className="absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white/90 to-transparent" />
-                  <div className="absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white/90 to-transparent" />
+                  <div className="absolute inset-y-0 left-0 z-10 w-5 bg-gradient-to-r from-white/90 to-transparent" />
+                  <div className="absolute inset-y-0 right-0 z-10 w-5 bg-gradient-to-l from-white/90 to-transparent" />
                 </div>
                 <nav className="relative overflow-x-auto overflow-y-visible px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <div className={centerNavClassName}>
