@@ -238,10 +238,11 @@ function NavDropdown({
     return (
       <Link
         href={item.href!}
-        className={`nav-pill flex h-10 shrink-0 items-center gap-2 whitespace-nowrap px-4 text-sm font-semibold tracking-[0.02em] ${isActive ? "nav-pill-active" : ""}`}
+        className={`relative flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 text-[14px] font-medium text-[var(--color-ink-secondary)] transition-all duration-200 ease-out hover:-translate-y-px hover:bg-[rgba(15,23,42,0.05)] hover:text-[var(--color-ink)] ${isActive ? "bg-[rgba(15,23,42,0.06)] text-[var(--color-ink)]" : ""}`}
       >
         <Icon size={16} className="hidden xl:block" />
         <span className="inline">{item.label}</span>
+        {isActive && <span className="absolute inset-x-3 bottom-1 h-px rounded-full bg-[var(--color-primary)]/70" />}
       </Link>
     );
   }
@@ -250,7 +251,7 @@ function NavDropdown({
     <div ref={dropdownRef} className="relative">
       <button
         onClick={onToggle}
-        className={`nav-pill flex h-10 shrink-0 items-center gap-1 whitespace-nowrap px-4 text-sm font-semibold tracking-[0.02em] ${isActive || isOpen ? "nav-pill-active" : ""}`}
+        className={`relative flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-xl px-3 text-[14px] font-medium text-[var(--color-ink-secondary)] transition-all duration-200 ease-out hover:-translate-y-px hover:bg-[rgba(15,23,42,0.05)] hover:text-[var(--color-ink)] ${(isActive || isOpen) ? "bg-[rgba(15,23,42,0.06)] text-[var(--color-ink)]" : ""}`}
       >
         <Icon size={16} className="hidden xl:block" />
         <span className="inline">{item.label}</span>
@@ -258,6 +259,7 @@ function NavDropdown({
           size={14} 
           className={`hidden lg:block transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} 
         />
+        {(isActive || isOpen) && <span className="absolute inset-x-3 bottom-1 h-px rounded-full bg-[var(--color-primary)]/70" />}
       </button>
 
       {/* Dropdown Menu */}
@@ -298,7 +300,7 @@ function NavDropdown({
 
 const POPOVER_PANEL_CLASSNAME = "absolute right-0 top-full mt-2 z-50 overflow-hidden border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] rounded-[var(--radius-card)] shadow-[var(--shadow-raised)] animate-in fade-in slide-in-from-top-2 duration-200";
 
-const NAV_ACTION_ICON_BUTTON_CLASSNAME = "inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[rgba(15,23,42,0.1)] bg-[rgba(15,23,42,0.04)] text-[var(--color-ink-secondary)] transition-all duration-200 ease-out hover:-translate-y-px hover:bg-[rgba(15,23,42,0.08)] hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/25 focus-visible:ring-offset-2";
+const NAV_ACTION_ICON_BUTTON_CLASSNAME = "inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(15,23,42,0.09)] bg-transparent text-[var(--color-ink-secondary)] transition-all duration-200 ease-out hover:-translate-y-px hover:bg-[rgba(15,23,42,0.05)] hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/25 focus-visible:ring-offset-2";
 
 function SearchPanel({ children }: { children: ReactNode }) {
   return <div className={`${POPOVER_PANEL_CLASSNAME} w-[420px] max-w-[90vw]`}>{children}</div>;
@@ -845,75 +847,66 @@ export default function Navbar() {
 
   const totalUnreadMessages = messagePreviews.reduce((sum, item) => sum + item.unreadCount, 0);
   const latestNotifications = notifications.slice(0, 12);
-  const compactTransitionClassName = prefersReducedMotion
-    ? "transition-none"
-    : "transition-[opacity,transform,max-width,margin,filter] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,transform,max-width]";
   const headerClassName = [
-    "hidden md:block sticky top-0 z-40 w-full",
+    "hidden md:block sticky top-0 z-50 w-full border-b border-[var(--color-border-light)]",
     prefersReducedMotion
-      ? "bg-[var(--color-surface)]/70 py-3 backdrop-blur-xl"
-      : `transition-[padding,background-color,backdrop-filter] duration-300 ease-out ${isCompact ? "bg-[var(--color-surface)]/55 py-2 backdrop-blur-2xl" : "bg-[var(--color-surface)]/70 py-3 backdrop-blur-xl"}`,
+      ? "bg-white/80 shadow-[0_1px_8px_rgba(15,23,42,0.04)] backdrop-blur-xl"
+      : `transition-[background-color,backdrop-filter,box-shadow] duration-300 ease-out ${isCompact ? "bg-white/75 shadow-[0_2px_10px_rgba(15,23,42,0.06)] backdrop-blur-2xl" : "bg-white/85 shadow-[0_1px_8px_rgba(15,23,42,0.04)] backdrop-blur-xl"}`,
   ].join(" ");
   const shellClassName = [
-    "flex h-16 items-center gap-3 rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)]/85 px-4 shadow-[0_8px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl lg:gap-3",
+    "grid h-[60px] grid-cols-[auto_1fr_auto] items-center gap-3 sm:h-16",
     prefersReducedMotion
       ? ""
-      : `transition-[height,box-shadow,background-color] duration-300 ease-out ${isCompact ? "h-14 shadow-[0_6px_18px_rgba(15,23,42,0.08)]" : "h-16"}`,
+      : "transition-[height] duration-300 ease-out",
   ].join(" ");
-  const leftSectionClassName = [
-    "flex shrink-0 items-center justify-start",
-    compactTransitionClassName,
-    isCompact
-      ? "pointer-events-none mr-0 max-w-0 -translate-y-1 scale-[0.97] opacity-0 blur-[1.5px]"
-      : "pointer-events-auto translate-y-0 scale-100 opacity-100 blur-0",
-  ].join(" ");
-  const rightSectionClassName = [
-    "flex shrink-0 items-center justify-end gap-2 sm:gap-2.5",
-    compactTransitionClassName,
-    isCompact
-      ? "pointer-events-none ml-0 max-w-0 -translate-y-1 scale-[0.97] opacity-0 blur-[1.5px]"
-      : "pointer-events-auto translate-y-0 scale-100 opacity-100 blur-0",
-  ].join(" ");
+  const leftSectionClassName = "flex h-full shrink-0 items-center justify-start";
+  const rightSectionClassName = "flex h-full shrink-0 items-center justify-end gap-2 sm:gap-2.5";
   const centerNavClassName = [
-    "scrollbar-thin flex min-w-max items-center gap-1 overflow-x-auto whitespace-nowrap rounded-xl border border-[var(--color-border-light)]/80 bg-[var(--color-surface)]/75 p-1.5",
+    "scrollbar-thin flex min-w-max items-center justify-center gap-1 whitespace-nowrap px-2",
     prefersReducedMotion
       ? ""
-      : `transition-[padding,background-color,transform] duration-300 ease-out ${isCompact ? "bg-[var(--color-surface)]/90 p-1" : ""}`,
+      : "transition-[transform] duration-200 ease-out",
   ].join(" ");
 
   return (
     <>
       <header className={headerClassName}>
-        <div className="app-container">
+        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
           <div className={shellClassName}>
             <div className={leftSectionClassName}>
               {/* Logo */}
-              <Link href="/" className="flex items-center gap-2.5 flex-shrink-0" aria-label="Amerikala ana sayfa">
+              <Link href="/" className="flex h-full items-center gap-2.5 pr-2" aria-label="Amerikala ana sayfa">
                 <Image
                   src="/logo.png"
                   alt="Amerikala logosu"
                   width={36}
                   height={36}
                   priority
-                  className="h-9 w-9 rounded-xl"
+                  className="h-8 w-8 rounded-lg"
                 />
-                <span className="text-base font-bold tracking-[0.18em] text-[var(--color-ink)] uppercase">amerikala</span>
+                <span className="text-sm font-semibold tracking-[0.14em] text-[var(--color-ink)] uppercase">amerikala</span>
               </Link>
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden min-w-0 flex-1 items-center justify-center md:flex">
-              <nav className={centerNavClassName}>
-                {desktopNavItems.map((item) => (
-                  <NavDropdown
-                    key={item.id}
-                    item={item}
-                    isOpen={openDropdown === item.id}
-                    onToggle={() => setOpenDropdown(openDropdown === item.id ? null : item.id)}
-                    onClose={() => setOpenDropdown(null)}
-                  />
-                ))}
-              </nav>
+            <div className="hidden min-w-0 items-center justify-center px-2 md:flex">
+              <div className="relative mx-auto w-full max-w-[620px] overflow-hidden">
+                <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white/90 to-transparent" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white/90 to-transparent" />
+                <nav className="overflow-x-auto px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <div className={centerNavClassName}>
+                    {desktopNavItems.map((item) => (
+                      <NavDropdown
+                        key={item.id}
+                        item={item}
+                        isOpen={openDropdown === item.id}
+                        onToggle={() => setOpenDropdown(openDropdown === item.id ? null : item.id)}
+                        onClose={() => setOpenDropdown(null)}
+                      />
+                    ))}
+                  </div>
+                </nav>
+              </div>
             </div>
 
             {/* Right Section */}
@@ -1197,19 +1190,19 @@ export default function Navbar() {
                   </div>
 
                   {/* User Menu */}
-                  <div ref={userMenuRef} className="relative hidden md:block md:ml-4">
+                  <div ref={userMenuRef} className="relative hidden md:block md:ml-2">
                     <button
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
-                      className="flex min-h-10 items-center gap-2 rounded-xl border border-[rgba(15,23,42,0.12)] bg-[rgba(15,23,42,0.03)] py-1.5 pl-1.5 pr-2.5 transition-all duration-200 ease-out hover:-translate-y-px hover:bg-[rgba(15,23,42,0.06)]"
+                      className="flex min-h-10 max-w-[170px] items-center gap-2 rounded-xl border border-[rgba(15,23,42,0.1)] bg-[rgba(15,23,42,0.05)] py-1 pl-1 pr-2.5 transition-all duration-200 ease-out hover:-translate-y-px hover:bg-[rgba(15,23,42,0.08)]"
                     >
                       <Avatar
                         src={getAvatarUrl(profile, user)}
                         fallback={displayName}
-                        size="md"
+                        size="sm"
                         className="shrink-0"
                       />
-                      <div className="text-left max-w-[140px]">
-                        <div className="text-sm font-medium text-[var(--color-ink)] truncate">{usernameLabel}</div>
+                      <div className="max-w-[110px] text-left">
+                        <div className="truncate text-sm font-medium text-[var(--color-ink)]">{usernameLabel}</div>
                       </div>
                       <ChevronDown size={14} className={`transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
                     </button>
