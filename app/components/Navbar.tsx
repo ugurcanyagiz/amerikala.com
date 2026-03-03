@@ -238,7 +238,7 @@ function NavDropdown({
     return (
       <Link
         href={item.href!}
-        className={`nav-pill flex h-10 items-center gap-2 px-4 text-sm font-semibold tracking-[0.02em] ${isActive ? "nav-pill-active" : ""}`}
+        className={`nav-pill flex h-10 shrink-0 items-center gap-2 whitespace-nowrap px-4 text-sm font-semibold tracking-[0.02em] ${isActive ? "nav-pill-active" : ""}`}
       >
         <Icon size={16} className="hidden xl:block" />
         <span className="inline">{item.label}</span>
@@ -250,7 +250,7 @@ function NavDropdown({
     <div ref={dropdownRef} className="relative">
       <button
         onClick={onToggle}
-        className={`nav-pill flex h-10 items-center gap-1 px-4 text-sm font-semibold tracking-[0.02em] ${isActive || isOpen ? "nav-pill-active" : ""}`}
+        className={`nav-pill flex h-10 shrink-0 items-center gap-1 whitespace-nowrap px-4 text-sm font-semibold tracking-[0.02em] ${isActive || isOpen ? "nav-pill-active" : ""}`}
       >
         <Icon size={16} className="hidden xl:block" />
         <span className="inline">{item.label}</span>
@@ -855,30 +855,30 @@ export default function Navbar() {
       : `transition-[padding,background-color,backdrop-filter] duration-300 ease-out ${isCompact ? "bg-[var(--color-surface)]/55 py-2 backdrop-blur-2xl" : "bg-[var(--color-surface)]/70 py-3 backdrop-blur-xl"}`,
   ].join(" ");
   const shellClassName = [
-    "flex items-center border border-[var(--color-border-light)] bg-[var(--color-surface-raised)]/90 px-4 shadow-[0_18px_42px_rgba(15,23,42,0.12)]",
+    "flex h-16 items-center gap-3 rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)]/85 px-4 shadow-[0_8px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl lg:gap-3",
     prefersReducedMotion
-      ? "h-16 rounded-2xl"
-      : `transition-[height,border-radius,box-shadow] duration-300 ease-out ${isCompact ? "h-14 rounded-[18px] shadow-[0_14px_30px_rgba(15,23,42,0.10)]" : "h-16 rounded-2xl"}`,
+      ? ""
+      : `transition-[height,box-shadow,background-color] duration-300 ease-out ${isCompact ? "h-14 shadow-[0_6px_18px_rgba(15,23,42,0.08)]" : "h-16"}`,
   ].join(" ");
   const leftSectionClassName = [
-    "flex flex-1 items-center justify-start overflow-hidden",
+    "flex shrink-0 items-center justify-start",
     compactTransitionClassName,
     isCompact
       ? "pointer-events-none mr-0 max-w-0 -translate-y-1 scale-[0.97] opacity-0 blur-[1.5px]"
-      : "pointer-events-auto mr-3 max-w-[280px] translate-y-0 scale-100 opacity-100 blur-0",
+      : "pointer-events-auto translate-y-0 scale-100 opacity-100 blur-0",
   ].join(" ");
   const rightSectionClassName = [
-    "flex flex-1 items-center justify-end gap-2 overflow-hidden sm:gap-2.5",
+    "flex shrink-0 items-center justify-end gap-2 sm:gap-2.5",
     compactTransitionClassName,
     isCompact
       ? "pointer-events-none ml-0 max-w-0 -translate-y-1 scale-[0.97] opacity-0 blur-[1.5px]"
-      : "pointer-events-auto ml-3 max-w-[640px] translate-y-0 scale-100 opacity-100 blur-0",
+      : "pointer-events-auto translate-y-0 scale-100 opacity-100 blur-0",
   ].join(" ");
   const centerNavClassName = [
-    "flex items-center rounded-full border border-[var(--color-border-light)] bg-[var(--color-surface)]/90",
+    "scrollbar-thin flex min-w-max items-center gap-1 overflow-x-auto whitespace-nowrap rounded-xl border border-[var(--color-border-light)]/80 bg-[var(--color-surface)]/75 p-1.5",
     prefersReducedMotion
-      ? "gap-1 p-1.5 lg:gap-2"
-      : `transition-[padding,gap,background-color,transform] duration-300 ease-out ${isCompact ? "gap-1 p-1 bg-[var(--color-surface)]/95 scale-[0.99]" : "gap-1 p-1.5 lg:gap-2"}`,
+      ? ""
+      : `transition-[padding,background-color,transform] duration-300 ease-out ${isCompact ? "bg-[var(--color-surface)]/90 p-1" : ""}`,
   ].join(" ");
 
   return (
@@ -902,7 +902,7 @@ export default function Navbar() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden flex-1 items-center justify-center md:flex">
+            <div className="hidden min-w-0 flex-1 items-center justify-center md:flex">
               <nav className={centerNavClassName}>
                 {desktopNavItems.map((item) => (
                   <NavDropdown
