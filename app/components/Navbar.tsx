@@ -618,6 +618,8 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<SiteSearchResult[]>([]);
+  const [isCompact, setIsCompact] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const timeHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -800,6 +802,41 @@ export default function Navbar() {
     return () => window.clearTimeout(timer);
   }, [searchOpen, searchQuery]);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateMotionPreference = () => {
+      setPrefersReducedMotion(mediaQuery.matches);
+    };
+
+    updateMotionPreference();
+    mediaQuery.addEventListener("change", updateMotionPreference);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateMotionPreference);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+
+      setIsCompact((prev) => {
+        if (prev) {
+          return scrollY > 8;
+        }
+
+        return scrollY > 24;
+      });
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   const handleSignOut = async () => {
     setUserMenuOpen(false);
     await signOut();
@@ -808,13 +845,48 @@ export default function Navbar() {
 
   const totalUnreadMessages = messagePreviews.reduce((sum, item) => sum + item.unreadCount, 0);
   const latestNotifications = notifications.slice(0, 12);
+  const compactTransitionClassName = prefersReducedMotion
+    ? "transition-none"
+    : "transition-[opacity,transform,max-width,margin,filter] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,transform,max-width]";
+  const headerClassName = [
+    "hidden md:block sticky top-0 z-40 w-full",
+    prefersReducedMotion
+      ? "bg-[var(--color-surface)]/70 py-3 backdrop-blur-xl"
+      : `transition-[padding,background-color,backdrop-filter] duration-300 ease-out ${isCompact ? "bg-[var(--color-surface)]/55 py-2 backdrop-blur-2xl" : "bg-[var(--color-surface)]/70 py-3 backdrop-blur-xl"}`,
+  ].join(" ");
+  const shellClassName = [
+    "flex items-center border border-[var(--color-border-light)] bg-[var(--color-surface-raised)]/90 px-4 shadow-[0_18px_42px_rgba(15,23,42,0.12)]",
+    prefersReducedMotion
+      ? "h-16 rounded-2xl"
+      : `transition-[height,border-radius,box-shadow] duration-300 ease-out ${isCompact ? "h-14 rounded-[18px] shadow-[0_14px_30px_rgba(15,23,42,0.10)]" : "h-16 rounded-2xl"}`,
+  ].join(" ");
+  const leftSectionClassName = [
+    "flex flex-1 items-center justify-start overflow-hidden",
+    compactTransitionClassName,
+    isCompact
+      ? "pointer-events-none mr-0 max-w-0 -translate-y-1 scale-[0.97] opacity-0 blur-[1.5px]"
+      : "pointer-events-auto mr-3 max-w-[280px] translate-y-0 scale-100 opacity-100 blur-0",
+  ].join(" ");
+  const rightSectionClassName = [
+    "flex flex-1 items-center justify-end gap-2 overflow-hidden sm:gap-2.5",
+    compactTransitionClassName,
+    isCompact
+      ? "pointer-events-none ml-0 max-w-0 -translate-y-1 scale-[0.97] opacity-0 blur-[1.5px]"
+      : "pointer-events-auto ml-3 max-w-[640px] translate-y-0 scale-100 opacity-100 blur-0",
+  ].join(" ");
+  const centerNavClassName = [
+    "flex items-center rounded-full border border-[var(--color-border-light)] bg-[var(--color-surface)]/90",
+    prefersReducedMotion
+      ? "gap-1 p-1.5 lg:gap-2"
+      : `transition-[padding,gap,background-color,transform] duration-300 ease-out ${isCompact ? "gap-1 p-1 bg-[var(--color-surface)]/95 scale-[0.99]" : "gap-1 p-1.5 lg:gap-2"}`,
+  ].join(" ");
 
   return (
     <>
-      <header className="hidden md:block sticky top-0 z-40 w-full bg-[var(--color-surface)]/70 py-3 backdrop-blur-xl">
+      <header className={headerClassName}>
         <div className="app-container">
-          <div className="flex h-16 items-center rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)]/90 px-4 shadow-[0_18px_42px_rgba(15,23,42,0.12)]">
-            <div className="flex flex-1 items-center justify-start">
+          <div className={shellClassName}>
+            <div className={leftSectionClassName}>
               {/* Logo */}
               <Link href="/" className="flex items-center gap-2.5 flex-shrink-0" aria-label="Amerikala ana sayfa">
                 <Image
@@ -831,7 +903,7 @@ export default function Navbar() {
 
             {/* Desktop Navigation */}
             <div className="hidden flex-1 items-center justify-center md:flex">
-              <nav className="flex items-center gap-1 rounded-full border border-[var(--color-border-light)] bg-[var(--color-surface)]/90 p-1.5 lg:gap-2">
+              <nav className={centerNavClassName}>
                 {desktopNavItems.map((item) => (
                   <NavDropdown
                     key={item.id}
@@ -845,7 +917,7 @@ export default function Navbar() {
             </div>
 
             {/* Right Section */}
-            <div className="flex flex-1 items-center justify-end gap-2 sm:gap-2.5">
+            <div className={rightSectionClassName}>
               {/* Search Button */}
               <div ref={searchRef} className="relative hidden sm:block">
                 <button
