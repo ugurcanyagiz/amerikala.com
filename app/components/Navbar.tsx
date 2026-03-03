@@ -86,10 +86,14 @@ const NAV_ITEMS = [
     ],
   },
   {
-    id: "yardimlasma",
-    label: "Yardımlaşma",
-    href: "/yardimlasma",
+    id: "paylasimlar",
+    label: "Soru/Cevap",
     icon: HandHelping,
+    children: [
+      { href: "/paylasimlar", label: "Tüm Paylaşımlar", icon: HandHelping, description: "Topluluk soru/cevap akışı" },
+      { href: "/yardimlasma", label: "Yardımlaşma", icon: HandHelping, description: "Yardım talepleri ve destek" },
+      { href: "/feed", label: "Feed", icon: List, description: "Son paylaşımlar" },
+    ],
   },
 ];
 
@@ -854,7 +858,7 @@ export default function Navbar() {
       : `transition-[background-color,backdrop-filter,box-shadow] duration-300 ease-out ${isCompact ? "bg-white/75 shadow-[0_2px_10px_rgba(15,23,42,0.06)] backdrop-blur-2xl" : "bg-white/85 shadow-[0_1px_8px_rgba(15,23,42,0.04)] backdrop-blur-xl"}`,
   ].join(" ");
   const shellClassName = [
-    "grid h-[60px] grid-cols-[auto_1fr_auto] items-center gap-3 sm:h-16",
+    "relative grid h-[60px] grid-cols-[auto_1fr_auto] items-center sm:h-16",
     prefersReducedMotion
       ? ""
       : "transition-[height] duration-300 ease-out",
@@ -871,7 +875,7 @@ export default function Navbar() {
   return (
     <>
       <header className={headerClassName}>
-        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+        <div className="w-full px-[clamp(0.75rem,2.8vw,2.75rem)]">
           <div className={shellClassName}>
             <div className={leftSectionClassName}>
               {/* Logo */}
@@ -889,8 +893,8 @@ export default function Navbar() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden min-w-0 items-center justify-center px-2 md:flex">
-              <div className="relative mx-auto w-full max-w-[620px] overflow-hidden">
+            <div className="pointer-events-none absolute inset-0 z-10 hidden items-center justify-center md:flex">
+              <div className="pointer-events-auto relative w-full max-w-[620px] overflow-visible px-2">
                 <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white/90 to-transparent" />
                 <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white/90 to-transparent" />
                 <nav className="overflow-x-auto px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
