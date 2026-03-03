@@ -15,10 +15,16 @@ import {
   UserRound,
   MessageSquare,
   Bell,
-  Scale,
   Star,
   HandHelping,
 } from "lucide-react";
+
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  badge?: string;
+};
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -29,61 +35,104 @@ export default function Sidebar() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   const hasAuthenticatedUser = Boolean(user);
+  const collapsed = !isExpanded;
+
+  const sections: { title: string; icon: LucideIcon; items: NavItem[] }[] = [
+    {
+      title: "Keşfet",
+      icon: Star,
+      items: [
+        { href: "/meetups", label: "Etkinlikler", icon: Calendar },
+        { href: "/groups", label: "Gruplar", icon: UserRound },
+        { href: "/search", label: "İnsanlar", icon: User },
+      ],
+    },
+    {
+      title: "Topluluk",
+      icon: Home,
+      items: [
+        { href: "/meetups", label: "Buluşmalar", icon: Calendar },
+        { href: "/messages", label: "Mesajlar", icon: MessageSquare },
+        { href: "/yardimlasma", label: "Yardımlaşma", icon: HandHelping },
+        { href: "/notifications", label: "Bildirimler", icon: Bell },
+      ],
+    },
+  ];
+
+  const footerItems: NavItem[] = [
+    { href: "/profile", label: "Profil", icon: User },
+    { href: "/ayarlar", label: "Ayarlar", icon: Settings },
+  ];
 
   return (
     <aside
-      className={`sticky top-16 hidden h-[calc(100vh-64px)] flex-col border-r transition-[width,opacity,transform] duration-300 ease-in-out md:flex ${
-        isExpanded ? "w-[260px]" : "w-16"
-      } border-[var(--color-border-light)] bg-[var(--color-surface-raised)]`}
+      className={`sticky top-16 hidden h-[calc(100vh-64px)] shrink-0 flex-col border-r border-[var(--color-border-light)] bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(247,248,250,0.98)_100%)] transition-[width] duration-300 ease-[var(--ease-out-expo)] md:flex ${
+        isExpanded ? "w-[272px]" : "w-[72px]"
+      }`}
     >
-      <div className="flex items-center justify-end border-b border-[var(--color-border-light)] p-2 transition-colors duration-200">
-        <button
-          onClick={() => setIsExpanded((prev) => !prev)}
-          className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
-          title={isExpanded ? "Daralt" : "Genişlet"}
-          aria-label={isExpanded ? "Sidebar daralt" : "Sidebar genişlet"}
-        >
-          <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-        </button>
-      </div>
-
-      <>
-        <nav className={`section-neutral flex-1 overflow-y-auto py-6 transition-[padding] duration-300 ${isExpanded ? "px-5" : "px-2"}`}>
-            <SidebarSection title="Keşfet" icon={Star} collapsed={!isExpanded}>
-              <SidebarItem href="/meetups" label="Etkinlikler" icon={Calendar} active={isActive("/meetups")} collapsed={!isExpanded} />
-              <SidebarItem href="/groups" label="Gruplar" icon={UserRound} active={isActive("/groups")} collapsed={!isExpanded} />
-              <SidebarItem href="/search" label="İnsanlar" icon={User} active={pathname.startsWith("/search")} collapsed={!isExpanded} />
-            </SidebarSection>
-
-            <SidebarSection title="Topluluk" icon={Home} collapsed={!isExpanded}>
-              <SidebarItem href="/meetups" label="Buluşmalar" icon={Calendar} active={isActive("/meetups")} collapsed={!isExpanded} />
-              <SidebarItem href="/messages" label="Mesajlar" icon={MessageSquare} active={isActive("/messages")} collapsed={!isExpanded} />
-              <SidebarItem href="/yardimlasma" label="Yardımlaşma" icon={HandHelping} active={isActive("/yardimlasma")} collapsed={!isExpanded} />
-              <SidebarItem href="/notifications" label="Bildirimler" icon={Bell} active={isActive("/notifications")} collapsed={!isExpanded} />
-            </SidebarSection>
-
-            <SidebarSection title="Yasal" icon={Scale} collapsed={!isExpanded}>
-              <SidebarItem href="/profile" label="Profil" icon={User} active={isActive("/profile")} collapsed={!isExpanded} />
-              <SidebarItem href="/ayarlar" label="Ayarlar" icon={Settings} active={isActive("/ayarlar")} collapsed={!isExpanded} />
-            </SidebarSection>
-          </nav>
-
-        <div className={`border-t p-3 transition-[padding] duration-300 ${isExpanded ? "px-5" : "px-2"} border-[var(--color-border-light)]`}>
-          <Link
-            href={hasAuthenticatedUser ? "/emlak/ilan-ver" : "/login"}
-            className={`flex items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] text-white shadow-[0_18px_28px_-20px_rgba(229,57,53,0.95)] transition-[width,opacity,transform,padding] duration-300 hover:bg-[var(--color-primary-hover)] ${
-              isExpanded ? "px-4 py-3 text-lg font-semibold" : "mx-auto h-10 w-10"
-            }`}
-            title="İlan Ver"
-            aria-label="İlan Ver"
+      <header className={`sticky top-0 z-10 border-b border-[var(--color-border-light)]/90 bg-[var(--color-surface-raised)]/90 backdrop-blur transition-[padding] duration-300 ${isExpanded ? "px-5 py-4" : "px-3 py-4"}`}>
+        <div className={`flex items-center ${isExpanded ? "justify-between" : "justify-center"}`}>
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-tertiary)] transition-opacity duration-200 ${collapsed ? "pointer-events-none w-0 opacity-0" : "opacity-100"}`}>
+            Navigasyon
+          </p>
+          <button
+            onClick={() => setIsExpanded((prev) => !prev)}
+            className="rounded-xl border border-transparent p-2 text-[var(--color-ink-secondary)] transition-all duration-200 hover:border-[var(--color-border-light)] hover:bg-white hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action)]/40"
+            title={isExpanded ? "Daralt" : "Genişlet"}
+            aria-label={isExpanded ? "Sidebar daralt" : "Sidebar genişlet"}
           >
-            <Plus className="h-4 w-4 shrink-0" />
-            <span className={`overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ${isExpanded ? "w-auto opacity-100" : "w-0 opacity-0 sr-only"}`}>
-              İlan Ver
-            </span>
-          </Link>
+            <ChevronRight className={`h-4 w-4 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
+          </button>
         </div>
-      </>
+      </header>
+
+      <nav className={`flex-1 overflow-y-auto py-4 transition-[padding] duration-300 ${isExpanded ? "px-4" : "px-2"}`}>
+        {sections.map((section) => (
+          <SidebarSection key={section.title} title={section.title} icon={section.icon} collapsed={collapsed}>
+            {section.items.map((item) => (
+              <SidebarItem
+                key={`${section.title}-${item.href}-${item.label}`}
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+                active={isActive(item.href)}
+                collapsed={collapsed}
+                badge={item.badge}
+              />
+            ))}
+          </SidebarSection>
+        ))}
+      </nav>
+
+      <footer className={`sticky bottom-0 space-y-3 border-t border-[var(--color-border-light)] bg-[var(--color-surface-raised)]/95 pb-4 pt-3 backdrop-blur transition-[padding] duration-300 ${isExpanded ? "px-4" : "px-2"}`}>
+        <div className="space-y-1">
+          {footerItems.map((item) => (
+            <SidebarItem
+              key={`footer-${item.href}`}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              active={isActive(item.href)}
+              collapsed={collapsed}
+            />
+          ))}
+        </div>
+
+        <Link
+          href={hasAuthenticatedUser ? "/emlak/ilan-ver" : "/login"}
+          className={`group relative flex h-12 items-center justify-center overflow-visible rounded-xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)] text-white shadow-[0_12px_24px_-18px_rgba(196,55,55,0.85)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--color-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 ${
+            isExpanded ? "gap-2 px-4" : "mx-auto w-12"
+          }`}
+          title="İlan Ver"
+          aria-label="İlan Ver"
+        >
+          <Plus className="h-5 w-5 shrink-0" />
+          <span className={`text-[15px] font-semibold transition-[width,opacity] duration-200 ${isExpanded ? "w-auto opacity-100" : "w-0 opacity-0 sr-only"}`}>
+            İlan Ver
+          </span>
+          {collapsed && <CollapsedTooltip label="İlan Ver" />}
+        </Link>
+      </footer>
     </aside>
   );
 }
@@ -100,13 +149,13 @@ function SidebarSection({
   collapsed: boolean;
 }) {
   return (
-    <div className={`section-surface mb-5 last:mb-0 ${collapsed ? "px-2 py-3" : "p-4"}`}>
-      <p className={`mb-3 flex items-center text-xs font-bold uppercase tracking-[0.24em] text-[var(--color-ink-tertiary)] transition-[opacity,transform] duration-200 ${collapsed ? "justify-center" : "gap-2"}`}>
-        <Icon className={`shrink-0 transition-[width,height,opacity] duration-200 ${collapsed ? "h-0 w-0 opacity-0" : "h-3.5 w-3.5 opacity-100"}`} />
-        <span className={`overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ${collapsed ? "w-0 opacity-0 sr-only" : "w-auto opacity-100"}`}>{title}</span>
+    <section className="mb-5 last:mb-0">
+      <p className={`mb-2 flex items-center text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-tertiary)] transition-all duration-200 ${collapsed ? "justify-center" : "gap-2 px-3"}`}>
+        <Icon className="h-3.5 w-3.5 shrink-0" />
+        <span className={`${collapsed ? "sr-only" : ""}`}>{title}</span>
       </p>
       <div className="space-y-1">{children}</div>
-    </div>
+    </section>
   );
 }
 
@@ -116,24 +165,47 @@ function SidebarItem({
   icon: Icon,
   active,
   collapsed,
+  badge,
 }: {
   href: string;
   label: string;
   icon: LucideIcon;
   active: boolean;
   collapsed: boolean;
+  badge?: string;
 }) {
   return (
     <Link
       href={href}
-      className={`nav-pill group flex items-center text-base transition-[width,opacity,transform,color,background-color,border-color,padding] duration-200 ${active ? "nav-pill-active font-semibold" : ""} ${collapsed ? "justify-center gap-0 px-2 py-2" : "gap-3 px-3 py-2.5"}`}
+      className={`group relative flex h-11 items-center overflow-visible rounded-xl border px-3 text-[14px] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action)]/40 ${
+        active
+          ? "border-[var(--color-border-light)] bg-[rgba(30,42,56,0.08)] text-[var(--color-navy)]"
+          : "border-transparent text-[var(--color-ink-secondary)] hover:border-[var(--color-border-light)] hover:bg-white/70 hover:text-[var(--color-ink)]"
+      } ${collapsed ? "justify-center px-2" : "gap-3"}`}
       title={collapsed ? label : undefined}
       aria-label={collapsed ? label : undefined}
     >
-      <span className={`inline-flex items-center justify-center rounded-lg transition-[width,height,background-color] duration-200 ${collapsed ? "h-9 w-9" : "h-8 w-8"} ${active ? "bg-white/80" : "group-hover:bg-white/70"}`}>
-        <Icon className={`shrink-0 transition-[width,height] duration-200 ${collapsed ? "h-5 w-5" : "h-[18px] w-[18px]"}`} />
+      <span className={`absolute bottom-2 left-0 top-2 w-[3px] rounded-r-full bg-[var(--color-navy)] transition-opacity duration-200 ${active ? "opacity-100" : "opacity-0"}`} />
+      <span className={`inline-flex items-center justify-center rounded-lg transition-colors duration-200 ${collapsed ? "h-9 w-9" : "h-8 w-8"} ${active ? "bg-white text-[var(--color-navy)]" : "bg-white/0 text-inherit group-hover:bg-white/80"}`}>
+        <Icon className="h-[19px] w-[19px] shrink-0" strokeWidth={2} />
       </span>
-      <span className={`overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ${collapsed ? "w-0 opacity-0 sr-only" : "w-auto opacity-100"}`}>{label}</span>
+      <span className={`min-w-0 flex-1 truncate whitespace-nowrap text-[14px] leading-none transition-[width,opacity] duration-200 ${collapsed ? "w-0 opacity-0 sr-only" : "w-auto opacity-100"}`}>
+        {label}
+      </span>
+      {!collapsed && badge ? (
+        <span className="rounded-full bg-[var(--color-primary-subtle)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-primary)]">
+          {badge}
+        </span>
+      ) : null}
+      {collapsed && <CollapsedTooltip label={label} />}
     </Link>
+  );
+}
+
+function CollapsedTooltip({ label }: { label: string }) {
+  return (
+    <span className="pointer-events-none absolute left-full top-1/2 z-20 ml-2 -translate-y-1/2 whitespace-nowrap rounded-lg border border-[var(--color-border-light)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-ink)] opacity-0 shadow-[var(--shadow-sm)] transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+      {label}
+    </span>
   );
 }
