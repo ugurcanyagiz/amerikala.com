@@ -86,6 +86,12 @@ const NAV_ITEMS = [
     ],
   },
   {
+    id: "paylasimlar",
+    label: "Paylaşımlar",
+    href: "/feed",
+    icon: MessageSquare,
+  },
+  {
     id: "yardimlasma",
     label: "Yardımlaşma",
     href: "/yardimlasma",
@@ -264,7 +270,7 @@ function NavDropdown({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-64 py-2 bg-[var(--color-surface-raised)] rounded-2xl shadow-xl border border-[var(--color-border-light)] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute left-0 top-full z-[70] mt-2 w-64 rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] py-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
           {item.children?.map((child) => {
             const ChildIcon = child.icon;
             const isChildActive = pathname === child.href || pathname.startsWith(child.href + "/");
@@ -890,10 +896,12 @@ export default function Navbar() {
 
             {/* Desktop Navigation */}
             <div className="pointer-events-none absolute inset-0 z-10 hidden items-center justify-center md:flex">
-              <div className="pointer-events-auto relative w-full max-w-[620px] overflow-hidden px-2">
-                <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white/90 to-transparent" />
-                <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white/90 to-transparent" />
-                <nav className="overflow-x-auto px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="pointer-events-auto relative w-full max-w-[620px] overflow-visible px-2">
+                <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                  <div className="absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white/90 to-transparent" />
+                  <div className="absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white/90 to-transparent" />
+                </div>
+                <nav className="relative overflow-x-auto px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <div className={centerNavClassName}>
                     {desktopNavItems.map((item) => (
                       <NavDropdown
