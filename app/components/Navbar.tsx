@@ -845,10 +845,22 @@ export default function Navbar() {
 
   const totalUnreadMessages = messagePreviews.reduce((sum, item) => sum + item.unreadCount, 0);
   const latestNotifications = notifications.slice(0, 12);
-  const compactSectionClassName = [
-    "flex items-center overflow-hidden",
-    prefersReducedMotion ? "transition-none" : "transition-all duration-300 ease-out",
-    isCompact ? "pointer-events-none w-0 max-w-0 -translate-y-1 opacity-0" : "pointer-events-auto opacity-100 translate-y-0",
+  const compactTransitionClassName = prefersReducedMotion
+    ? "transition-none"
+    : "transition-[opacity,transform,max-width,margin] duration-[280ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,transform,max-width]";
+  const leftSectionClassName = [
+    "flex flex-1 items-center justify-start overflow-hidden",
+    compactTransitionClassName,
+    isCompact
+      ? "pointer-events-none mr-0 max-w-0 -translate-y-1 opacity-0"
+      : "pointer-events-auto mr-3 max-w-[260px] translate-y-0 opacity-100",
+  ].join(" ");
+  const rightSectionClassName = [
+    "flex flex-1 items-center justify-end gap-2 overflow-hidden sm:gap-2.5",
+    compactTransitionClassName,
+    isCompact
+      ? "pointer-events-none ml-0 max-w-0 -translate-y-1 opacity-0"
+      : "pointer-events-auto ml-3 max-w-[620px] translate-y-0 opacity-100",
   ].join(" ");
 
   return (
@@ -856,7 +868,7 @@ export default function Navbar() {
       <header className="hidden md:block sticky top-0 z-40 w-full bg-[var(--color-surface)]/70 py-3 backdrop-blur-xl">
         <div className="app-container">
           <div className="flex h-16 items-center rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)]/90 px-4 shadow-[0_18px_42px_rgba(15,23,42,0.12)]">
-            <div className={`${compactSectionClassName} flex-1 justify-start`}>
+            <div className={leftSectionClassName}>
               {/* Logo */}
               <Link href="/" className="flex items-center gap-2.5 flex-shrink-0" aria-label="Amerikala ana sayfa">
                 <Image
@@ -887,7 +899,7 @@ export default function Navbar() {
             </div>
 
             {/* Right Section */}
-            <div className={`${compactSectionClassName} flex-1 justify-end gap-2 sm:gap-2.5`}>
+            <div className={rightSectionClassName}>
               {/* Search Button */}
               <div ref={searchRef} className="relative hidden sm:block">
                 <button
