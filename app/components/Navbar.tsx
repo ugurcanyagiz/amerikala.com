@@ -32,7 +32,6 @@ import {
   Users,
   Shield,
   Package,
-  HandHelping,
 } from "lucide-react";
 
 // Navigation structure
@@ -88,15 +87,9 @@ const NAV_ITEMS = [
   },
   {
     id: "paylasimlar",
-    label: "Paylaşımlar",
+    label: "Soru/Cevap",
     href: "/yardimlasma",
     icon: MessageSquare,
-  },
-  {
-    id: "yardimlasma",
-    label: "Yardımlaşma",
-    href: "/yardimlasma",
-    icon: HandHelping,
   },
 ];
 
@@ -221,6 +214,7 @@ function NavDropdown({
 }) {
   const pathname = usePathname();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownMenuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 256 });
   const Icon = item.icon;
@@ -233,7 +227,11 @@ function NavDropdown({
   // Close on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const targetNode = e.target as Node;
+      const isButtonAreaClick = dropdownRef.current?.contains(targetNode);
+      const isDropdownMenuClick = dropdownMenuRef.current?.contains(targetNode);
+
+      if (!isButtonAreaClick && !isDropdownMenuClick) {
         onClose();
       }
     };
@@ -316,6 +314,7 @@ function NavDropdown({
       {/* Dropdown Menu */}
       {isOpen && typeof document !== "undefined" && createPortal(
         <div
+          ref={dropdownMenuRef}
           className="fixed z-[70] rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] py-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200"
           style={{ top: dropdownPosition.top, left: dropdownPosition.left, width: dropdownPosition.width }}
         >
@@ -408,8 +407,7 @@ function MobileBottomNav({
     { href: "/emlak", icon: Building2, label: "Emlak" },
     { href: "/is", icon: Briefcase, label: "İş" },
     { href: "/alisveris", icon: ShoppingBag, label: "Alışveriş" },
-    { href: "/yardimlasma", icon: MessageSquare, label: "Paylaşımlar" },
-    { href: "/yardimlasma", icon: HandHelping, label: "Yardımlaşma" },
+    { href: "/yardimlasma", icon: MessageSquare, label: "Soru/Cevap" },
     ...(isAdmin ? [{ href: "/admin", icon: Shield, label: "Admin Paneli" }] : []),
   ];
 
