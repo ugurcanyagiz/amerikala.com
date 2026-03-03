@@ -618,6 +618,8 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<SiteSearchResult[]>([]);
+  const [isCompact, setIsCompact] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const timeHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -800,6 +802,41 @@ export default function Navbar() {
     return () => window.clearTimeout(timer);
   }, [searchOpen, searchQuery]);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateMotionPreference = () => {
+      setPrefersReducedMotion(mediaQuery.matches);
+    };
+
+    updateMotionPreference();
+    mediaQuery.addEventListener("change", updateMotionPreference);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateMotionPreference);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+
+      setIsCompact((prev) => {
+        if (prev) {
+          return scrollY > 8;
+        }
+
+        return scrollY > 24;
+      });
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   const handleSignOut = async () => {
     setUserMenuOpen(false);
     await signOut();
@@ -808,13 +845,18 @@ export default function Navbar() {
 
   const totalUnreadMessages = messagePreviews.reduce((sum, item) => sum + item.unreadCount, 0);
   const latestNotifications = notifications.slice(0, 12);
+  const compactSectionClassName = [
+    "flex items-center overflow-hidden",
+    prefersReducedMotion ? "transition-none" : "transition-all duration-300 ease-out",
+    isCompact ? "pointer-events-none w-0 max-w-0 -translate-y-1 opacity-0" : "pointer-events-auto opacity-100 translate-y-0",
+  ].join(" ");
 
   return (
     <>
       <header className="hidden md:block sticky top-0 z-40 w-full bg-[var(--color-surface)]/70 py-3 backdrop-blur-xl">
         <div className="app-container">
           <div className="flex h-16 items-center rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)]/90 px-4 shadow-[0_18px_42px_rgba(15,23,42,0.12)]">
-            <div className="flex flex-1 items-center justify-start">
+            <div className={`${compactSectionClassName} flex-1 justify-start`}>
               {/* Logo */}
               <Link href="/" className="flex items-center gap-2.5 flex-shrink-0" aria-label="Amerikala ana sayfa">
                 <Image
@@ -845,7 +887,7 @@ export default function Navbar() {
             </div>
 
             {/* Right Section */}
-            <div className="flex flex-1 items-center justify-end gap-2 sm:gap-2.5">
+            <div className={`${compactSectionClassName} flex-1 justify-end gap-2 sm:gap-2.5`}>
               {/* Search Button */}
               <div ref={searchRef} className="relative hidden sm:block">
                 <button
