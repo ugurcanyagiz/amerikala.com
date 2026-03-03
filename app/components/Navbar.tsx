@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useState, useRef, useEffect, useSyncExternalStore, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { getTimeAgo, useNotifications } from "../contexts/NotificationContext";
 import { Avatar } from "./ui/Avatar";
@@ -88,12 +89,6 @@ const NAV_ITEMS = [
   {
     id: "paylasimlar",
     label: "Paylaşımlar",
-    href: "/feed",
-    icon: MessageSquare,
-  },
-  {
-    id: "yardimlasma",
-    label: "Yardımlaşma",
     href: "/yardimlasma",
     icon: HandHelping,
   },
@@ -220,6 +215,8 @@ function NavDropdown({
 }) {
   const pathname = usePathname();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 256 });
   const Icon = item.icon;
   
   const hasChildren = 'children' in item && item.children;
@@ -240,6 +237,47 @@ function NavDropdown({
     return () => document.removeEventListener("pointerdown", handleClickOutside);
   }, [isOpen, onClose]);
 
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updatePosition = () => {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const dropdownWidth = 256;
+      const viewportPadding = 12;
+      const maxLeft = window.innerWidth - dropdownWidth - viewportPadding;
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: Math.max(viewportPadding, Math.min(rect.left + window.scrollX, maxLeft)),
+        width: dropdownWidth,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [isOpen]);
+
   if (!hasChildren) {
     return (
       <Link
@@ -256,6 +294,7 @@ function NavDropdown({
   return (
     <div ref={dropdownRef} className="relative">
       <button
+        ref={buttonRef}
         onClick={onToggle}
         className={`relative flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-xl px-3 text-[14px] font-medium text-[var(--color-ink-secondary)] transition-all duration-200 ease-out hover:-translate-y-px hover:bg-[rgba(15,23,42,0.05)] hover:text-[var(--color-ink)] ${(isActive || isOpen) ? "bg-[rgba(15,23,42,0.06)] text-[var(--color-ink)]" : ""}`}
       >
@@ -269,8 +308,11 @@ function NavDropdown({
       </button>
 
       {/* Dropdown Menu */}
-      {isOpen && (
-        <div className="absolute left-0 top-full z-[70] mt-2 w-64 rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] py-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+      {isOpen && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed z-[70] rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] py-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200"
+          style={{ top: dropdownPosition.top, left: dropdownPosition.left, width: dropdownPosition.width }}
+        >
           {item.children?.map((child) => {
             const ChildIcon = child.icon;
             const isChildActive = pathname === child.href || pathname.startsWith(child.href + "/");
@@ -298,7 +340,8 @@ function NavDropdown({
               </Link>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -359,7 +402,7 @@ function MobileBottomNav({
     { href: "/emlak", icon: Building2, label: "Emlak" },
     { href: "/is", icon: Briefcase, label: "İş" },
     { href: "/alisveris", icon: ShoppingBag, label: "Alışveriş" },
-    { href: "/yardimlasma", icon: HandHelping, label: "Yardımlaşma" },
+    { href: "/yardimlasma", icon: HandHelping, label: "Paylaşımlar" },
     ...(isAdmin ? [{ href: "/admin", icon: Shield, label: "Admin Paneli" }] : []),
   ];
 
@@ -901,7 +944,7 @@ export default function Navbar() {
                   <div className="absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white/90 to-transparent" />
                   <div className="absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white/90 to-transparent" />
                 </div>
-                <nav className="relative overflow-x-auto px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <nav className="relative overflow-x-auto overflow-y-visible px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <div className={centerNavClassName}>
                     {desktopNavItems.map((item) => (
                       <NavDropdown
