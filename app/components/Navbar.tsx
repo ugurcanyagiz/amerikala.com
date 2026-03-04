@@ -32,7 +32,6 @@ import {
   Users,
   Shield,
   Package,
-  HandHelping,
 } from "lucide-react";
 
 // Navigation structure
@@ -87,16 +86,10 @@ const NAV_ITEMS = [
     ],
   },
   {
-    id: "paylasimlar",
-    label: "Paylaşımlar",
-    href: "/yardimlasma",
+    id: "soru-cevap",
+    label: "Soru/Cevap",
+    href: "/paylasimlar",
     icon: MessageSquare,
-  },
-  {
-    id: "yardimlasma",
-    label: "Yardımlaşma",
-    href: "/yardimlasma",
-    icon: HandHelping,
   },
 ];
 
@@ -408,8 +401,7 @@ function MobileBottomNav({
     { href: "/emlak", icon: Building2, label: "Emlak" },
     { href: "/is", icon: Briefcase, label: "İş" },
     { href: "/alisveris", icon: ShoppingBag, label: "Alışveriş" },
-    { href: "/yardimlasma", icon: MessageSquare, label: "Paylaşımlar" },
-    { href: "/yardimlasma", icon: HandHelping, label: "Yardımlaşma" },
+    { href: "/paylasimlar", icon: MessageSquare, label: "Soru/Cevap" },
     ...(isAdmin ? [{ href: "/admin", icon: Shield, label: "Admin Paneli" }] : []),
   ];
 
