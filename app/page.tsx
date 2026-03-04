@@ -701,7 +701,7 @@ export default function Home() {
             </div>
           </Modal>
 
-          <section className="app-page-container relative z-30 -mt-7 bg-transparent pb-12 sm:-mt-8 lg:-mt-20 lg:pb-14">
+          <section className="app-page-container relative z-30 -mt-7 bg-transparent pb-12 sm:-mt-8 lg:-mt-16 lg:pb-14">
             {/* Upward overlap creates an Amazon-like merged composition with the hero above. */}
             <div className="rounded-3xl border border-[rgba(148,163,184,0.24)] bg-white p-5 shadow-[0_26px_54px_-40px_rgba(15,23,42,0.55)] sm:p-7">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">

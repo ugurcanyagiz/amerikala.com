@@ -39,7 +39,9 @@ export default function HeroBackgroundCarousel() {
             className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[1400ms] ease-in-out ${isActive ? "opacity-100" : "opacity-0"}`}
             style={{
               backgroundImage: `url(${src})`,
-              filter: "brightness(0.8) saturate(0.9)",
+              filter: "brightness(0.85) saturate(0.9)",
+              transform: isActive ? "scale(1.02)" : "scale(1)",
+              transition: "opacity 1400ms ease-in-out, transform 6000ms ease-out",
             }}
           >
             <div className="absolute inset-0 blur-[6px] md:blur-[10px]" />
@@ -51,7 +53,14 @@ export default function HeroBackgroundCarousel() {
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(to bottom, rgba(255,255,255,0.35), rgba(255,255,255,0.65))",
+            "linear-gradient(to bottom, rgba(255,255,255,0.58) 0%, rgba(255,255,255,0.72) 45%, rgba(255,255,255,0.62) 100%)",
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(120% 90% at 50% 40%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.10) 100%)",
         }}
       />
     </div>
