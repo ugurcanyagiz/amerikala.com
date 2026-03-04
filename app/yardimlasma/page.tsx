@@ -119,90 +119,28 @@ export default function YardimlasmaPage() {
     setError(null);
 
     try {
-      const { data: postRows, error: postError } = await supabase
-        .from("help_posts")
-        .select("id,user_id,title,body,category,location_text,tags,is_urgent,status,comment_count,created_at")
-        .order("created_at", { ascending: false })
-        .limit(100);
+      const response = await fetch("/api/yardimlasma/feed", {
+        method: "GET",
+        cache: "no-store",
+      });
 
-      if (postError) throw postError;
-      const postList = postRows ?? [];
-      if (postList.length === 0) {
-        setPosts([]);
-        return;
+      if (!response.ok) {
+        throw new Error(`Feed request failed (${response.status})`);
       }
 
-      const postIds = postList.map((p) => p.id as string);
-      const userIds = Array.from(new Set(postList.map((p) => p.user_id as string)));
-
-      const [imagesRes, commentsRes, subscriptionsRes] = await Promise.all([
-        supabase.from("help_post_images").select("id,post_id,image_url,position").in("post_id", postIds).order("position", { ascending: true }),
-        supabase.from("help_comments").select("id,post_id,user_id,parent_comment_id,body,helpful_count,created_at").in("post_id", postIds).order("created_at", { ascending: true }),
-        user ? supabase.from("help_post_subscriptions").select("post_id").eq("user_id", user.id).in("post_id", postIds) : Promise.resolve({ data: [], error: null }),
-      ]);
-
-      if (imagesRes.error) throw imagesRes.error;
-      if (commentsRes.error) throw commentsRes.error;
-      if (subscriptionsRes.error) throw subscriptionsRes.error;
-
-      const comments = commentsRes.data ?? [];
-      const commentUserIds = Array.from(new Set(comments.map((c) => c.user_id as string)));
-      const profileIds = Array.from(new Set([...userIds, ...commentUserIds]));
-
-      const [profilesRes, reactionsRes] = await Promise.all([
-        supabase.from("profiles").select("id,full_name,first_name,last_name,username,avatar_url").in("id", profileIds),
-        user && comments.length > 0
-          ? supabase.from("help_comment_reactions").select("comment_id").eq("user_id", user.id).in("comment_id", comments.map((c) => c.id as string))
-          : Promise.resolve({ data: [], error: null }),
-      ]);
-
-      if (profilesRes.error) throw profilesRes.error;
-      if (reactionsRes.error) throw reactionsRes.error;
-
-      const profileMap = new Map((profilesRes.data ?? []).map((p) => [p.id as string, p as ProfileMini]));
-      const imagesMap = new Map<string, HelpImage[]>();
-      const commentsMap = new Map<string, HelpComment[]>();
-      const viewerReactionSet = new Set((reactionsRes.data ?? []).map((r) => r.comment_id as string));
-      const subscribedSet = new Set((subscriptionsRes.data ?? []).map((row) => row.post_id as string));
-
-      for (const img of imagesRes.data ?? []) {
-        const postId = img.post_id as string;
-        const arr = imagesMap.get(postId) ?? [];
-        arr.push(img as HelpImage);
-        imagesMap.set(postId, arr);
-      }
-
-      for (const comment of comments) {
-        const postId = comment.post_id as string;
-        const arr = commentsMap.get(postId) ?? [];
-        arr.push({
-          ...(comment as Omit<HelpComment, "profile">),
-          profile: profileMap.get(comment.user_id as string) ?? null,
-          viewer_reacted: viewerReactionSet.has(comment.id as string),
-        });
-        commentsMap.set(postId, arr);
-      }
-
-      const enriched = postList.map((post) => ({
-        ...(post as Omit<HelpPost, "profile" | "images" | "comments" | "subscribed">),
-        profile: profileMap.get(post.user_id as string) ?? null,
-        images: imagesMap.get(post.id as string) ?? [],
-        comments: commentsMap.get(post.id as string) ?? [],
-        subscribed: subscribedSet.has(post.id as string),
-      }));
-
-      setPosts(enriched as HelpPost[]);
+      const payload = (await response.json()) as { posts?: HelpPost[] };
+      setPosts(payload.posts ?? []);
     } catch (fetchError) {
       console.error(fetchError);
       setError("Yardımlaşma akışı yüklenemedi.");
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     void fetchPosts();
-  }, [fetchPosts]);
+  }, [fetchPosts, user?.id]);
 
   const visiblePosts = useMemo(() => {
     return posts.filter((post) => {
