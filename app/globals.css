@@ -937,3 +937,89 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Home hero ambient background layers */
+.hero-ambient-base {
+  background:
+    radial-gradient(84% 76% at 16% 14%, color-mix(in srgb, var(--hero-ambient-red) 34%, transparent) 0%, transparent 68%),
+    radial-gradient(86% 82% at 84% 86%, color-mix(in srgb, var(--hero-ambient-navy) 40%, transparent) 0%, transparent 70%),
+    radial-gradient(62% 48% at 50% 40%, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--hero-ambient-base) 94%, white 6%) 0%, var(--hero-ambient-base) 100%);
+  transform: translate3d(var(--hero-parallax-x), var(--hero-parallax-y), 0) scale(1.03);
+  will-change: transform;
+}
+
+.hero-ambient-motion::before,
+.hero-ambient-motion::after {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  pointer-events: none;
+}
+
+.hero-ambient-motion::before {
+  background: radial-gradient(64% 56% at 24% 22%, color-mix(in srgb, var(--hero-ambient-red) 24%, transparent) 0%, transparent 74%);
+  transform: translate3d(calc(var(--hero-parallax-x) * -0.35), calc(var(--hero-parallax-y) * -0.35), 0);
+  animation: heroAmbientDriftA 34s ease-in-out infinite alternate;
+}
+
+.hero-ambient-motion::after {
+  background: radial-gradient(66% 62% at 78% 80%, color-mix(in srgb, var(--hero-ambient-navy) 28%, transparent) 0%, transparent 76%);
+  transform: translate3d(calc(var(--hero-parallax-x) * 0.45), calc(var(--hero-parallax-y) * 0.45), 0);
+  animation: heroAmbientDriftB 28s ease-in-out infinite alternate;
+}
+
+.hero-ambient-noise {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.48) 1px, transparent 0),
+    radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.2) 1px, transparent 0);
+  background-size:
+    21px 21px,
+    27px 27px;
+  background-position:
+    0 0,
+    10px 12px;
+  mix-blend-mode: soft-light;
+}
+
+.hero-ambient-vignette {
+  background:
+    radial-gradient(130% 94% at 50% 42%, rgba(10, 18, 34, 0) 50%, rgba(10, 18, 34, 0.16) 82%, rgba(10, 18, 34, 0.25) 100%),
+    linear-gradient(180deg, rgba(10, 18, 34, 0.06) 0%, rgba(10, 18, 34, 0.03) 30%, rgba(10, 18, 34, 0.12) 100%);
+}
+
+.hero-under-card-fade {
+  background: linear-gradient(
+    to bottom,
+    rgba(247, 248, 250, 0) 0%,
+    rgba(247, 248, 250, 0.02) 48%,
+    rgba(247, 248, 250, 0.22) 68%,
+    rgba(247, 248, 250, 0.72) 84%,
+    rgba(247, 248, 250, 1) 100%
+  );
+}
+
+@keyframes heroAmbientDriftA {
+  0% {
+    transform: translate3d(calc(var(--hero-parallax-x) * -0.35), calc(var(--hero-parallax-y) * -0.35), 0) scale(1);
+  }
+  100% {
+    transform: translate3d(calc(var(--hero-parallax-x) * -0.35 - 14px), calc(var(--hero-parallax-y) * -0.35 + 10px), 0) scale(1.05);
+  }
+}
+
+@keyframes heroAmbientDriftB {
+  0% {
+    transform: translate3d(calc(var(--hero-parallax-x) * 0.45), calc(var(--hero-parallax-y) * 0.45), 0) scale(1);
+  }
+  100% {
+    transform: translate3d(calc(var(--hero-parallax-x) * 0.45 + 16px), calc(var(--hero-parallax-y) * 0.45 - 12px), 0) scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-ambient-motion::before,
+  .hero-ambient-motion::after {
+    animation: none;
+  }
+}

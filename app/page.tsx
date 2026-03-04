@@ -15,7 +15,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import Sidebar from "./components/Sidebar";
-import HeroRayBurstBackground from "./components/hero/HeroRayBurstBackground";
+import HeroAmbientBackground from "./components/hero/HeroAmbientBackground";
 import HeroTitleMotion from "./components/HeroTitleMotion";
 import YardimlasmaSpotlight, { type YardimlasmaSpotlightItem } from "./components/YardimlasmaSpotlight";
 import { Button } from "./components/ui/Button";
@@ -515,39 +515,7 @@ export default function Home() {
 
         <main className="relative z-10 flex-1">
           <section className="relative mt-4 flex min-h-[500px] items-center justify-center overflow-hidden lg:mt-5 lg:min-h-[540px]">
-            <div
-              className="pointer-events-none absolute inset-0"
-              aria-hidden="true"
-              style={{
-                WebkitMaskImage:
-                  "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 8%, rgba(0,0,0,0.92) 24%, rgba(0,0,0,0.96) 68%, rgba(0,0,0,0.7) 74%, rgba(0,0,0,0.24) 86%, transparent 100%)",
-                maskImage:
-                  "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 8%, rgba(0,0,0,0.92) 24%, rgba(0,0,0,0.96) 68%, rgba(0,0,0,0.7) 74%, rgba(0,0,0,0.24) 86%, transparent 100%)",
-              }}
-            >
-              <div
-                className="absolute inset-0"
-                style={{
-                  backgroundImage:
-                    "radial-gradient(118% 96% at 8% 12%, rgba(156,48,62,0.34) 0%, rgba(156,48,62,0.2) 24%, rgba(156,48,62,0.08) 48%, rgba(156,48,62,0) 74%), radial-gradient(124% 108% at 92% 88%, rgba(25,49,94,0.4) 0%, rgba(25,49,94,0.24) 28%, rgba(25,49,94,0.09) 52%, rgba(25,49,94,0) 78%), radial-gradient(145% 114% at 50% 50%, rgba(7,14,28,0) 44%, rgba(5,10,21,0.34) 76%, rgba(4,8,18,0.55) 100%), linear-gradient(132deg, rgba(255,255,255,0.05) 4%, rgba(255,255,255,0) 36%)",
-                }}
-              />
-              <div
-                className="absolute inset-0 opacity-[0.05]"
-                style={{
-                  backgroundImage:
-                    "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.9) 1px, transparent 0)",
-                  backgroundSize: "18px 18px",
-                }}
-              />
-              <div
-                className="absolute inset-0"
-                style={{
-                  backgroundImage:
-                    "radial-gradient(120% 90% at 50% 44%, rgba(0,0,0,0) 46%, rgba(6,12,24,0.3) 76%, rgba(4,9,18,0.42) 100%)",
-                }}
-              />
-            </div>
+            <HeroAmbientBackground />
 
             <div className="app-page-container relative w-full">
               <div className="mx-auto w-full max-w-[1140px]">
@@ -558,13 +526,7 @@ export default function Home() {
                   />
 
                   <div className="relative z-10 overflow-hidden rounded-[24px] border border-[rgba(255,255,255,0.66)] bg-[rgba(249,251,255,0.94)] px-6 py-6 text-[var(--color-ink)] shadow-[0_30px_72px_-44px_rgba(8,20,45,0.56)] backdrop-blur-[22px] md:px-10 md:py-7 lg:px-14 lg:py-8 xl:px-16">
-                    <HeroRayBurstBackground />
                     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 border border-white/35" />
-                    <div
-                      aria-hidden="true"
-                      className="pointer-events-none absolute right-[-8%] top-[-24%] z-0 h-[260px] w-[260px] rounded-full"
-                      style={{ background: "radial-gradient(circle, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.12) 32%, rgba(255,255,255,0) 72%)" }}
-                    />
 
                     <div className="relative z-20">
                       <div className="mb-3 flex justify-center md:hidden" aria-hidden="true">
