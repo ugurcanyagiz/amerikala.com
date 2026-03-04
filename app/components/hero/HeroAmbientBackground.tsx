@@ -98,6 +98,7 @@ export default function HeroAmbientBackground() {
           "--hero-ambient-red": "var(--color-primary, #A34B52)",
           "--hero-ambient-navy": "var(--color-navy, #1B304A)",
           "--hero-ambient-base": "var(--color-surface-sunken, #EEF2F7)",
+          "--hero-page-bg": "var(--color-bg, #F7F8FA)",
         } as CSSProperties
       }
     >
@@ -110,6 +111,22 @@ export default function HeroAmbientBackground() {
       {/* Soft vignette + under-card fade increase depth/readability without hard edges. */}
       <div className="absolute inset-0 z-20 hero-ambient-vignette" />
       <div className="absolute inset-0 z-30 hero-under-card-fade" />
+
+      {/* Edge dissolves so the hero wash blends naturally into page background. */}
+      <div
+        className="absolute inset-x-0 top-0 z-40 h-[100px]"
+        style={{
+          background:
+            "linear-gradient(to bottom, var(--hero-page-bg) 0%, color-mix(in srgb, var(--hero-page-bg) 80%, transparent) 32%, transparent 100%)",
+        }}
+      />
+      <div
+        className="absolute inset-x-0 bottom-0 z-40 h-[180px]"
+        style={{
+          background:
+            "linear-gradient(to top, var(--hero-page-bg) 0%, color-mix(in srgb, var(--hero-page-bg) 82%, transparent) 38%, transparent 100%)",
+        }}
+      />
     </div>
   );
 }
