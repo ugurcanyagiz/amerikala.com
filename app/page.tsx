@@ -15,7 +15,6 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import Sidebar from "./components/Sidebar";
-import HeroAmbientBackground from "./components/hero/HeroAmbientBackground";
 import HeroAmbientVisual from "./components/hero/HeroAmbientVisual";
 import HeroTitleMotion from "./components/HeroTitleMotion";
 import YardimlasmaSpotlight, { type YardimlasmaSpotlightItem } from "./components/YardimlasmaSpotlight";
@@ -96,6 +95,15 @@ const HOME_THEME = {
 
 const FEATURED_CAROUSEL_AUTO_ADVANCE_MS = 11_000;
 const FEATURED_CAROUSEL_EASING = "cubic-bezier(0.16,1,0.3,1)";
+const HERO_BACKDROP_AUTO_ADVANCE_MS = 10_000;
+
+const HOME_HERO_BACKDROPS = [
+  "/arkaplan.png",
+  // TODO: Replace with production community photo at /public/home/hero-community-2.jpg
+  "/home/hero-community-2.svg",
+  // TODO: Replace with production community photo at /public/home/hero-community-3.jpg
+  "/home/hero-community-3.svg",
+];
 
 const CATEGORY_CONFIG: Record<
   HomeCategoryKey,
@@ -171,6 +179,8 @@ export default function Home() {
   const [isPostListingModalOpen, setIsPostListingModalOpen] = useState(false);
   const [latestAdsCategoryFilter, setLatestAdsCategoryFilter] = useState<"all" | HomeCategoryKey>("all");
   const [activeCategoryPreview, setActiveCategoryPreview] = useState<HomeCategoryKey>("realEstate");
+  const [activeHeroBackdropIndex, setActiveHeroBackdropIndex] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [yardimlasmaSpotlightItems, setYardimlasmaSpotlightItems] = useState<YardimlasmaSpotlightItem[]>([]);
   const [categoryPreviewItems, setCategoryPreviewItems] = useState<Record<HomeCategoryKey, UnifiedAd[]>>({
     events: [],
@@ -198,6 +208,32 @@ export default function Home() {
       combined.includes("request aborted")
     );
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncReducedMotion = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    syncReducedMotion();
+    mediaQuery.addEventListener("change", syncReducedMotion);
+
+    return () => mediaQuery.removeEventListener("change", syncReducedMotion);
+  }, []);
+
+  useEffect(() => {
+    // Hero backdrop carousel intentionally pauses for reduced-motion users.
+    if (prefersReducedMotion || HOME_HERO_BACKDROPS.length < 2) {
+      setActiveHeroBackdropIndex(0);
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setActiveHeroBackdropIndex((prev) => (prev + 1) % HOME_HERO_BACKDROPS.length);
+    }, HERO_BACKDROP_AUTO_ADVANCE_MS);
+
+    return () => window.clearInterval(interval);
+  }, [prefersReducedMotion]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -515,8 +551,37 @@ export default function Home() {
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative mt-4 flex min-h-[500px] items-center justify-center overflow-hidden lg:mt-5 lg:min-h-[540px]">
-            <HeroAmbientBackground />
+          <section className="relative mt-4 flex min-h-[520px] items-center justify-center px-4 pb-20 pt-8 lg:mt-5 lg:min-h-[620px] lg:px-0 lg:pb-28 lg:pt-10">
+            {/* Layered hero backdrop: crossfade carousel + vignette + low-opacity noise for depth. */}
+            <div className="absolute inset-0 -z-10 overflow-hidden">
+              {HOME_HERO_BACKDROPS.map((imageSrc, index) => {
+                const isActive = index === activeHeroBackdropIndex;
+
+                return (
+                  <div
+                    key={imageSrc}
+                    className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${prefersReducedMotion ? "" : "transition-opacity duration-[1400ms]"} ${isActive ? "opacity-100" : "opacity-0"}`}
+                    style={{
+                      backgroundImage: `url(${imageSrc})`,
+                      transform: prefersReducedMotion ? "scale(1)" : isActive ? "scale(1.02)" : "scale(1)",
+                      transition: prefersReducedMotion ? undefined : "transform 10s ease-out",
+                    }}
+                    aria-hidden="true"
+                  />
+                );
+              })}
+
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(15,23,42,0.12)_20%,rgba(15,23,42,0.48)_100%)]" aria-hidden="true" />
+              <div
+                className="absolute inset-0 opacity-[0.07]"
+                style={{
+                  backgroundImage:
+                    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E\")",
+                }}
+                aria-hidden="true"
+              />
+              <div className="absolute inset-0 bg-white/22 backdrop-blur-[1px]" aria-hidden="true" />
+            </div>
 
             <div className="app-page-container relative z-10 w-full">
               <div className="mx-auto w-full max-w-[1140px]">
@@ -526,11 +591,11 @@ export default function Home() {
                     className="pointer-events-none absolute inset-0 z-0 translate-x-4 -translate-y-4 rounded-[24px] border border-white/20 bg-[rgba(255,255,255,0.1)] shadow-[0_22px_60px_-52px_rgba(8,20,45,0.6)] backdrop-blur-[48px] md:translate-x-8 md:-translate-y-6"
                   />
 
-                  <div className="relative z-10 overflow-hidden rounded-[24px] border border-[rgba(255,255,255,0.66)] bg-[rgba(249,251,255,0.94)] px-6 py-6 text-[var(--color-ink)] shadow-[0_30px_72px_-44px_rgba(8,20,45,0.56)] backdrop-blur-[22px] md:px-10 md:py-7 lg:px-14 lg:py-8 xl:px-16">
+                  <div className="relative z-10 overflow-hidden rounded-[24px] border border-[rgba(255,255,255,0.66)] bg-[rgba(249,251,255,0.95)] px-6 py-6 text-[var(--color-ink)] shadow-[0_34px_80px_-44px_rgba(8,20,45,0.6)] backdrop-blur-[22px] md:px-10 md:py-7 lg:h-[430px] lg:px-14 lg:py-8 xl:px-16">
                     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 border border-white/35" />
                     <HeroAmbientVisual />
 
-                    <div className="relative z-10">
+                    <div className="relative z-10 flex h-full flex-col justify-center lg:justify-between">
                       <div className="mb-3 flex justify-center md:hidden" aria-hidden="true">
                         <Image src="/logo.png" alt="" width={56} height={56} className="h-14 w-14 object-contain" />
                       </div>
@@ -643,7 +708,7 @@ export default function Home() {
                         )}
                       </div>
 
-                      <div className="relative z-20 mx-auto mt-4 flex w-full max-w-[780px] flex-wrap items-center justify-center gap-2.5 md:mt-5 md:gap-3">
+                      <div className="relative z-20 mx-auto mt-4 flex w-full max-w-[780px] flex-wrap items-center justify-center gap-2.5 pb-1 md:mt-5 md:gap-3 lg:pb-0">
                         {user ? (
                           <Button
                             variant="primary"
@@ -703,7 +768,8 @@ export default function Home() {
             </div>
           </Modal>
 
-          <section className="app-page-container bg-[#F7F8FA] pt-8 pb-12 lg:pt-10 lg:pb-14">
+          <section className="app-page-container relative z-20 -mt-8 bg-transparent pb-12 lg:-mt-14 lg:pb-14">
+            {/* Upward overlap creates an Amazon-like merged composition with the hero above. */}
             <div className="rounded-3xl border border-[rgba(148,163,184,0.24)] bg-white p-5 shadow-[0_26px_54px_-40px_rgba(15,23,42,0.55)] sm:p-7">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
