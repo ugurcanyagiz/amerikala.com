@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import HeroAmbientBackground from "./components/hero/HeroAmbientBackground";
+import HeroAmbientVisual from "./components/hero/HeroAmbientVisual";
 import HeroTitleMotion from "./components/HeroTitleMotion";
 import YardimlasmaSpotlight, { type YardimlasmaSpotlightItem } from "./components/YardimlasmaSpotlight";
 import { Button } from "./components/ui/Button";
@@ -527,6 +528,7 @@ export default function Home() {
 
                   <div className="relative z-10 overflow-hidden rounded-[24px] border border-[rgba(255,255,255,0.66)] bg-[rgba(249,251,255,0.94)] px-6 py-6 text-[var(--color-ink)] shadow-[0_30px_72px_-44px_rgba(8,20,45,0.56)] backdrop-blur-[22px] md:px-10 md:py-7 lg:px-14 lg:py-8 xl:px-16">
                     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 border border-white/35" />
+                    <HeroAmbientVisual />
 
                     <div className="relative z-20">
                       <div className="mb-3 flex justify-center md:hidden" aria-hidden="true">

@@ -999,6 +999,117 @@
   );
 }
 
+.hero-card-ambient {
+  isolation: isolate;
+}
+
+.hero-card-ambient__zone {
+  position: absolute;
+  top: -14%;
+  bottom: -14%;
+  width: 36%;
+  filter: blur(34px);
+  opacity: 0.44;
+  will-change: transform;
+  animation-duration: 14s;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  animation-timing-function: ease-in-out;
+}
+
+.hero-card-ambient__zone--left {
+  left: -10%;
+  background:
+    radial-gradient(68% 62% at 66% 34%, rgba(59, 130, 246, 0.22) 0%, rgba(59, 130, 246, 0.06) 48%, rgba(59, 130, 246, 0) 76%),
+    radial-gradient(56% 54% at 30% 68%, rgba(244, 114, 182, 0.15) 0%, rgba(244, 114, 182, 0) 74%);
+  transform: translate3d(
+      calc(var(--hero-ambient-parallax-x) * -0.7),
+      calc(var(--hero-ambient-parallax-y) * -0.6),
+      0
+    )
+    scale(1.02);
+  animation-name: heroCardAmbientDriftLeft;
+  mask-image: radial-gradient(110% 92% at 72% 50%, #000 40%, rgba(0, 0, 0, 0.08) 76%, transparent 100%);
+}
+
+.hero-card-ambient__zone--right {
+  right: -10%;
+  background:
+    radial-gradient(70% 64% at 34% 34%, rgba(56, 189, 248, 0.2) 0%, rgba(56, 189, 248, 0.06) 50%, rgba(56, 189, 248, 0) 78%),
+    radial-gradient(56% 58% at 70% 70%, rgba(99, 102, 241, 0.18) 0%, rgba(99, 102, 241, 0) 74%);
+  transform: translate3d(
+      calc(var(--hero-ambient-parallax-x) * 0.7),
+      calc(var(--hero-ambient-parallax-y) * 0.6),
+      0
+    )
+    scale(1.04);
+  animation-duration: 12s;
+  animation-name: heroCardAmbientDriftRight;
+  mask-image: radial-gradient(112% 94% at 28% 52%, #000 40%, rgba(0, 0, 0, 0.08) 76%, transparent 100%);
+}
+
+.hero-card-ambient__noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.07;
+  mix-blend-mode: soft-light;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.5) 1px, transparent 0),
+    radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.2) 1px, transparent 0);
+  background-size:
+    22px 22px,
+    28px 28px;
+  background-position:
+    0 0,
+    9px 11px;
+}
+
+.hero-card-ambient__vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(126% 92% at 50% 50%, rgba(15, 23, 42, 0) 52%, rgba(15, 23, 42, 0.12) 100%),
+    linear-gradient(90deg, rgba(248, 250, 252, 0.28) 0%, rgba(248, 250, 252, 0) 17%, rgba(248, 250, 252, 0) 83%, rgba(248, 250, 252, 0.28) 100%);
+}
+
+@keyframes heroCardAmbientDriftLeft {
+  0% {
+    transform: translate3d(
+        calc(var(--hero-ambient-parallax-x) * -0.7),
+        calc(var(--hero-ambient-parallax-y) * -0.6),
+        0
+      )
+      scale(1.02);
+  }
+  100% {
+    transform: translate3d(
+        calc(var(--hero-ambient-parallax-x) * -0.7 - 8px),
+        calc(var(--hero-ambient-parallax-y) * -0.6 + 7px),
+        0
+      )
+      scale(1.06);
+  }
+}
+
+@keyframes heroCardAmbientDriftRight {
+  0% {
+    transform: translate3d(
+        calc(var(--hero-ambient-parallax-x) * 0.7),
+        calc(var(--hero-ambient-parallax-y) * 0.6),
+        0
+      )
+      scale(1.04);
+  }
+  100% {
+    transform: translate3d(
+        calc(var(--hero-ambient-parallax-x) * 0.7 + 10px),
+        calc(var(--hero-ambient-parallax-y) * 0.6 - 8px),
+        0
+      )
+      scale(1.08);
+  }
+}
+
 @keyframes heroAmbientDriftA {
   0% {
     transform: translate3d(calc(var(--hero-parallax-x) * -0.35), calc(var(--hero-parallax-y) * -0.35), 0) scale(1);
@@ -1021,5 +1132,10 @@
   .hero-ambient-motion::before,
   .hero-ambient-motion::after {
     animation: none;
+  }
+
+  .hero-card-ambient__zone {
+    animation: none;
+    transform: translate3d(0, 0, 0);
   }
 }
