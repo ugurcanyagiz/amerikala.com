@@ -89,7 +89,7 @@ export default function HeroAmbientBackground() {
     <div
       ref={containerRef}
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 overflow-hidden"
+      className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
       style={
         {
           // Shared CSS vars for slow parallax across layers.
