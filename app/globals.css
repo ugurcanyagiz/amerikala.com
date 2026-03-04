@@ -994,8 +994,8 @@
     rgba(247, 248, 250, 0) 0%,
     rgba(247, 248, 250, 0.02) 48%,
     rgba(247, 248, 250, 0.22) 68%,
-    rgba(247, 248, 250, 0.72) 84%,
-    rgba(247, 248, 250, 1) 100%
+    rgba(247, 248, 250, 0.52) 84%,
+    rgba(247, 248, 250, 0.82) 100%
   );
 }
 
@@ -1006,15 +1006,15 @@
 .hero-card-ambient__fx {
   position: absolute;
   inset: 0;
-  mask-image: radial-gradient(130% 96% at 50% 48%, #000 48%, rgba(0, 0, 0, 0.18) 82%, transparent 100%);
+  background: radial-gradient(128% 94% at 50% 52%, rgba(244, 247, 252, 0) 42%, rgba(226, 233, 244, 0.22) 100%);
 }
 
 .hero-card-ambient__zone {
   position: absolute;
-  top: -20%;
-  bottom: -20%;
-  width: 40%;
-  filter: blur(84px);
+  top: -24%;
+  bottom: -24%;
+  width: 42%;
+  filter: blur(92px);
   opacity: 1;
   will-change: transform;
   animation-duration: 16s;
@@ -1026,8 +1026,8 @@
 .hero-card-ambient__zone--left {
   left: -12%;
   background:
-    radial-gradient(74% 72% at 74% 36%, rgba(59, 130, 246, 0.24) 0%, rgba(59, 130, 246, 0.11) 46%, rgba(59, 130, 246, 0) 78%),
-    radial-gradient(60% 58% at 34% 72%, rgba(244, 114, 182, 0.19) 0%, rgba(244, 114, 182, 0) 76%);
+    radial-gradient(78% 74% at 74% 36%, rgba(59, 130, 246, 0.27) 0%, rgba(59, 130, 246, 0.14) 50%, rgba(59, 130, 246, 0) 84%),
+    radial-gradient(66% 62% at 34% 72%, rgba(244, 114, 182, 0.2) 0%, rgba(244, 114, 182, 0) 82%);
   transform: translate3d(
       calc(var(--hero-ambient-parallax-x) * -0.5),
       calc(var(--hero-ambient-parallax-y) * -0.45),
@@ -1035,14 +1035,21 @@
     )
     scale(1.04);
   animation-name: heroCardAmbientDriftLeft;
-  mask-image: radial-gradient(114% 96% at 74% 50%, #000 44%, rgba(0, 0, 0, 0.15) 78%, transparent 100%);
+}
+
+.hero-card-ambient__center-wash {
+  position: absolute;
+  inset: 8% 20% 12%;
+  border-radius: 999px;
+  background: radial-gradient(70% 60% at 50% 50%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 100%);
+  filter: blur(58px);
 }
 
 .hero-card-ambient__zone--right {
   right: -12%;
   background:
-    radial-gradient(74% 72% at 28% 34%, rgba(56, 189, 248, 0.23) 0%, rgba(56, 189, 248, 0.1) 48%, rgba(56, 189, 248, 0) 80%),
-    radial-gradient(62% 62% at 72% 70%, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0) 76%);
+    radial-gradient(78% 74% at 28% 34%, rgba(56, 189, 248, 0.26) 0%, rgba(56, 189, 248, 0.13) 50%, rgba(56, 189, 248, 0) 84%),
+    radial-gradient(66% 64% at 72% 70%, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0) 82%);
   transform: translate3d(
       calc(var(--hero-ambient-parallax-x) * 0.5),
       calc(var(--hero-ambient-parallax-y) * 0.45),
@@ -1051,7 +1058,6 @@
     scale(1.04);
   animation-duration: 14s;
   animation-name: heroCardAmbientDriftRight;
-  mask-image: radial-gradient(114% 96% at 26% 52%, #000 44%, rgba(0, 0, 0, 0.15) 78%, transparent 100%);
 }
 
 .hero-card-ambient__noise {
@@ -1074,8 +1080,8 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(132% 96% at 50% 52%, rgba(15, 23, 42, 0) 54%, rgba(15, 23, 42, 0.09) 100%),
-    linear-gradient(90deg, rgba(248, 250, 252, 0.26) 0%, rgba(248, 250, 252, 0.02) 16%, rgba(248, 250, 252, 0.02) 84%, rgba(248, 250, 252, 0.26) 100%);
+    radial-gradient(132% 96% at 50% 52%, rgba(15, 23, 42, 0) 58%, rgba(15, 23, 42, 0.07) 100%),
+    linear-gradient(90deg, rgba(248, 250, 252, 0.12) 0%, rgba(248, 250, 252, 0.02) 16%, rgba(248, 250, 252, 0.02) 84%, rgba(248, 250, 252, 0.12) 100%);
 }
 
 @keyframes heroCardAmbientDriftLeft {

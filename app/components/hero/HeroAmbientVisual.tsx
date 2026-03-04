@@ -21,6 +21,7 @@ export default function HeroAmbientVisual() {
       <div className="hero-card-ambient__fx">
         <div className="hero-card-ambient__zone hero-card-ambient__zone--left" />
         <div className="hero-card-ambient__zone hero-card-ambient__zone--right" />
+        <div className="hero-card-ambient__center-wash" />
         <div className="hero-card-ambient__noise" />
         <div className="hero-card-ambient__vignette" />
       </div>

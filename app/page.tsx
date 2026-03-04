@@ -518,7 +518,7 @@ export default function Home() {
           <section className="relative mt-4 flex min-h-[500px] items-center justify-center overflow-hidden lg:mt-5 lg:min-h-[540px]">
             <HeroAmbientBackground />
 
-            <div className="app-page-container relative w-full">
+            <div className="app-page-container relative z-10 w-full">
               <div className="mx-auto w-full max-w-[1140px]">
                 <div className="hero-card-shell relative">
                   <div
