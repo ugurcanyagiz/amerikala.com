@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useState, useRef, useEffect, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useState, useRef, useEffect, useLayoutEffect, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { getTimeAgo, useNotifications } from "../contexts/NotificationContext";
@@ -214,6 +214,7 @@ function NavDropdown({
 }) {
   const pathname = usePathname();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownContentRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 256 });
   const Icon = item.icon;
@@ -226,7 +227,11 @@ function NavDropdown({
   // Close on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const clickedTrigger = dropdownRef.current?.contains(target);
+      const clickedMenu = dropdownContentRef.current?.contains(target);
+
+      if (!clickedTrigger && !clickedMenu) {
         onClose();
       }
     };
@@ -250,7 +255,7 @@ function NavDropdown({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isOpen) return;
 
     const updatePosition = () => {
@@ -309,7 +314,8 @@ function NavDropdown({
       {/* Dropdown Menu */}
       {isOpen && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed z-[70] rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] py-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200"
+          ref={dropdownContentRef}
+          className="fixed z-[80] pointer-events-auto rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] py-2 shadow-xl animate-[slideDown_160ms_cubic-bezier(0.16,1,0.3,1)]"
           style={{ top: dropdownPosition.top, left: dropdownPosition.left, width: dropdownPosition.width }}
         >
           {item.children?.map((child) => {
