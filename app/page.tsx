@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import HeroAmbientVisual from "./components/hero/HeroAmbientVisual";
+import HeroBackgroundCarousel from "./components/hero/HeroBackgroundCarousel";
 import HeroTitleMotion from "./components/HeroTitleMotion";
 import YardimlasmaSpotlight, { type YardimlasmaSpotlightItem } from "./components/YardimlasmaSpotlight";
 import { Button } from "./components/ui/Button";
@@ -95,16 +96,6 @@ const HOME_THEME = {
 
 const FEATURED_CAROUSEL_AUTO_ADVANCE_MS = 11_000;
 const FEATURED_CAROUSEL_EASING = "cubic-bezier(0.16,1,0.3,1)";
-const HERO_BACKDROP_AUTO_ADVANCE_MS = 10_000;
-
-const HOME_HERO_BACKDROPS = [
-  "/arkaplan.png",
-  // TODO: Replace with production community photo at /public/home/hero-community-2.jpg
-  "/home/hero-community-2.svg",
-  // TODO: Replace with production community photo at /public/home/hero-community-3.jpg
-  "/home/hero-community-3.svg",
-];
-
 const CATEGORY_CONFIG: Record<
   HomeCategoryKey,
   {
@@ -179,8 +170,6 @@ export default function Home() {
   const [isPostListingModalOpen, setIsPostListingModalOpen] = useState(false);
   const [latestAdsCategoryFilter, setLatestAdsCategoryFilter] = useState<"all" | HomeCategoryKey>("all");
   const [activeCategoryPreview, setActiveCategoryPreview] = useState<HomeCategoryKey>("realEstate");
-  const [activeHeroBackdropIndex, setActiveHeroBackdropIndex] = useState(0);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [yardimlasmaSpotlightItems, setYardimlasmaSpotlightItems] = useState<YardimlasmaSpotlightItem[]>([]);
   const [categoryPreviewItems, setCategoryPreviewItems] = useState<Record<HomeCategoryKey, UnifiedAd[]>>({
     events: [],
@@ -208,32 +197,6 @@ export default function Home() {
       combined.includes("request aborted")
     );
   };
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const syncReducedMotion = () => setPrefersReducedMotion(mediaQuery.matches);
-
-    syncReducedMotion();
-    mediaQuery.addEventListener("change", syncReducedMotion);
-
-    return () => mediaQuery.removeEventListener("change", syncReducedMotion);
-  }, []);
-
-  useEffect(() => {
-    // Hero backdrop carousel intentionally pauses for reduced-motion users.
-    if (prefersReducedMotion || HOME_HERO_BACKDROPS.length < 2) {
-      setActiveHeroBackdropIndex(0);
-      return;
-    }
-
-    const interval = window.setInterval(() => {
-      setActiveHeroBackdropIndex((prev) => (prev + 1) % HOME_HERO_BACKDROPS.length);
-    }, HERO_BACKDROP_AUTO_ADVANCE_MS);
-
-    return () => window.clearInterval(interval);
-  }, [prefersReducedMotion]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -562,33 +525,7 @@ export default function Home() {
                   />
 
                   <div className="relative z-10 rounded-[24px] border border-[rgba(255,255,255,0.66)] bg-[rgba(249,251,255,0.84)] px-6 py-6 text-[var(--color-ink)] shadow-[0_34px_80px_-44px_rgba(8,20,45,0.6)] backdrop-blur-[14px] md:px-10 md:py-7 lg:h-[430px] lg:px-14 lg:py-8 xl:px-16">
-                    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-[24px]" aria-hidden="true">
-                      {HOME_HERO_BACKDROPS.map((imageSrc, index) => {
-                        const isActive = index === activeHeroBackdropIndex;
-
-                        return (
-                          <div
-                            key={imageSrc}
-                            className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${prefersReducedMotion ? "" : "transition-opacity duration-[1400ms]"} ${isActive ? "opacity-100" : "opacity-0"}`}
-                            style={{
-                              backgroundImage: `url(${imageSrc})`,
-                              transform: prefersReducedMotion ? "scale(1)" : isActive ? "scale(1.02)" : "scale(1)",
-                              transition: prefersReducedMotion ? undefined : "transform 10s ease-out",
-                            }}
-                          />
-                        );
-                      })}
-                      <div className="absolute inset-0 bg-white/24 backdrop-blur-[2px]" />
-                      <div className="absolute inset-0 bg-[radial-gradient(125%_95%_at_50%_48%,rgba(12,18,30,0)_54%,rgba(12,18,30,0.28)_100%)]" />
-                      <div
-                        className="absolute inset-0 opacity-[0.05] mix-blend-soft-light"
-                        style={{
-                          backgroundImage:
-                            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E\")",
-                        }}
-                      />
-                      <div className="absolute inset-0 border border-white/35" />
-                    </div>
+                    <HeroBackgroundCarousel />
                     <HeroAmbientVisual />
 
                     <div className="relative z-10 flex h-full flex-col justify-center lg:justify-between">
