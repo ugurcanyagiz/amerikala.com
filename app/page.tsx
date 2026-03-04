@@ -551,37 +551,7 @@ export default function Home() {
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative mt-4 flex min-h-[520px] items-center justify-center px-4 pb-20 pt-8 lg:mt-5 lg:min-h-[620px] lg:px-0 lg:pb-28 lg:pt-10">
-            {/* Layered hero backdrop: crossfade carousel + vignette + low-opacity noise for depth. */}
-            <div className="absolute inset-0 -z-10 overflow-hidden">
-              {HOME_HERO_BACKDROPS.map((imageSrc, index) => {
-                const isActive = index === activeHeroBackdropIndex;
-
-                return (
-                  <div
-                    key={imageSrc}
-                    className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${prefersReducedMotion ? "" : "transition-opacity duration-[1400ms]"} ${isActive ? "opacity-100" : "opacity-0"}`}
-                    style={{
-                      backgroundImage: `url(${imageSrc})`,
-                      transform: prefersReducedMotion ? "scale(1)" : isActive ? "scale(1.02)" : "scale(1)",
-                      transition: prefersReducedMotion ? undefined : "transform 10s ease-out",
-                    }}
-                    aria-hidden="true"
-                  />
-                );
-              })}
-
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(15,23,42,0.12)_20%,rgba(15,23,42,0.48)_100%)]" aria-hidden="true" />
-              <div
-                className="absolute inset-0 opacity-[0.07]"
-                style={{
-                  backgroundImage:
-                    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E\")",
-                }}
-                aria-hidden="true"
-              />
-              <div className="absolute inset-0 bg-white/22 backdrop-blur-[1px]" aria-hidden="true" />
-            </div>
+          <section className="relative mt-4 flex min-h-[520px] items-center justify-center px-4 pb-16 pt-8 lg:mt-5 lg:min-h-[620px] lg:px-0 lg:pb-20 lg:pt-10">
 
             <div className="app-page-container relative z-10 w-full">
               <div className="mx-auto w-full max-w-[1140px]">
@@ -591,8 +561,34 @@ export default function Home() {
                     className="pointer-events-none absolute inset-0 z-0 translate-x-4 -translate-y-4 rounded-[24px] border border-white/20 bg-[rgba(255,255,255,0.1)] shadow-[0_22px_60px_-52px_rgba(8,20,45,0.6)] backdrop-blur-[48px] md:translate-x-8 md:-translate-y-6"
                   />
 
-                  <div className="relative z-10 overflow-hidden rounded-[24px] border border-[rgba(255,255,255,0.66)] bg-[rgba(249,251,255,0.95)] px-6 py-6 text-[var(--color-ink)] shadow-[0_34px_80px_-44px_rgba(8,20,45,0.6)] backdrop-blur-[22px] md:px-10 md:py-7 lg:h-[430px] lg:px-14 lg:py-8 xl:px-16">
-                    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 border border-white/35" />
+                  <div className="relative z-10 rounded-[24px] border border-[rgba(255,255,255,0.66)] bg-[rgba(249,251,255,0.84)] px-6 py-6 text-[var(--color-ink)] shadow-[0_34px_80px_-44px_rgba(8,20,45,0.6)] backdrop-blur-[14px] md:px-10 md:py-7 lg:h-[430px] lg:px-14 lg:py-8 xl:px-16">
+                    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-[24px]" aria-hidden="true">
+                      {HOME_HERO_BACKDROPS.map((imageSrc, index) => {
+                        const isActive = index === activeHeroBackdropIndex;
+
+                        return (
+                          <div
+                            key={imageSrc}
+                            className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${prefersReducedMotion ? "" : "transition-opacity duration-[1400ms]"} ${isActive ? "opacity-100" : "opacity-0"}`}
+                            style={{
+                              backgroundImage: `url(${imageSrc})`,
+                              transform: prefersReducedMotion ? "scale(1)" : isActive ? "scale(1.02)" : "scale(1)",
+                              transition: prefersReducedMotion ? undefined : "transform 10s ease-out",
+                            }}
+                          />
+                        );
+                      })}
+                      <div className="absolute inset-0 bg-white/24 backdrop-blur-[2px]" />
+                      <div className="absolute inset-0 bg-[radial-gradient(125%_95%_at_50%_48%,rgba(12,18,30,0)_54%,rgba(12,18,30,0.28)_100%)]" />
+                      <div
+                        className="absolute inset-0 opacity-[0.05] mix-blend-soft-light"
+                        style={{
+                          backgroundImage:
+                            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E\")",
+                        }}
+                      />
+                      <div className="absolute inset-0 border border-white/35" />
+                    </div>
                     <HeroAmbientVisual />
 
                     <div className="relative z-10 flex h-full flex-col justify-center lg:justify-between">
@@ -768,7 +764,7 @@ export default function Home() {
             </div>
           </Modal>
 
-          <section className="app-page-container relative z-20 -mt-8 bg-transparent pb-12 lg:-mt-14 lg:pb-14">
+          <section className="app-page-container relative z-30 -mt-7 bg-transparent pb-12 sm:-mt-8 lg:-mt-20 lg:pb-14">
             {/* Upward overlap creates an Amazon-like merged composition with the hero above. */}
             <div className="rounded-3xl border border-[rgba(148,163,184,0.24)] bg-white p-5 shadow-[0_26px_54px_-40px_rgba(15,23,42,0.55)] sm:p-7">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
