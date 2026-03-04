@@ -530,7 +530,7 @@ export default function Home() {
                     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 border border-white/35" />
                     <HeroAmbientVisual />
 
-                    <div className="relative z-20">
+                    <div className="relative z-10">
                       <div className="mb-3 flex justify-center md:hidden" aria-hidden="true">
                         <Image src="/logo.png" alt="" width={56} height={56} className="h-14 w-14 object-contain" />
                       </div>
@@ -643,7 +643,7 @@ export default function Home() {
                         )}
                       </div>
 
-                      <div className="mx-auto mt-4 flex w-full max-w-[780px] flex-wrap items-center justify-center gap-2.5 md:mt-5 md:gap-3">
+                      <div className="relative z-20 mx-auto mt-4 flex w-full max-w-[780px] flex-wrap items-center justify-center gap-2.5 md:mt-5 md:gap-3">
                         {user ? (
                           <Button
                             variant="primary"

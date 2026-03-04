@@ -4,13 +4,13 @@ import { type CSSProperties } from "react";
 import usePointerParallax from "./usePointerParallax";
 
 export default function HeroAmbientVisual() {
-  const visualRef = usePointerParallax<HTMLDivElement>({ maxOffset: 12, easing: 0.075 });
+  const visualRef = usePointerParallax<HTMLDivElement>({ maxOffset: 10, easing: 0.07 });
 
   return (
     <div
       ref={visualRef}
       aria-hidden="true"
-      className="hero-card-ambient pointer-events-none absolute inset-0 z-10 overflow-hidden"
+      className="hero-card-ambient pointer-events-none absolute inset-0 z-0 overflow-hidden"
       style={
         {
           "--hero-ambient-parallax-x": "0px",
@@ -18,10 +18,12 @@ export default function HeroAmbientVisual() {
         } as CSSProperties
       }
     >
-      <div className="hero-card-ambient__zone hero-card-ambient__zone--left" />
-      <div className="hero-card-ambient__zone hero-card-ambient__zone--right" />
-      <div className="hero-card-ambient__noise" />
-      <div className="hero-card-ambient__vignette" />
+      <div className="hero-card-ambient__fx">
+        <div className="hero-card-ambient__zone hero-card-ambient__zone--left" />
+        <div className="hero-card-ambient__zone hero-card-ambient__zone--right" />
+        <div className="hero-card-ambient__noise" />
+        <div className="hero-card-ambient__vignette" />
+      </div>
     </div>
   );
 }
