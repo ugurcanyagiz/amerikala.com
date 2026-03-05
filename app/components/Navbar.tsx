@@ -394,8 +394,10 @@ function MobileBottomNav({
   const pathname = usePathname();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [menuSheetOpen, setMenuSheetOpen] = useState(false);
+  const [menuSheetMounted, setMenuSheetMounted] = useState(false);
   const menuSheetRef = useRef<HTMLDivElement>(null);
   const menuSheetStartY = useRef<number | null>(null);
+  const menuSheetCloseTimeoutRef = useRef<number | null>(null);
   const profileMenuRef = useRef<HTMLElement>(null);
   const profileAlertCount = unreadNotifications + unreadMessages;
   const profileName = profile?.username?.trim() || profile?.full_name?.trim() || profile?.display_name?.trim() || "Profil";
@@ -425,15 +427,56 @@ function MobileBottomNav({
     };
   }, []);
 
+  const openMenuSheet = useCallback(() => {
+    if (menuSheetCloseTimeoutRef.current) {
+      window.clearTimeout(menuSheetCloseTimeoutRef.current);
+      menuSheetCloseTimeoutRef.current = null;
+    }
+
+    setMenuSheetMounted(true);
+    requestAnimationFrame(() => setMenuSheetOpen(true));
+  }, []);
+
+  const closeMenuSheet = useCallback(() => {
+    setMenuSheetOpen(false);
+
+    if (menuSheetCloseTimeoutRef.current) {
+      window.clearTimeout(menuSheetCloseTimeoutRef.current);
+    }
+
+    menuSheetCloseTimeoutRef.current = window.setTimeout(() => {
+      setMenuSheetMounted(false);
+      menuSheetCloseTimeoutRef.current = null;
+    }, 240);
+  }, []);
+
+  const toggleMenuSheet = useCallback(() => {
+    if (menuSheetOpen) {
+      closeMenuSheet();
+      return;
+    }
+
+    openMenuSheet();
+  }, [closeMenuSheet, menuSheetOpen, openMenuSheet]);
+
   useEffect(() => {
-    if (!menuSheetOpen) return;
+    if (!menuSheetMounted) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
+    const handleClickOutside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      const clickedInsideSheet = menuSheetRef.current?.contains(target);
+
+      if (!clickedInsideSheet) {
+        closeMenuSheet();
+      }
+    };
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setMenuSheetOpen(false);
+        closeMenuSheet();
         return;
       }
 
@@ -470,6 +513,7 @@ function MobileBottomNav({
     };
 
     document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handleClickOutside);
 
     const focusTimer = window.setTimeout(() => {
       menuSheetRef.current?.querySelector<HTMLElement>("a[href], button")?.focus();
@@ -479,8 +523,17 @@ function MobileBottomNav({
       window.clearTimeout(focusTimer);
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handleClickOutside);
     };
-  }, [menuSheetOpen]);
+  }, [closeMenuSheet, menuSheetMounted]);
+
+  useEffect(() => {
+    return () => {
+      if (menuSheetCloseTimeoutRef.current) {
+        window.clearTimeout(menuSheetCloseTimeoutRef.current);
+      }
+    };
+  }, []);
 
 
   const startSheetDrag = (clientY: number) => {
@@ -493,7 +546,7 @@ function MobileBottomNav({
     menuSheetStartY.current = null;
 
     if (delta > 52) {
-      setMenuSheetOpen(false);
+      closeMenuSheet();
     }
   };
 
@@ -503,18 +556,18 @@ function MobileBottomNav({
 
   return (
     <nav ref={profileMenuRef} className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--color-surface)]/90 backdrop-blur-xl border-t border-[var(--color-border-light)] z-50 safe-area-inset-bottom">
-      {menuSheetOpen && (
+      {menuSheetMounted && (
         <div className="fixed inset-0 z-[55] md:hidden" role="dialog" aria-modal="true" aria-label="Menü">
           <button
             type="button"
             aria-label="Menüyü kapat"
-            className="absolute inset-0 bg-neutral-950/45 backdrop-blur-[2px] animate-in fade-in duration-200"
-            onClick={() => setMenuSheetOpen(false)}
+            className={`absolute inset-0 bg-neutral-950/45 backdrop-blur-[2px] transition-opacity duration-200 ${menuSheetOpen ? "opacity-100" : "opacity-0"}`}
+            onClick={closeMenuSheet}
           />
 
           <div
             ref={menuSheetRef}
-            className="absolute inset-x-0 bottom-0 rounded-t-[24px] border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-20px_44px_rgba(15,23,42,0.24)] animate-[sheet-up_240ms_cubic-bezier(0.16,1,0.3,1)]"
+            className={`absolute inset-x-0 bottom-0 rounded-t-[24px] border border-[var(--color-border-light)] bg-[var(--color-surface-raised)] px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-20px_44px_rgba(15,23,42,0.24)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${menuSheetOpen ? "translate-y-0 scale-100 opacity-100" : "translate-y-8 scale-[0.985] opacity-0"}`}
             onTouchStart={(event) => startSheetDrag(event.touches[0].clientY)}
             onTouchEnd={(event) => endSheetDrag(event.changedTouches[0].clientY)}
             onMouseDown={(event) => startSheetDrag(event.clientY)}
@@ -523,7 +576,7 @@ function MobileBottomNav({
             <button
               type="button"
               className="mx-auto mb-3 block h-1.5 w-12 rounded-full bg-[var(--color-border)]"
-              onClick={() => setMenuSheetOpen(false)}
+              onClick={closeMenuSheet}
               aria-label="Menüyü kapat"
             />
             <div className="space-y-1 pb-1">
@@ -535,7 +588,7 @@ function MobileBottomNav({
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={() => setMenuSheetOpen(false)}
+                    onClick={closeMenuSheet}
                     className={`flex h-12 items-center gap-3 rounded-2xl px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 ${isActive ? "bg-[var(--color-primary)]/12 text-[var(--color-primary)]" : "text-[var(--color-ink)] hover:bg-[var(--color-surface)]"}`}
                   >
                     <Icon size={18} />
@@ -603,7 +656,7 @@ function MobileBottomNav({
             type="button"
             onClick={() => {
               setProfileMenuOpen(false);
-              setMenuSheetOpen((prev) => !prev);
+              toggleMenuSheet();
             }}
             className={`nav-pill flex h-11 items-center justify-center gap-2 px-3 ${menuSheetOpen ? "nav-pill-active text-[var(--color-primary)]" : "text-[var(--color-muted)]"}`}
             aria-expanded={menuSheetOpen}
@@ -619,7 +672,7 @@ function MobileBottomNav({
               <button
                 type="button"
                 onClick={() => {
-                  setMenuSheetOpen(false);
+                  closeMenuSheet();
                   setProfileMenuOpen((prev) => !prev);
                 }}
                 className={`nav-pill relative flex h-11 w-full items-center justify-center gap-1.5 px-3 ${isProfileActive ? "nav-pill-active text-[var(--color-primary)]" : "text-[var(--color-muted)]"}`}
