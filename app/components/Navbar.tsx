@@ -266,8 +266,8 @@ function NavDropdown({
       const viewportPadding = 12;
       const maxLeft = window.innerWidth - dropdownWidth - viewportPadding;
       setDropdownPosition({
-        top: rect.bottom + window.scrollY + 8,
-        left: Math.max(viewportPadding, Math.min(rect.left + window.scrollX, maxLeft)),
+        top: rect.bottom + 8,
+        left: Math.max(viewportPadding, Math.min(rect.left, maxLeft)),
         width: dropdownWidth,
       });
     };
