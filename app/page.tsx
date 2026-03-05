@@ -514,7 +514,7 @@ export default function Home() {
         <Sidebar />
 
         <main className="relative z-10 flex-1">
-          <section className="relative mt-4 flex min-h-[520px] items-center justify-center px-4 pb-16 pt-8 lg:mt-5 lg:min-h-[620px] lg:px-0 lg:pb-20 lg:pt-10">
+          <section className="relative flex min-h-[520px] items-center justify-center px-4 pb-16 pt-8 lg:min-h-[620px] lg:px-0 lg:pb-20 lg:pt-10">
 
             <div className="app-page-container relative z-10 w-full">
               <div className="mx-auto w-full max-w-[1140px]">
