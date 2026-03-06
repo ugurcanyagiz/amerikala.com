@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ArrowUpRight,
   Building2,
   BriefcaseBusiness,
   CalendarDays,
@@ -842,11 +843,12 @@ function AdsSection({
   loading: boolean;
 }) {
   return (
-    <section className="bg-[#F7F8FA] py-14">
+    <section className="relative overflow-hidden bg-[#F6F7FA] py-16 sm:py-20">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.12),transparent_52%)]" aria-hidden="true" />
       <div className="app-page-container py-0">
-        <div className="mb-7 text-center">
-          <h2 className="text-3xl font-bold text-[var(--color-ink)]">{title}</h2>
-          {subtitle && <p className="mt-1 text-[var(--color-ink-secondary)]">{subtitle}</p>}
+        <div className="mb-8 text-center sm:mb-10">
+          <h2 className="text-3xl font-bold tracking-[-0.02em] text-[var(--color-ink)] sm:text-4xl">{title}</h2>
+          {subtitle && <p className="mx-auto mt-2 max-w-2xl text-sm text-[var(--color-ink-secondary)] sm:text-base">{subtitle}</p>}
         </div>
         <FeaturedAdsCarousel items={items} loading={loading} />
       </div>
@@ -855,8 +857,6 @@ function AdsSection({
 }
 
 function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: boolean }) {
-  const FEATURED_CARD_HEIGHT = "h-[10rem] md:h-[10.5rem]";
-
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -997,7 +997,7 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
   };
 
   if (loading) {
-    return <div className="h-[10rem] animate-pulse rounded-[28px] border border-[rgba(148,163,184,0.24)] bg-[#EEF1F5] md:h-[10.5rem]" aria-hidden="true" />;
+    return <div className="h-[26rem] animate-pulse rounded-[30px] border border-[rgba(148,163,184,0.24)] bg-[#EEF1F5] md:h-[29rem]" aria-hidden="true" />;
   }
 
   if (items.length === 0) {
@@ -1023,7 +1023,7 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
         role="region"
         aria-label="Öne çıkan ilanlar karuseli"
         tabIndex={0}
-        className="w-full max-w-full min-w-0 overflow-hidden rounded-[28px] border border-[rgba(148,163,184,0.26)] bg-white/95 p-2.5 shadow-[0_22px_44px_-34px_rgba(15,23,42,0.62)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] md:p-3"
+        className="w-full max-w-full min-w-0 overflow-hidden rounded-[30px] border border-[rgba(148,163,184,0.3)] bg-gradient-to-b from-white via-white to-[#F8FAFC] p-2.5 shadow-[0_34px_75px_-44px_rgba(15,23,42,0.58)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] sm:p-3"
         onKeyDown={(event) => {
           if (event.key === "ArrowRight") {
             event.preventDefault();
@@ -1035,10 +1035,10 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
           }
         }}
       >
-        <div className="w-full max-w-full min-w-0 overflow-hidden rounded-[22px]">
+        <div className="w-full max-w-full min-w-0 overflow-hidden rounded-[24px]">
           <div
             ref={containerRef}
-            className="flex w-full max-w-full min-w-0 gap-3"
+            className="flex w-full max-w-full min-w-0 gap-4"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -1065,30 +1065,54 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
                   href={item.href}
                   aria-label={`${item.title} ilanına git`}
                   aria-current={isActive ? "true" : undefined}
-                  className="relative w-full max-w-full min-w-0 flex-[0_0_100%] overflow-hidden rounded-[20px] border border-[rgba(148,163,184,0.22)] bg-white shadow-[0_14px_26px_-22px_rgba(15,23,42,0.65)]"
+                  className="group/slide relative w-full max-w-full min-w-0 flex-[0_0_100%] overflow-hidden rounded-[24px] border border-[rgba(148,163,184,0.2)] bg-white/95 shadow-[0_22px_55px_-36px_rgba(15,23,42,0.72)] transition duration-500 hover:-translate-y-0.5 hover:shadow-[0_32px_68px_-40px_rgba(15,23,42,0.75)]"
                 >
-                  <div className={`grid ${FEATURED_CARD_HEIGHT} min-w-0 md:grid-cols-[0.92fr_1.08fr]`}>
-                    {item.imageUrl ? (
-                      <div className="relative h-full min-h-0 w-full min-w-0 overflow-hidden bg-slate-50">
-                        <img src={item.imageUrl} alt={item.title} className="h-full w-full object-contain p-2 md:p-3" />
+                  <div className="grid min-h-[26rem] min-w-0 md:min-h-[29rem] md:grid-cols-[1.1fr_0.9fr]">
+                    <div className="relative min-h-[15rem] overflow-hidden bg-slate-950">
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          className="h-full w-full object-cover transition duration-700 ease-out group-hover/slide:scale-[1.04]"
+                        />
+                      ) : (
+                        <div className={`relative h-full w-full bg-gradient-to-br ${meta.cardClass}`}>
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_25%,rgba(255,255,255,0.55),transparent_55%)]" aria-hidden="true" />
+                          <div className="absolute -right-10 -top-10 h-44 w-44 rounded-full border border-white/30 bg-white/25 blur-2xl" aria-hidden="true" />
+                          <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(rgba(71,85,105,0.55)_1px,transparent_1px)] [background-size:12px_12px]" aria-hidden="true" />
+                          <div className="relative flex h-full items-end p-6">
+                            <span className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold ${meta.badgeClass}`}>{meta.title}</span>
+                          </div>
+                        </div>
+                      )}
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/78 via-slate-900/18 to-transparent" aria-hidden="true" />
+                      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-4 sm:p-5">
+                        <div>
+                          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${meta.badgeClass}`}>{meta.title}</span>
+                        </div>
+                        <span className="rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white/95 backdrop-blur">
+                          Öne Çıkan
+                        </span>
                       </div>
-                    ) : (
-                      <div className={`h-full min-h-0 bg-gradient-to-br ${meta.cardClass} p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] md:p-5`}>
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badgeClass}`}>{meta.title}</span>
-                      </div>
-                    )}
-                    <div className="flex min-w-0 flex-col justify-between p-3.5 md:p-4">
-                      <div>
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta.badgeClass}`}>{meta.title}</span>
-                        <h3 className="mt-1.5 line-clamp-2 text-base font-semibold leading-snug text-slate-900 md:text-lg">{item.title}</h3>
-                        <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 md:text-sm">
+                    </div>
+                    <div className="flex min-w-0 flex-col justify-between p-5 sm:p-6 md:p-7">
+                      <div className="space-y-4">
+                        <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">Seçkin ilan</p>
+                        <h3 className="line-clamp-3 text-xl font-semibold leading-tight tracking-[-0.02em] text-slate-900 sm:text-2xl">{item.title}</h3>
+                        <p className="flex items-center gap-2 text-sm text-slate-500 sm:text-[15px]">
                           <MapPin className="h-4 w-4" />
                           {item.location}
                         </p>
+                        <p className="line-clamp-2 text-sm leading-relaxed text-slate-500 sm:text-[15px]">
+                          Bölgenizde öne çıkan bu ilanı keşfedin ve detayları inceleyin.
+                        </p>
                       </div>
-                      <div className="mt-2 border-t border-[var(--color-border-light)] pt-2">
-                        <p className="text-sm font-semibold text-slate-800">{item.priceLabel ?? "Detaylı bilgi"}</p>
-                        <p className="mt-0.5 text-xs text-[var(--color-ink-secondary)]">İlan detayını görüntüle</p>
+                      <div className="mt-6 border-t border-[rgba(148,163,184,0.24)] pt-4 sm:pt-5">
+                        <p className="text-lg font-semibold tracking-[-0.01em] text-slate-900">{item.priceLabel ?? "Detaylı bilgi"}</p>
+                        <div className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary-hover)] transition group-hover/slide:translate-x-0.5 group-hover/slide:text-[var(--color-primary)]">
+                          İlan detayını görüntüle
+                          <ArrowUpRight className="h-4 w-4" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1106,11 +1130,11 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
 
       {items.length > 1 && (
         <>
-          <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-8 rounded-r-[22px] bg-gradient-to-l from-[#F7F8FA] to-transparent md:block" aria-hidden="true" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-12 rounded-r-[24px] bg-gradient-to-l from-[#F7F8FA] to-transparent md:block" aria-hidden="true" />
           <button
             type="button"
             onClick={goToPrevious}
-            className="absolute left-2 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(148,163,184,0.45)] bg-white/90 text-slate-600 shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] md:flex"
+            className="absolute left-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-white/75 text-slate-600 shadow-[0_12px_22px_-16px_rgba(15,23,42,0.7)] backdrop-blur-md transition hover:scale-105 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] md:flex"
             aria-label="Önceki ilan"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -1118,12 +1142,12 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
           <button
             type="button"
             onClick={goToNext}
-            className="absolute right-2 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(148,163,184,0.45)] bg-white/90 text-slate-600 shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] md:flex"
+            className="absolute right-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-white/75 text-slate-600 shadow-[0_12px_22px_-16px_rgba(15,23,42,0.7)] backdrop-blur-md transition hover:scale-105 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] md:flex"
             aria-label="Sonraki ilan"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
-          <div className="mt-3 flex items-center justify-center gap-2">
+          <div className="mt-4 flex items-center justify-center gap-2">
             {items.map((item, index) => {
               const isActive = index === normalizedActiveIndex;
               return (
@@ -1131,11 +1155,15 @@ function FeaturedAdsCarousel({ items, loading }: { items: UnifiedAd[]; loading: 
                   key={`${item.id}-dot`}
                   type="button"
                   onClick={() => goTo(index)}
-                  className="group/dot relative h-2.5 w-2.5 rounded-full bg-slate-300 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                  className={`group/dot relative h-2.5 rounded-full bg-slate-300/80 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
+                    isActive ? "w-7" : "w-2.5 hover:bg-slate-400"
+                  }`}
                   aria-label={`${index + 1}. ilana git`}
                   aria-current={isActive ? "true" : undefined}
                 >
-                  <span className={`absolute inset-0 rounded-full bg-[var(--color-primary)] ${isActive ? "opacity-100" : "opacity-0"}`} />
+                  <span
+                    className={`absolute inset-0 rounded-full bg-[var(--color-primary)] transition-opacity duration-300 ${isActive ? "opacity-100" : "opacity-0"}`}
+                  />
                 </button>
               );
             })}
