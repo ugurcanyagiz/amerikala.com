@@ -543,6 +543,7 @@ export default function Home() {
                 <p className="text-sm font-medium text-[var(--color-primary)] tracking-wide uppercase mb-4">
                   {t("home.hero.badge")}
                 </p>
+              </div>
 
             <div className="app-page-container relative z-10 w-full">
               <div className="mx-auto w-full max-w-[1140px]">
@@ -705,6 +706,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </div>
           </section>
 
           <Modal
@@ -810,10 +812,10 @@ export default function Home() {
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/55 to-slate-900/20" aria-hidden="true" />
                           </>
                         )}
-                        <div className={`relative z-10 flex h-28 flex-col justify-end p-3 sm:h-32 ${item.imageUrl ? "text-white" : "text-slate-900"}`}>
-                          <h4 className="line-clamp-2 text-sm font-semibold">{item.title}</h4>
-                          <p className={`mt-1 text-xs ${item.imageUrl ? "text-white" : "text-slate-500"}`}>{item.location}</p>
-                          <p className={`mt-1 text-xs font-medium ${item.imageUrl ? "text-white" : "text-slate-600"}`}>{item.priceLabel ?? "Detaylı bilgi"}</p>
+                        <div className={`relative z-10 flex h-28 flex-col justify-end p-3 sm:h-32 ${item.imageUrl ? "text-slate-50" : "text-slate-900"}`}>
+                          <h4 className={`line-clamp-2 text-sm font-semibold ${item.imageUrl ? "text-slate-50" : "text-slate-900"}`}>{item.title}</h4>
+                          <p className={`mt-1 text-xs ${item.imageUrl ? "text-slate-100" : "text-slate-500"}`}>{item.location}</p>
+                          <p className={`mt-1 text-xs font-medium ${item.imageUrl ? "text-slate-100" : "text-slate-600"}`}>{item.priceLabel ?? "Detaylı bilgi"}</p>
                         </div>
                       </Link>
                     ))}
