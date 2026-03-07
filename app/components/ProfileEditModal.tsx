@@ -14,11 +14,8 @@ import {
   MapPin,
   FileText,
   Building,
-  Globe,
-  Eye,
-  EyeOff,
   Lock,
-  Info
+  Info,
 } from "lucide-react";
 
 interface ProfileEditModalProps {
@@ -84,14 +81,19 @@ const US_STATES = [
 
 export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: ProfileEditModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const AVATAR_SIZE = 1080;
+  const MIN_AVATAR_SIDE = 200;
   
   // Form state - İsim alanları kaldırıldı, sadece düzenlenebilir alanlar
   const [bio, setBio] = useState(profile.bio || "");
   const [city, setCity] = useState(profile.city || "");
   const [state, setState] = useState(profile.state || "");
-  const [website, setWebsite] = useState(profile.website || "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
-  const [showFullName, setShowFullName] = useState(profile.show_full_name ?? true);
+  const [avatarVersion, setAvatarVersion] = useState(() => Date.now());
+  const [accountIdentity, setAccountIdentity] = useState({
+    fullName: profile.full_name || "",
+    username: profile.username || "",
+  });
   
   // UI state
   const [saving, setSaving] = useState(false);
@@ -104,12 +106,110 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
     setBio(profile.bio || "");
     setCity(profile.city || "");
     setState(profile.state || "");
-    setWebsite(profile.website || "");
     setAvatarUrl(profile.avatar_url || "");
-    setShowFullName(profile.show_full_name ?? true);
+    setAvatarVersion(Date.now());
+    setAccountIdentity({
+      fullName: profile.full_name || "",
+      username: profile.username || "",
+    });
     setStatus(null);
     setErrors({});
   }, [profile, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const loadAuthIdentity = async () => {
+      const { data } = await supabase.auth.getUser();
+      const authUser = data.user;
+      if (!authUser) return;
+
+      const fullNameFromAuth =
+        typeof authUser.user_metadata?.full_name === "string" ? authUser.user_metadata.full_name : "";
+      const firstName = typeof authUser.user_metadata?.first_name === "string" ? authUser.user_metadata.first_name : "";
+      const lastName = typeof authUser.user_metadata?.last_name === "string" ? authUser.user_metadata.last_name : "";
+      const usernameFromAuth =
+        typeof authUser.user_metadata?.username === "string" ? authUser.user_metadata.username : "";
+
+      const mergedFullName = profile.full_name || fullNameFromAuth || [firstName, lastName].filter(Boolean).join(" ").trim();
+      const mergedUsername = profile.username || usernameFromAuth;
+
+      setAccountIdentity({
+        fullName: mergedFullName,
+        username: mergedUsername,
+      });
+    };
+
+    loadAuthIdentity();
+  }, [isOpen, profile.full_name, profile.username]);
+
+  const loadImage = (file: File): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const image = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      image.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(image);
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("Fotoğraf okunamadı."));
+      };
+      image.src = objectUrl;
+    });
+
+  const processAvatarImage = async (file: File) => {
+    const image = await loadImage(file);
+    const minSide = Math.min(image.width, image.height);
+
+    if (minSide < MIN_AVATAR_SIDE) {
+      throw new Error("Fotoğraf en az 200x200 px olmalı.");
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = AVATAR_SIZE;
+    canvas.height = AVATAR_SIZE;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("Görsel işleme başlatılamadı.");
+    }
+
+    const cropX = (image.width - minSide) / 2;
+    const cropY = (image.height - minSide) / 2;
+    ctx.drawImage(image, cropX, cropY, minSide, minSide, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (result) => {
+          if (result) resolve(result);
+          else reject(new Error("Fotoğraf dönüştürülemedi."));
+        },
+        "image/jpeg",
+        0.9
+      );
+    });
+
+    return blob;
+  };
+
+  const buildAvatarPath = (fileName: string) => {
+    // Storage policy compatibility: (storage.foldername(name))[1] must be user id.
+    return `${profile.id}/avatars/${fileName}`;
+  };
+
+  const extractAvatarStoragePath = (publicUrl: string) => {
+    const marker = "/object/public/avatars/";
+    const markerIndex = publicUrl.indexOf(marker);
+    if (markerIndex === -1) return null;
+
+    const pathWithQuery = publicUrl.slice(markerIndex + marker.length);
+    return pathWithQuery.split("?")[0] || null;
+  };
+
+  const isLegacyAvatarPath = (path: string) => {
+    // Legacy format was: avatars/<profile-id>-<timestamp>.jpg
+    return path.startsWith("avatars/");
+  };
 
   // Handle avatar upload
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,15 +231,21 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
     setStatus(null);
 
     try {
+      const processedBlob = await processAvatarImage(file);
+
       // Create unique filename
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${profile.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `${Date.now()}.jpg`;
+      const filePath = buildAvatarPath(fileName);
+
+      // Guardrail for RLS policy: first folder must always be the authenticated user's id.
+      if (filePath.split("/")[0] !== profile.id) {
+        throw new Error("Avatar dosya yolu policy ile uyumlu değil.");
+      }
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, processedBlob, { upsert: true, cacheControl: "3600", contentType: "image/jpeg" });
 
       if (uploadError) throw uploadError;
 
@@ -148,13 +254,35 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
         .from("avatars")
         .getPublicUrl(filePath);
 
+      if (!publicUrl) {
+        throw new Error("Fotoğraf URL'i alınamadı.");
+      }
+
       setAvatarUrl(publicUrl);
+      setAvatarVersion(Date.now());
       setStatus({ type: "success", message: "Fotoğraf yüklendi!" });
-    } catch (error: any) {
+
+      // Backward compatibility strategy:
+      // - Legacy URLs (`avatars/<file>`) remain readable as-is.
+      // - On each new upload, profile now points to the new user-scoped path.
+      // - Existing records can be migrated in background by copying legacy objects
+      //   into `<user-id>/avatars/<file>` and then updating `profiles.avatar_url`.
+      const previousPath = avatarUrl ? extractAvatarStoragePath(avatarUrl) : null;
+      if (previousPath && isLegacyAvatarPath(previousPath)) {
+        console.info("Legacy avatar path detected. Migrate in background:", {
+          from: previousPath,
+          to: filePath,
+        });
+      }
+    } catch (error: unknown) {
       console.error("Avatar upload error:", error);
-      setStatus({ type: "error", message: "Fotoğraf yüklenemedi: " + error.message });
+      const message = error instanceof Error ? error.message : "Bilinmeyen hata";
+      setStatus({ type: "error", message: "Fotoğraf yüklenemedi: " + message });
     } finally {
       setUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -162,21 +290,14 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (bio && bio.length > 500) {
-      newErrors.bio = "En fazla 500 karakter olabilir";
+    if (bio && bio.length > 160) {
+      newErrors.bio = "En fazla 160 karakter olabilir";
     }
 
     if (city && city.length > 50) {
       newErrors.city = "En fazla 50 karakter olabilir";
     }
 
-    if (website && website.length > 100) {
-      newErrors.website = "En fazla 100 karakter olabilir";
-    }
-
-    if (website && website.trim() && !website.match(/^https?:\/\/.+/)) {
-      newErrors.website = "Geçerli bir URL girin (https://...)";
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -196,9 +317,7 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
           bio: bio.trim() || null,
           city: city.trim() || null,
           state: state || null,
-          website: website.trim() || null,
           avatar_url: avatarUrl || null,
-          show_full_name: showFullName,
           updated_at: new Date().toISOString(),
         })
         .eq("id", profile.id);
@@ -214,9 +333,12 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
       setTimeout(() => {
         onClose();
       }, 1000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Profile update error:", error);
-      setStatus({ type: "error", message: error.message || "Profil güncellenemedi" });
+      const supabaseError = error as { message?: string; details?: string; hint?: string; code?: string };
+      const detailMessage = [supabaseError?.message, supabaseError?.details, supabaseError?.hint].filter(Boolean).join(" • ");
+      const message = detailMessage || "Profil güncellenemedi";
+      setStatus({ type: "error", message });
     } finally {
       setSaving(false);
     }
@@ -226,12 +348,15 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
 
   // Display name for avatar fallback
   const displayName = profile.full_name || profile.username || "U";
+  const avatarPreview = avatarUrl
+    ? `${avatarUrl}${avatarUrl.includes("?") ? "&" : "?"}t=${avatarVersion}`
+    : "/logo.png";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-[rgba(var(--color-trust-rgb),0.5)] backdrop-blur-sm"
         onClick={onClose}
       />
       
@@ -254,7 +379,7 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
           <div className="flex flex-col items-center">
             <div className="relative mb-3">
               <Avatar
-                src={avatarUrl || undefined}
+                src={avatarPreview}
                 fallback={displayName}
                 size="xl"
                 className="h-24 w-24 text-2xl"
@@ -273,13 +398,13 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={handleAvatarChange}
                 className="hidden"
               />
             </div>
             <p className="text-sm text-neutral-500">
-              Fotoğraf yüklemek için tıklayın
+              1:1 oranında kırpılır, 1080×1080 px olarak yüklenir (JPG)
             </p>
           </div>
 
@@ -290,66 +415,17 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
               <span className="text-sm font-medium text-neutral-500">İsim Bilgileri</span>
             </div>
             <p className="text-lg font-semibold text-neutral-700 dark:text-neutral-300">
-              {profile.full_name || "İsim belirtilmemiş"}
+              {accountIdentity.fullName || "İsim belirtilmemiş"}
             </p>
+            <p className="text-sm text-neutral-500 mt-1">@{accountIdentity.username || "kullanici"}</p>
             <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
               <Info size={12} />
-              İsim ve soyisim kayıt sırasında belirlenir ve değiştirilemez
+              İsim soyisim ve kullanıcı adı kayıt sırasında belirlenir, değiştirilemez.
             </p>
-          </div>
-
-          {/* Privacy Setting - Show/Hide Full Name */}
-          <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {showFullName ? (
-                  <Eye size={20} className="text-green-500" />
-                ) : (
-                  <EyeOff size={20} className="text-neutral-400" />
-                )}
-                <div>
-                  <p className="font-medium">İsim Görünürlüğü</p>
-                  <p className="text-sm text-neutral-500">
-                    {showFullName ? "Herkes tam isminizi görebilir" : "Sadece kullanıcı adınız görünür"}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowFullName(!showFullName)}
-                className={`relative w-12 h-6 rounded-full transition-colors ${
-                  showFullName ? "bg-green-500" : "bg-neutral-300 dark:bg-neutral-600"
-                }`}
-              >
-                <span
-                  className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                    showFullName ? "translate-x-7" : "translate-x-1"
-                  }`}
-                />
-              </button>
-            </div>
           </div>
 
           {/* Form Fields */}
           <div className="space-y-4">
-            {/* Username (Read-only) */}
-            <div>
-              <label className="block text-sm font-medium mb-1.5 text-neutral-500">
-                Kullanıcı Adı
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">@</span>
-                <input
-                  type="text"
-                  value={profile.username || ""}
-                  disabled
-                  className="w-full pl-8 pr-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed"
-                />
-              </div>
-              <p className="text-xs text-neutral-500 mt-1">
-                Kullanıcı adı değiştirilemez
-              </p>
-            </div>
-
             {/* Bio */}
             <div>
               <label className="block text-sm font-medium mb-1.5">
@@ -367,7 +443,7 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
                       ? "border-red-500 focus:ring-red-500" 
                       : "border-neutral-200 dark:border-neutral-700 focus:ring-red-500"
                   } bg-neutral-50 dark:bg-neutral-800 focus:outline-none focus:ring-2 transition-colors resize-none`}
-                  maxLength={500}
+                  maxLength={160}
                 />
               </div>
               <div className="flex justify-between mt-1">
@@ -376,33 +452,8 @@ export default function ProfileEditModal({ isOpen, onClose, profile, onSave }: P
                 ) : (
                   <span />
                 )}
-                <span className="text-xs text-neutral-500">{bio.length}/500</span>
+                <span className="text-xs text-neutral-500">{bio.length}/160</span>
               </div>
-            </div>
-
-            {/* Website */}
-            <div>
-              <label className="block text-sm font-medium mb-1.5">
-                Web Sitesi
-              </label>
-              <div className="relative">
-                <Globe size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                <input
-                  type="url"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                  placeholder="https://website.com"
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${
-                    errors.website 
-                      ? "border-red-500 focus:ring-red-500" 
-                      : "border-neutral-200 dark:border-neutral-700 focus:ring-red-500"
-                  } bg-neutral-50 dark:bg-neutral-800 focus:outline-none focus:ring-2 transition-colors`}
-                  maxLength={100}
-                />
-              </div>
-              {errors.website && (
-                <p className="text-red-500 text-sm mt-1">{errors.website}</p>
-              )}
             </div>
 
             {/* City */}

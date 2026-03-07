@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
@@ -16,6 +16,9 @@ import {
 import Sidebar from "@/app/components/Sidebar";
 import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent } from "@/app/components/ui/Card";
+import { Input } from "@/app/components/ui/Input";
+import { Select } from "@/app/components/ui/Select";
+import { Textarea } from "@/app/components/ui/Textarea";
 import {
   ArrowLeft,
   ShoppingBag,
@@ -26,12 +29,12 @@ import {
   Check,
   AlertCircle,
   Loader2,
-  Plus,
   X,
   Phone,
   Mail,
   Sparkles,
 } from "lucide-react";
+import { uploadImageToStorage } from "@/lib/supabase/imageUpload";
 
 interface FormData {
   title: string;
@@ -68,7 +71,11 @@ export default function AlisverisIlanVerPage() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [newImageUrl, setNewImageUrl] = useState("");
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fieldClassName = "h-11 rounded-xl border-neutral-200 bg-white hover:border-neutral-300 focus:border-orange-400 focus:ring-orange-500/20 dark:border-neutral-700 dark:bg-neutral-900";
 
   // Redirect if not logged in
   useEffect(() => {
@@ -84,20 +91,58 @@ export default function AlisverisIlanVerPage() {
     }
   }, [user?.email]);
 
-  const handleChange = (field: keyof FormData, value: any) => {
+  const handleChange = (field: keyof FormData, value: FormData[keyof FormData]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
-  const addImage = () => {
-    if (newImageUrl && !formData.images.includes(newImageUrl)) {
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, newImageUrl],
-      }));
-      setNewImageUrl("");
+  const MAX_IMAGES = 12;
+  const MAX_SIZE_MB = 8;
+
+  const addImageFiles = async (files: FileList | null) => {
+    if (!files?.length || !user) return;
+
+    if (formData.images.length >= MAX_IMAGES) {
+      alert(`En fazla ${MAX_IMAGES} fotoğraf yükleyebilirsiniz.`);
+      return;
+    }
+
+    setUploadingImages(true);
+    try {
+      const availableSlots = MAX_IMAGES - formData.images.length;
+      const selectedFiles = Array.from(files).slice(0, availableSlots);
+      const uploadedUrls: string[] = [];
+
+      for (const file of selectedFiles) {
+        if (!file.type.startsWith("image/")) continue;
+        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+          alert(`${file.name} dosyası ${MAX_SIZE_MB}MB sınırını aşıyor.`);
+          continue;
+        }
+
+        const url = await uploadImageToStorage({
+          file,
+          folder: `listings/marketplace/${user.id}`,
+        });
+        uploadedUrls.push(url);
+      }
+
+      if (uploadedUrls.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          images: [...prev.images, ...uploadedUrls],
+        }));
+      }
+    } catch (error) {
+      console.error("Image upload error:", error);
+      alert("Fotoğraflar yüklenirken bir hata oluştu.");
+    } finally {
+      setUploadingImages(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -174,12 +219,13 @@ export default function AlisverisIlanVerPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="ak-page">
       <div className="flex">
         <Sidebar />
 
         <main className="flex-1">
-          <div className="max-w-3xl mx-auto px-4 py-8">
+          <div className="app-page-container py-6 md:py-10">
+            <div className="mx-auto w-full max-w-4xl">
             {/* Header */}
             <div className="flex items-center gap-4 mb-8">
               <Link href="/alisveris">
@@ -196,8 +242,12 @@ export default function AlisverisIlanVerPage() {
               </div>
             </div>
 
-            <Card>
-              <CardContent className="p-6 space-y-6">
+            <Card className="overflow-hidden rounded-3xl border border-neutral-200/80 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:border-neutral-800 dark:bg-neutral-950">
+              <CardContent className="space-y-8 p-5 sm:p-8">
+                <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
+                  <h2 className="text-base font-semibold">Ürün Bilgileri</h2>
+                  <p className="mt-1 text-sm text-neutral-500">İlanınızı öne çıkaracak temel bilgileri ekleyin.</p>
+                </div>
                 {/* Category Selection */}
                 <div>
                   <label className="block text-sm font-medium mb-3">Kategori</label>
@@ -227,45 +277,42 @@ export default function AlisverisIlanVerPage() {
                   <label className="block text-sm font-medium mb-2">
                     İlan Başlığı <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <Input
                     type="text"
                     value={formData.title}
                     onChange={(e) => handleChange("title", e.target.value)}
                     placeholder="Örn: iPhone 14 Pro Max - 256GB"
-                    className={`w-full px-4 py-3 rounded-xl border ${
-                      errors.title ? "border-red-500" : "border-neutral-200 dark:border-neutral-700"
-                    } bg-white dark:bg-neutral-900`}
+                    error={errors.title}
                     maxLength={100}
+                    className={fieldClassName}
                   />
-                  {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
                 </div>
 
                 {/* Description */}
                 <div>
                   <label className="block text-sm font-medium mb-2">Açıklama</label>
-                  <textarea
+                  <Textarea
                     value={formData.description}
                     onChange={(e) => handleChange("description", e.target.value)}
                     placeholder="Ürün hakkında detaylı bilgi..."
                     rows={4}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"
                     maxLength={2000}
+                    className="min-h-[132px] rounded-xl border-neutral-200 bg-white hover:border-neutral-300 focus:border-orange-400 focus:ring-orange-500/20 dark:border-neutral-700 dark:bg-neutral-900"
                   />
                 </div>
 
                 {/* Condition & Price */}
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
+                  <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-neutral-500"><DollarSign size={16} /> Fiyat</h3>
+                  <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">Durumu</label>
-                    <select
+                    <Select
                       value={formData.condition}
                       onChange={(e) => handleChange("condition", e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"
-                    >
-                      {Object.entries(MARKETPLACE_CONDITION_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
-                    </select>
+                      options={Object.entries(MARKETPLACE_CONDITION_LABELS).map(([value, label]) => ({ value, label }))}
+                      className={fieldClassName}
+                    />
                   </div>
 
                   <div>
@@ -274,17 +321,17 @@ export default function AlisverisIlanVerPage() {
                     </label>
                     <div className="relative">
                       <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={20} />
-                      <input
+                      <Input
                         type="number"
                         value={formData.price}
                         onChange={(e) => handleChange("price", e.target.value)}
                         placeholder="0"
-                        className={`w-full pl-10 pr-4 py-3 rounded-xl border ${
-                          errors.price ? "border-red-500" : "border-neutral-200 dark:border-neutral-700"
-                        } bg-white dark:bg-neutral-900`}
+                        className={`pl-10 ${fieldClassName}`}
+                        error={errors.price}
                       />
                     </div>
                     {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
+                  </div>
                   </div>
                 </div>
 
@@ -295,7 +342,7 @@ export default function AlisverisIlanVerPage() {
                     id="negotiable"
                     checked={formData.is_negotiable}
                     onChange={(e) => handleChange("is_negotiable", e.target.checked)}
-                    className="w-5 h-5 rounded border-neutral-300 text-orange-500 focus:ring-orange-500"
+                    className="h-5 w-5 rounded border-neutral-300 text-orange-500 focus:ring-orange-500"
                   />
                   <label htmlFor="negotiable" className="font-medium">
                     Fiyat pazarlığa açık
@@ -303,21 +350,21 @@ export default function AlisverisIlanVerPage() {
                 </div>
 
                 {/* Location */}
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
+                  <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-neutral-500"><MapPin size={16} /> Teslimat / Konum</h3>
+                  <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       Şehir <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <Input
                       type="text"
                       value={formData.city}
                       onChange={(e) => handleChange("city", e.target.value)}
                       placeholder="Örn: New York"
-                      className={`w-full px-4 py-3 rounded-xl border ${
-                        errors.city ? "border-red-500" : "border-neutral-200 dark:border-neutral-700"
-                      } bg-white dark:bg-neutral-900`}
+                      error={errors.city}
+                      className={fieldClassName}
                     />
-                    {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
                   </div>
 
                   <div>
@@ -327,8 +374,8 @@ export default function AlisverisIlanVerPage() {
                     <select
                       value={formData.state}
                       onChange={(e) => handleChange("state", e.target.value)}
-                      className={`w-full px-4 py-3 rounded-xl border ${
-                        errors.state ? "border-red-500" : "border-neutral-200 dark:border-neutral-700"
+                      className={`h-11 w-full rounded-xl border px-4 text-sm ${
+                        errors.state ? "border-red-500" : "border-neutral-300 bg-gradient-to-b from-white to-neutral-50 dark:border-neutral-700 dark:from-neutral-950 dark:to-neutral-900"
                       } bg-white dark:bg-neutral-900`}
                     >
                       <option value="">Eyalet Seçin</option>
@@ -338,22 +385,52 @@ export default function AlisverisIlanVerPage() {
                     </select>
                     {errors.state && <p className="text-red-500 text-sm mt-1">{errors.state}</p>}
                   </div>
+                  </div>
                 </div>
 
                 {/* Images */}
-                <div>
+                <div className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
                   <label className="block text-sm font-medium mb-2">Fotoğraflar</label>
-                  <div className="flex gap-2 mb-4">
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(true);
+                    }}
+                    onDragLeave={() => setIsDragOver(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(false);
+                      addImageFiles(e.dataTransfer.files);
+                    }}
+                    className={`rounded-2xl border-2 border-dashed p-8 text-center transition-all mb-4 ${
+                      isDragOver
+                        ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                        : "border-neutral-300 bg-gradient-to-b from-white to-neutral-50 dark:border-neutral-700 dark:from-neutral-950 dark:to-neutral-900"
+                    }`}
+                  >
                     <input
-                      type="url"
-                      value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
-                      placeholder="Fotoğraf URL'si yapıştırın"
-                      className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => addImageFiles(e.target.files)}
                     />
-                    <Button type="button" variant="outline" onClick={addImage} disabled={!newImageUrl}>
-                      <Plus size={18} />
+                    <ImageIcon className="w-10 h-10 text-neutral-400 mx-auto mb-2" />
+                    <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-3">
+                      Fotoğrafları sürükleyip bırakın veya cihazınızdan seçin
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImages}
+                    >
+                      {uploadingImages ? "Yükleniyor..." : "Bilgisayardan Fotoğraf Seç"}
                     </Button>
+                    <p className="text-xs text-neutral-500 mt-2">
+                      Maksimum {MAX_IMAGES} fotoğraf • Her dosya en fazla {MAX_SIZE_MB}MB
+                    </p>
                   </div>
 
                   {formData.images.length > 0 ? (
@@ -369,7 +446,7 @@ export default function AlisverisIlanVerPage() {
                             <X size={14} />
                           </button>
                           {idx === 0 && (
-                            <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/60 text-white text-xs">
+                            <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-[rgba(var(--color-trust-rgb),0.6)] text-white text-xs">
                               Kapak
                             </span>
                           )}
@@ -385,7 +462,7 @@ export default function AlisverisIlanVerPage() {
                 </div>
 
                 {/* Contact */}
-                <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800 space-y-4">
+                <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 dark:border-neutral-800 dark:bg-neutral-900/50 space-y-4">
                   <h3 className="font-semibold">İletişim Bilgileri</h3>
                   
                   <div className="grid sm:grid-cols-2 gap-4">
@@ -393,12 +470,12 @@ export default function AlisverisIlanVerPage() {
                       <label className="block text-sm font-medium mb-2">E-posta</label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                        <input
+                        <Input
                           type="email"
                           value={formData.contact_email}
                           onChange={(e) => handleChange("contact_email", e.target.value)}
                           placeholder="ornek@email.com"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+                          className={`pl-10 ${fieldClassName}`}
                         />
                       </div>
                     </div>
@@ -407,12 +484,12 @@ export default function AlisverisIlanVerPage() {
                       <label className="block text-sm font-medium mb-2">Telefon</label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                        <input
+                        <Input
                           type="tel"
                           value={formData.contact_phone}
                           onChange={(e) => handleChange("contact_phone", e.target.value)}
                           placeholder="+1 (555) 123-4567"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+                          className={`pl-10 ${fieldClassName}`}
                         />
                       </div>
                     </div>
@@ -456,6 +533,7 @@ export default function AlisverisIlanVerPage() {
                 </div>
               </CardContent>
             </Card>
+            </div>
           </div>
         </main>
       </div>

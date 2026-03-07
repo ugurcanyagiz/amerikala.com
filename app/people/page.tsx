@@ -3,16 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { 
-  Users,
   Search,
   MapPin,
   MessageCircle,
   UserPlus,
-  Filter,
   Sparkles,
-  Coffee,
-  Dumbbell,
-  Briefcase,
   Heart,
   Star,
   CheckCircle2
@@ -24,6 +19,7 @@ import { Avatar } from "../components/ui/Avatar";
 import { Badge } from "../components/ui/Badge";
 import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
+import { PageHero, ResponsiveCardGrid, StickyFilterBar } from "../components/ui/SectionPrimitives";
 
 type Interest = "all" | "coffee" | "sports" | "career" | "social" | "food";
 
@@ -43,51 +39,37 @@ export default function PeoplePage() {
   ];
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="ak-page">
       <div className="flex">
         <Sidebar />
 
-        <main className="flex-1">
-          {/* HERO */}
-          <section className="relative overflow-hidden bg-gradient-to-r from-pink-500 to-rose-600 text-white">
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0 bg-[url('/pattern.svg')]" />
-            </div>
-            
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-4xl font-bold mb-2">İnsanlar</h1>
-                  <p className="text-pink-100 text-lg">
-                    Amerika&apos;daki Türklerle tanış, arkadaşlık kur
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+        <main className="flex-1 bg-[var(--color-surface)] text-[var(--color-ink)]">
+          <PageHero
+            title="İnsanlar"
+            description="Amerika&apos;daki Türklerle tanış, arkadaşlık kur"
+            stats={(
+              <ResponsiveCardGrid cols="compact">
+                <div className="bg-[color:var(--color-surface-raised)]/20 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                   <div className="text-3xl font-bold">{PEOPLE.length * 30}</div>
-                  <div className="text-sm text-pink-100">Kayıtlı Üye</div>
+                  <div className="text-sm text-white/85">Kayıtlı Üye</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="bg-[color:var(--color-surface-raised)]/20 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                   <div className="text-3xl font-bold">450+</div>
-                  <div className="text-sm text-pink-100">Tanışmaya Açık</div>
+                  <div className="text-sm text-white/85">Tanışmaya Açık</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="bg-[color:var(--color-surface-raised)]/20 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                   <div className="text-3xl font-bold">45</div>
-                  <div className="text-sm text-pink-100">Eyalet</div>
+                  <div className="text-sm text-white/85">Eyalet</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="bg-[color:var(--color-surface-raised)]/20 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                   <div className="text-3xl font-bold">1.2K</div>
-                  <div className="text-sm text-pink-100">Bu Hafta Aktif</div>
+                  <div className="text-sm text-white/85">Bu Hafta Aktif</div>
                 </div>
-              </div>
-            </div>
-          </section>
+              </ResponsiveCardGrid>
+            )}
+          />
 
-          {/* FILTERS */}
-          <section className="sticky top-16 z-40 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-lg border-b border-neutral-200 dark:border-neutral-800 shadow-sm">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <StickyFilterBar>
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1">
                   <Input
@@ -113,10 +95,10 @@ export default function PeoplePage() {
 
                 <button
                   onClick={() => setOpenToMeet(!openToMeet)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-smooth ${
+                  className={`h-10 flex items-center gap-2 px-4 rounded-xl font-medium text-sm transition-smooth ${
                     openToMeet
-                      ? "bg-pink-500 text-white"
-                      : "bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700"
+                      ? "bg-[var(--color-primary)] text-white"
+                      : "bg-[var(--color-surface-raised)] border border-[var(--color-border-light)] text-[var(--color-ink-secondary)]"
                   }`}
                 >
                   <Heart size={18} className={openToMeet ? "fill-white" : ""} />
@@ -129,10 +111,10 @@ export default function PeoplePage() {
                   <button
                     key={interest.value}
                     onClick={() => setSelectedInterest(interest.value as Interest)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-smooth whitespace-nowrap ${
+                    className={`h-10 flex items-center gap-2 px-4 rounded-full font-medium text-sm transition-smooth whitespace-nowrap ${
                       selectedInterest === interest.value
-                        ? "bg-pink-500 text-white shadow-lg"
-                        : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
+                        ? "bg-[var(--color-primary)] text-white shadow-lg"
+                        : "bg-[var(--color-surface-raised)] text-[var(--color-ink-secondary)] border border-[var(--color-border-light)]"
                     }`}
                   >
                     <span>{interest.icon}</span>
@@ -140,36 +122,35 @@ export default function PeoplePage() {
                   </button>
                 ))}
               </div>
-            </div>
-          </section>
+          </StickyFilterBar>
 
           {/* FEATURED SECTION */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div className="flex items-center gap-2 mb-6">
               <Sparkles className="h-6 w-6 text-amber-500" />
               <h2 className="text-2xl font-bold">Öne Çıkan Üyeler</h2>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+            <ResponsiveCardGrid cols="compact" className="mb-12">
               {PEOPLE.filter(p => p.featured).map((person) => (
                 <FeaturedPersonCard key={person.id} person={person} />
               ))}
-            </div>
+            </ResponsiveCardGrid>
 
             {/* ALL PEOPLE */}
             <h2 className="text-2xl font-bold mb-6">Tüm Üyeler</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <ResponsiveCardGrid>
               {PEOPLE.map((person) => (
                 <PersonCard key={person.id} person={person} />
               ))}
-            </div>
+            </ResponsiveCardGrid>
           </section>
 
           {/* CTA SECTION */}
-          <section className="bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 py-12">
+          <section className="bg-[var(--color-surface-sunken)] py-12">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
               <h2 className="text-3xl font-bold mb-4">Profilini Güncelle</h2>
-              <p className="text-neutral-600 dark:text-neutral-400 mb-6 max-w-2xl mx-auto">
+              <p className="text-[var(--color-ink-secondary)] mb-6 max-w-2xl mx-auto">
                 İlgi alanlarını ekle, &quot;tanışmaya açığım&quot; seçeneğini aktifleştir ve 
                 yakınındaki Türklerle tanışmaya başla!
               </p>
@@ -189,21 +170,21 @@ export default function PeoplePage() {
 
 function FeaturedPersonCard({ person }: { person: typeof PEOPLE[0] }) {
   return (
-    <Card className="glass hover:shadow-xl transition-smooth text-center group">
+    <Card className="glass hover:shadow-xl transition-smooth text-center group bg-[var(--color-surface-raised)] border border-[var(--color-border-light)]">
       <CardContent className="p-5">
         <div className="relative inline-block mb-3">
           <Avatar 
             src={person.avatar} 
             fallback={person.name} 
             size="xl"
-            className="ring-4 ring-amber-200 dark:ring-amber-800"
+            className="ring-4 ring-[var(--color-warning-light)]"
           />
           {person.isOnline && (
-            <div className="absolute bottom-1 right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-white dark:border-neutral-900" />
+            <div className="absolute bottom-1 right-1 h-4 w-4 bg-[var(--color-success)] rounded-full border-2 border-[var(--color-surface-raised)]" />
           )}
         </div>
         <h3 className="font-bold">{person.name}</h3>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400 flex items-center justify-center gap-1 mt-1">
+        <p className="text-sm text-[var(--color-ink-secondary)] flex items-center justify-center gap-1 mt-1">
           <MapPin size={12} />
           {person.city}
         </p>
@@ -222,13 +203,13 @@ function PersonCard({ person }: { person: typeof PEOPLE[0] }) {
   const [following, setFollowing] = useState(false);
 
   return (
-    <Card className="glass hover:shadow-lg transition-smooth">
+    <Card className="glass hover:shadow-lg transition-smooth bg-[var(--color-surface-raised)] border border-[var(--color-border-light)]">
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
           <div className="relative">
             <Avatar src={person.avatar} fallback={person.name} size="lg" />
             {person.isOnline && (
-              <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-white dark:border-neutral-900" />
+              <div className="absolute bottom-0 right-0 h-3 w-3 bg-[var(--color-success)] rounded-full border-2 border-[var(--color-surface-raised)]" />
             )}
           </div>
 
@@ -239,7 +220,7 @@ function PersonCard({ person }: { person: typeof PEOPLE[0] }) {
                 <CheckCircle2 className="h-4 w-4 text-blue-500 flex-shrink-0" />
               )}
             </div>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400 flex items-center gap-1">
+            <p className="text-sm text-[var(--color-ink-secondary)] flex items-center gap-1">
               <MapPin size={12} />
               {person.city}, {person.state}
             </p>
@@ -252,7 +233,7 @@ function PersonCard({ person }: { person: typeof PEOPLE[0] }) {
           )}
         </div>
 
-        <p className="text-sm text-neutral-700 dark:text-neutral-300 mt-3 line-clamp-2">
+        <p className="text-sm text-[var(--color-ink)] mt-3 line-clamp-2">
           {person.bio}
         </p>
 
@@ -262,13 +243,13 @@ function PersonCard({ person }: { person: typeof PEOPLE[0] }) {
           ))}
         </div>
 
-        <div className="flex gap-2 mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-          <Button variant="outline" size="sm" className="flex-1 gap-1">
+        <div className="flex gap-2 mt-4 pt-4 border-t border-[var(--color-border-light)]">
+          <Button variant="secondary" size="sm" className="flex-1 gap-1">
             <MessageCircle size={16} />
             Mesaj
           </Button>
           <Button 
-            variant={following ? "outline" : "primary"} 
+            variant={following ? "secondary" : "primary"} 
             size="sm" 
             className="flex-1 gap-1"
             onClick={() => setFollowing(!following)}

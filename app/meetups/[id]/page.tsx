@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import { ensureProfileExists } from "@/lib/supabase/ensureProfile";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { 
   Event,
@@ -17,6 +18,7 @@ import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/Card";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
+import { Modal } from "@/app/components/ui/Modal";
 import { 
   ArrowLeft,
   Calendar,
@@ -32,73 +34,437 @@ import {
   ExternalLink,
   UserPlus,
   UserMinus,
+  UserCheck,
+  UserX,
   Copy,
   Twitter,
   Facebook,
-  MessageCircle
+  MessageCircle,
+  Trash2
 } from "lucide-react";
+
+type BasicProfile = {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  city: string | null;
+  state: string | null;
+};
+
+type EventComment = {
+  id: string;
+  event_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  profile?: BasicProfile | BasicProfile[] | null;
+};
+
+type LegacyEventRecord = Record<string, unknown> & {
+  organizer_id?: string | null;
+  organizer?: BasicProfile | BasicProfile[] | null;
+};
+
+type MeetupEventDetail = Omit<Event, "organizer"> & {
+  organizer?: BasicProfile | null;
+};
 
 export default function EventDetailPage() {
   const router = useRouter();
   const params = useParams();
   const eventId = params.id as string;
-  const { user } = useAuth();
+  const { user, profile: authProfile, role } = useAuth();
 
-  const [event, setEvent] = useState<Event | null>(null);
+  const [event, setEvent] = useState<MeetupEventDetail | null>(null);
   const [attendees, setAttendees] = useState<EventAttendee[]>([]);
   const [loading, setLoading] = useState(true);
   const [attending, setAttending] = useState(false);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [selectedAttendee, setSelectedAttendee] = useState<BasicProfile | null>(null);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [dmLoading, setDmLoading] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [comments, setComments] = useState<EventComment[]>([]);
+  const [commentInput, setCommentInput] = useState("");
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [commentDeleteLoadingId, setCommentDeleteLoadingId] = useState<string | null>(null);
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [deleteEventLoading, setDeleteEventLoading] = useState(false);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
+  const [attendanceNotice, setAttendanceNotice] = useState<string | null>(null);
+  const [pendingAttendees, setPendingAttendees] = useState<EventAttendee[]>([]);
+  const [myAttendanceStatus, setMyAttendanceStatus] = useState<EventAttendee["status"] | null>(null);
+  const [approvalLoadingUserId, setApprovalLoadingUserId] = useState<string | null>(null);
+
+  const ATTENDEE_PROFILE_SELECT_FULL = "id, username, full_name, first_name, last_name, avatar_url";
+  const ATTENDEE_PROFILE_SELECT_MINIMAL = "id, username, full_name, first_name, last_name, avatar_url";
+  const authMetadata = useMemo(() => (user?.user_metadata ?? {}) as Record<string, unknown>, [user?.user_metadata]);
+
+  const resolveProfile = (profile?: BasicProfile | BasicProfile[] | null) => {
+    if (!profile) return null;
+    return Array.isArray(profile) ? profile[0] || null : profile;
+  };
+
+  const hasReadableIdentity = (profile?: BasicProfile | BasicProfile[] | null) => {
+    const p = resolveProfile(profile);
+    if (!p) return false;
+
+    const hasId = typeof p.id === "string" && p.id.trim().length > 0;
+    const hasName = Boolean(
+      p.username?.trim()
+      || p.full_name?.trim()
+      || p.first_name?.trim()
+      || p.last_name?.trim()
+    );
+
+    return hasId || hasName;
+  };
+
+  const getAuthMetadataText = useCallback((key: string) => {
+    const value = authMetadata[key];
+    return typeof value === "string" ? value.trim() : "";
+  }, [authMetadata]);
+
+  const getResolvedProfile = (profile?: BasicProfile | BasicProfile[] | null) => {
+    const p = resolveProfile(profile);
+    if (!p) return null;
+
+    if (user?.id && p.id === user.id) {
+      const metadataFirstName = getAuthMetadataText("first_name");
+      const metadataLastName = getAuthMetadataText("last_name");
+      const metadataFullName = getAuthMetadataText("full_name") || getAuthMetadataText("name");
+      const metadataUsername = getAuthMetadataText("username");
+      const metadataAvatar = getAuthMetadataText("avatar_url") || getAuthMetadataText("picture");
+
+      return {
+        ...p,
+        first_name: p.first_name || authProfile?.first_name || metadataFirstName || null,
+        last_name: p.last_name || authProfile?.last_name || metadataLastName || null,
+        full_name: p.full_name || authProfile?.full_name || metadataFullName || null,
+        username: p.username || authProfile?.username || metadataUsername || null,
+        avatar_url: p.avatar_url || authProfile?.avatar_url || metadataAvatar || null,
+      };
+    }
+
+    return p;
+  };
+
+  const isAbortLikeError = (error: unknown) => {
+    if (!error || typeof error !== "object") return false;
+    const message = "message" in error ? String((error as { message?: string }).message || "") : "";
+    const details = "details" in error ? String((error as { details?: string }).details || "") : "";
+    const code = "code" in error ? String((error as { code?: string }).code || "") : "";
+    const combined = `${message} ${details} ${code}`.toLowerCase();
+    return combined.includes("aborted") || combined.includes("aborterror");
+  };
+
+  const fetchProfilesByIds = useCallback(async (userIds: string[]) => {
+    const uniqueIds = Array.from(new Set(userIds.filter(Boolean)));
+    if (uniqueIds.length === 0) return new Map<string, BasicProfile>();
+
+    const runProfileQuery = async (selectFields: string) => {
+      return supabase
+        .from("profiles")
+        .select(selectFields)
+        .in("id", uniqueIds);
+    };
+
+    let { data, error } = await runProfileQuery(ATTENDEE_PROFILE_SELECT_FULL);
+
+    if (error) {
+      const fallback = await runProfileQuery(ATTENDEE_PROFILE_SELECT_MINIMAL);
+      data = fallback.data;
+      error = fallback.error;
+    }
+
+    if (error) {
+      if (!isAbortLikeError(error)) {
+        console.error("fetchProfilesByIds failed:", error);
+      }
+      return new Map<string, BasicProfile>();
+    }
+
+    const profileMap = new Map<string, BasicProfile>();
+    ((data as BasicProfile[] | null) || []).forEach((profile) => {
+      if (profile.id) {
+        profileMap.set(profile.id, profile);
+      }
+    });
+
+    if (authProfile?.id && uniqueIds.includes(authProfile.id) && !profileMap.has(authProfile.id)) {
+      profileMap.set(authProfile.id, {
+        id: authProfile.id,
+        username: authProfile.username ?? (getAuthMetadataText("username") || null),
+        full_name: authProfile.full_name ?? (getAuthMetadataText("full_name") || getAuthMetadataText("name") || null),
+        first_name: authProfile.first_name ?? (getAuthMetadataText("first_name") || null),
+        last_name: authProfile.last_name ?? (getAuthMetadataText("last_name") || null),
+        avatar_url: authProfile.avatar_url ?? (getAuthMetadataText("avatar_url") || getAuthMetadataText("picture") || null),
+        bio: authProfile.bio ?? null,
+        city: authProfile.city ?? null,
+        state: authProfile.state ?? null,
+      });
+    }
+
+    return profileMap;
+  }, [authProfile, getAuthMetadataText]);
+
+  const normalizeAttendees = (rows: Array<Record<string, unknown>> | null) => {
+    return (rows || []).map((row) => {
+      const profile = resolveProfile(row.profile as BasicProfile | BasicProfile[] | null | undefined);
+
+      const eventIdValue = typeof row.event_id === "string" ? row.event_id : "";
+      const userIdValue = typeof row.user_id === "string" ? row.user_id : "";
+      const statusValue = typeof row.status === "string" ? row.status : "going";
+      const createdAtValue =
+        typeof row.created_at === "string"
+          ? row.created_at
+          : typeof row.joined_at === "string"
+            ? row.joined_at
+            : new Date().toISOString();
+
+      return {
+        event_id: eventIdValue,
+        user_id: userIdValue,
+        status: statusValue as EventAttendee["status"],
+        created_at: createdAtValue,
+        profile: profile
+          ? {
+              id: profile.id || "",
+              username: profile.username ?? null,
+              full_name: profile.full_name ?? null,
+              first_name: profile.first_name ?? null,
+              last_name: profile.last_name ?? null,
+              avatar_url: profile.avatar_url ?? null,
+              bio: profile.bio ?? null,
+              city: profile.city ?? null,
+              state: profile.state ?? null,
+            }
+          : null,
+      } as EventAttendee;
+    });
+  };
+
+  const fetchAttendees = useCallback(async () => {
+    const attendeeResult = await supabase
+      .from("event_attendees")
+      .select("event_id, user_id, status, created_at")
+      .eq("event_id", eventId);
+
+    if (attendeeResult.error) {
+      if (!isAbortLikeError(attendeeResult.error)) {
+        console.error("fetchAttendees failed:", attendeeResult.error);
+      }
+      return { approvedList: [] as EventAttendee[], pendingList: [] as EventAttendee[], myStatus: null as EventAttendee["status"] | null };
+    }
+
+    const attendeeRows = (attendeeResult.data as Array<Record<string, unknown>> | null) || [];
+    const pendingRows = attendeeRows.filter((row) => row.status === "pending");
+    const approvedRows = attendeeRows.filter((row) => row.status === "going");
+    const relevantRows = [...approvedRows, ...pendingRows];
+
+    const profileMap = await fetchProfilesByIds(
+      relevantRows
+        .map((row) => (typeof row.user_id === "string" ? row.user_id : ""))
+        .filter(Boolean)
+    );
+
+    const rowsWithProfiles = relevantRows.map((row) => ({
+      ...row,
+      profile: profileMap.get((row.user_id as string) || "") || null,
+    }));
+
+    const normalizedList = normalizeAttendees(rowsWithProfiles);
+    const approvedList = normalizedList.filter((item) => item.status === "going");
+    const pendingList = normalizedList.filter((item) => item.status === "pending");
+
+    setAttendees(approvedList);
+    setPendingAttendees(pendingList);
+
+    if (user) {
+      const myRecord = normalizedList.find((item) => item.user_id === user.id) || null;
+      setMyAttendanceStatus(myRecord?.status || null);
+      setAttending(myRecord?.status === "going");
+    } else {
+      setAttending(false);
+      setMyAttendanceStatus(null);
+    }
+
+    setEvent((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        current_attendees: approvedList.length,
+      };
+    });
+
+    return {
+      approvedList,
+      pendingList,
+      myStatus: user ? normalizedList.find((item) => item.user_id === user.id)?.status || null : null,
+    };
+  }, [eventId, user, fetchProfilesByIds]);
 
   // Fetch event
   useEffect(() => {
+    let isActive = true;
+
     const fetchEvent = async () => {
       setLoading(true);
       try {
-        // Fetch event
-        const { data: eventData, error: eventError } = await supabase
-          .from("events")
-          .select(`
+        const eventSelectWithOrganizer = `
             *,
-            organizer:organizer_id (id, username, full_name, avatar_url, bio)
-          `)
-          .eq("id", eventId)
-          .single();
+            organizer:profiles!events_organizer_id_fkey (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state)
+          `;
 
-        if (eventError) throw eventError;
-        setEvent(eventData);
+        let eventData: LegacyEventRecord | null = null;
+        let eventError: unknown = null;
 
-        // Fetch attendees
-        const { data: attendeesData } = await supabase
-          .from("event_attendees")
-          .select(`
-            *,
-            profile:user_id (id, username, full_name, avatar_url)
-          `)
-          .eq("event_id", eventId)
-          .eq("status", "going");
+        const runEventQuery = async (selectQuery: string, limitToOwner = false) => {
+          let query = supabase
+            .from("events")
+            .select(selectQuery)
+            .eq("id", eventId);
 
-        setAttendees(attendeesData || []);
+          if (limitToOwner && user?.id) {
+            query = query.eq("organizer_id", user.id);
+          }
 
-        // Check if current user is attending
-        if (user) {
-          const isAttending = attendeesData?.some(a => a.user_id === user.id);
-          setAttending(!!isAttending);
+          return query.single();
+        };
+
+        let eventWithOrganizer = await runEventQuery(eventSelectWithOrganizer);
+
+        if (eventWithOrganizer.error && user?.id) {
+          eventWithOrganizer = await runEventQuery(eventSelectWithOrganizer, true);
+        }
+
+        if (!eventWithOrganizer.error && eventWithOrganizer.data) {
+          eventData = eventWithOrganizer.data as unknown as LegacyEventRecord;
+        } else {
+          let eventWithLegacyRelations = await runEventQuery(`
+                *,
+                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state)
+              `);
+
+          if (eventWithLegacyRelations.error && user?.id) {
+            eventWithLegacyRelations = await runEventQuery(`
+                *,
+                organizer:organizer_id (${ATTENDEE_PROFILE_SELECT_FULL}, bio, city, state)
+              `, true);
+          }
+
+          if (!eventWithLegacyRelations.error && eventWithLegacyRelations.data) {
+            eventData = eventWithLegacyRelations.data as unknown as LegacyEventRecord;
+          } else {
+            let eventWithoutRelations = await runEventQuery("*");
+
+            if (eventWithoutRelations.error && user?.id) {
+              eventWithoutRelations = await runEventQuery("*", true);
+            }
+
+            if (!eventWithoutRelations.error && eventWithoutRelations.data) {
+              eventData = eventWithoutRelations.data as unknown as LegacyEventRecord;
+            } else {
+              eventError = eventWithoutRelations.error || eventWithLegacyRelations.error || eventWithOrganizer.error;
+            }
+          }
+        }
+
+        if (eventError) {
+          throw eventError;
+        }
+        if (!eventData) {
+          throw new Error("Event data missing");
+        }
+
+        {
+          const eventRecordForOrganizer = eventData as LegacyEventRecord;
+          const eventRow = eventData as unknown as MeetupEventDetail;
+          const organizerProfileFromJoinedData =
+            resolveProfile(eventRecordForOrganizer.organizer);
+          const organizerUserId =
+            (typeof eventRecordForOrganizer.organizer_id === "string" && eventRecordForOrganizer.organizer_id)
+            || "";
+
+          const organizerProfilesById = hasReadableIdentity(organizerProfileFromJoinedData) || !organizerUserId
+            ? new Map<string, BasicProfile>()
+            : await fetchProfilesByIds([organizerUserId]);
+
+          if (isActive) {
+            setEvent({
+              ...eventRow,
+              organizer:
+                (hasReadableIdentity(organizerProfileFromJoinedData)
+                  ? organizerProfileFromJoinedData
+                  : null)
+                || organizerProfilesById.get(organizerUserId)
+                || undefined,
+            });
+          }
+        }
+
+        const attendeeState = await fetchAttendees();
+        const canLoadComments = Boolean(
+          user?.id && (eventData.organizer_id === user.id || attendeeState?.myStatus === "going")
+        );
+
+        if (canLoadComments) {
+          const { data: commentsData, error: commentsError } = await supabase
+            .from("event_comments")
+            .select("id, event_id, user_id, content, created_at")
+            .eq("event_id", eventId)
+            .order("created_at", { ascending: false })
+            .limit(50);
+
+          if (commentsError) {
+            if (isActive && !isAbortLikeError(commentsError)) {
+              setCommentError("Yorumlar şu an yüklenemedi.");
+            }
+          } else {
+            const commentRows = (commentsData as EventComment[] | null) || [];
+            const commentProfileMap = await fetchProfilesByIds(commentRows.map((comment) => comment.user_id));
+            if (isActive) {
+              setComments(
+                commentRows.map((comment) => ({
+                  ...comment,
+                  profile: commentProfileMap.get(comment.user_id) || null,
+                }))
+              );
+              setCommentError(null);
+            }
+          }
+        } else if (isActive) {
+          setComments([]);
+          setCommentError(null);
         }
 
       } catch (error) {
-        console.error("Error fetching event:", error);
-        router.push("/meetups");
+        if (!isAbortLikeError(error)) {
+          console.error("Error fetching event:", error);
+        }
+        if (isActive) {
+          setEvent(null);
+        }
       } finally {
-        setLoading(false);
+        if (isActive) {
+          setLoading(false);
+        }
       }
     };
 
     if (eventId) {
       fetchEvent();
     }
-  }, [eventId, user, router]);
+
+    return () => {
+      isActive = false;
+    };
+  }, [eventId, fetchAttendees, fetchProfilesByIds]);
 
   // Handle attendance
   const handleAttendance = async () => {
@@ -108,44 +474,403 @@ export default function EventDetailPage() {
     }
 
     setAttendanceLoading(true);
+    setAttendanceError(null);
+    setAttendanceNotice(null);
 
     try {
+      const { error: profileError } = await ensureProfileExists(user);
+      if (profileError) {
+        throw profileError;
+      }
+
       if (attending) {
-        // Remove attendance
+        // Remove attendance (fallback to status update if hard delete fails due policies)
         const { error } = await supabase
           .from("event_attendees")
           .delete()
           .eq("event_id", eventId)
           .eq("user_id", user.id);
 
-        if (error) throw error;
-        setAttending(false);
-        setAttendees(prev => prev.filter(a => a.user_id !== user.id));
+        if (error) {
+          const { error: updateError } = await supabase
+            .from("event_attendees")
+            .update({ status: "not_going" })
+            .eq("event_id", eventId)
+            .eq("user_id", user.id);
+
+          if (updateError) throw updateError;
+        }
+
+        await fetchAttendees();
+        setAttendanceNotice("Katılım isteğin kaldırıldı.");
       } else {
-        // Add attendance
-        const { data, error } = await supabase
+        const { error: insertError } = await supabase
           .from("event_attendees")
           .insert({
             event_id: eventId,
             user_id: user.id,
-            status: "going"
-          })
-          .select(`
-            *,
-            profile:user_id (id, username, full_name, avatar_url)
-          `)
-          .single();
+            status: "pending",
+          });
 
-        if (error) throw error;
-        setAttending(true);
-        if (data) {
-          setAttendees(prev => [...prev, data]);
+        if (insertError) {
+          const isDuplicateError =
+            insertError.code === "23505" ||
+            insertError.code === "409" ||
+            insertError.message?.toLowerCase().includes("duplicate");
+
+          if (!isDuplicateError) {
+            throw insertError;
+          }
+
+          const { error: updateError } = await supabase
+            .from("event_attendees")
+            .update({ status: "pending" })
+            .eq("event_id", eventId)
+            .eq("user_id", user.id);
+
+          if (updateError) throw updateError;
         }
+
+        await fetchAttendees();
+        setAttendanceNotice("Katılma isteğiniz iletildi. Organizatör onayı bekleniyor.");
       }
     } catch (error) {
       console.error("Error updating attendance:", error);
+      setAttendanceError("Katılım işlemi tamamlanamadı. Lütfen tekrar deneyin.");
     } finally {
       setAttendanceLoading(false);
+    }
+  };
+
+  const handleApprovalDecision = async (targetUserId: string, nextStatus: EventAttendee["status"]) => {
+    if (!user || !event || event.organizer_id !== user.id || !targetUserId) return;
+
+    setApprovalLoadingUserId(targetUserId);
+    setAttendanceError(null);
+
+    try {
+      const { error } = await supabase
+        .from("event_attendees")
+        .update({ status: nextStatus })
+        .eq("event_id", eventId)
+        .eq("user_id", targetUserId);
+
+      if (error) {
+        throw error;
+      }
+
+      await fetchAttendees();
+      setAttendanceNotice(nextStatus === "going" ? "Katılım isteği onaylandı." : "Katılım isteği reddedildi.");
+    } catch (error) {
+      console.error("Error approving attendee:", error);
+      setAttendanceError("Katılım isteği güncellenemedi. Lütfen RLS politikalarını kontrol edin.");
+    } finally {
+      setApprovalLoadingUserId(null);
+    }
+  };
+
+  const getDisplayName = (profile?: BasicProfile | BasicProfile[] | null) => {
+    const p = getResolvedProfile(profile);
+    if (!p) return "Anonim";
+    const fullName = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+    return fullName || p.full_name || p.username || "Anonim";
+  };
+
+  const getProfileRecord = (profile?: BasicProfile | BasicProfile[] | null) => getResolvedProfile(profile);
+
+  const getUsernameLabel = (profile?: BasicProfile | BasicProfile[] | null) => {
+    const p = getProfileRecord(profile);
+    if (p?.username) {
+      return p.username.startsWith("@") ? p.username : `@${p.username}`;
+    }
+    if (p?.id && user?.id && p.id === user.id) {
+      const metadataUsername = getAuthMetadataText("username");
+      const emailLocalPart = user.email?.split("@")[0]?.trim();
+      const fallbackUsername = metadataUsername || emailLocalPart;
+      if (fallbackUsername) {
+        return fallbackUsername.startsWith("@") ? fallbackUsername : `@${fallbackUsername}`;
+      }
+    }
+    return "@kullanici";
+  };
+
+  const checkFollowing = async (targetUserId: string) => {
+    if (!user || user.id === targetUserId) return;
+    const candidates: Array<{ from: string; to: string }> = [
+      { from: "follower_id", to: "following_id" },
+      { from: "user_id", to: "target_user_id" },
+      { from: "user_id", to: "followed_user_id" },
+    ];
+
+    for (const pair of candidates) {
+      const { data, error } = await supabase
+        .from("follows")
+        .select("*")
+        .eq(pair.from, user.id)
+        .eq(pair.to, targetUserId)
+        .limit(1);
+
+      if (!error) {
+        setIsFollowing((data?.length || 0) > 0);
+        return;
+      }
+    }
+
+    setIsFollowing(false);
+  };
+
+  const handleToggleFollow = async () => {
+    if (!user || !selectedAttendee || user.id === selectedAttendee.id) return;
+    setFollowLoading(true);
+
+    try {
+      const pairs: Array<{ from: string; to: string }> = [
+        { from: "follower_id", to: "following_id" },
+        { from: "user_id", to: "target_user_id" },
+        { from: "user_id", to: "followed_user_id" },
+      ];
+
+      if (isFollowing) {
+        for (const pair of pairs) {
+          const { error } = await supabase
+            .from("follows")
+            .delete()
+            .eq(pair.from, user.id)
+            .eq(pair.to, selectedAttendee.id);
+          if (!error) {
+            setIsFollowing(false);
+            return;
+          }
+        }
+      } else {
+        for (const pair of pairs) {
+          const { error } = await supabase
+            .from("follows")
+            .insert({ [pair.from]: user.id, [pair.to]: selectedAttendee.id });
+          if (!error) {
+            setIsFollowing(true);
+            return;
+          }
+        }
+      }
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!user || !selectedAttendee || user.id === selectedAttendee.id) return;
+    setDmLoading(true);
+    try {
+      const { data: myRows } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", user.id);
+
+      const candidateConversationIds = ((myRows as Array<{ conversation_id: string }> | null) || []).map((row) => row.conversation_id);
+      if (candidateConversationIds.length > 0) {
+        const { data: otherRows } = await supabase
+          .from("conversation_participants")
+          .select("conversation_id")
+          .eq("user_id", selectedAttendee.id)
+          .in("conversation_id", candidateConversationIds);
+
+        const existingId = (otherRows as Array<{ conversation_id: string }> | null)?.[0]?.conversation_id;
+        if (existingId) {
+          router.push(`/messages?conversation=${existingId}`);
+          return;
+        }
+      }
+
+      const conversationPayloads = [
+        { is_group: false, created_by: user.id },
+        { is_group: false },
+        {},
+      ];
+
+      let conversationId = "";
+      for (const payload of conversationPayloads) {
+        const { data, error } = await supabase.from("conversations").insert(payload).select("id").single();
+        if (!error && data?.id) {
+          conversationId = data.id as string;
+          break;
+        }
+      }
+
+      if (!conversationId) {
+        router.push("/messages");
+        return;
+      }
+
+      await supabase.from("conversation_participants").insert([
+        { conversation_id: conversationId, user_id: user.id },
+        { conversation_id: conversationId, user_id: selectedAttendee.id },
+      ]);
+
+      router.push(`/messages?conversation=${conversationId}`);
+    } finally {
+      setDmLoading(false);
+    }
+  };
+
+  const handleCommentSubmit = async () => {
+    const isOrganizer = Boolean(user && event && event.organizer_id === user.id);
+    if (!user || !commentInput.trim() || (!attending && !isOrganizer)) return;
+    setCommentLoading(true);
+    try {
+      if (isOrganizer) {
+        const { data, error } = await supabase
+          .from("event_comments")
+          .insert({
+            event_id: eventId,
+            user_id: user.id,
+            content: commentInput.trim(),
+          })
+          .select("id, event_id, user_id, content, created_at")
+          .single();
+
+        if (error) {
+          if (!isAbortLikeError(error)) {
+            setCommentError("Yorum paylaşılırken bir sorun oluştu.");
+          }
+          return;
+        }
+
+        if (data) {
+          const commentProfileMap = await fetchProfilesByIds([user.id]);
+          setComments((prev) => [
+            {
+              ...(data as EventComment),
+              profile: commentProfileMap.get(user.id) || null,
+            },
+            ...prev,
+          ]);
+        }
+
+        setCommentInput("");
+        setCommentError(null);
+        return;
+      }
+
+      const { data: attendanceRecord, error: attendanceCheckError } = await supabase
+        .from("event_attendees")
+        .select("event_id, status")
+        .eq("event_id", eventId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (attendanceCheckError) {
+        throw attendanceCheckError;
+      }
+
+      if (!attendanceRecord || attendanceRecord.status !== "going") {
+        setAttending(false);
+        setCommentError("Yorum yazabilmek için önce etkinliğe katılman gerekiyor.");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("event_comments")
+        .insert({
+          event_id: eventId,
+          user_id: user.id,
+          content: commentInput.trim(),
+        })
+        .select("id, event_id, user_id, content, created_at")
+        .single();
+
+      if (error) {
+        if (!isAbortLikeError(error)) {
+          setCommentError("Yorum paylaşılırken bir sorun oluştu.");
+        }
+        return;
+      }
+
+      if (data) {
+        const commentProfileMap = await fetchProfilesByIds([user.id]);
+        setComments((prev) => [
+          {
+            ...(data as EventComment),
+            profile: commentProfileMap.get(user.id) || null,
+          },
+          ...prev,
+        ]);
+      }
+      setCommentInput("");
+      setCommentError(null);
+    } catch (error) {
+      if (!isAbortLikeError(error)) {
+        setCommentError("Yorum paylaşılırken bir sorun oluştu.");
+      }
+    } finally {
+      setCommentLoading(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!user || !commentId) return;
+
+    const targetComment = comments.find((comment) => comment.id === commentId);
+    if (!targetComment) return;
+
+    const canDeleteComment = targetComment.user_id === user.id || role === "admin";
+    if (!canDeleteComment) return;
+
+    const confirmed = window.confirm("Bu yorumu silmek istediğinize emin misiniz?");
+    if (!confirmed) return;
+
+    setCommentDeleteLoadingId(commentId);
+    setCommentError(null);
+
+    try {
+      const { error } = await supabase
+        .from("event_comments")
+        .delete()
+        .eq("id", commentId);
+
+      if (error) {
+        throw error;
+      }
+
+      setComments((prev) => prev.filter((comment) => comment.id !== commentId));
+    } catch (error) {
+      if (!isAbortLikeError(error)) {
+        setCommentError("Yorum silinirken bir sorun oluştu.");
+      }
+    } finally {
+      setCommentDeleteLoadingId(null);
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!user || !event) return;
+
+    const canDeleteEvent = event.organizer_id === user.id || role === "admin";
+    if (!canDeleteEvent) return;
+
+    const confirmed = window.confirm("Bu etkinliği kalıcı olarak silmek istediğinize emin misiniz?");
+    if (!confirmed) return;
+
+    setDeleteEventLoading(true);
+    setAttendanceError(null);
+
+    try {
+      const { error } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", event.id);
+
+      if (error) {
+        throw error;
+      }
+
+      router.push("/meetups");
+    } catch (error) {
+      if (!isAbortLikeError(error)) {
+        setAttendanceError("Etkinlik silinirken bir sorun oluştu.");
+      }
+    } finally {
+      setDeleteEventLoading(false);
     }
   };
 
@@ -189,12 +914,17 @@ export default function EventDetailPage() {
     );
   }
 
-  const organizer = event.organizer as any;
+  const organizer = (event.organizer as BasicProfile | null | undefined) || null;
+  const isOrganizer = Boolean(user && event.organizer_id === user.id);
+  const canOpenComments = attending || isOrganizer;
+  const isAdmin = role === "admin";
+  const canDeleteEvent = Boolean(user && (isOrganizer || isAdmin));
+  const isRequestPending = myAttendanceStatus === "pending";
   const isFull = event.max_attendees && event.current_attendees >= event.max_attendees;
   const isPast = new Date(event.event_date) < new Date(new Date().toDateString());
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="ak-page overflow-x-hidden">
       {/* Cover Image */}
       <div className="relative h-64 sm:h-80 bg-gradient-to-br from-red-500 to-orange-500">
         {event.cover_image_url ? (
@@ -204,11 +934,11 @@ export default function EventDetailPage() {
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-8xl">{EVENT_CATEGORY_ICONS[event.category]}</span>
+          <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 dark:bg-neutral-900">
+            <img src="/logo.png" alt="No picture" className="h-28 w-28 object-contain opacity-90" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(var(--color-trust-rgb),0.6)] to-transparent" />
         
         {/* Back Button */}
         <div className="absolute top-4 left-4">
@@ -228,7 +958,7 @@ export default function EventDetailPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10 pb-12">
+      <div className="ak-shell lg:px-8 -mt-20 relative z-10 pb-12">
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -246,8 +976,8 @@ export default function EventDetailPage() {
                   <div className="flex items-center gap-2">
                     <Clock size={20} className="text-red-500" />
                     <span>
-                      {event.start_time.slice(0, 5)}
-                      {event.end_time && ` - ${event.end_time.slice(0, 5)}`}
+                      {event.start_time ? event.start_time.slice(0, 5) : "Saat belirtilmedi"}
+                      {event.end_time ? ` - ${event.end_time.slice(0, 5)}` : ""}
                     </span>
                   </div>
                 </div>
@@ -297,11 +1027,18 @@ export default function EventDetailPage() {
                 <div className="flex flex-wrap gap-3">
                   {isPast ? (
                     <Badge variant="default" size="lg">Etkinlik Sona Erdi</Badge>
+                  ) : isOrganizer ? (
+                    <Badge variant="primary" size="lg">Bu etkinliğin organizatörüsün</Badge>
+                  ) : isRequestPending ? (
+                    <Button variant="secondary" size="lg" disabled className="gap-2">
+                      <Loader2 size={18} className="animate-spin" />
+                      Katılım isteğin onay bekliyor
+                    </Button>
                   ) : isFull && !attending ? (
                     <Badge variant="warning" size="lg">Kontenjan Dolu</Badge>
                   ) : (
                     <Button
-                      variant={attending ? "outline" : "primary"}
+                      variant={attending ? "secondary" : "primary"}
                       size="lg"
                       onClick={handleAttendance}
                       disabled={attendanceLoading}
@@ -317,18 +1054,37 @@ export default function EventDetailPage() {
                       ) : (
                         <>
                           <UserPlus size={18} />
-                          Katıl
+                          Katılım İsteği Gönder
                         </>
                       )}
                     </Button>
                   )}
 
                   {/* Share Buttons */}
-                  <Button variant="outline" size="lg" onClick={copyLink} className="gap-2">
+                  <Button variant="secondary" size="lg" onClick={copyLink} className="gap-2">
                     {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
                     {copied ? "Kopyalandı!" : "Link Kopyala"}
                   </Button>
+
+                  {canDeleteEvent && (
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      onClick={handleDeleteEvent}
+                      disabled={deleteEventLoading}
+                      className="gap-2 text-red-600 hover:text-red-700"
+                    >
+                      {deleteEventLoading ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                      Etkinliği Sil
+                    </Button>
+                  )}
                 </div>
+                {attendanceError && (
+                  <p className="mt-3 text-sm text-red-500">{attendanceError}</p>
+                )}
+                {attendanceNotice && (
+                  <p className="mt-3 text-sm text-emerald-600 dark:text-emerald-400">{attendanceNotice}</p>
+                )}
               </CardContent>
             </Card>
 
@@ -343,6 +1099,82 @@ export default function EventDetailPage() {
                 </p>
               </CardContent>
             </Card>
+
+            {isOrganizer && (
+              <Card className="glass">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <UserCheck size={20} />
+                      Katılım İstekleri
+                    </span>
+                    <Badge variant="warning">{pendingAttendees.length}</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {pendingAttendees.length === 0 ? (
+                    <p className="text-neutral-500 text-sm">Şu anda bekleyen katılım isteği yok.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {pendingAttendees.map((request) => {
+                        const profile = getProfileRecord(request.profile as BasicProfile | BasicProfile[] | null);
+                        const disabled = approvalLoadingUserId === request.user_id;
+                        return (
+                          <div
+                            key={`pending-${request.user_id}`}
+                            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200/80 dark:border-neutral-700/60 p-3"
+                          >
+                            <button
+                              onClick={() => {
+                                if (profile) {
+                                  setSelectedAttendee(profile);
+                                  if (user && user.id !== profile.id) {
+                                    checkFollowing(profile.id);
+                                  }
+                                }
+                              }}
+                              className="flex items-center gap-3 text-left"
+                            >
+                              <Avatar
+                                src={profile?.avatar_url || "/logo.png"}
+                                fallback={getDisplayName(profile)}
+                                size="sm"
+                              />
+                              <div>
+                                <p className="text-sm font-semibold">{getDisplayName(profile)}</p>
+                                <p className="text-xs text-neutral-500">{getUsernameLabel(profile)}</p>
+                              </div>
+                            </button>
+
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                className="gap-2"
+                                disabled={disabled}
+                                onClick={() => handleApprovalDecision(request.user_id, "going")}
+                              >
+                                {disabled ? <Loader2 size={14} className="animate-spin" /> : <UserCheck size={14} />}
+                                Onayla
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="gap-2"
+                                disabled={disabled}
+                                onClick={() => handleApprovalDecision(request.user_id, "rejected")}
+                              >
+                                <UserX size={14} />
+                                Reddet
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Attendees */}
             <Card className="glass">
@@ -364,56 +1196,168 @@ export default function EventDetailPage() {
                     Henüz katılımcı yok. İlk katılan sen ol!
                   </p>
                 ) : (
-                  <div className="flex flex-wrap gap-3">
+                  <div className="grid sm:grid-cols-2 gap-3">
                     {attendees.map(attendee => {
-                      const profile = attendee.profile as any;
+                      const profile = getProfileRecord(attendee.profile as BasicProfile | BasicProfile[] | null);
                       return (
-                        <Link 
+                        <button
                           key={attendee.user_id} 
-                          href={`/profile/${attendee.user_id}`}
-                          className="flex items-center gap-2 p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                          onClick={() => {
+                            if (profile) {
+                              setSelectedAttendee(profile);
+                              if (user && user.id !== profile.id) {
+                                checkFollowing(profile.id);
+                              }
+                            }
+                          }}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl border border-neutral-200/80 dark:border-neutral-700/60 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-left"
                         >
                           <Avatar 
-                            src={profile?.avatar_url} 
-                            fallback={profile?.full_name || profile?.username || "U"} 
+                            src={profile?.avatar_url || "/logo.png"} 
+                            fallback={getDisplayName(profile)} 
                             size="sm"
                           />
-                          <span className="text-sm font-medium">
-                            {profile?.full_name || profile?.username || "Anonim"}
-                          </span>
-                        </Link>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold truncate">{getDisplayName(profile)}</p>
+                            <p className="text-xs text-neutral-500 truncate">{getUsernameLabel(profile)}</p>
+                          </div>
+                        </button>
                       );
                     })}
                   </div>
                 )}
               </CardContent>
             </Card>
+
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle size={20} />
+                  Etkinlik Aktivitesi
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {canOpenComments ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={commentInput}
+                      onChange={(e) => setCommentInput(e.target.value)}
+                      className="w-full rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white/70 dark:bg-neutral-900/70 p-3 text-sm outline-none focus:ring-2 focus:ring-red-500"
+                      placeholder="Katıldığın bu etkinlik hakkında bir yorum yaz..."
+                      rows={3}
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        onClick={handleCommentSubmit}
+                        disabled={(!attending && !isOrganizer) || commentLoading || !commentInput.trim()}
+                      >
+                        {commentLoading ? "Paylaşılıyor..." : "Yorum Paylaş"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-neutral-500">
+                    Etkinlik aktivitesi, katılımcı olduğunda otomatik açılır.
+                  </p>
+                )}
+
+                {commentError && <p className="text-sm text-red-500">{commentError}</p>}
+
+                <div className="space-y-3">
+                  {comments.length === 0 ? (
+                    <p className="text-sm text-neutral-500">Henüz yorum yok. İlk yorumu sen yaz!</p>
+                  ) : (
+                    comments.map((comment) => {
+                      const commentProfile = getProfileRecord(comment.profile);
+                      const canDeleteComment = Boolean(user && (comment.user_id === user.id || isAdmin));
+                      const isDeletingComment = commentDeleteLoadingId === comment.id;
+                      return (
+                        <div key={comment.id} className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <button
+                              onClick={() => {
+                                if (commentProfile) {
+                                  setSelectedAttendee(commentProfile);
+                                  if (user && user.id !== commentProfile.id) {
+                                    checkFollowing(commentProfile.id);
+                                  }
+                                }
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <Avatar
+                                src={commentProfile?.avatar_url || "/logo.png"}
+                                fallback={getDisplayName(commentProfile)}
+                                size="sm"
+                              />
+                              <div className="text-left">
+                                <p className="text-sm font-semibold">{getDisplayName(commentProfile)}</p>
+                                <p className="text-xs text-neutral-500">{new Date(comment.created_at).toLocaleString("tr-TR")}</p>
+                              </div>
+                            </button>
+                          </div>
+                          <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">{comment.content}</p>
+                          {canDeleteComment && (
+                            <div className="mt-2 flex justify-end">
+                              <button
+                                type="button"
+                                className="text-xs text-red-600 hover:underline inline-flex items-center gap-1 disabled:opacity-60"
+                                onClick={() => handleDeleteComment(comment.id)}
+                                disabled={isDeletingComment}
+                              >
+                                {isDeletingComment ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                                Sil
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-6 lg:sticky lg:top-24 self-start">
             {/* Organizer */}
             <Card className="glass">
               <CardHeader>
                 <CardTitle className="text-base">Organizatör</CardTitle>
               </CardHeader>
               <CardContent>
-                <Link 
-                  href={`/profile/${organizer?.id}`}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                >
-                  <Avatar 
-                    src={organizer?.avatar_url} 
-                    fallback={organizer?.full_name || organizer?.username || "O"} 
-                    size="lg"
-                  />
-                  <div>
-                    <p className="font-semibold">
-                      {organizer?.full_name || organizer?.username || "Organizatör"}
-                    </p>
-                    <p className="text-sm text-neutral-500">@{organizer?.username}</p>
+                {organizer?.id ? (
+                  <Link 
+                    href={`/profile/${organizer.id}`}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    <Avatar 
+                      src={organizer?.avatar_url || "/logo.png"} 
+                      fallback={getDisplayName(organizer) || "O"} 
+                      size="lg"
+                    />
+                    <div>
+                      <p className="font-semibold">
+                        {getDisplayName(organizer) || "Organizatör"}
+                      </p>
+                      <p className="text-sm text-neutral-500">{getUsernameLabel(organizer)}</p>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-3 p-3 rounded-lg">
+                    <Avatar 
+                      src={organizer?.avatar_url || "/logo.png"} 
+                      fallback={getDisplayName(organizer) || "O"} 
+                      size="lg"
+                    />
+                    <div>
+                      <p className="font-semibold">{getDisplayName(organizer) || "Organizatör"}</p>
+                      <p className="text-sm text-neutral-500">{getUsernameLabel(organizer)}</p>
+                    </div>
                   </div>
-                </Link>
+                )}
                 {organizer?.bio && (
                   <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-3 line-clamp-3">
                     {organizer.bio}
@@ -433,29 +1377,29 @@ export default function EventDetailPage() {
               <CardContent>
                 <div className="flex gap-2">
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="icon"
                     onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(event.title)}&url=${encodeURIComponent(window.location.href)}`, "_blank")}
                   >
                     <Twitter size={18} />
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="icon"
                     onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, "_blank")}
                   >
                     <Facebook size={18} />
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="icon"
                     onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(event.title + " - " + window.location.href)}`, "_blank")}
                   >
                     <MessageCircle size={18} />
                   </Button>
                   <Button
-                    variant="outline"
-                    className="flex-1"
+                    variant="secondary"
+                    className="flex-1 min-w-0"
                     onClick={copyLink}
                   >
                     {copied ? "Kopyalandı!" : "Link Kopyala"}
@@ -490,6 +1434,72 @@ export default function EventDetailPage() {
           </div>
         </div>
       </div>
+
+      <Modal
+        open={!!selectedAttendee}
+        onClose={() => setSelectedAttendee(null)}
+        title={selectedAttendee ? getDisplayName(selectedAttendee) : "Profil"}
+        description={selectedAttendee?.username ? `@${selectedAttendee.username}` : "Etkinlik katılımcısı"}
+      >
+        {selectedAttendee && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-4">
+              <Avatar
+                src={selectedAttendee.avatar_url || "/logo.png"}
+                fallback={getDisplayName(selectedAttendee)}
+                size="xl"
+              />
+              <div>
+                <p className="text-lg font-semibold">{getDisplayName(selectedAttendee)}</p>
+                <p className="text-sm text-neutral-500">{getUsernameLabel(selectedAttendee) || "Topluluk üyesi"}</p>
+                <p className="text-sm text-neutral-500">
+                  {[selectedAttendee.city, selectedAttendee.state].filter(Boolean).join(", ") || "Konum belirtilmemiş"}
+                </p>
+              </div>
+            </div>
+
+            {selectedAttendee.bio && (
+              <p className="text-sm text-neutral-700 dark:text-neutral-300">{selectedAttendee.bio}</p>
+            )}
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <Button
+                variant={isFollowing ? "secondary" : "primary"}
+                onClick={handleToggleFollow}
+                disabled={!user || user.id === selectedAttendee.id || followLoading}
+                className="gap-2"
+              >
+                <Heart size={16} />
+                {isFollowing ? "Takibi Bırak" : "Arkadaş Ekle / Takip Et"}
+              </Button>
+
+              <Button
+                variant="secondary"
+                onClick={handleSendMessage}
+                disabled={!user || user.id === selectedAttendee.id || dmLoading}
+                className="gap-2"
+              >
+                <MessageCircle size={16} />
+                Özel Mesaj Gönder
+              </Button>
+
+              <Link href={`/profile/${selectedAttendee.id}`} className="sm:col-span-2">
+                <Button variant="secondary" className="w-full gap-2">
+                  <ExternalLink size={16} />
+                  Profili Görüntüle
+                </Button>
+              </Link>
+
+              <Link href="/groups/create" className="sm:col-span-2">
+                <Button variant="secondary" className="w-full gap-2">
+                  <Users size={16} />
+                  Birlikte Grup Oluştur
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

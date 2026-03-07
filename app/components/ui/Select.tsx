@@ -8,28 +8,30 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 }
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className = "", label, error, options, ...props }, ref) => {
+  ({ className = "", label, error, options, id, ...props }, ref) => {
+    const generatedId = React.useId();
+    const selectId = id || generatedId;
+
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium mb-2 text-neutral-900 dark:text-neutral-50">
+          <label htmlFor={selectId} className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
             {label}
           </label>
         )}
         <div className="relative">
           <select
+            id={selectId}
             className={`
-              flex h-11 w-full rounded-lg
-              bg-white dark:bg-neutral-950
-              border border-neutral-200 dark:border-neutral-800
-              px-3 py-2 text-sm
-              pr-10
-              transition-smooth
-              appearance-none
-              focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent
-              disabled:cursor-not-allowed disabled:opacity-50
-              hover:border-red-500
-              ${error ? "border-red-500 focus:ring-red-500" : ""}
+              h-11 w-full appearance-none rounded-[var(--radius-xl)] border bg-white px-4 pr-10 text-sm text-[var(--color-ink)]
+              transition-colors duration-150
+              focus:outline-none focus:ring-2
+              disabled:cursor-not-allowed disabled:bg-white disabled:text-[var(--color-ink-tertiary)] disabled:opacity-60
+              ${
+                error
+                  ? "border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[var(--color-error)]/20"
+                  : "border-[var(--color-border)] hover:border-[var(--color-border-strong)] focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)]/20"
+              }
               ${className}
             `}
             ref={ref}
@@ -41,11 +43,9 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
               </option>
             ))}
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 pointer-events-none" />
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-tertiary)]" />
         </div>
-        {error && (
-          <p className="mt-1.5 text-sm text-red-500">{error}</p>
-        )}
+        {error && <p className="mt-1.5 text-sm text-[var(--color-error)]">{error}</p>}
       </div>
     );
   }

@@ -3,10 +3,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
+import { useCallback, useState, useRef, useEffect, useLayoutEffect, useSyncExternalStore, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { getTimeAgo, useNotifications } from "../contexts/NotificationContext";
 import { Avatar } from "./ui/Avatar";
+import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
+import { getMessagePreviews, markConversationMessagesAsRead, type MessagePreview } from "@/lib/messages";
+import { supabase } from "@/lib/supabase/client";
+import { searchSiteContent, type SiteSearchResult } from "@/lib/siteSearch";
+import { devLog } from "@/lib/debug/devLogger";
 import {
     Home,
     Calendar,
@@ -93,6 +100,35 @@ function getUsernameLabel(profile: { username?: string | null } | null | undefin
     if (fallbackEmail) return fallbackEmail;
     return "@user";
 }
+
+function formatMessageTime(dateString: string | null | undefined) {
+  if (!dateString) return "Bilinmiyor";
+
+  const createdAt = new Date(dateString);
+  if (Number.isNaN(createdAt.getTime())) return "Bilinmiyor";
+
+  const now = new Date();
+  const diffMs = now.getTime() - createdAt.getTime();
+  const minutes = Math.floor(diffMs / 60000);
+
+  if (minutes < 1) return "Şimdi";
+  if (minutes < 60) return `${minutes} dk`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} sa`;
+
+  return createdAt.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
+}
+
+const SEARCH_TYPE_LABELS: Record<SiteSearchResult["type"], string> = {
+  event: "Etkinlik",
+  realEstate: "Emlak",
+  job: "İş",
+  marketplace: "Alışveriş",
+  group: "Grup",
+  profile: "Profil",
+  post: "Feed",
+};
 
 // Dropdown Component
 function NavDropdown({

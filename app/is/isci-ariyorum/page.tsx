@@ -22,6 +22,7 @@ import { Badge } from "../../components/ui/Badge";
 import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
+import MobileFilterSheet from "../components/MobileFilterSheet";
 import {
   Search,
   MapPin,
@@ -40,6 +41,13 @@ import {
   Globe
 } from "lucide-react";
 
+type JobFilterDraft = {
+  searchQuery: string;
+  selectedCategory: string;
+  selectedState: string;
+  selectedJobType: string;
+};
+
 export default function IsciAriyorumPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -54,6 +62,8 @@ export default function IsciAriyorumPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedState, setSelectedState] = useState<string>("all");
   const [selectedJobType, setSelectedJobType] = useState<string>("all");
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [mobileDraft, setMobileDraft] = useState<JobFilterDraft | null>(null);
 
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -166,7 +176,7 @@ export default function IsciAriyorumPage() {
         contact_phone: formData.contact_phone.trim() || null,
         website_url: formData.website_url.trim() || null,
         user_id: user.id,
-        status: "approved"
+        status: "pending"
       });
 
       if (error) throw error;
@@ -196,9 +206,10 @@ export default function IsciAriyorumPage() {
         setShowCreateModal(false);
         setCreateSuccess(false);
       }, 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating listing:", error);
-      setCreateError(error.message || "Bir hata oluştu");
+      const errorMessage = error instanceof Error ? error.message : "Bir hata oluştu";
+      setCreateError(errorMessage);
     } finally {
       setCreating(false);
     }
@@ -212,6 +223,34 @@ export default function IsciAriyorumPage() {
     if (max) return `$${max.toLocaleString()}'a kadar${suffix}`;
     return "Belirtilmemiş";
   };
+
+  const buildFilterState = (): JobFilterDraft => ({
+    searchQuery,
+    selectedCategory,
+    selectedState,
+    selectedJobType,
+  });
+
+  const resetFilterState = (): JobFilterDraft => ({
+    searchQuery: "",
+    selectedCategory: "all",
+    selectedState: "all",
+    selectedJobType: "all",
+  });
+
+  const applyFilterState = (next: JobFilterDraft) => {
+    setSearchQuery(next.searchQuery);
+    setSelectedCategory(next.selectedCategory);
+    setSelectedState(next.selectedState);
+    setSelectedJobType(next.selectedJobType);
+  };
+
+  const mobileFilterChips = [
+    searchQuery ? `Ara: ${searchQuery}` : null,
+    selectedCategory !== "all" ? JOB_CATEGORY_LABELS[selectedCategory as JobCategory] : null,
+    selectedState !== "all" ? (US_STATES_MAP[selectedState] || selectedState) : null,
+    selectedJobType !== "all" ? JOB_TYPE_LABELS[selectedJobType as JobType] : null,
+  ].filter(Boolean) as string[];
 
   return (
     <div className="min-h-screen bg-[var(--color-surface)]">
@@ -246,11 +285,39 @@ export default function IsciAriyorumPage() {
                   İlan Ver
                 </Button>
               </div>
+
+              {mobileFilterChips.length > 0 && (
+                <div className="mt-4 flex gap-2 overflow-x-auto md:hidden">
+                  {mobileFilterChips.map((chip) => (
+                    <Badge key={chip} variant="outline" size="sm" className="whitespace-nowrap">
+                      {chip}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
 
           {/* Filters */}
-          <section className="sticky top-[72px] z-30 bg-[var(--color-surface)] border-b border-[var(--color-border-light)]">
+          <section className="border-b border-[var(--color-border-light)] bg-[var(--color-surface)] md:hidden">
+            <div className="max-w-5xl mx-auto px-6 lg:px-8 py-3">
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full gap-2"
+                onClick={() => {
+                  setMobileDraft(buildFilterState());
+                  setIsMobileFiltersOpen(true);
+                }}
+                aria-label="Filtreleri aç"
+              >
+                <Search size={16} />
+                Filtreler
+              </Button>
+            </div>
+          </section>
+
+          <section className="sticky top-[72px] z-30 hidden bg-[var(--color-surface)] border-b border-[var(--color-border-light)] md:block">
             <div className="max-w-5xl mx-auto px-6 lg:px-8 py-4">
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1">
@@ -316,7 +383,7 @@ export default function IsciAriyorumPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredListings.map((listing) => (
                   <JobCard key={listing.id} listing={listing} formatSalary={formatSalary} />
                 ))}
@@ -326,9 +393,65 @@ export default function IsciAriyorumPage() {
         </main>
       </div>
 
+      <MobileFilterSheet
+        open={isMobileFiltersOpen && !!mobileDraft}
+        title="Filters"
+        onClose={() => {
+          setIsMobileFiltersOpen(false);
+          setMobileDraft(null);
+        }}
+        onClear={() => {
+          const cleared = resetFilterState();
+          setMobileDraft(cleared);
+          applyFilterState(cleared);
+          setIsMobileFiltersOpen(false);
+        }}
+        onApply={() => {
+          if (!mobileDraft) return;
+          applyFilterState(mobileDraft);
+          setIsMobileFiltersOpen(false);
+          setMobileDraft(null);
+        }}
+      >
+        {mobileDraft && (
+          <div className="space-y-4">
+            <Input
+              placeholder="Pozisyon veya şirket ara..."
+              value={mobileDraft.searchQuery}
+              onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, searchQuery: e.target.value } : prev)}
+              icon={<Search size={18} />}
+            />
+            <Select
+              options={[
+                { value: "all", label: "Tüm Kategoriler" },
+                ...Object.entries(JOB_CATEGORY_LABELS).map(([value, label]) => ({ value, label }))
+              ]}
+              value={mobileDraft.selectedCategory}
+              onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, selectedCategory: e.target.value } : prev)}
+            />
+            <Select
+              options={[
+                { value: "all", label: "Tüm Eyaletler" },
+                ...US_STATES.map(s => ({ value: s.value, label: s.label }))
+              ]}
+              value={mobileDraft.selectedState}
+              onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, selectedState: e.target.value } : prev)}
+            />
+            <Select
+              options={[
+                { value: "all", label: "Çalışma Şekli" },
+                ...Object.entries(JOB_TYPE_LABELS).map(([value, label]) => ({ value, label }))
+              ]}
+              value={mobileDraft.selectedJobType}
+              onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, selectedJobType: e.target.value } : prev)}
+            />
+          </div>
+        )}
+      </MobileFilterSheet>
+
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(var(--color-trust-rgb),0.5)]">
           <Card variant="elevated" className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <CardHeader className="flex flex-row items-center justify-between p-6 border-b border-[var(--color-border-light)]">
               <CardTitle>Yeni İş İlanı</CardTitle>
@@ -508,7 +631,7 @@ export default function IsciAriyorumPage() {
                   <div className="flex gap-3 pt-4">
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="secondary"
                       onClick={() => setShowCreateModal(false)}
                       className="flex-1"
                     >
@@ -535,81 +658,64 @@ export default function IsciAriyorumPage() {
 
 function JobCard({ listing, formatSalary }: { listing: JobListing; formatSalary: (min: number | null, max: number | null, type: string | null) => string }) {
   return (
-    <Card variant="elevated" className="hover:shadow-[var(--shadow-md)] transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-start gap-5">
-          <div className="h-14 w-14 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center flex-shrink-0">
-            <span className="text-2xl">{JOB_CATEGORY_ICONS[listing.category]}</span>
+    <Link href={`/is/ilan/${listing.id}`}>
+      <Card variant="elevated" className="h-full hover:shadow-[var(--shadow-md)] transition-shadow cursor-pointer group">
+        <CardContent className="p-5 h-full flex flex-col">
+          <div className="flex items-start justify-between gap-3">
+            <div className="h-12 w-12 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center flex-shrink-0">
+              <span className="text-xl">{JOB_CATEGORY_ICONS[listing.category]}</span>
+            </div>
+            <Badge variant="primary" size="sm">{JOB_CATEGORY_LABELS[listing.category]}</Badge>
           </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-[var(--color-ink)]">{listing.title}</h3>
-                {listing.company_name && (
-                  <p className="text-[var(--color-ink-secondary)]">{listing.company_name}</p>
-                )}
-              </div>
-              <Badge variant="primary" size="sm">{JOB_CATEGORY_LABELS[listing.category]}</Badge>
-            </div>
-
-            <p className="text-[var(--color-ink-secondary)] mt-3 line-clamp-2">
-              {listing.description}
-            </p>
-
-            <div className="flex flex-wrap gap-4 mt-4 text-sm text-[var(--color-ink-secondary)]">
-              <span className="flex items-center gap-1.5">
-                <MapPin size={15} />
-                {listing.city}, {US_STATES_MAP[listing.state] || listing.state}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <DollarSign size={15} />
-                {formatSalary(listing.salary_min, listing.salary_max, listing.salary_type)}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Clock size={15} />
-                {JOB_TYPE_LABELS[listing.job_type]}
-              </span>
-              {listing.is_remote && (
-                <Badge variant="info" size="sm">Uzaktan OK</Badge>
-              )}
-            </div>
-
-            {listing.skills && listing.skills.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                {listing.skills.slice(0, 5).map((skill, idx) => (
-                  <Badge key={idx} variant="outline" size="sm">{skill}</Badge>
-                ))}
-                {listing.skills.length > 5 && (
-                  <Badge variant="outline" size="sm">+{listing.skills.length - 5}</Badge>
-                )}
-              </div>
+          <div className="mt-4 min-w-0">
+            <h3 className="text-lg font-semibold text-[var(--color-ink)] line-clamp-1 group-hover:text-[var(--color-primary)] transition-colors">
+              {listing.title}
+            </h3>
+            {listing.company_name && (
+              <p className="text-sm text-[var(--color-ink-secondary)] mt-1 line-clamp-1">{listing.company_name}</p>
             )}
+          </div>
 
-            <div className="flex items-center gap-3 mt-5 pt-4 border-t border-[var(--color-border-light)]">
-              {listing.contact_email && (
-                <a href={`mailto:${listing.contact_email}`}>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Mail size={15} />
-                    E-posta
-                  </Button>
-                </a>
-              )}
-              {listing.website_url && (
-                <a href={listing.website_url} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Globe size={15} />
-                    Web Sitesi
-                  </Button>
-                </a>
-              )}
-              <Button variant="primary" size="sm">
-                Başvur
-              </Button>
+          <p className="text-sm text-[var(--color-ink-secondary)] mt-3 line-clamp-2">
+            {listing.description}
+          </p>
+
+          <div className="space-y-2.5 mt-4 text-sm text-[var(--color-ink-secondary)]">
+            <div className="flex items-center gap-1.5">
+              <MapPin size={14} />
+              <span className="line-clamp-1">{listing.city}, {US_STATES_MAP[listing.state] || listing.state}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <DollarSign size={14} />
+              <span className="line-clamp-1">{formatSalary(listing.salary_min, listing.salary_max, listing.salary_type)}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock size={14} />
+              {JOB_TYPE_LABELS[listing.job_type]}
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+
+          {listing.skills && listing.skills.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {listing.skills.slice(0, 3).map((skill, idx) => (
+                <Badge key={idx} variant="outline" size="sm">{skill}</Badge>
+              ))}
+              {listing.skills.length > 3 && (
+                <Badge variant="outline" size="sm">+{listing.skills.length - 3}</Badge>
+              )}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-2 mt-auto pt-4 border-t border-[var(--color-border-light)]">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" size="sm">{JOB_TYPE_LABELS[listing.job_type]}</Badge>
+              {listing.is_remote && <Badge variant="info" size="sm">Uzaktan OK</Badge>}
+            </div>
+            <span className="text-sm font-medium text-[var(--color-primary)]">İlana Git</span>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

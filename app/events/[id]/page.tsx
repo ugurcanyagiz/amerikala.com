@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import { ensureProfileExists } from "@/lib/supabase/ensureProfile";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   Event,
@@ -39,14 +40,16 @@ import { Avatar } from "../../components/ui/Avatar";
 import { Badge } from "../../components/ui/Badge";
 import { Textarea } from "../../components/ui/Textarea";
 
-interface EventWithOrganizer extends Event {
-  organizer: Profile;
-}
+type EventWithOrganizer = Omit<Event, "organizer"> & {
+  organizer?: Profile;
+  creator?: Profile;
+  created_by?: string | null;
+};
 
 export default function EventDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const eventId = params.id as string;
 
   // State
@@ -54,7 +57,9 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAttending, setIsAttending] = useState(false);
+  const [myAttendanceStatus, setMyAttendanceStatus] = useState<"pending" | "going" | "interested" | "not_going" | "rejected" | null>(null);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [similarEvents, setSimilarEvents] = useState<Event[]>([]);
@@ -67,14 +72,30 @@ export default function EventDetailPage() {
 
       try {
         // Fetch event with organizer
-        const { data: eventData, error: eventError } = await supabase
+        const eventWithFk = await supabase
           .from("events")
           .select(`
             *,
-            organizer:organizer_id (id, username, full_name, avatar_url, bio)
+            organizer:profiles!events_organizer_id_fkey (id, username, first_name, last_name, full_name, avatar_url, bio),
+            creator:profiles!events_created_by_fkey (id, username, first_name, last_name, full_name, avatar_url, bio)
           `)
           .eq("id", eventId)
           .single();
+
+        const eventWithLegacy = eventWithFk.error
+          ? await supabase
+              .from("events")
+              .select(`
+                *,
+                organizer:organizer_id (id, username, first_name, last_name, full_name, avatar_url, bio),
+                creator:created_by (id, username, first_name, last_name, full_name, avatar_url, bio)
+              `)
+              .eq("id", eventId)
+              .single()
+          : eventWithFk;
+
+        const eventData = eventWithLegacy.data as EventWithOrganizer | null;
+        const eventError = eventWithLegacy.error;
 
         if (eventError) {
           if (eventError.code === "PGRST116") {
@@ -85,20 +106,25 @@ export default function EventDetailPage() {
           return;
         }
 
-        setEvent(eventData as EventWithOrganizer);
+        if (!eventData) {
+          setError("Etkinlik verisi alınamadı");
+          return;
+        }
+
+        setEvent(eventData);
 
         // Check if user is attending
         if (user) {
           const { data: attendeeData } = await supabase
             .from("event_attendees")
-            .select("status")
+            .select("event_id, status")
             .eq("event_id", eventId)
             .eq("user_id", user.id)
-            .single();
+            .maybeSingle();
 
-          if (attendeeData) {
-            setIsAttending(attendeeData.status === "going");
-          }
+          const status = (attendeeData?.status as "pending" | "going" | "interested" | "not_going" | "rejected" | undefined) || null;
+          setMyAttendanceStatus(status);
+          setIsAttending(status === "going");
         }
 
         // Fetch similar events (same category, different event)
@@ -131,53 +157,91 @@ export default function EventDetailPage() {
   // Handle attendance
   const handleJoin = async () => {
     if (!user) {
-      router.push("/login");
+      router.push(`/login?redirect=/events/${eventId}`);
       return;
     }
 
     setAttendanceLoading(true);
+    setAttendanceError(null);
+
     try {
-      if (isAttending) {
-        // Remove attendance
-        await supabase
+      const { error: profileError } = await ensureProfileExists(user);
+      if (profileError) {
+        throw profileError;
+      }
+
+      if (isAttending || myAttendanceStatus === "pending") {
+        const { error: updateError } = await supabase
           .from("event_attendees")
-          .delete()
+          .update({ status: "not_going" })
           .eq("event_id", eventId)
           .eq("user_id", user.id);
 
-        // Decrement attendee count
-        await supabase
-          .from("events")
-          .update({ current_attendees: (event?.current_attendees || 1) - 1 })
-          .eq("id", eventId);
-
-        setIsAttending(false);
-        if (event) {
-          setEvent({ ...event, current_attendees: event.current_attendees - 1 });
+        if (updateError) {
+          throw updateError;
         }
       } else {
-        // Add attendance
-        await supabase
+        const { error: insertError } = await supabase
           .from("event_attendees")
           .insert({
             event_id: eventId,
             user_id: user.id,
-            status: "going"
+            status: "pending",
           });
 
-        // Increment attendee count
-        await supabase
-          .from("events")
-          .update({ current_attendees: (event?.current_attendees || 0) + 1 })
-          .eq("id", eventId);
+        if (insertError) {
+          const isDuplicateError =
+            insertError.code === "23505" ||
+            insertError.code === "409" ||
+            insertError.message?.toLowerCase().includes("duplicate");
 
-        setIsAttending(true);
-        if (event) {
-          setEvent({ ...event, current_attendees: event.current_attendees + 1 });
+          if (!isDuplicateError) {
+            throw insertError;
+          }
+
+          const { error: retryUpdateError } = await supabase
+            .from("event_attendees")
+            .update({ status: "pending" })
+            .eq("event_id", eventId)
+            .eq("user_id", user.id);
+
+          if (retryUpdateError) {
+            throw retryUpdateError;
+          }
         }
+      }
+
+      const [{ data: attendeeData }, { count: attendeeCount, error: attendeeCountError }] = await Promise.all([
+        supabase
+          .from("event_attendees")
+          .select("event_id, status")
+          .eq("event_id", eventId)
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("event_attendees")
+          .select("*", { count: "exact", head: true })
+          .eq("event_id", eventId)
+          .eq("status", "going"),
+      ]);
+
+      if (attendeeCountError) {
+        throw attendeeCountError;
+      }
+
+      const status = (attendeeData?.status as "pending" | "going" | "interested" | "not_going" | "rejected" | undefined) || null;
+      setMyAttendanceStatus(status);
+      setIsAttending(status === "going");
+
+      if (event) {
+        setEvent({
+          ...event,
+          current_attendees: attendeeCount || 0,
+        });
       }
     } catch (err) {
       console.error("Error updating attendance:", err);
+      setAttendanceError("Katılım işlemi tamamlanamadı. Lütfen tekrar deneyin veya yöneticinle iletişime geç.");
     } finally {
       setAttendanceLoading(false);
     }
@@ -220,7 +284,7 @@ export default function EventDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-surface">
+      <div className="min-h-screen bg-surface overflow-x-hidden">
         <div className="flex">
           <Sidebar />
           <main className="flex-1 flex items-center justify-center py-16">
@@ -233,11 +297,11 @@ export default function EventDetailPage() {
 
   if (error || !event) {
     return (
-      <div className="min-h-screen bg-surface">
+      <div className="min-h-screen bg-surface overflow-x-hidden">
         <div className="flex">
           <Sidebar />
-          <main className="flex-1">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <main className="flex-1 min-w-0">
+            <div className="ak-shell lg:px-8 py-8">
               <Link href="/events">
                 <Button variant="ghost" className="gap-2 mb-6">
                   <ArrowLeft size={18} />
@@ -263,15 +327,21 @@ export default function EventDetailPage() {
     );
   }
 
-  const organizer = event.organizer;
+  const organizer = event.organizer || event.creator;
+  const isOrganizer = Boolean(user?.id && event.organizer_id === user.id);
+  const isPendingRequest = myAttendanceStatus === "pending";
+  const organizerName = [organizer?.first_name, organizer?.last_name].filter(Boolean).join(" ").trim()
+    || organizer?.full_name
+    || organizer?.username
+    || "Anonim";
 
   return (
-    <div className="min-h-screen bg-surface">
-      <div className="flex">
+    <div className="min-h-screen bg-surface overflow-x-hidden">
+      <div className="flex min-w-0">
         <Sidebar />
 
-        <main className="flex-1">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main className="flex-1 min-w-0">
+          <div className="ak-shell lg:px-8 py-6">
             {/* Back Button */}
             <Link href="/events">
               <Button variant="ghost" className="gap-2 mb-4">
@@ -297,7 +367,7 @@ export default function EventDetailPage() {
                         <span className="text-8xl">{EVENT_CATEGORY_ICONS[event.category]}</span>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[rgba(var(--color-trust-rgb),0.6)] to-transparent" />
 
                     {/* Floating Actions */}
                     <div className="absolute top-4 right-4 flex gap-2">
@@ -345,13 +415,13 @@ export default function EventDetailPage() {
                     <div className="flex items-center gap-3 mb-6">
                       <Avatar
                         src={organizer?.avatar_url || undefined}
-                        fallback={organizer?.full_name || organizer?.username || "?"}
+                        fallback={organizerName}
                         size="md"
                       />
                       <div>
                         <p className="font-semibold">Organize eden</p>
                         <p className="text-sm text-ink-muted">
-                          {organizer?.full_name || organizer?.username || "Anonim"}
+                          {organizerName}
                         </p>
                       </div>
                     </div>
@@ -521,34 +591,46 @@ export default function EventDetailPage() {
                       </div>
 
                       <Button
-                        variant={isAttending ? "outline" : "primary"}
+                        variant={isAttending || isPendingRequest ? "secondary" : "primary"}
                         className="w-full mt-4"
                         size="lg"
                         onClick={handleJoin}
                         loading={attendanceLoading}
                         disabled={
                           attendanceLoading ||
+                          isOrganizer ||
                           (event.max_attendees !== null &&
                            event.current_attendees >= event.max_attendees &&
-                           !isAttending)
+                           !isAttending &&
+                           !isPendingRequest)
                         }
                       >
-                        {isAttending ? (
+                        {isOrganizer ? (
+                          "Bu etkinliğin organizatörüsün"
+                        ) : isAttending ? (
                           <>
                             <CheckCircle2 size={20} className="mr-2" />
                             Katılıyorsun
                           </>
+                        ) : isPendingRequest ? (
+                          "Katılım isteğin onay bekliyor"
                         ) : event.max_attendees !== null && event.current_attendees >= event.max_attendees ? (
                           "Kontenjan Doldu"
                         ) : (
-                          "Etkinliğe Katıl"
+                          "Katılım İsteği Gönder"
                         )}
                       </Button>
 
-                      {isAttending && (
+                      {(isAttending || isPendingRequest) && !isOrganizer && (
                         <p className="text-xs text-center text-ink-muted">
-                          Katılımdan vazgeçmek için tekrar tıkla
+                          {isPendingRequest
+                            ? "İsteğini geri çekmek için tekrar tıkla"
+                            : "Katılımdan vazgeçmek için tekrar tıkla"}
                         </p>
+                      )}
+
+                      {attendanceError && (
+                        <p className="text-sm text-center text-red-500">{attendanceError}</p>
                       )}
                     </div>
                   </CardContent>
@@ -563,12 +645,12 @@ export default function EventDetailPage() {
                     <div className="text-center mb-4">
                       <Avatar
                         src={organizer?.avatar_url || undefined}
-                        fallback={organizer?.full_name || organizer?.username || "?"}
+                        fallback={organizerName}
                         size="xl"
                         className="mx-auto mb-3"
                       />
                       <h3 className="font-bold">
-                        {organizer?.full_name || organizer?.username || "Anonim"}
+                        {organizerName}
                       </h3>
                       {organizer?.bio && (
                         <p className="text-sm text-ink-muted mt-1 line-clamp-2">
@@ -579,7 +661,7 @@ export default function EventDetailPage() {
 
                     <div className="space-y-2">
                       <Link href={`/profile/${organizer?.username || organizer?.id}`}>
-                        <Button variant="outline" className="w-full gap-2" size="sm">
+                        <Button variant="secondary" className="w-full gap-2" size="sm">
                           <Users size={16} />
                           Profili Görüntüle
                         </Button>

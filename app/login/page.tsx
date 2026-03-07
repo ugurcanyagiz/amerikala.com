@@ -3,16 +3,14 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/app/components/ui";
 import { Button } from "@/app/components/ui";
 import { Input } from "@/app/components/ui";
-import { Mail, Lock, Eye, EyeOff, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from "lucide-react";
 
 type StatusType = "idle" | "loading" | "success" | "error";
-
-type LoginMethod = "password" | "magic";
 
 export default function LoginPage() {
     const router = useRouter();

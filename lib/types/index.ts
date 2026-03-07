@@ -70,7 +70,7 @@ export type EventCategory =
   | 'travel'
   | 'other';
 
-export type AttendanceStatus = 'going' | 'interested' | 'not_going';
+export type AttendanceStatus = 'pending' | 'going' | 'interested' | 'not_going' | 'rejected';
 
 export interface Event {
   id: string;
@@ -218,6 +218,26 @@ export interface GroupMember {
   joined_at: string;
   // Joined data
   profile?: Profile;
+}
+
+export interface GroupJoinRequest {
+  id: string;
+  group_id: string;
+  user_id: string;
+  answer: string | null;
+  status: "pending" | "approved" | "rejected";
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+  updated_at: string;
+  user?: Profile;
+}
+
+export interface GroupPost extends Post {
+  group_id: string;
+  profiles?: Profile;
+  likes?: Like[];
 }
 
 // Group category labels
@@ -453,24 +473,18 @@ export const LISTING_STATUS_COLORS: Record<ListingStatus, string> = {
 
 // Amenities list
 export const AMENITIES_LIST = [
-  { value: 'ac', label: 'Klima', icon: '❄️' },
-  { value: 'heating', label: 'Isıtma', icon: '🔥' },
+  { value: 'gas_heating', label: 'Gas Isınma', icon: '🔥' },
+  { value: 'ac_window_unit', label: 'Klima / window Unit', icon: '❄️' },
   { value: 'washer', label: 'Çamaşır Makinesi', icon: '🧺' },
   { value: 'dryer', label: 'Kurutma Makinesi', icon: '👕' },
   { value: 'dishwasher', label: 'Bulaşık Makinesi', icon: '🍽️' },
-  { value: 'wifi', label: 'WiFi', icon: '📶' },
-  { value: 'parking', label: 'Otopark', icon: '🅿️' },
-  { value: 'gym', label: 'Spor Salonu', icon: '🏋️' },
+  { value: 'wifi', label: 'Wifi', icon: '📶' },
+  { value: 'gym', label: 'Gym', icon: '🏋️' },
   { value: 'pool', label: 'Havuz', icon: '🏊' },
-  { value: 'balcony', label: 'Balkon', icon: '🌅' },
-  { value: 'garden', label: 'Bahçe', icon: '🌳' },
-  { value: 'elevator', label: 'Asansör', icon: '🛗' },
-  { value: 'doorman', label: 'Kapıcı', icon: '🚪' },
-  { value: 'furnished', label: 'Eşyalı', icon: '🛋️' },
   { value: 'storage', label: 'Depo', icon: '📦' },
+  { value: 'garage', label: 'Garaj', icon: '🚗' },
   { value: 'pet_friendly', label: 'Evcil Hayvan OK', icon: '🐾' },
   { value: 'smoke_free', label: 'Sigara Yasak', icon: '🚭' },
-  { value: 'security', label: 'Güvenlik', icon: '🔒' },
 ];
 
 // Pet policy options
@@ -554,6 +568,7 @@ export const ROLE_PERMISSIONS = {
     canApproveGroups: true,
     canApproveListings: true,
   },
+
 } as const;
 
 // Helper function to check permission
@@ -636,6 +651,9 @@ export const US_STATES = [
 export const US_STATES_MAP: Record<string, string> = Object.fromEntries(
   US_STATES.map(s => [s.value, s.label])
 );
+
+
+export type FavoriteTargetType = 'emlak' | 'is' | 'alisveris';
 
 // =============================================
 // JOB TYPES

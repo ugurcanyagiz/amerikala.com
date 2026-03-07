@@ -40,7 +40,7 @@ export default function Error({
 
         <div className="flex gap-3 justify-center">
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={reset}
             className="gap-2"
           >

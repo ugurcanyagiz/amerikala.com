@@ -17,33 +17,37 @@ import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent } from "@/app/components/ui/Card";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
+import UserProfileCardModal, { UserProfileCardData } from "@/app/components/UserProfileCardModal";
+import { FavoriteButton } from "@/app/components/listings/FavoriteButton";
+import { ShareButton } from "@/app/components/listings/ShareButton";
 import {
   ArrowLeft,
   MapPin,
   ShoppingBag,
   Phone,
   Mail,
-  Heart,
-  Share2,
   Flag,
   Loader2,
   ChevronLeft,
   ChevronRight,
   MessageCircle,
-  Tag,
-  Calendar,
+  Trash2,
 } from "lucide-react";
 
 export default function MarketplaceDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const listingId = params.id as string;
+  const isAdmin = role === "admin";
 
   const [listing, setListing] = useState<MarketplaceListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [selectedProfile, setSelectedProfile] = useState<UserProfileCardData | null>(null);
+  const [deletingListing, setDeletingListing] = useState(false);
+  const [ownerActionFeedback, setOwnerActionFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -65,14 +69,18 @@ export default function MarketplaceDetailPage() {
 
         setListing(data);
 
-        // Increment view count
-        await supabase
-          .from("marketplace_listings")
-          .update({ view_count: (data.view_count || 0) + 1 })
-          .eq("id", listingId);
-      } catch (err: any) {
+        void fetch("/api/public/view", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ table: "marketplace_listings", id: listingId }),
+          keepalive: true,
+        }).catch((touchError) => {
+          console.error("Error incrementing marketplace listing view count:", touchError);
+        });
+      } catch (err) {
         console.error("Error fetching listing:", err);
-        setError(err.message);
+        const message = err instanceof Error ? err.message : "İlan yüklenirken bir hata oluştu";
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -80,6 +88,39 @@ export default function MarketplaceDetailPage() {
 
     fetchListing();
   }, [listingId]);
+
+  const handleDeleteListing = async () => {
+    if (!user) {
+      router.push(`/login?redirect=/alisveris/ilan/${listingId}`);
+      return;
+    }
+
+    if (!listing || (!isAdmin && listing.user_id !== user.id)) return;
+    if (!confirm("Bu ilanı silmek istediğinize emin misiniz?")) return;
+
+    setDeletingListing(true);
+    setOwnerActionFeedback(null);
+
+    try {
+      let query = supabase
+        .from("marketplace_listings")
+        .delete()
+        .eq("id", listing.id);
+
+      if (!isAdmin) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { error: deleteError } = await query;
+      if (deleteError) throw deleteError;
+      router.push("/alisveris/ilanlarim?deleted=true");
+    } catch (deleteError: unknown) {
+      const message = deleteError instanceof Error ? deleteError.message : "İlan silinemedi.";
+      setOwnerActionFeedback(message);
+    } finally {
+      setDeletingListing(false);
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -122,16 +163,23 @@ export default function MarketplaceDetailPage() {
     );
   }
 
-  const owner = listing.user as any;
+  const owner = listing.user as {
+    id?: string;
+    username?: string | null;
+    full_name?: string | null;
+    avatar_url?: string | null;
+  };
   const images = listing.images || [];
+  const isOwnListing = user?.id === listing.user_id;
+  const canManageListing = isOwnListing || isAdmin;
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
-      <div className="flex">
+    <div className="ak-page overflow-x-hidden">
+      <div className="flex min-w-0">
         <Sidebar />
 
-        <main className="flex-1">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main className="flex-1 min-w-0">
+          <div className="ak-shell lg:px-8 py-6">
             {/* Back Button */}
             <div className="mb-6">
               <button
@@ -160,13 +208,13 @@ export default function MarketplaceDetailPage() {
                           <>
                             <button
                               onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+                              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[rgba(var(--color-trust-rgb),0.5)] text-white flex items-center justify-center hover:bg-[rgba(var(--color-trust-rgb),0.7)] transition-colors"
                             >
                               <ChevronLeft size={24} />
                             </button>
                             <button
                               onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
-                              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+                              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[rgba(var(--color-trust-rgb),0.5)] text-white flex items-center justify-center hover:bg-[rgba(var(--color-trust-rgb),0.7)] transition-colors"
                             >
                               <ChevronRight size={24} />
                             </button>
@@ -192,12 +240,12 @@ export default function MarketplaceDetailPage() {
 
                     {/* Actions */}
                     <div className="absolute top-4 right-4 flex gap-2">
-                      <button className="w-10 h-10 rounded-full bg-white/90 text-neutral-600 flex items-center justify-center hover:bg-white transition-colors">
-                        <Heart size={20} />
-                      </button>
-                      <button className="w-10 h-10 rounded-full bg-white/90 text-neutral-600 flex items-center justify-center hover:bg-white transition-colors">
-                        <Share2 size={20} />
-                      </button>
+                      <FavoriteButton targetType="alisveris" targetId={listingId} />
+                      <ShareButton
+                        url={typeof window !== "undefined" ? window.location.href : `${process.env.NEXT_PUBLIC_SITE_URL || ""}/alisveris/ilan/${listingId}`}
+                        title={listing.title || "Amerikala Alışveriş İlanı"}
+                        text={listing.description?.slice(0, 120) || "Bu ilanı inceleyin."}
+                      />
                     </div>
                   </div>
                 </Card>
@@ -251,17 +299,53 @@ export default function MarketplaceDetailPage() {
                   <CardContent className="p-6">
                     <div className="flex items-center gap-4 mb-6">
                       <Avatar
-                        src={owner?.avatar_url}
+                        src={owner?.avatar_url || undefined}
                         fallback={owner?.full_name || owner?.username || "U"}
                         size="lg"
+                        className={owner?.id ? "cursor-pointer" : undefined}
+                        onClick={() => {
+                          if (!owner?.id) return;
+                          setSelectedProfile({
+                            id: owner.id,
+                            username: owner.username,
+                            full_name: owner.full_name,
+                            avatar_url: owner.avatar_url,
+                          });
+                        }}
                       />
                       <div>
-                        <h3 className="font-bold">{owner?.full_name || owner?.username || "Kullanıcı"}</h3>
+                        <button
+                          type="button"
+                          className="font-bold hover:underline"
+                          onClick={() => {
+                            if (!owner?.id) return;
+                            setSelectedProfile({
+                              id: owner.id,
+                              username: owner.username,
+                              full_name: owner.full_name,
+                              avatar_url: owner.avatar_url,
+                            });
+                          }}
+                        >
+                          {owner?.full_name || owner?.username || "Kullanıcı"}
+                        </button>
                         <p className="text-sm text-neutral-500">Satıcı</p>
                       </div>
                     </div>
 
                     <div className="space-y-3">
+                      {canManageListing && (
+                        <Button
+                          variant="secondary"
+                          className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50"
+                          onClick={handleDeleteListing}
+                          disabled={deletingListing}
+                        >
+                          {deletingListing ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                          İlanı Sil
+                        </Button>
+                      )}
+
                       {listing.contact_email && (
                         <a
                           href={`mailto:${listing.contact_email}`}
@@ -275,7 +359,7 @@ export default function MarketplaceDetailPage() {
                       {listing.contact_phone && (
                         <a
                           href={`tel:${listing.contact_phone}`}
-                          className="flex items-center gap-3 w-full p-3 rounded-xl bg-green-500 text-white font-medium hover:bg-green-600 transition-colors"
+                          className="flex items-center gap-3 w-full p-3 rounded-xl bg-green-500 text-white font-medium hover:bg-green-600 transition-colors break-all"
                         >
                           <Phone size={20} />
                           {listing.contact_phone}
@@ -283,7 +367,7 @@ export default function MarketplaceDetailPage() {
                       )}
 
                       {user && user.id !== listing.user_id && (
-                        <Button variant="outline" className="w-full gap-2">
+                        <Button variant="secondary" className="w-full gap-2">
                           <MessageCircle size={20} />
                           Mesaj Gönder
                         </Button>
@@ -293,7 +377,7 @@ export default function MarketplaceDetailPage() {
                     <div className="mt-6 pt-6 border-t space-y-2 text-sm">
                       <div className="flex items-center justify-between text-neutral-500">
                         <span>İlan No</span>
-                        <span>{listing.id.slice(0, 8)}</span>
+                        <span className="break-all text-right">{listing.id.slice(0, 8)}</span>
                       </div>
                       <div className="flex items-center justify-between text-neutral-500">
                         <span>Görüntülenme</span>
@@ -301,18 +385,30 @@ export default function MarketplaceDetailPage() {
                       </div>
                       <div className="flex items-center justify-between text-neutral-500">
                         <span>Yayın Tarihi</span>
-                        <span>{formatDate(listing.created_at)}</span>
+                        <span className="text-right">{formatDate(listing.created_at)}</span>
                       </div>
                     </div>
 
-                    <button className="flex items-center justify-center gap-2 w-full mt-4 p-2 text-sm text-neutral-500 hover:text-red-500 transition-colors">
-                      <Flag size={16} />
-                      İlanı Şikayet Et
-                    </button>
+                    {!canManageListing && (
+                      <button className="flex items-center justify-center gap-2 w-full mt-4 p-2 text-sm text-neutral-500 hover:text-red-500 transition-colors">
+                        <Flag size={16} />
+                        İlanı Şikayet Et
+                      </button>
+                    )}
+
+                    {ownerActionFeedback && (
+                      <p className="text-sm text-red-500">{ownerActionFeedback}</p>
+                    )}
                   </CardContent>
                 </Card>
               </div>
             </div>
+
+            <UserProfileCardModal
+              profile={selectedProfile}
+              open={!!selectedProfile}
+              onClose={() => setSelectedProfile(null)}
+            />
           </div>
         </main>
       </div>

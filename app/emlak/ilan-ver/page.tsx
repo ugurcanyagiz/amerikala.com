@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
@@ -9,16 +9,9 @@ import {
   ListingType,
   RoommateType,
   PropertyType,
-  LISTING_TYPE_LABELS,
-  LISTING_TYPE_ICONS,
-  ROOMMATE_TYPE_LABELS,
-  ROOMMATE_TYPE_ICONS,
   PROPERTY_TYPE_LABELS,
   PROPERTY_TYPE_ICONS,
   AMENITIES_LIST,
-  PET_POLICY_OPTIONS,
-  PARKING_OPTIONS,
-  LAUNDRY_OPTIONS,
   LEASE_TERM_OPTIONS,
   GENDER_PREFERENCE_OPTIONS,
   US_STATES,
@@ -26,6 +19,7 @@ import {
 import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/Card";
 import { Badge } from "@/app/components/ui/Badge";
+import { SelectionPicker } from "@/app/components/ui/SelectionPicker";
 import {
   ArrowLeft,
   ArrowRight,
@@ -43,7 +37,6 @@ import {
   Loader2,
   Info,
   X,
-  Plus,
   Trash2,
   Calendar,
   Phone,
@@ -52,8 +45,10 @@ import {
   EyeOff,
   Sparkles,
 } from "lucide-react";
+import { uploadImageToStorage } from "@/lib/supabase/imageUpload";
+import { ListingFormStep, normalizeText, validateListingStep } from "./formValidation";
 
-type Step = 1 | 2 | 3 | 4 | 5;
+type Step = ListingFormStep;
 
 interface FormData {
   // Step 1 - Type
@@ -74,9 +69,6 @@ interface FormData {
   utilities_included: boolean;
   available_date: string;
   lease_term: string;
-  pet_policy: string;
-  parking: string;
-  laundry: string;
   amenities: string[];
   
   // Roommate specific
@@ -115,9 +107,6 @@ const initialFormData: FormData = {
   utilities_included: false,
   available_date: "",
   lease_term: "",
-  pet_policy: "",
-  parking: "",
-  laundry: "",
   amenities: [],
   current_occupants: 1,
   preferred_gender: "any",
@@ -136,6 +125,14 @@ const initialFormData: FormData = {
   contact_email: "",
 };
 
+const propertyTypeOptions = Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => ({
+  value,
+  label,
+  icon: PROPERTY_TYPE_ICONS[value as PropertyType],
+}));
+
+const amenityOptions = AMENITIES_LIST;
+
 export default function IlanVerPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -145,7 +142,9 @@ export default function IlanVerPage() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [newImageUrl, setNewImageUrl] = useState("");
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Pre-fill type from URL
   useEffect(() => {
@@ -172,57 +171,21 @@ export default function IlanVerPage() {
 
   // Validate step
   const validateStep = (currentStep: Step): boolean => {
-    const newErrors: Partial<Record<keyof FormData, string>> = {};
-
-    switch (currentStep) {
-      case 1:
-        if (!formData.listing_type) {
-          newErrors.listing_type = "İlan türü seçiniz";
-        }
-        if (formData.listing_type === "roommate" && !formData.roommate_type) {
-          newErrors.roommate_type = "Alt kategori seçiniz";
-        }
-        break;
-
-      case 2:
-        if (!formData.title || formData.title.length < 10) {
-          newErrors.title = "Başlık en az 10 karakter olmalı";
-        }
-        if (!formData.description || formData.description.length < 50) {
-          newErrors.description = "Açıklama en az 50 karakter olmalı";
-        }
-        if (!formData.property_type) {
-          newErrors.property_type = "Emlak tipi seçiniz";
-        }
-        break;
-
-      case 3:
-        if (!formData.price || parseInt(formData.price) <= 0) {
-          newErrors.price = "Geçerli bir fiyat giriniz";
-        }
-        break;
-
-      case 4:
-        if (!formData.address) {
-          newErrors.address = "Adres zorunludur";
-        }
-        if (!formData.city) {
-          newErrors.city = "Şehir zorunludur";
-        }
-        if (!formData.state) {
-          newErrors.state = "Eyalet seçiniz";
-        }
-        break;
-
-      case 5:
-        if (formData.show_phone && !formData.contact_phone) {
-          newErrors.contact_phone = "Telefon numarası giriniz";
-        }
-        if (formData.show_email && !formData.contact_email) {
-          newErrors.contact_email = "E-posta adresi giriniz";
-        }
-        break;
-    }
+    const newErrors = validateListingStep(currentStep, {
+      listing_type: formData.listing_type,
+      roommate_type: formData.roommate_type,
+      title: formData.title,
+      description: formData.description,
+      property_type: formData.property_type,
+      price: formData.price,
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      show_phone: formData.show_phone,
+      contact_phone: formData.contact_phone,
+      show_email: formData.show_email,
+      contact_email: formData.contact_email,
+    }) as Partial<Record<keyof FormData, string>>;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -240,31 +203,59 @@ export default function IlanVerPage() {
   };
 
   // Handle form change
-  const handleChange = (field: keyof FormData, value: any) => {
+  const handleChange = (field: keyof FormData, value: FormData[keyof FormData]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
-  // Toggle amenity
-  const toggleAmenity = (value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      amenities: prev.amenities.includes(value)
-        ? prev.amenities.filter(a => a !== value)
-        : [...prev.amenities, value]
-    }));
-  };
 
-  // Add image
-  const addImage = () => {
-    if (newImageUrl && !formData.images.includes(newImageUrl)) {
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, newImageUrl]
-      }));
-      setNewImageUrl("");
+  const MAX_IMAGES = 16;
+  const MAX_SIZE_MB = 8;
+
+  const addImageFiles = async (files: FileList | null) => {
+    if (!files?.length || !user) return;
+
+    if (formData.images.length >= MAX_IMAGES) {
+      alert(`En fazla ${MAX_IMAGES} fotoğraf yükleyebilirsiniz.`);
+      return;
+    }
+
+    setUploadingImages(true);
+    try {
+      const availableSlots = MAX_IMAGES - formData.images.length;
+      const selectedFiles = Array.from(files).slice(0, availableSlots);
+      const uploadedUrls: string[] = [];
+
+      for (const file of selectedFiles) {
+        if (!file.type.startsWith("image/")) continue;
+        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+          alert(`${file.name} dosyası ${MAX_SIZE_MB}MB sınırını aşıyor.`);
+          continue;
+        }
+
+        const url = await uploadImageToStorage({
+          file,
+          folder: `listings/real-estate/${user.id}`,
+        });
+        uploadedUrls.push(url);
+      }
+
+      if (uploadedUrls.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          images: [...prev.images, ...uploadedUrls],
+        }));
+      }
+    } catch (error) {
+      console.error("Image upload error:", error);
+      alert("Fotoğraflar yüklenirken bir hata oluştu.");
+    } finally {
+      setUploadingImages(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -286,8 +277,8 @@ export default function IlanVerPage() {
       const listingData = {
         listing_type: formData.listing_type,
         roommate_type: formData.listing_type === "roommate" ? formData.roommate_type : null,
-        title: formData.title,
-        description: formData.description,
+        title: normalizeText(formData.title),
+        description: normalizeText(formData.description),
         property_type: formData.property_type,
         bedrooms: formData.bedrooms,
         bathrooms: formData.bathrooms,
@@ -297,25 +288,25 @@ export default function IlanVerPage() {
         utilities_included: formData.utilities_included,
         available_date: formData.available_date || null,
         lease_term: formData.lease_term || null,
-        pet_policy: formData.pet_policy || null,
-        parking: formData.parking || null,
-        laundry: formData.laundry || null,
         amenities: formData.amenities,
+        pet_policy: null,
+        parking: null,
+        laundry: null,
         current_occupants: formData.listing_type === "roommate" ? formData.current_occupants : 0,
         preferred_gender: formData.listing_type === "roommate" ? formData.preferred_gender : null,
         preferred_age_min: formData.preferred_age_min ? parseInt(formData.preferred_age_min) : null,
         preferred_age_max: formData.preferred_age_max ? parseInt(formData.preferred_age_max) : null,
         move_in_date: formData.move_in_date || null,
-        address: formData.address,
-        city: formData.city,
+        address: normalizeText(formData.address),
+        city: normalizeText(formData.city),
         state: formData.state,
-        zip_code: formData.zip_code || null,
-        neighborhood: formData.neighborhood || null,
+        zip_code: normalizeText(formData.zip_code) || null,
+        neighborhood: normalizeText(formData.neighborhood) || null,
         images: formData.images,
         show_phone: formData.show_phone,
         show_email: formData.show_email,
-        contact_phone: formData.contact_phone || null,
-        contact_email: formData.contact_email || null,
+        contact_phone: normalizeText(formData.contact_phone) || null,
+        contact_email: normalizeText(formData.contact_email) || null,
         user_id: user.id,
         status: "approved",
       };
@@ -347,7 +338,7 @@ export default function IlanVerPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="ak-page">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
@@ -580,35 +571,16 @@ export default function IlanVerPage() {
                   </div>
                 </div>
 
-                {/* Property Type */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Emlak Tipi <span className="text-red-500">*</span>
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => handleChange("property_type", value)}
-                        className={`p-3 rounded-lg border-2 transition-all text-center ${
-                          formData.property_type === value
-                            ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
-                            : "border-neutral-200 dark:border-neutral-700 hover:border-neutral-300"
-                        }`}
-                      >
-                        <span className="text-xl">{PROPERTY_TYPE_ICONS[value as PropertyType]}</span>
-                        <p className="text-sm font-medium mt-1">{label}</p>
-                      </button>
-                    ))}
-                  </div>
-                  {errors.property_type && (
-                    <p className="text-red-500 text-sm flex items-center gap-1 mt-2">
-                      <AlertCircle size={14} />
-                      {errors.property_type}
-                    </p>
-                  )}
-                </div>
+                <SelectionPicker
+                  label="Emlak Tipi"
+                  required
+                  options={propertyTypeOptions}
+                  value={formData.property_type}
+                  onChange={(value) => handleChange("property_type", value as PropertyType)}
+                  error={errors.property_type}
+                  mobileTitle="Emlak tipini seçin"
+                  mobileDescription="İlanınızın en doğru kitleye ulaşması için tip seçimi yapın."
+                />
               </div>
             )}
 
@@ -761,50 +733,6 @@ export default function IlanVerPage() {
                   </div>
                 )}
 
-                {/* More Options */}
-                <div className="grid sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Evcil Hayvan</label>
-                    <select
-                      value={formData.pet_policy}
-                      onChange={(e) => handleChange("pet_policy", e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    >
-                      <option value="">Seçiniz</option>
-                      {PET_POLICY_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Otopark</label>
-                    <select
-                      value={formData.parking}
-                      onChange={(e) => handleChange("parking", e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    >
-                      <option value="">Seçiniz</option>
-                      {PARKING_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Çamaşırhane</label>
-                    <select
-                      value={formData.laundry}
-                      onChange={(e) => handleChange("laundry", e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    >
-                      <option value="">Seçiniz</option>
-                      {LAUNDRY_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
 
                 {/* Roommate Specific */}
                 {formData.listing_type === "roommate" && (
@@ -854,30 +782,17 @@ export default function IlanVerPage() {
                   </div>
                 )}
 
-                {/* Amenities */}
-                <div>
-                  <label className="block text-sm font-medium mb-3">Olanaklar</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {AMENITIES_LIST.map(amenity => (
-                      <button
-                        key={amenity.value}
-                        type="button"
-                        onClick={() => toggleAmenity(amenity.value)}
-                        className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                          formData.amenities.includes(amenity.value)
-                            ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
-                            : "border-neutral-200 dark:border-neutral-700 hover:border-neutral-300"
-                        }`}
-                      >
-                        <span>{amenity.icon}</span>
-                        <span className="text-sm">{amenity.label}</span>
-                        {formData.amenities.includes(amenity.value) && (
-                          <Check size={16} className="ml-auto text-emerald-500" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <SelectionPicker
+                  label="Olanaklar"
+                  options={amenityOptions}
+                  value={formData.amenities}
+                  onChange={(value) => handleChange("amenities", value as string[])}
+                  multiple
+                  mobileTitle="Olanakları seçin"
+                  mobileDescription="İlanınıza uygun olanakları seçin."
+                  desktopColumnsClass="grid-cols-2 sm:grid-cols-3"
+                  mobileGridColumnsClass="grid-cols-2"
+                />
               </div>
             )}
 
@@ -990,20 +905,47 @@ export default function IlanVerPage() {
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Fotoğraflar
-                    <span className="text-neutral-500 font-normal ml-2">(URL olarak ekleyin)</span>
                   </label>
-                  
-                  <div className="flex gap-2 mb-4">
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(true);
+                    }}
+                    onDragLeave={() => setIsDragOver(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(false);
+                      addImageFiles(e.dataTransfer.files);
+                    }}
+                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors mb-4 ${
+                      isDragOver
+                        ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+                        : "border-neutral-200 dark:border-neutral-700"
+                    }`}
+                  >
                     <input
-                      type="url"
-                      value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
-                      placeholder="Fotoğraf URL'si yapıştırın"
-                      className="flex-1 px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => addImageFiles(e.target.files)}
                     />
-                    <Button type="button" variant="outline" onClick={addImage} disabled={!newImageUrl}>
-                      <Plus size={18} />
+                    <ImageIcon className="w-10 h-10 text-neutral-400 mx-auto mb-2" />
+                    <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-3">
+                      Fotoğrafları sürükleyip bırakın veya bilgisayarınızdan seçin
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImages}
+                    >
+                      {uploadingImages ? "Yükleniyor..." : "Bilgisayardan Fotoğraf Seç"}
                     </Button>
+                    <p className="text-xs text-neutral-500 mt-2">
+                      Maksimum {MAX_IMAGES} fotoğraf • Her dosya en fazla {MAX_SIZE_MB}MB
+                    </p>
                   </div>
 
                   {/* Image Preview Grid */}
@@ -1020,7 +962,7 @@ export default function IlanVerPage() {
                             <X size={14} />
                           </button>
                           {idx === 0 && (
-                            <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/60 text-white text-xs">
+                            <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-[rgba(var(--color-trust-rgb),0.6)] text-white text-xs">
                               Kapak
                             </span>
                           )}
@@ -1031,7 +973,7 @@ export default function IlanVerPage() {
                     <div className="border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-lg p-8 text-center">
                       <ImageIcon className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
                       <p className="text-neutral-500">Henüz fotoğraf eklenmedi</p>
-                      <p className="text-sm text-neutral-400 mt-1">Fotoğraf URL'lerini yukarıya yapıştırın</p>
+                      <p className="text-sm text-neutral-400 mt-1">Fotoğrafları dosya olarak ekleyebilirsiniz</p>
                     </div>
                   )}
                 </div>

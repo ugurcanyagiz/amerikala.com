@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
@@ -18,34 +18,138 @@ import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent } from "@/app/components/ui/Card";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
+import { Textarea } from "@/app/components/ui/Textarea";
+import UserProfileCardModal, { UserProfileCardData } from "@/app/components/UserProfileCardModal";
+import { FavoriteButton } from "@/app/components/listings/FavoriteButton";
+import { ShareButton } from "@/app/components/listings/ShareButton";
 import {
   ArrowLeft,
   MapPin,
   Briefcase,
   DollarSign,
-  Clock,
   Building,
   Globe,
   Phone,
   Mail,
   ExternalLink,
-  Share2,
   Flag,
   Loader2,
   CheckCircle,
   Calendar,
-  Users,
+  Send,
+  MessageCircle,
+  AlertTriangle,
+  X,
+  Trash2,
 } from "lucide-react";
+
+type ListingOwner = {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  created_at?: string | null;
+} | null;
+
+const toErrorMessage = (error: unknown, fallback: string) => {
+  if (!error || typeof error !== "object") return fallback;
+
+  const maybeError = error as { message?: string; details?: string; hint?: string };
+  const parts = [maybeError.message, maybeError.details, maybeError.hint].filter(Boolean);
+  return parts.length > 0 ? parts.join(" — ") : fallback;
+};
 
 export default function JobListingDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const listingId = params.id as string;
+  const isAdmin = role === "admin";
 
   const [listing, setListing] = useState<JobListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [dmText, setDmText] = useState("");
+  const [dmSending, setDmSending] = useState(false);
+  const [dmFeedback, setDmFeedback] = useState<string | null>(null);
+
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [reportSending, setReportSending] = useState(false);
+  const [reportFeedback, setReportFeedback] = useState<string | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<UserProfileCardData | null>(null);
+  const [deletingListing, setDeletingListing] = useState(false);
+
+  const createConversationRecord = useCallback(async (targetUserId: string) => {
+    const payloads = [
+      { is_group: false, created_by: user?.id },
+      { is_group: false },
+      {},
+    ];
+
+    for (const payload of payloads) {
+      const { data, error: conversationError } = await supabase.from("conversations").insert(payload).select("id").single();
+      if (!conversationError && data?.id) {
+        return data.id as string;
+      }
+    }
+
+    const { data: rpcData, error: rpcError } = await supabase.rpc("create_direct_conversation", {
+      target_user_id: targetUserId,
+    });
+
+    if (!rpcError && rpcData) {
+      return rpcData as string;
+    }
+
+    throw new Error("Mesaj odası oluşturulamadı. Supabase conversations tablosu için insert izni gerekebilir.");
+  }, [user?.id]);
+
+  const findOrCreateConversationWith = useCallback(async (targetUserId: string) => {
+    if (!user) {
+      throw new Error("Mesaj göndermek için giriş yapmalısınız.");
+    }
+
+    const { data: myRows, error: myRowsError } = await supabase
+      .from("conversation_participants")
+      .select("conversation_id")
+      .eq("user_id", user.id);
+
+    if (myRowsError) throw myRowsError;
+
+    const myIds = ((myRows as Array<{ conversation_id: string }> | null) || []).map((row) => row.conversation_id);
+
+    let conversationId = "";
+    if (myIds.length > 0) {
+      const { data: otherRows, error: otherRowsError } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", targetUserId)
+        .in("conversation_id", myIds);
+
+      if (otherRowsError) throw otherRowsError;
+
+      conversationId = (otherRows as Array<{ conversation_id: string }> | null)?.[0]?.conversation_id || "";
+    }
+
+    const isNewConversation = !conversationId;
+    if (!conversationId) {
+      conversationId = await createConversationRecord(targetUserId);
+    }
+
+    if (isNewConversation) {
+      const { error: participantError } = await supabase.from("conversation_participants").insert([
+        { conversation_id: conversationId, user_id: user.id },
+        { conversation_id: conversationId, user_id: targetUserId },
+      ]);
+
+      if (participantError) throw participantError;
+    }
+
+    return conversationId;
+  }, [createConversationRecord, user]);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -53,7 +157,7 @@ export default function JobListingDetailPage() {
 
       setLoading(true);
       try {
-        const { data, error } = await supabase
+        const { data, error: fetchError } = await supabase
           .from("job_listings")
           .select(`
             *,
@@ -62,19 +166,22 @@ export default function JobListingDetailPage() {
           .eq("id", listingId)
           .single();
 
-        if (error) throw error;
+        if (fetchError) throw fetchError;
         if (!data) throw new Error("İlan bulunamadı");
 
         setListing(data);
 
-        // Increment view count
-        await supabase
-          .from("job_listings")
-          .update({ view_count: (data.view_count || 0) + 1 })
-          .eq("id", listingId);
-      } catch (err: any) {
-        console.error("Error fetching listing:", err);
-        setError(err.message);
+        void fetch("/api/public/view", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ table: "job_listings", id: listingId }),
+          keepalive: true,
+        }).catch((touchError) => {
+          console.error("Error incrementing job listing view count:", touchError);
+        });
+      } catch (fetchListingError: unknown) {
+        console.error("Error fetching listing:", fetchListingError);
+        setError(toErrorMessage(fetchListingError, "İlan yüklenirken bir sorun oluştu."));
       } finally {
         setLoading(false);
       }
@@ -82,6 +189,154 @@ export default function JobListingDetailPage() {
 
     fetchListing();
   }, [listingId]);
+
+  const handleSendMessage = async () => {
+    if (!user) {
+      router.push(`/login?redirect=/is/ilan/${listingId}`);
+      return;
+    }
+
+    if (!listing || listing.user_id === user.id) return;
+
+    const content = dmText.trim();
+    if (!content) {
+      setDmFeedback("Lütfen bir mesaj yazın.");
+      return;
+    }
+
+    setDmSending(true);
+    setDmFeedback(null);
+
+    try {
+      const conversationId = await findOrCreateConversationWith(listing.user_id);
+
+      const { error: messageError } = await supabase.from("messages").insert({
+        conversation_id: conversationId,
+        sender_id: user.id,
+        content,
+      });
+
+      if (messageError) throw messageError;
+
+      setDmText("");
+      setDmFeedback("Mesaj gönderildi. Sohbet sayfasına yönlendiriliyorsunuz...");
+      setTimeout(() => {
+        router.push(`/messages?conversation=${conversationId}`);
+      }, 300);
+    } catch (messageSendError: unknown) {
+      console.error("Error sending listing owner message:", messageSendError);
+      setDmFeedback(toErrorMessage(messageSendError, "Mesaj gönderilemedi. Lütfen tekrar deneyin."));
+    } finally {
+      setDmSending(false);
+    }
+  };
+
+  const handleDeleteListing = async () => {
+    if (!user) {
+      router.push(`/login?redirect=/is/ilan/${listingId}`);
+      return;
+    }
+
+    if (!listing || (!isAdmin && listing.user_id !== user.id)) return;
+    if (!confirm("Bu ilanı silmek istediğinize emin misiniz?")) return;
+
+    setDeletingListing(true);
+    try {
+      let query = supabase
+        .from("job_listings")
+        .delete()
+        .eq("id", listing.id);
+
+      if (!isAdmin) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { error: deleteError } = await query;
+      if (deleteError) throw deleteError;
+      router.push("/is/ilanlarim?deleted=true");
+    } catch (deleteError: unknown) {
+      setDmFeedback(toErrorMessage(deleteError, "İlan silinemedi. Lütfen tekrar deneyin."));
+    } finally {
+      setDeletingListing(false);
+    }
+  };
+
+  const handleReportListing = async () => {
+    if (!user) {
+      router.push(`/login?redirect=/is/ilan/${listingId}`);
+      return;
+    }
+
+    if (!listing) return;
+
+    const reason = reportReason.trim();
+    const details = reportDetails.trim();
+
+    if (!reason) {
+      setReportFeedback("Lütfen şikayet sebebini yazın.");
+      return;
+    }
+
+    setReportSending(true);
+    setReportFeedback(null);
+
+    try {
+      const { data: adminRows, error: adminsError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("role", "admin")
+        .limit(20);
+
+      if (adminsError) throw adminsError;
+
+      const adminIds = ((adminRows as Array<{ id: string }> | null) || [])
+        .map((row) => row.id)
+        .filter((id) => id && id !== user.id);
+
+      if (adminIds.length === 0) {
+        throw new Error("Şu anda ulaşılabilir admin bulunamadı.");
+      }
+
+      const listingUrl = typeof window !== "undefined"
+        ? `${window.location.origin}/is/ilan/${listing.id}`
+        : `/is/ilan/${listing.id}`;
+
+      const reporterName = user.user_metadata?.full_name || user.email || user.id;
+      const reportMessage = [
+        "🚨 İş ilanı şikayeti alındı",
+        `İlan: ${listing.title}`,
+        `İlan ID: ${listing.id}`,
+        `Link: ${listingUrl}`,
+        `Şikayet eden: ${reporterName}`,
+        `Sebep: ${reason}`,
+        details ? `Detay: ${details}` : null,
+      ].filter(Boolean).join("\n");
+
+      for (const adminId of adminIds) {
+        const conversationId = await findOrCreateConversationWith(adminId);
+        const { error: messageError } = await supabase.from("messages").insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          content: reportMessage,
+        });
+
+        if (messageError) throw messageError;
+      }
+
+      setReportFeedback("Şikayetiniz admin ekibine iletildi. Teşekkür ederiz.");
+      setReportReason("");
+      setReportDetails("");
+      setTimeout(() => {
+        setShowReportModal(false);
+        setReportFeedback(null);
+      }, 1200);
+    } catch (reportError: unknown) {
+      console.error("Error reporting listing:", reportError);
+      setReportFeedback(toErrorMessage(reportError, "Şikayet gönderilemedi. Lütfen tekrar deneyin."));
+    } finally {
+      setReportSending(false);
+    }
+  };
 
   const formatSalary = (min: number | null, max: number | null, type: string | null) => {
     if (!min && !max) return "Belirtilmemiş";
@@ -127,18 +382,19 @@ export default function JobListingDetailPage() {
     );
   }
 
-  const owner = listing.user as any;
+  const owner = listing.user as ListingOwner;
   const skills = listing.skills || [];
   const benefits = listing.benefits || [];
+  const isOwnListing = user?.id === listing.user_id;
+  const canManageListing = isOwnListing || isAdmin;
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
-      <div className="flex">
+    <div className="ak-page overflow-x-hidden">
+      <div className="flex min-w-0">
         <Sidebar />
 
-        <main className="flex-1">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            {/* Back Button */}
+        <main className="flex-1 min-w-0">
+          <div className="ak-shell lg:px-8 py-6">
             <div className="mb-6">
               <button
                 onClick={() => router.back()}
@@ -150,23 +406,20 @@ export default function JobListingDetailPage() {
             </div>
 
             <div className="grid lg:grid-cols-3 gap-8">
-              {/* Main Content */}
               <div className="lg:col-span-2 space-y-6">
-                {/* Header Card */}
                 <Card>
                   <CardContent className="p-6">
-                    <div className="flex items-start gap-4 mb-4">
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div className="flex items-start gap-4 min-w-0">
                       <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-3xl">
                         {JOB_CATEGORY_ICONS[listing.category]}
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap gap-2 mb-2">
                           <Badge variant={listing.listing_type === "hiring" ? "success" : "info"}>
                             {JOB_LISTING_TYPE_LABELS[listing.listing_type]}
                           </Badge>
-                          <Badge variant="default">
-                            {JOB_TYPE_LABELS[listing.job_type]}
-                          </Badge>
+                          <Badge variant="default">{JOB_TYPE_LABELS[listing.job_type]}</Badge>
                           {listing.is_remote && (
                             <Badge variant="default" className="gap-1">
                               <Globe size={12} />
@@ -183,6 +436,16 @@ export default function JobListingDetailPage() {
                         )}
                       </div>
                     </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <FavoriteButton targetType="is" targetId={listingId} />
+                      <ShareButton
+                        url={typeof window !== "undefined" ? window.location.href : `${process.env.NEXT_PUBLIC_SITE_URL || ""}/is/ilan/${listingId}`}
+                        title={listing.title || "Amerikala İş İlanı"}
+                        text={listing.description?.slice(0, 120) || "Bu ilanı inceleyin."}
+                      />
+                    </div>
+                  </div>
 
                     <div className="flex flex-wrap gap-4 text-sm text-neutral-500">
                       <div className="flex items-center gap-1">
@@ -201,7 +464,6 @@ export default function JobListingDetailPage() {
                   </CardContent>
                 </Card>
 
-                {/* Description */}
                 <Card>
                   <CardContent className="p-6">
                     <h2 className="text-lg font-bold mb-4">İlan Detayı</h2>
@@ -211,7 +473,6 @@ export default function JobListingDetailPage() {
                   </CardContent>
                 </Card>
 
-                {/* Skills */}
                 {skills.length > 0 && (
                   <Card>
                     <CardContent className="p-6">
@@ -227,7 +488,6 @@ export default function JobListingDetailPage() {
                   </Card>
                 )}
 
-                {/* Benefits */}
                 {benefits.length > 0 && (
                   <Card>
                     <CardContent className="p-6">
@@ -245,18 +505,41 @@ export default function JobListingDetailPage() {
                 )}
               </div>
 
-              {/* Sidebar */}
               <div className="space-y-6">
                 <Card className="sticky top-24">
                   <CardContent className="p-6">
                     <div className="flex items-center gap-4 mb-6">
                       <Avatar
-                        src={owner?.avatar_url}
+                        src={owner?.avatar_url ?? undefined}
                         fallback={owner?.full_name || owner?.username || "U"}
                         size="lg"
+                        className={owner?.id ? "cursor-pointer" : undefined}
+                        onClick={() => {
+                          if (!owner?.id) return;
+                          setSelectedProfile({
+                            id: owner.id,
+                            username: owner.username,
+                            full_name: owner.full_name,
+                            avatar_url: owner.avatar_url,
+                          });
+                        }}
                       />
                       <div>
-                        <h3 className="font-bold">{owner?.full_name || owner?.username || "Kullanıcı"}</h3>
+                        <button
+                          type="button"
+                          className="font-bold hover:underline"
+                          onClick={() => {
+                            if (!owner?.id) return;
+                            setSelectedProfile({
+                              id: owner.id,
+                              username: owner.username,
+                              full_name: owner.full_name,
+                              avatar_url: owner.avatar_url,
+                            });
+                          }}
+                        >
+                          {owner?.full_name || owner?.username || "Kullanıcı"}
+                        </button>
                         <p className="text-sm text-neutral-500">
                           {listing.listing_type === "hiring" ? "İşveren" : "İş Arayan"}
                         </p>
@@ -264,6 +547,43 @@ export default function JobListingDetailPage() {
                     </div>
 
                     <div className="space-y-3">
+                      {canManageListing && (
+                        <Button
+                          variant="secondary"
+                          className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50"
+                          onClick={handleDeleteListing}
+                          loading={deletingListing}
+                        >
+                          <Trash2 size={16} />
+                          İlanı Sil
+                        </Button>
+                      )}
+
+                      {!canManageListing && (
+                        <div className="space-y-3 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <MessageCircle size={16} />
+                            İşverene Mesaj Gönder
+                          </div>
+                          <Textarea
+                            value={dmText}
+                            onChange={(event) => setDmText(event.target.value)}
+                            placeholder="Merhaba, ilanınız hakkında bilgi almak istiyorum..."
+                            rows={3}
+                          />
+                          <Button
+                            variant="primary"
+                            className="w-full gap-2"
+                            onClick={handleSendMessage}
+                            loading={dmSending}
+                          >
+                            <Send size={16} />
+                            Mesaj Gönder
+                          </Button>
+                          {dmFeedback && <p className="text-xs text-neutral-500">{dmFeedback}</p>}
+                        </div>
+                      )}
+
                       {listing.contact_email && (
                         <a
                           href={`mailto:${listing.contact_email}`}
@@ -308,17 +628,95 @@ export default function JobListingDetailPage() {
                       </div>
                     </div>
 
-                    <button className="flex items-center justify-center gap-2 w-full mt-4 p-2 text-sm text-neutral-500 hover:text-red-500 transition-colors">
-                      <Flag size={16} />
-                      İlanı Şikayet Et
-                    </button>
+                    {!canManageListing && (
+                      <button
+                        onClick={() => {
+                          setReportFeedback(null);
+                          setShowReportModal(true);
+                        }}
+                        className="flex items-center justify-center gap-2 w-full mt-4 p-2 text-sm text-neutral-500 hover:text-red-500 transition-colors"
+                      >
+                        <Flag size={16} />
+                        İlanı Şikayet Et
+                      </button>
+                    )}
                   </CardContent>
                 </Card>
               </div>
             </div>
+
+            <UserProfileCardModal
+              profile={selectedProfile}
+              open={!!selectedProfile}
+              onClose={() => setSelectedProfile(null)}
+            />
           </div>
         </main>
       </div>
+
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 bg-[rgba(var(--color-trust-rgb),0.5)] flex items-center justify-center p-4">
+          <Card className="w-full max-w-lg">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="text-amber-500" size={20} />
+                  <h3 className="text-lg font-semibold">İlanı Şikayet Et</h3>
+                </div>
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="text-neutral-500 hover:text-neutral-700"
+                  aria-label="Kapat"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <Textarea
+                  label="Şikayet Sebebi *"
+                  value={reportReason}
+                  onChange={(event) => setReportReason(event.target.value)}
+                  placeholder="Örn: Yanıltıcı bilgi, spam, uygunsuz içerik..."
+                  rows={3}
+                />
+                <Textarea
+                  label="Ek Detaylar"
+                  value={reportDetails}
+                  onChange={(event) => setReportDetails(event.target.value)}
+                  placeholder="İsterseniz ekstra bilgi ekleyebilirsiniz."
+                  rows={4}
+                />
+
+                {reportFeedback && (
+                  <p className={`text-sm ${reportFeedback.includes("iletil") ? "text-green-600" : "text-red-500"}`}>
+                    {reportFeedback}
+                  </p>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    variant="secondary"
+                    className="flex-1 min-w-0"
+                    onClick={() => setShowReportModal(false)}
+                    disabled={reportSending}
+                  >
+                    Vazgeç
+                  </Button>
+                  <Button
+                    variant="primary"
+                    className="flex-1 min-w-0"
+                    onClick={handleReportListing}
+                    loading={reportSending}
+                  >
+                    Şikayeti Gönder
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

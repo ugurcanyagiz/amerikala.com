@@ -17,7 +17,8 @@ import {
 import Sidebar from "../components/Sidebar";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
-import { Avatar } from "../components/ui/Avatar";
+import { Input } from "../components/ui/Input";
+import { Select } from "../components/ui/Select";
 import { Badge } from "../components/ui/Badge";
 import { 
   Plus, 
@@ -120,21 +121,21 @@ export default function GroupsPage() {
   ];
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="ak-page">
       <div className="flex">
         <Sidebar />
 
         <main className="flex-1">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="ak-shell ak-shell-wide py-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
               <div>
                 <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
                   <Users className="text-blue-500" />
-                  Gruplar
+                  Community Grupları
                 </h1>
                 <p className="text-neutral-600 dark:text-neutral-400">
-                  {filteredGroups.length} aktif grup ile tanış ve topluluğa katıl
+                  {filteredGroups.length} aktif grup · canlı feed, etkinlik ve moderasyonlu üyelik sistemi
                 </p>
               </div>
               
@@ -147,7 +148,7 @@ export default function GroupsPage() {
                 </Link>
               ) : (
                 <Link href="/login">
-                  <Button variant="outline" className="gap-2">
+                  <Button variant="secondary" className="gap-2">
                     Grup oluşturmak için giriş yapın
                   </Button>
                 </Link>
@@ -159,30 +160,27 @@ export default function GroupsPage() {
               <CardContent className="p-4">
                 <div className="flex flex-col lg:flex-row gap-4">
                   {/* Search */}
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={20} />
-                    <input
+                  <div className="flex-1">
+                    <Input
                       type="text"
                       placeholder="Grup ara..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      icon={<Search size={20} />}
+                      className="pl-10"
                     />
                   </div>
 
                   {/* State Filter */}
-                  <select
+                  <Select
                     value={selectedState}
                     onChange={(e) => setSelectedState(e.target.value)}
-                    className="px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px]"
-                  >
-                    <option value="all">Tüm Eyaletler</option>
-                    {US_STATES.map(state => (
-                      <option key={state.value} value={state.value}>
-                        {state.label}
-                      </option>
-                    ))}
-                  </select>
+                    className="min-w-[180px]"
+                    options={[
+                      { value: "all", label: "Tüm Eyaletler" },
+                      ...US_STATES.map((state) => ({ value: state.value, label: state.label })),
+                    ]}
+                  />
 
                   {/* View Mode */}
                   <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1">
@@ -320,8 +318,6 @@ export default function GroupsPage() {
 
 // Group Card Component (Grid View)
 function GroupCard({ group }: { group: Group }) {
-  const creator = group.creator as any;
-
   return (
     <Link href={`/groups/${group.slug}`}>
       <Card className="glass overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full group">
@@ -338,7 +334,7 @@ function GroupCard({ group }: { group: Group }) {
               <span className="text-4xl opacity-50">{GROUP_CATEGORY_ICONS[group.category]}</span>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(var(--color-trust-rgb),0.6)] to-transparent" />
           
           {/* Avatar */}
           <div className="absolute -bottom-6 left-4">
@@ -407,8 +403,7 @@ function GroupCard({ group }: { group: Group }) {
 
 // Group List Card Component
 function GroupListCard({ group }: { group: Group }) {
-  const creator = group.creator as any;
-
+  const creator = group.creator as { full_name?: string | null; username?: string | null } | undefined;
   return (
     <Link href={`/groups/${group.slug}`}>
       <Card className="glass hover:shadow-lg transition-all duration-300 group">
@@ -484,7 +479,7 @@ function GroupListCard({ group }: { group: Group }) {
 
             {/* Arrow & Join Button */}
             <div className="flex-shrink-0 flex items-center gap-3">
-              <Button variant="outline" size="sm" className="hidden sm:flex gap-1">
+              <Button variant="secondary" size="sm" className="hidden sm:flex gap-1">
                 <UserPlus size={16} />
                 Katıl
               </Button>

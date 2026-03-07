@@ -10,7 +10,6 @@ import {
   JobCategory,
   JobType,
   JOB_CATEGORY_LABELS,
-  JOB_CATEGORY_ICONS,
   JOB_TYPE_LABELS,
   US_STATES,
   US_STATES_MAP
@@ -23,6 +22,7 @@ import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import { Avatar } from "../../components/ui/Avatar";
+import MobileFilterSheet from "../components/MobileFilterSheet";
 import {
   Search,
   MapPin,
@@ -35,8 +35,15 @@ import {
   AlertCircle,
   X,
   Mail,
-  Phone
+  Phone,
 } from "lucide-react";
+
+type JobFilterDraft = {
+  searchQuery: string;
+  selectedCategory: string;
+  selectedState: string;
+  selectedJobType: string;
+};
 
 export default function IsAriyorumPage() {
   const router = useRouter();
@@ -52,6 +59,8 @@ export default function IsAriyorumPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedState, setSelectedState] = useState<string>("all");
   const [selectedJobType, setSelectedJobType] = useState<string>("all");
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [mobileDraft, setMobileDraft] = useState<JobFilterDraft | null>(null);
 
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -151,7 +160,7 @@ export default function IsAriyorumPage() {
         contact_email: formData.contact_email.trim() || null,
         contact_phone: formData.contact_phone.trim() || null,
         user_id: user.id,
-        status: "approved"
+        status: "pending"
       });
 
       if (error) throw error;
@@ -175,13 +184,42 @@ export default function IsAriyorumPage() {
         setShowCreateModal(false);
         setCreateSuccess(false);
       }, 2000);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error creating listing:", error);
-      setCreateError(error.message || "Bir hata oluştu");
+      const errorMessage = error instanceof Error ? error.message : "Bir hata oluştu";
+      setCreateError(errorMessage);
     } finally {
       setCreating(false);
     }
   };
+
+  const buildFilterState = (): JobFilterDraft => ({
+    searchQuery,
+    selectedCategory,
+    selectedState,
+    selectedJobType,
+  });
+
+  const resetFilterState = (): JobFilterDraft => ({
+    searchQuery: "",
+    selectedCategory: "all",
+    selectedState: "all",
+    selectedJobType: "all",
+  });
+
+  const applyFilterState = (next: JobFilterDraft) => {
+    setSearchQuery(next.searchQuery);
+    setSelectedCategory(next.selectedCategory);
+    setSelectedState(next.selectedState);
+    setSelectedJobType(next.selectedJobType);
+  };
+
+  const mobileFilterChips = [
+    searchQuery ? `Ara: ${searchQuery}` : null,
+    selectedCategory !== "all" ? JOB_CATEGORY_LABELS[selectedCategory as JobCategory] : null,
+    selectedState !== "all" ? (US_STATES_MAP[selectedState] || selectedState) : null,
+    selectedJobType !== "all" ? JOB_TYPE_LABELS[selectedJobType as JobType] : null,
+  ].filter(Boolean) as string[];
 
   return (
     <div className="min-h-screen bg-[var(--color-surface)]">
@@ -216,11 +254,39 @@ export default function IsAriyorumPage() {
                   Profil Oluştur
                 </Button>
               </div>
+
+              {mobileFilterChips.length > 0 && (
+                <div className="mt-4 flex gap-2 overflow-x-auto md:hidden">
+                  {mobileFilterChips.map((chip) => (
+                    <Badge key={chip} variant="outline" size="sm" className="whitespace-nowrap">
+                      {chip}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
 
           {/* Filters */}
-          <section className="sticky top-[72px] z-30 bg-[var(--color-surface)] border-b border-[var(--color-border-light)]">
+          <section className="border-b border-[var(--color-border-light)] bg-[var(--color-surface)] md:hidden">
+            <div className="max-w-5xl mx-auto px-6 lg:px-8 py-3">
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full gap-2"
+                onClick={() => {
+                  setMobileDraft(buildFilterState());
+                  setIsMobileFiltersOpen(true);
+                }}
+                aria-label="Filtreleri aç"
+              >
+                <Search size={16} />
+                Filtreler
+              </Button>
+            </div>
+          </section>
+
+          <section className="sticky top-[72px] z-30 hidden bg-[var(--color-surface)] border-b border-[var(--color-border-light)] md:block">
             <div className="max-w-5xl mx-auto px-6 lg:px-8 py-4">
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1">
@@ -296,9 +362,65 @@ export default function IsAriyorumPage() {
         </main>
       </div>
 
+      <MobileFilterSheet
+        open={isMobileFiltersOpen && !!mobileDraft}
+        title="Filters"
+        onClose={() => {
+          setIsMobileFiltersOpen(false);
+          setMobileDraft(null);
+        }}
+        onClear={() => {
+          const cleared = resetFilterState();
+          setMobileDraft(cleared);
+          applyFilterState(cleared);
+          setIsMobileFiltersOpen(false);
+        }}
+        onApply={() => {
+          if (!mobileDraft) return;
+          applyFilterState(mobileDraft);
+          setIsMobileFiltersOpen(false);
+          setMobileDraft(null);
+        }}
+      >
+        {mobileDraft && (
+          <div className="space-y-4">
+            <Input
+              placeholder="Pozisyon veya şehir ara..."
+              value={mobileDraft.searchQuery}
+              onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, searchQuery: e.target.value } : prev)}
+              icon={<Search size={18} />}
+            />
+            <Select
+              options={[
+                { value: "all", label: "Tüm Kategoriler" },
+                ...Object.entries(JOB_CATEGORY_LABELS).map(([value, label]) => ({ value, label }))
+              ]}
+              value={mobileDraft.selectedCategory}
+              onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, selectedCategory: e.target.value } : prev)}
+            />
+            <Select
+              options={[
+                { value: "all", label: "Tüm Eyaletler" },
+                ...US_STATES.map(s => ({ value: s.value, label: s.label }))
+              ]}
+              value={mobileDraft.selectedState}
+              onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, selectedState: e.target.value } : prev)}
+            />
+            <Select
+              options={[
+                { value: "all", label: "Çalışma Şekli" },
+                ...Object.entries(JOB_TYPE_LABELS).map(([value, label]) => ({ value, label }))
+              ]}
+              value={mobileDraft.selectedJobType}
+              onChange={(e) => setMobileDraft((prev) => prev ? { ...prev, selectedJobType: e.target.value } : prev)}
+            />
+          </div>
+        )}
+      </MobileFilterSheet>
+
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(var(--color-trust-rgb),0.5)]">
           <Card variant="elevated" className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <CardHeader className="flex flex-row items-center justify-between p-6 border-b border-[var(--color-border-light)]">
               <CardTitle>İş Arayan Profili Oluştur</CardTitle>
@@ -428,7 +550,7 @@ export default function IsAriyorumPage() {
                   <div className="flex gap-3 pt-4">
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="secondary"
                       onClick={() => setShowCreateModal(false)}
                       className="flex-1"
                     >
@@ -454,15 +576,36 @@ export default function IsAriyorumPage() {
 }
 
 function SeekerCard({ listing }: { listing: JobListing }) {
-  const user = listing.user;
+  const router = useRouter();
+  const listingUser = listing.user;
+
+  const handleCardClick = () => {
+    router.push(`/is/ariyorum/${listing.id}`);
+  };
+
+  const handleActionClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+  };
 
   return (
-    <Card variant="elevated" className="hover:shadow-[var(--shadow-md)] transition-shadow">
+    <Card
+      variant="elevated"
+      className="hover:shadow-[var(--shadow-md)] transition-shadow cursor-pointer"
+      onClick={handleCardClick}
+      role="link"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleCardClick();
+        }
+      }}
+    >
       <CardContent className="p-6">
         <div className="flex items-start gap-5">
           <Avatar
-            src={user?.avatar_url || undefined}
-            fallback={user?.full_name || user?.username || "?"}
+            src={listingUser?.avatar_url || undefined}
+            fallback={listingUser?.full_name || listingUser?.username || "?"}
             size="lg"
           />
 
@@ -471,7 +614,7 @@ function SeekerCard({ listing }: { listing: JobListing }) {
               <div>
                 <h3 className="text-lg font-semibold text-[var(--color-ink)]">{listing.title}</h3>
                 <p className="text-sm text-[var(--color-ink-secondary)]">
-                  {user?.full_name || user?.username}
+                  {listingUser?.full_name || listingUser?.username || "Anonim Kullanıcı"}
                 </p>
               </div>
               <Badge variant="primary" size="sm">{JOB_CATEGORY_LABELS[listing.category]}</Badge>
@@ -506,26 +649,21 @@ function SeekerCard({ listing }: { listing: JobListing }) {
               </div>
             )}
 
-            <div className="flex items-center gap-3 mt-5 pt-4 border-t border-[var(--color-border-light)]">
-              {listing.contact_email && (
-                <a href={`mailto:${listing.contact_email}`}>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Mail size={15} />
-                    E-posta
-                  </Button>
-                </a>
-              )}
-              {listing.contact_phone && (
-                <a href={`tel:${listing.contact_phone}`}>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Phone size={15} />
-                    Ara
-                  </Button>
-                </a>
-              )}
-              <Button variant="primary" size="sm">
-                Profili Görüntüle
-              </Button>
+            <div
+              className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-[var(--color-border-light)]"
+              onClick={handleActionClick}
+            >
+              <Link href={`/is/ariyorum/${listing.id}`}>
+                <Button variant="primary" size="sm" className="gap-2">
+                  Özgeçmiş Görüntüle
+                </Button>
+              </Link>
+
+              <Link href={listingUser?.id ? `/profile/${listingUser.id}` : "#"}>
+                <Button variant="secondary" size="sm" className="gap-2" disabled={!listingUser?.id}>
+                  Profil Görüntüle
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -533,3 +671,4 @@ function SeekerCard({ listing }: { listing: JobListing }) {
     </Card>
   );
 }
+

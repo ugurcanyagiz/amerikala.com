@@ -10,6 +10,26 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+
+  async redirects() {
+    return [
+      {
+        source: "/events",
+        destination: "/meetups",
+        permanent: true,
+      },
+      {
+        source: "/events/create",
+        destination: "/meetups/create",
+        permanent: true,
+      },
+      {
+        source: "/events/:id",
+        destination: "/meetups/:id",
+        permanent: true,
+      },
+    ];
+  },
   
   trailingSlash: false,
 };

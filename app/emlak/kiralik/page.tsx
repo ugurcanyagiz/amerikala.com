@@ -18,6 +18,8 @@ import {
 import Sidebar from "@/app/components/Sidebar";
 import { Button } from "@/app/components/ui/Button";
 import { Card, CardContent } from "@/app/components/ui/Card";
+import { Input } from "@/app/components/ui/Input";
+import { Select } from "@/app/components/ui/Select";
 import { Badge } from "@/app/components/ui/Badge";
 import { 
   Plus, 
@@ -72,7 +74,7 @@ export default function KiralikPage() {
             user:user_id (id, username, full_name, avatar_url)
           `)
           .eq("status", "approved")
-          .eq("listing_type", "rent")
+          .in("listing_type", ["rent", "roommate"])
           .order("created_at", { ascending: false });
 
         // Filters
@@ -146,12 +148,12 @@ export default function KiralikPage() {
   const hasActiveFilters = selectedState !== "all" || selectedPropertyType !== "all" || priceMin || priceMax || bedroomsMin;
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="ak-page">
       <div className="flex">
         <Sidebar />
 
         <main className="flex-1">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="ak-shell ak-shell-wide py-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div className="flex items-center gap-3">
@@ -163,7 +165,7 @@ export default function KiralikPage() {
                 <div>
                   <h1 className="text-2xl font-bold flex items-center gap-2">
                     <Home className="text-blue-500" />
-                    Kiralık İlanlar
+                    Kiralık & Ev Arkadaşı İlanları
                   </h1>
                   <p className="text-neutral-500 text-sm">
                     {filteredListings.length} ilan bulundu
@@ -184,34 +186,31 @@ export default function KiralikPage() {
               <CardContent className="p-4">
                 <div className="flex flex-col lg:flex-row gap-4">
                   {/* Search */}
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={20} />
-                    <input
+                  <div className="flex-1">
+                    <Input
                       type="text"
                       placeholder="Adres, şehir veya mahalle ara..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      icon={<Search size={20} />}
+                      className="pl-10"
                     />
                   </div>
 
                   {/* State Filter */}
-                  <select
+                  <Select
                     value={selectedState}
                     onChange={(e) => setSelectedState(e.target.value)}
-                    className="px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[160px]"
-                  >
-                    <option value="all">Tüm Eyaletler</option>
-                    {US_STATES.map(state => (
-                      <option key={state.value} value={state.value}>
-                        {state.label}
-                      </option>
-                    ))}
-                  </select>
+                    className="min-w-[160px]"
+                    options={[
+                      { value: "all", label: "Tüm Eyaletler" },
+                      ...US_STATES.map((state) => ({ value: state.value, label: state.label })),
+                    ]}
+                  />
 
                   {/* Filters Toggle */}
                   <Button 
-                    variant="outline" 
+                    variant="secondary" 
                     onClick={() => setShowFilters(!showFilters)}
                     className="gap-2"
                   >
@@ -254,38 +253,35 @@ export default function KiralikPage() {
                       {/* Property Type */}
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Emlak Tipi</label>
-                        <select
+                        <Select
                           value={selectedPropertyType}
                           onChange={(e) => setSelectedPropertyType(e.target.value as any)}
-                          className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        >
-                          <option value="all">Tümü</option>
-                          {Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {PROPERTY_TYPE_ICONS[value as PropertyType]} {label}
-                            </option>
-                          ))}
-                        </select>
+                          className="text-sm"
+                          options={[
+                            { value: "all", label: "Tümü" },
+                            ...Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => ({ value, label: `${PROPERTY_TYPE_ICONS[value as PropertyType]} ${label}` })),
+                          ]}
+                        />
                       </div>
 
                       {/* Price Range */}
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Fiyat Aralığı</label>
                         <div className="flex items-center gap-2">
-                          <input
+                          <Input
                             type="number"
                             placeholder="Min"
                             value={priceMin}
                             onChange={(e) => setPriceMin(e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            className="text-sm"
                           />
                           <span className="text-neutral-400">-</span>
-                          <input
+                          <Input
                             type="number"
                             placeholder="Max"
                             value={priceMax}
                             onChange={(e) => setPriceMax(e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            className="text-sm"
                           />
                         </div>
                       </div>
@@ -293,18 +289,19 @@ export default function KiralikPage() {
                       {/* Bedrooms */}
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Min. Yatak Odası</label>
-                        <select
+                        <Select
                           value={bedroomsMin}
                           onChange={(e) => setBedroomsMin(e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        >
-                          <option value="">Farketmez</option>
-                          <option value="0">Stüdyo</option>
-                          <option value="1">1+</option>
-                          <option value="2">2+</option>
-                          <option value="3">3+</option>
-                          <option value="4">4+</option>
-                        </select>
+                          className="text-sm"
+                          options={[
+                            { value: "", label: "Farketmez" },
+                            { value: "0", label: "Stüdyo" },
+                            { value: "1", label: "1+" },
+                            { value: "2", label: "2+" },
+                            { value: "3", label: "3+" },
+                            { value: "4", label: "4+" },
+                          ]}
+                        />
                       </div>
 
                       {/* Clear Filters */}
@@ -343,7 +340,7 @@ export default function KiralikPage() {
                       : "Henüz kiralık ilan eklenmemiş."}
                   </p>
                   {hasActiveFilters && (
-                    <Button variant="outline" onClick={clearFilters} className="gap-2">
+                    <Button variant="secondary" onClick={clearFilters} className="gap-2">
                       <X size={16} />
                       Filtreleri Temizle
                     </Button>
@@ -399,7 +396,7 @@ function ListingGridCard({ listing }: { listing: Listing }) {
               <Home className="w-12 h-12 text-neutral-400" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(var(--color-trust-rgb),0.6)] via-transparent to-transparent" />
           
           {/* Property Type Badge */}
           <div className="absolute top-3 left-3">
@@ -423,7 +420,7 @@ function ListingGridCard({ listing }: { listing: Listing }) {
 
           {/* Image Count */}
           {listing.images && listing.images.length > 1 && (
-            <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded">
+            <div className="absolute bottom-3 right-3 bg-[rgba(var(--color-trust-rgb),0.6)] text-white text-xs px-2 py-1 rounded">
               +{listing.images.length - 1} foto
             </div>
           )}
@@ -505,7 +502,7 @@ function ListingListCard({ listing }: { listing: Listing }) {
               
               {/* Image Count */}
               {listing.images && listing.images.length > 1 && (
-                <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                <div className="absolute bottom-2 right-2 bg-[rgba(var(--color-trust-rgb),0.6)] text-white text-xs px-2 py-1 rounded">
                   +{listing.images.length - 1}
                 </div>
               )}

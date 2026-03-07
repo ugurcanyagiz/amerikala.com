@@ -76,10 +76,10 @@ export default function IsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 md:pb-0">
+    <div className="ak-page pb-20 md:pb-0">
       {/* Hero Section */}
       <section className="relative py-12 lg:py-16 bg-gradient-to-b from-blue-50 to-transparent dark:from-blue-950/20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="ak-shell">
           <div className="text-center max-w-2xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 text-sm font-medium mb-4">
               <Briefcase size={16} />
@@ -116,8 +116,29 @@ export default function IsPage() {
       </section>
 
       {/* Quick Links */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <section className="ak-shell py-8">
         <div className="grid md:grid-cols-2 gap-4">
+          <Link href="/is/isci-ariyorum" className="group">
+            <Card className="h-full hover:shadow-lg transition-all border-2 border-transparent hover:border-green-200 dark:hover:border-green-800">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <Users className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold mb-1 group-hover:text-green-600 transition-colors">
+                      İş İlanları
+                    </h3>
+                    <p className="text-sm text-neutral-500">
+                      İş ilanı paylaşın veya iş ilanı bulun.
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-neutral-300 group-hover:text-green-600 group-hover:translate-x-1 transition-all" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
           <Link href="/is/ariyorum" className="group">
             <Card className="h-full hover:shadow-lg transition-all border-2 border-transparent hover:border-blue-200 dark:hover:border-blue-800">
               <CardContent className="p-6">
@@ -138,32 +159,11 @@ export default function IsPage() {
               </CardContent>
             </Card>
           </Link>
-
-          <Link href="/is/isci-ariyorum" className="group">
-            <Card className="h-full hover:shadow-lg transition-all border-2 border-transparent hover:border-green-200 dark:hover:border-green-800">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                    <Users className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold mb-1 group-hover:text-green-600 transition-colors">
-                      İşçi Arıyorum
-                    </h3>
-                    <p className="text-sm text-neutral-500">
-                      İş ilanı verin, yetenekleri bulun.
-                    </p>
-                  </div>
-                  <ArrowRight className="h-5 w-5 text-neutral-300 group-hover:text-green-600 group-hover:translate-x-1 transition-all" />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
         </div>
       </section>
 
       {/* Recent Listings */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 pb-12">
+      <section className="ak-shell pb-12">
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-blue-500" />

@@ -17,6 +17,8 @@ import {
 import Sidebar from "../components/Sidebar";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
+import { Input } from "../components/ui/Input";
+import { Select } from "../components/ui/Select";
 import { Avatar } from "../components/ui/Avatar";
 import { Badge } from "../components/ui/Badge";
 import { 
@@ -50,51 +52,69 @@ export default function EventsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
 
+  const formatTime = (time?: string | null) => {
+    if (!time) return "Saat belirtilmedi";
+    return time.slice(0, 5);
+  };
+
   // Fetch approved events
   useEffect(() => {
     const fetchEvents = async () => {
       setLoading(true);
       try {
-        let query = supabase
-          .from("events")
-          .select(`
-            *,
-            organizer:organizer_id (id, username, full_name, avatar_url)
-          `)
-          .eq("status", "approved")
-          .gte("event_date", new Date().toISOString().split("T")[0])
-          .order("event_date", { ascending: true });
+        const queryBuild = (selectText: string) => {
+          let query = supabase
+            .from("events")
+            .select(selectText)
+            .eq("status", "approved")
+            .gte("event_date", new Date().toISOString().split("T")[0])
+            .order("event_date", { ascending: true });
 
-        // Filter by state
-        if (selectedState !== "all") {
-          query = query.eq("state", selectedState);
-        }
+          // Filter by state
+          if (selectedState !== "all") {
+            query = query.eq("state", selectedState);
+          }
 
-        // Filter by category
-        if (selectedCategory !== "all") {
-          query = query.eq("category", selectedCategory);
-        }
+          // Filter by category
+          if (selectedCategory !== "all") {
+            query = query.eq("category", selectedCategory);
+          }
 
-        // Filter by date
-        const today = new Date();
-        if (dateFilter === "today") {
-          query = query.eq("event_date", today.toISOString().split("T")[0]);
-        } else if (dateFilter === "week") {
-          const weekLater = new Date(today);
-          weekLater.setDate(weekLater.getDate() + 7);
-          query = query.lte("event_date", weekLater.toISOString().split("T")[0]);
-        } else if (dateFilter === "month") {
-          const monthLater = new Date(today);
-          monthLater.setMonth(monthLater.getMonth() + 1);
-          query = query.lte("event_date", monthLater.toISOString().split("T")[0]);
-        }
+          // Filter by date
+          const today = new Date();
+          if (dateFilter === "today") {
+            query = query.eq("event_date", today.toISOString().split("T")[0]);
+          } else if (dateFilter === "week") {
+            const weekLater = new Date(today);
+            weekLater.setDate(weekLater.getDate() + 7);
+            query = query.lte("event_date", weekLater.toISOString().split("T")[0]);
+          } else if (dateFilter === "month") {
+            const monthLater = new Date(today);
+            monthLater.setMonth(monthLater.getMonth() + 1);
+            query = query.lte("event_date", monthLater.toISOString().split("T")[0]);
+          }
 
-        const { data, error } = await query;
+          return query;
+        };
+
+        const selectWithFk = `
+          *,
+          organizer:profiles!events_organizer_id_fkey (id, username, first_name, last_name, full_name, avatar_url),
+          creator:profiles!events_created_by_fkey (id, username, first_name, last_name, full_name, avatar_url)
+        `;
+        const selectLegacy = `
+          *,
+          organizer:organizer_id (id, username, first_name, last_name, full_name, avatar_url),
+          creator:created_by (id, username, first_name, last_name, full_name, avatar_url)
+        `;
+
+        const resultWithFk = await queryBuild(selectWithFk);
+        const { data, error } = resultWithFk.error ? await queryBuild(selectLegacy) : resultWithFk;
 
         if (error) {
           console.error("Error fetching events:", error);
         } else {
-          setEvents(data || []);
+          setEvents(((data as unknown as Event[] | null) || []));
         }
       } catch (error) {
         console.error("Error:", error);
@@ -145,12 +165,12 @@ export default function EventsPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="ak-page">
       <div className="flex">
         <Sidebar />
 
         <main className="flex-1">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="ak-shell ak-shell-wide py-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
               <div>
@@ -172,7 +192,7 @@ export default function EventsPage() {
                 </Link>
               ) : (
                 <Link href="/login">
-                  <Button variant="outline" className="gap-2">
+                  <Button variant="secondary" className="gap-2">
                     Etkinlik oluşturmak için giriş yapın
                   </Button>
                 </Link>
@@ -183,18 +203,18 @@ export default function EventsPage() {
             <div className="mb-6 space-y-4">
               {/* Search Bar */}
               <div className="flex gap-3">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={20} />
-                  <input
+                <div className="flex-1">
+                  <Input
                     type="text"
                     placeholder="Etkinlik, konum veya organizatör ara..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-red-500 text-lg"
+                    icon={<Search size={20} />}
+                    className="h-[50px] pl-12 text-lg"
                   />
                 </div>
                 <Button 
-                  variant="outline" 
+                  variant="secondary" 
                   size="lg"
                   onClick={() => setShowFilters(!showFilters)}
                   className="gap-2"
@@ -214,7 +234,7 @@ export default function EventsPage() {
                 ].map(filter => (
                   <button
                     key={filter.value}
-                    onClick={() => setDateFilter(filter.value as any)}
+                    onClick={() => setDateFilter(filter.value as "all" | "today" | "week" | "month")}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                       dateFilter === filter.value
                         ? "bg-red-500 text-white"
@@ -234,34 +254,27 @@ export default function EventsPage() {
                       {/* State Filter */}
                       <div>
                         <label className="block text-sm font-medium mb-2">Eyalet</label>
-                        <select
+                        <Select
                           value={selectedState}
                           onChange={(e) => setSelectedState(e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        >
-                          <option value="all">Tüm Eyaletler</option>
-                          {US_STATES.map(state => (
-                            <option key={state.value} value={state.value}>
-                              {state.label}
-                            </option>
-                          ))}
-                        </select>
+                          options={[
+                            { value: "all", label: "Tüm Eyaletler" },
+                            ...US_STATES.map((state) => ({ value: state.value, label: state.label }))
+                          ]}
+                        />
                       </div>
 
                       {/* Category Filter */}
                       <div>
                         <label className="block text-sm font-medium mb-2">Kategori</label>
-                        <select
+                        <Select
                           value={selectedCategory}
-                          onChange={(e) => setSelectedCategory(e.target.value as any)}
-                          className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        >
-                          {categories.map(cat => (
-                            <option key={cat.value} value={cat.value}>
-                              {cat.icon} {cat.label}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(e) => setSelectedCategory(e.target.value as EventCategory | "all")}
+                          options={categories.map((cat) => ({
+                            value: cat.value,
+                            label: `${cat.icon} ${cat.label}`
+                          }))}
+                        />
                       </div>
                     </div>
                   </CardContent>
@@ -338,7 +351,7 @@ export default function EventsPage() {
                     </h2>
                     <div className="space-y-3">
                       {regularEvents.map(event => (
-                        <EventListCard key={event.id} event={event} />
+                        <EventListCard key={event.id} event={event} formatTime={formatTime} />
                       ))}
                     </div>
                   </div>
@@ -353,6 +366,12 @@ export default function EventsPage() {
 }
 
 // Featured Event Card Component
+function getDisplayName(profile?: { username?: string | null; first_name?: string | null; last_name?: string | null; full_name?: string | null } | null) {
+  if (!profile) return "Anonim";
+  const full = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
+  return full || profile.username || profile.full_name || "Anonim";
+}
+
 function FeaturedEventCard({ event }: { event: Event }) {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -363,7 +382,7 @@ function FeaturedEventCard({ event }: { event: Event }) {
   };
 
   const date = formatDate(event.event_date);
-  const organizer = event.organizer as any;
+  const organizer = event.organizer || (event as Event & { creator?: Event["organizer"] }).creator || null;
 
   return (
     <Link href={`/meetups/${event.id}`}>
@@ -377,11 +396,15 @@ function FeaturedEventCard({ event }: { event: Event }) {
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-5xl">{EVENT_CATEGORY_ICONS[event.category]}</span>
+            <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 dark:bg-neutral-900">
+              <img
+                src="/logo.png"
+                alt="No picture"
+                className="h-16 w-16 object-contain opacity-90"
+              />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(var(--color-trust-rgb),0.6)] to-transparent" />
           
           {/* Date Badge */}
           <div className="absolute top-3 left-3 bg-white dark:bg-neutral-900 rounded-lg px-2 py-1 text-center shadow-lg">
@@ -409,7 +432,7 @@ function FeaturedEventCard({ event }: { event: Event }) {
           <div className="space-y-1.5 text-xs text-neutral-500">
             <div className="flex items-center gap-1.5">
               <Clock size={14} />
-              <span>{event.start_time.slice(0, 5)}</span>
+              <span>{event.start_time ? event.start_time.slice(0, 5) : "Saat belirtilmedi"}</span>
             </div>
             <div className="flex items-center gap-1.5">
               {event.is_online ? <Globe size={14} /> : <MapPin size={14} />}
@@ -419,7 +442,7 @@ function FeaturedEventCard({ event }: { event: Event }) {
             </div>
             <div className="flex items-center gap-1.5">
               <Users size={14} />
-              <span>{event.current_attendees} katılımcı</span>
+              <span>{event.current_attendees} katılımcı · {getDisplayName(organizer)}</span>
             </div>
           </div>
         </CardContent>
@@ -429,7 +452,7 @@ function FeaturedEventCard({ event }: { event: Event }) {
 }
 
 // Event List Card Component
-function EventListCard({ event }: { event: Event }) {
+function EventListCard({ event, formatTime }: { event: Event; formatTime: (time?: string | null) => string }) {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return {
@@ -440,7 +463,7 @@ function EventListCard({ event }: { event: Event }) {
   };
 
   const date = formatDate(event.event_date);
-  const organizer = event.organizer as any;
+  const organizer = event.organizer || (event as Event & { creator?: Event["organizer"] }).creator || null;
 
   return (
     <Link href={`/meetups/${event.id}`}>
@@ -472,22 +495,28 @@ function EventListCard({ event }: { event: Event }) {
                 </div>
 
                 {/* Cover Thumbnail */}
-                {event.cover_image_url && (
-                  <div className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden hidden sm:block">
-                    <img 
-                      src={event.cover_image_url} 
+                <div className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden hidden sm:block bg-neutral-100 dark:bg-neutral-900">
+                  {event.cover_image_url ? (
+                    <img
+                      src={event.cover_image_url}
                       alt={event.title}
                       className="w-full h-full object-cover"
                     />
-                  </div>
-                )}
+                  ) : (
+                    <img
+                      src="/logo.png"
+                      alt="No picture"
+                      className="w-full h-full object-contain p-3 opacity-90"
+                    />
+                  )}
+                </div>
               </div>
 
               {/* Meta */}
               <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-neutral-500">
                 <div className="flex items-center gap-1">
                   <Clock size={16} />
-                  <span>{event.start_time.slice(0, 5)}</span>
+                  <span>{formatTime(event.start_time)}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   {event.is_online ? <Globe size={16} /> : <MapPin size={16} />}
@@ -495,7 +524,7 @@ function EventListCard({ event }: { event: Event }) {
                 </div>
                 <div className="flex items-center gap-1">
                   <Users size={16} />
-                  <span>{event.current_attendees} katılımcı</span>
+                  <span>{event.current_attendees} katılımcı · {getDisplayName(organizer)}</span>
                 </div>
                 {!event.is_free && (
                   <Badge variant="success" size="sm">${event.price}</Badge>

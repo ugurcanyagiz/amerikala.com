@@ -132,7 +132,7 @@ export default function AlisverisIlanlarimPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="ak-page">
       <div className="flex">
         <Sidebar />
 
@@ -251,7 +251,7 @@ export default function AlisverisIlanlarimPage() {
                           {/* Actions */}
                           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
                             <Link href={`/alisveris/ilan/${listing.id}`}>
-                              <Button variant="outline" size="sm" className="gap-1">
+                              <Button variant="secondary" size="sm" className="gap-1">
                                 <Eye size={16} />
                                 Görüntüle
                               </Button>

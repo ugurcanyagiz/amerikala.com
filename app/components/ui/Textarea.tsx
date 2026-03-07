@@ -6,35 +6,37 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 }
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className = "", label, error, ...props }, ref) => {
+  ({ className = "", label, error, id, ...props }, ref) => {
+    const generatedId = React.useId();
+    const textareaId = id || generatedId;
+
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium mb-2 text-neutral-900 dark:text-neutral-50">
+          <label htmlFor={textareaId} className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
             {label}
           </label>
         )}
         <textarea
+          id={textareaId}
           className={`
-            flex min-h-[100px] w-full rounded-lg
-            bg-white dark:bg-neutral-950
-            border border-neutral-200 dark:border-neutral-800
-            px-3 py-2 text-sm
-            transition-smooth
-            placeholder:text-neutral-500
-            focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent
-            disabled:cursor-not-allowed disabled:opacity-50
-            hover:border-red-500
+            min-h-[100px] w-full rounded-[var(--radius-xl)] border bg-white px-4 py-3 text-sm text-[var(--color-ink)]
+            placeholder:text-[var(--color-ink-tertiary)]
+            transition-colors duration-150
+            focus:outline-none focus:ring-2
+            disabled:cursor-not-allowed disabled:bg-white disabled:text-[var(--color-ink-tertiary)] disabled:opacity-60
             resize-none
-            ${error ? "border-red-500 focus:ring-red-500" : ""}
+            ${
+              error
+                ? "border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[var(--color-error)]/20"
+                : "border-[var(--color-border)] hover:border-[var(--color-border-strong)] focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)]/20"
+            }
             ${className}
           `}
           ref={ref}
           {...props}
         />
-        {error && (
-          <p className="mt-1.5 text-sm text-red-500">{error}</p>
-        )}
+        {error && <p className="mt-1.5 text-sm text-[var(--color-error)]">{error}</p>}
       </div>
     );
   }

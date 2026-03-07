@@ -4,9 +4,8 @@ import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css";
 import Navbar from "./components/Navbar";
-import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
-import FloatingLanguageSwitcher from "./components/FloatingLanguageSwitcher";
+import { NotificationProvider } from "./contexts/NotificationContext";
 
 const inter = Inter({
     subsets: ["latin"],

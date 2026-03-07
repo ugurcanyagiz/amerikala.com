@@ -59,7 +59,7 @@ export default function MyEventsPage() {
         const { data, error } = await supabase
           .from("events")
           .select("*")
-          .eq("organizer_id", user.id)
+          .or(`organizer_id.eq.${user.id},created_by.eq.${user.id}`)
           .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -76,6 +76,7 @@ export default function MyEventsPage() {
 
   // Delete event
   const handleDeleteEvent = async (eventId: string) => {
+    if (!user) return;
     if (!confirm("Bu etkinliği silmek istediğinizden emin misiniz?")) return;
 
     setDeletingEvent(eventId);
@@ -83,7 +84,8 @@ export default function MyEventsPage() {
       const { error } = await supabase
         .from("events")
         .delete()
-        .eq("id", eventId);
+        .eq("id", eventId)
+        .eq("organizer_id", user.id);
 
       if (error) throw error;
       setEvents(prev => prev.filter(e => e.id !== eventId));
@@ -127,7 +129,7 @@ export default function MyEventsPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="ak-page">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -298,7 +300,7 @@ export default function MyEventsPage() {
                       {/* Actions */}
                       <div className="flex flex-wrap gap-2">
                         <Link href={`/meetups/${event.id}`}>
-                          <Button variant="outline" size="sm" className="gap-1">
+                          <Button variant="secondary" size="sm" className="gap-1">
                             <Eye size={16} />
                             Görüntüle
                           </Button>

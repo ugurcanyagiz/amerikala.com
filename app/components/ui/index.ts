@@ -24,3 +24,17 @@ export type { AvatarProps } from './Avatar';
 
 export { Modal } from './Modal';
 export type { ModalProps } from './Modal';
+
+export { SelectionPicker } from './SelectionPicker';
+export type { SelectionOption } from './SelectionPicker';
+
+export { Sheet } from './Sheet';
+export { FilterChip } from './FilterChip';
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs';
+export type { TabsProps } from './Tabs';
+export { Alert } from './Alert';
+export type { AlertProps } from './Alert';
+export { Toast, ToastViewport } from './Toast';
+export type { ToastProps } from './Toast';
+
+export { PageHero, StickyFilterBar, ResponsiveCardGrid } from './SectionPrimitives';
