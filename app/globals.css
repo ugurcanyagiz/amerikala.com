@@ -1145,3 +1145,25 @@
     transform: translate3d(0, 0, 0);
   }
 }
+
+
+/* Team Hair Pro homepage motion */
+.review-track {
+  animation: floatReviews 30s linear infinite;
+  width: max-content;
+}
+
+@keyframes floatReviews {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review-track {
+    animation: none;
+  }
+}
