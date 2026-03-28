@@ -171,7 +171,6 @@ export default function Home() {
   const [isPostListingModalOpen, setIsPostListingModalOpen] = useState(false);
   const [latestAdsCategoryFilter, setLatestAdsCategoryFilter] = useState<"all" | HomeCategoryKey>("all");
   const [activeCategoryPreview, setActiveCategoryPreview] = useState<HomeCategoryKey>("realEstate");
-  const [mobileCategorySecondTapTarget, setMobileCategorySecondTapTarget] = useState<HomeCategoryKey | null>(null);
   const [yardimlasmaSpotlightItems, setYardimlasmaSpotlightItems] = useState<YardimlasmaSpotlightItem[]>([]);
   const [categoryPreviewItems, setCategoryPreviewItems] = useState<Record<HomeCategoryKey, UnifiedAd[]>>({
     events: [],
@@ -498,16 +497,9 @@ export default function Home() {
         return;
       }
 
-      if (mobileCategorySecondTapTarget === key) {
-        setMobileCategorySecondTapTarget(null);
-        router.push(config.href);
-        return;
-      }
-
       setActiveCategoryPreview(key);
-      setMobileCategorySecondTapTarget(key);
     },
-    [mobileCategorySecondTapTarget, router],
+    [router],
   );
 
   const featuredAds = useMemo(() => ads.slice(0, 4), [ads]);
