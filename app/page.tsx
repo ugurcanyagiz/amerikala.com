@@ -547,12 +547,7 @@ export default function Home() {
             <div className="app-page-container relative z-10 w-full">
               <div className="mx-auto w-full max-w-[1140px]">
                 <div className="hero-card-shell relative">
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 z-0 translate-x-4 -translate-y-4 rounded-[24px] border border-white/20 bg-[rgba(255,255,255,0.1)] shadow-[0_22px_60px_-52px_rgba(8,20,45,0.6)] backdrop-blur-[48px] md:translate-x-8 md:-translate-y-6"
-                  />
-
-                  <div className="relative z-10 rounded-[24px] border border-[rgba(255,255,255,0.66)] bg-[rgba(249,251,255,0.84)] px-6 py-6 text-[var(--color-ink)] shadow-[0_34px_80px_-44px_rgba(8,20,45,0.6)] backdrop-blur-[14px] md:px-10 md:py-7 lg:h-[430px] lg:px-14 lg:py-8 xl:px-16">
+                  <div className="relative z-10 rounded-[24px] px-6 py-6 text-[var(--color-ink)] md:px-10 md:py-7 lg:h-[430px] lg:px-14 lg:py-8 xl:px-16">
                     <HeroBackgroundCarousel />
                     <HeroAmbientVisual />
 
@@ -703,6 +698,8 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
               </div>
             </div>
           </section>
