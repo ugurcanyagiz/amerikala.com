@@ -98,10 +98,6 @@ type GroupEvent = {
   current_attendees: number;
 };
 
-type GroupMemberRow = Omit<GroupMember, "profile"> & {
-  profile: GroupProfile[] | GroupProfile | null;
-};
-
 type JoinRequest = {
   id: string;
   user_id: string;
@@ -141,11 +137,6 @@ const normalizeGroupPost = (row: GroupPostRow): GroupPost => ({
   user_id: row.user_id,
   profile: toSingleProfile(row.profile),
   comments: (row.comments || []).map(normalizeGroupComment),
-});
-
-const normalizeGroupMember = (row: GroupMemberRow): GroupMember => ({
-  ...row,
-  profile: (toSingleProfile(row.profile) ?? undefined) as GroupMember["profile"],
 });
 
 const normalizeJoinRequest = (row: JoinRequestRow): JoinRequest => ({
@@ -211,11 +202,7 @@ export default function GroupDetailPage() {
     setLoading(true);
 
     try {
-      const { data: groupData, error: groupError } = await supabase
-        .from("groups")
-        .select("*, creator:created_by (id, username, full_name, avatar_url)")
-        .eq("slug", slug)
-        .single();
+      const { data: groupData, error: groupError } = await supabase.from("groups").select("*").eq("slug", slug).single();
 
       if (groupError) throw groupError;
       const questionFromDb =
@@ -235,16 +222,16 @@ export default function GroupDetailPage() {
       setApplicationQuestionDraft(questionFromDb);
       setApplicationQuestionPreview(questionFromDb);
 
-      const [membersRes, postsRes, eventsRes] = await Promise.all([
+      const [membersRes, postsRes, eventsRes] = await Promise.allSettled([
         supabase
           .from("group_members")
-          .select("*, profile:user_id(id,username,full_name,avatar_url)")
+          .select("group_id, user_id, role, status, joined_at")
           .eq("group_id", groupData.id)
           .eq("status", "approved")
           .order("joined_at", { ascending: true }),
         supabase
           .from("posts")
-          .select("id, content, created_at, user_id, profile:user_id (id, username, full_name, avatar_url), comments(id, post_id, user_id, content, created_at, profile:user_id(id, username, full_name, avatar_url))")
+          .select("id, content, created_at, user_id, comments(id, post_id, user_id, content, created_at)")
           .eq("group_id", groupData.id)
           .order("created_at", { ascending: false })
           .limit(50),
@@ -256,18 +243,87 @@ export default function GroupDetailPage() {
           .limit(20),
       ]);
 
-      if (membersRes.error) throw membersRes.error;
-      if (postsRes.error) throw postsRes.error;
-      if (eventsRes.error) throw eventsRes.error;
+      const membersData =
+        membersRes.status === "fulfilled"
+          ? membersRes.value
+          : { data: null, error: membersRes.reason };
+      const postsData =
+        postsRes.status === "fulfilled"
+          ? postsRes.value
+          : { data: null, error: postsRes.reason };
+      const eventsData =
+        eventsRes.status === "fulfilled"
+          ? eventsRes.value
+          : { data: null, error: eventsRes.reason };
 
-      const memberRows = membersRes.data;
-      const postRows = postsRes.data;
-      const eventRows = eventsRes.data;
+      if (membersData.error) console.warn("group_members okunamadı:", membersData.error);
+      if (postsData.error) console.warn("group posts okunamadı:", postsData.error);
+      if (eventsData.error) console.warn("group events okunamadı:", eventsData.error);
 
-      const normalizedMembers = ((memberRows || []) as GroupMemberRow[]).map(normalizeGroupMember);
+      const memberRows = (membersData.data || []) as GroupMember[];
+      const postRows = (postsData.data || []) as Omit<GroupPostRow, "profile">[];
+      const eventRows = (eventsData.data || []) as GroupEvent[];
+
+      const profileIds = Array.from(
+        new Set([
+          groupData.created_by,
+          ...memberRows.map((member) => member.user_id),
+          ...postRows.map((post) => post.user_id),
+          ...postRows.flatMap((post) => (post.comments || []).map((comment) => comment.user_id)),
+        ].filter(Boolean))
+      );
+
+      const profileById = new Map<string, GroupProfile>();
+      if (profileIds.length > 0) {
+        const { data: profileRows, error: profileError } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url")
+          .in("id", profileIds);
+
+        if (profileError) {
+          console.warn("profiles okunamadı:", profileError);
+        } else {
+          (profileRows || []).forEach((profile) => {
+            profileById.set(profile.id, {
+              id: profile.id,
+              username: profile.username ?? null,
+              full_name: profile.full_name ?? null,
+              avatar_url: profile.avatar_url ?? null,
+            });
+          });
+        }
+      }
+
+      setGroup((prev) => ({
+        ...(prev || groupData),
+        ...groupData,
+        creator: profileById.get(groupData.created_by) as Group["creator"],
+      }));
+
+      const normalizedMembers: GroupMember[] = memberRows.map((member) => ({
+        ...member,
+        profile: profileById.get(member.user_id) as GroupMember["profile"],
+      }));
+
+      const normalizedPosts: GroupPost[] = postRows.map((post) => ({
+        id: post.id,
+        content: post.content,
+        created_at: post.created_at,
+        user_id: post.user_id,
+        profile: profileById.get(post.user_id) ?? null,
+        comments: (post.comments || []).map((comment) => ({
+          id: comment.id,
+          post_id: comment.post_id,
+          user_id: comment.user_id,
+          content: comment.content,
+          created_at: comment.created_at,
+          profile: profileById.get(comment.user_id) ?? null,
+        })),
+      }));
+
       setMembers(normalizedMembers);
-      setPosts(((postRows || []) as GroupPostRow[]).map(normalizeGroupPost));
-      setEvents((eventRows || []) as GroupEvent[]);
+      setPosts(normalizedPosts);
+      setEvents(eventRows);
 
       if (user) {
         const { data: membership } = await supabase
@@ -306,11 +362,11 @@ export default function GroupDetailPage() {
       }
     } catch (error) {
       console.error("fetch group error", error);
-      router.push("/groups");
+      setGroup(null);
     } finally {
       setLoading(false);
     }
-  }, [router, slug, user]);
+  }, [slug, user]);
 
   useEffect(() => {
     fetchGroup();
