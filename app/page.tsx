@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Building2, BriefcaseBusiness, CalendarDays, MapPin, Search, ShoppingBag, Users } from "lucide-react";
+import { ArrowRight, Building2, BriefcaseBusiness, CalendarDays, MapPin, Search, ShoppingBag } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import YardimlasmaSpotlight, { type YardimlasmaSpotlightItem } from "./components/YardimlasmaSpotlight";
 import { Button } from "./components/ui/Button";
@@ -342,16 +342,6 @@ export default function Home() {
     [ads, latestAdsCategoryFilter],
   );
 
-  const stats = useMemo(
-    () => [
-      { label: "Aktif Üye", value: formatCompactNumber(Math.max(3200, ads.length * 22)), icon: Users },
-      { label: "Toplam İlan", value: formatCompactNumber(ads.length), icon: ShoppingBag },
-      { label: "Yaklaşan Etkinlik", value: formatCompactNumber(ads.filter((a) => a.section === "events").length), icon: CalendarDays },
-      { label: "Topluluk Sorusu", value: formatCompactNumber(yardimlasmaSpotlightItems.length), icon: ArrowRight },
-    ],
-    [ads, yardimlasmaSpotlightItems.length],
-  );
-
   return (
     <div className="bg-slate-950 text-slate-900">
       <div className="flex">
@@ -481,18 +471,40 @@ export default function Home() {
           </section>
 
           <div className="bg-[linear-gradient(to_bottom,#020617_0%,#f8fafc_22%)]">
-            <section className="px-4 sm:px-6 lg:px-10">
-              <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 rounded-3xl border border-white/30 bg-white/90 p-4 shadow-[0_30px_90px_-60px_rgba(15,23,42,0.8)] sm:grid-cols-4 sm:gap-4 sm:p-6">
-                {stats.map((stat) => {
-                  const Icon = stat.icon;
-                  return (
-                    <div key={stat.label} className="rounded-2xl bg-slate-50 p-4">
-                      <div className="mb-2 inline-flex rounded-xl bg-white p-2 text-blue-600 shadow-sm"><Icon className="h-4 w-4" /></div>
-                      <p className="text-xl font-bold text-slate-900">{stat.value}</p>
-                      <p className="text-xs font-medium text-slate-500">{stat.label}</p>
-                    </div>
-                  );
-                })}
+            <section className="px-4 pb-14 pt-8 sm:px-6 lg:px-10">
+              <SectionHeader title="Katılım Alanları" subtitle="Keşiften etkileşime, etkileşimden topluluk üretimine geç." />
+              <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-12">
+                <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm lg:col-span-8">
+                  <h3 className="text-xl font-black text-slate-900">Nereden başlamak istersin?</h3>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
+                      const config = CATEGORY_CONFIG[key];
+                      const Icon = config.icon;
+                      return (
+                        <Link key={key} href={config.href} className={`rounded-2xl border border-slate-200 bg-gradient-to-br ${config.gradient} p-5 shadow-sm transition hover:-translate-y-0.5`}>
+                          <div className="inline-flex rounded-xl bg-white p-2 text-blue-700 shadow-sm"><Icon className="h-5 w-5" /></div>
+                          <h3 className="mt-3 text-lg font-bold text-slate-900">{config.title}</h3>
+                          <p className="mt-1 text-sm text-slate-600">{config.description}</p>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="rounded-[30px] border border-blue-200 bg-gradient-to-b from-blue-50 to-white p-6 shadow-sm lg:col-span-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.17em] text-blue-700">Dönüşüm Anı</p>
+                  <h3 className="mt-2 text-xl font-black text-slate-900">Topluluk ekonomisine hemen katıl</h3>
+                  <div className="mt-4 space-y-3">
+                    {conversionShowcase.map((item) => (
+                      <Link key={`convert-${item.id}`} href={item.href} className="block rounded-xl border border-blue-100 bg-white p-3 hover:border-blue-300">
+                        <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                        <p className="mt-1 text-xs text-slate-500">{item.location}</p>
+                      </Link>
+                    ))}
+                  </div>
+                  <Link href="/register" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                    Hemen Üye Ol <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
             </section>
 
@@ -548,43 +560,6 @@ export default function Home() {
                   ))}
                 </div>
                 <AdsGrid items={latestFilteredAds} loading={loading} />
-              </div>
-            </section>
-
-            <section className="px-4 pb-14 sm:px-6 lg:px-10">
-              <SectionHeader title="Katılım Alanları" subtitle="Keşiften etkileşime, etkileşimden topluluk üretimine geç." />
-              <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-12">
-                <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm lg:col-span-8">
-                  <h3 className="text-xl font-black text-slate-900">Nereden başlamak istersin?</h3>
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
-                      const config = CATEGORY_CONFIG[key];
-                      const Icon = config.icon;
-                      return (
-                        <Link key={key} href={config.href} className={`rounded-2xl border border-slate-200 bg-gradient-to-br ${config.gradient} p-5 shadow-sm transition hover:-translate-y-0.5`}>
-                          <div className="inline-flex rounded-xl bg-white p-2 text-blue-700 shadow-sm"><Icon className="h-5 w-5" /></div>
-                          <h3 className="mt-3 text-lg font-bold text-slate-900">{config.title}</h3>
-                          <p className="mt-1 text-sm text-slate-600">{config.description}</p>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="rounded-[30px] border border-blue-200 bg-gradient-to-b from-blue-50 to-white p-6 shadow-sm lg:col-span-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.17em] text-blue-700">Dönüşüm Anı</p>
-                  <h3 className="mt-2 text-xl font-black text-slate-900">Topluluk ekonomisine hemen katıl</h3>
-                  <div className="mt-4 space-y-3">
-                    {conversionShowcase.map((item) => (
-                      <Link key={`convert-${item.id}`} href={item.href} className="block rounded-xl border border-blue-100 bg-white p-3 hover:border-blue-300">
-                        <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                        <p className="mt-1 text-xs text-slate-500">{item.location}</p>
-                      </Link>
-                    ))}
-                  </div>
-                  <Link href="/register" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
-                    Hemen Üye Ol <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
               </div>
             </section>
 
@@ -707,10 +682,6 @@ function formatSalaryRange(min?: number | null, max?: number | null) {
   if (!min && !max) return "Maaş belirtilmedi";
   if (min && max) return `${formatCurrency(min)} - ${formatCurrency(max)}`;
   return `${formatCurrency(min || max)}+`;
-}
-
-function formatCompactNumber(value: number) {
-  return new Intl.NumberFormat("tr-TR", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
 function timeAgo(date: string) {
