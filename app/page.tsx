@@ -437,13 +437,13 @@ export default function Home() {
                   <div className="mt-6 flex flex-wrap items-center gap-3">
                     {user ? (
                       <Link href="#popular-listings">
-                        <Button className="rounded-xl border border-[#123d8d] bg-white px-7 text-[#123d8d] shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#b91c1c] hover:bg-[#123d8d] hover:text-white hover:shadow-md">
+                        <Button className="rounded-xl border border-[#123d8d] bg-white px-7 text-black shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#b91c1c] hover:bg-[#123d8d] hover:text-white hover:shadow-md">
                           Keşfet
                         </Button>
                       </Link>
                     ) : (
                       <Link href="/login">
-                        <Button className="rounded-xl border border-[#123d8d] bg-white px-7 text-[#123d8d] shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#b91c1c] hover:bg-[#123d8d] hover:text-white hover:shadow-md">
+                        <Button className="rounded-xl border border-[#123d8d] bg-white px-7 text-black shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#b91c1c] hover:bg-[#123d8d] hover:text-white hover:shadow-md">
                           Kayıt Ol
                         </Button>
                       </Link>
