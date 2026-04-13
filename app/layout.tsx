@@ -6,6 +6,8 @@ import "./globals.css";
 import Navbar from "./components/Navbar";
 import { AuthProvider } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
+import FloatingLanguageSwitcher from "./components/FloatingLanguageSwitcher";
 
 const inter = Inter({
     subsets: ["latin"],
@@ -80,7 +82,8 @@ export default function RootLayout({
                 className={`${inter.variable} ${jakarta.variable} font-sans min-h-screen antialiased`}
             >
                 <AuthProvider>
-                    <LanguageProvider>
+                    <NotificationProvider>
+                        <LanguageProvider>
                         {/* Floating Language Switcher */}
                         <FloatingLanguageSwitcher />
 
@@ -218,6 +221,7 @@ export default function RootLayout({
                             </footer>
                         </div>
                     </LanguageProvider>
+                    </NotificationProvider>
                 </AuthProvider>
             </body>
         </html>
