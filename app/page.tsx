@@ -472,7 +472,7 @@ export default function Home() {
             </div>
           </section>
 
-          <div className="bg-[linear-gradient(to_bottom,#020617_0%,#f8fafc_22%)]">
+          <div className="bg-[linear-gradient(to_bottom,#eff6ff_0%,#f8fafc_28%,#f1f5f9_100%)]">
             <section className="px-4 pb-14 pt-8 sm:px-6 lg:px-10">
               <SectionHeader title="Katılım Alanları" subtitle="Keşiften etkileşime, etkileşimden topluluk üretimine geç." />
               <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-12">
@@ -534,14 +534,14 @@ export default function Home() {
                       ))}
                     </div>
                   </div>
-                  <div className="rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 p-5 text-white shadow-sm">
-                    <h3 className="text-lg font-black">Toplulukta Yardımlaşma Canlı</h3>
-                    <p className="mt-1 text-sm text-slate-200">Gerçek sorular, gerçek destek, hızlı geri dönüşler.</p>
+                  <div className="rounded-[28px] border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-rose-50 p-5 text-slate-900 shadow-sm">
+                    <h3 className="text-lg font-black text-slate-900">Toplulukta Yardımlaşma Canlı</h3>
+                    <p className="mt-1 text-sm text-slate-600">Gerçek sorular, gerçek destek, hızlı geri dönüşler.</p>
                     <div className="mt-4 space-y-2">
                       {yardimlasmaSpotlightItems.slice(0, 3).map((item) => (
-                        <Link key={item.id} href={item.href} className="block rounded-xl border border-white/15 bg-white/10 p-3 text-sm hover:bg-white/15">
-                          <p className="font-semibold text-white">{item.excerpt}</p>
-                          <p className="mt-1 text-xs text-slate-200">{item.location || "ABD geneli"}</p>
+                        <Link key={item.id} href={item.href} className="block rounded-xl border border-blue-100 bg-white p-3 text-sm transition hover:border-blue-200 hover:bg-blue-50/40">
+                          <p className="font-semibold text-slate-900">{item.excerpt}</p>
+                          <p className="mt-1 text-xs text-slate-500">{item.location || "ABD geneli"}</p>
                         </Link>
                       ))}
                     </div>
