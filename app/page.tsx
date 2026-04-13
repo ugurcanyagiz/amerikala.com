@@ -343,28 +343,30 @@ export default function Home() {
   );
 
   return (
-    <div className="bg-slate-950 text-slate-900">
+    <div className="bg-slate-50 text-slate-900">
       <div className="flex">
         <Sidebar />
         <main className="flex-1">
           <section className="relative isolate overflow-hidden px-4 pb-20 pt-12 sm:px-6 lg:px-10 lg:pt-16">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,rgba(56,189,248,0.35),transparent_35%),radial-gradient(circle_at_80%_15%,rgba(99,102,241,0.3),transparent_38%),radial-gradient(circle_at_50%_95%,rgba(249,115,22,0.22),transparent_42%),linear-gradient(165deg,#0f172a_5%,#111827_55%,#0b1120_100%)]" />
-            <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(rgba(148,163,184,0.45)_0.8px,transparent_0.8px)] [background-size:18px_18px]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(56,189,248,0.22),transparent_40%),radial-gradient(circle_at_88%_12%,rgba(239,68,68,0.15),transparent_34%),radial-gradient(circle_at_50%_86%,rgba(251,146,60,0.17),transparent_38%),linear-gradient(170deg,#eff6ff_0%,#f8fafc_52%,#eef2ff_100%)]" />
+            <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(120deg,rgba(37,99,235,0.08)_0,rgba(37,99,235,0.08)_1px,transparent_1px,transparent_22px),linear-gradient(to_right,rgba(220,38,38,0.06)_0,rgba(220,38,38,0.06)_1px,transparent_1px,transparent_22px)] [background-size:24px_24px]" />
+            <div className="pointer-events-none absolute -left-10 top-20 h-56 w-56 rounded-full bg-white/70 blur-3xl" />
+            <div className="pointer-events-none absolute right-0 top-12 h-72 w-72 rounded-full bg-blue-100/80 blur-3xl" />
             <div className="relative mx-auto max-w-7xl">
-              <div className="grid gap-8 rounded-[36px] border border-white/15 bg-white/10 p-6 shadow-[0_60px_120px_-60px_rgba(14,116,255,0.65)] backdrop-blur-xl lg:grid-cols-12 lg:p-10">
+              <div className="grid gap-8 rounded-[36px] border border-blue-100 bg-white/85 p-6 shadow-[0_50px_100px_-60px_rgba(14,116,255,0.45)] backdrop-blur-xl lg:grid-cols-12 lg:p-10">
                 <div className="lg:col-span-8">
-                  <p className="mb-5 inline-flex rounded-full border border-sky-300/35 bg-sky-300/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100">Amerikala Topluluğu</p>
-                  <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
+                  <p className="mb-5 inline-flex rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Türk - Amerikan Topluluğu</p>
+                  <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
                   Amerika’daki Türk topluluğunun buluşma noktası
                   </h1>
-                  <p className="mt-5 max-w-3xl text-base text-slate-200 sm:text-lg">
+                  <p className="mt-5 max-w-3xl text-base text-slate-700 sm:text-lg">
                   Etkinlik ara, iş bul, ev keşfet, topluluğundan destek al. Amerikala’da her gün yeni bağlantılar, fırsatlar ve paylaşımlar seni bekliyor.
                   </p>
 
                   <div ref={searchBoxRef} className="relative mt-8 max-w-4xl">
-                    <div className="flex flex-col gap-3 rounded-2xl border border-white/20 bg-slate-950/45 p-3 shadow-2xl sm:flex-row sm:items-center">
+                    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-lg sm:flex-row sm:items-center">
                       <div className="flex flex-1 items-center gap-3 px-2">
-                        <Search className="h-5 w-5 text-slate-300" />
+                        <Search className="h-5 w-5 text-slate-400" />
                         <input
                           value={searchQuery}
                           onChange={(event) => {
@@ -386,7 +388,7 @@ export default function Home() {
                               onSearchSubmit();
                             }
                           }}
-                          className="h-12 w-full border-none bg-transparent text-base text-white outline-none placeholder:text-slate-300"
+                          className="h-12 w-full border-none bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400"
                           placeholder="Etkinlik ara, iş bul, ev ara, grup keşfet..."
                           aria-label="Site içi arama"
                         />
@@ -445,21 +447,21 @@ export default function Home() {
                         <Button className="rounded-xl bg-orange-500 px-7 text-white hover:bg-orange-600">Paylaşım Yap</Button>
                       </Link>
                     )}
-                    <Link href="/feed" className="rounded-xl border border-white/50 px-6 py-2.5 text-sm font-semibold text-white hover:bg-white/10">
+                    <Link href="/feed" className="rounded-xl border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
                       Topluluk Akışı
                     </Link>
                   </div>
                 </div>
                 <div className="lg:col-span-4">
-                  <div className="rounded-3xl border border-white/15 bg-slate-950/35 p-5">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">Canlı Topluluk Nabzı</p>
+                  <div className="rounded-3xl border border-blue-100 bg-gradient-to-b from-white to-blue-50 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Canlı Topluluk Nabzı</p>
                     <div className="mt-4 space-y-3">
                       {pulseFeed.slice(0, 4).map((item, index) => (
-                        <Link key={`pulse-${item.id}`} href={item.href} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10">
-                          <span className="mt-1 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-xs font-bold text-white">{index + 1}</span>
+                        <Link key={`pulse-${item.id}`} href={item.href} className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-white p-3 transition hover:border-blue-200 hover:bg-blue-50/40">
+                          <span className="mt-1 inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">{index + 1}</span>
                           <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold text-white">{item.title}</span>
-                            <span className="mt-0.5 block text-xs text-slate-300">{item.location}</span>
+                            <span className="block truncate text-sm font-semibold text-slate-900">{item.title}</span>
+                            <span className="mt-0.5 block text-xs text-slate-600">{item.location}</span>
                           </span>
                         </Link>
                       ))}
