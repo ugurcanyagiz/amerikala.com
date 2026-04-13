@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
@@ -315,11 +315,6 @@ export default function GroupDetailPage() {
   useEffect(() => {
     fetchGroup();
   }, [fetchGroup]);
-
-  const lockedByPrivacy = useMemo(() => {
-    if (!group?.is_private) return false;
-    return !isApprovedMember;
-  }, [group?.is_private, isApprovedMember]);
 
   const handleJoinGroup = async () => {
     if (!group) return;
@@ -706,16 +701,7 @@ export default function GroupDetailPage() {
           ))}
         </div>
 
-        {lockedByPrivacy ? (
-          <Card className="glass">
-            <CardContent className="p-10 text-center">
-              <Lock className="mx-auto mb-3 text-neutral-400" />
-              <h3 className="font-semibold mb-1">Bu grup dışarıya kapalıdır</h3>
-              <p className="text-sm text-neutral-500">İçerikleri görmek için üyelik başvurusu gönderin.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               {activeTab === "feed" && (
                 <>
@@ -1077,7 +1063,6 @@ export default function GroupDetailPage() {
               </Link>
             </div>
           </div>
-        )}
       </div>
     </div>
   );
