@@ -335,6 +335,8 @@ export default function Home() {
   };
 
   const featuredAds = useMemo(() => ads.slice(0, 6), [ads]);
+  const pulseFeed = useMemo(() => ads.slice(0, 5), [ads]);
+  const conversionShowcase = useMemo(() => ads.slice(0, 3), [ads]);
   const latestFilteredAds = useMemo(
     () => (latestAdsCategoryFilter === "all" ? ads : ads.filter((item) => item.section === latestAdsCategoryFilter)),
     [ads, latestAdsCategoryFilter],
@@ -351,213 +353,254 @@ export default function Home() {
   );
 
   return (
-    <div className="bg-slate-50 text-slate-900">
+    <div className="bg-slate-950 text-slate-900">
       <div className="flex">
         <Sidebar />
         <main className="flex-1">
-          <section className="relative overflow-hidden px-4 pb-16 pt-12 sm:px-6 lg:px-10 lg:pt-14">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(59,130,246,0.18),transparent_40%),radial-gradient(circle_at_80%_10%,rgba(14,165,233,0.16),transparent_38%),linear-gradient(to_bottom,rgba(255,255,255,1),rgba(248,250,252,1))]" />
-            <div className="absolute inset-0 opacity-[0.35] [background-image:radial-gradient(#93c5fd_1px,transparent_1px)] [background-size:18px_18px]" />
-            <div className="relative mx-auto max-w-6xl rounded-[32px] border border-slate-200/70 bg-white/85 p-6 shadow-[0_35px_90px_-50px_rgba(15,23,42,0.5)] backdrop-blur-xl sm:p-10">
-              <div className="mx-auto max-w-4xl text-center">
-                <p className="mb-4 inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Amerikala Topluluğu</p>
-                <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-5xl">
+          <section className="relative isolate overflow-hidden px-4 pb-20 pt-12 sm:px-6 lg:px-10 lg:pt-16">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,rgba(56,189,248,0.35),transparent_35%),radial-gradient(circle_at_80%_15%,rgba(99,102,241,0.3),transparent_38%),radial-gradient(circle_at_50%_95%,rgba(249,115,22,0.22),transparent_42%),linear-gradient(165deg,#0f172a_5%,#111827_55%,#0b1120_100%)]" />
+            <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(rgba(148,163,184,0.45)_0.8px,transparent_0.8px)] [background-size:18px_18px]" />
+            <div className="relative mx-auto max-w-7xl">
+              <div className="grid gap-8 rounded-[36px] border border-white/15 bg-white/10 p-6 shadow-[0_60px_120px_-60px_rgba(14,116,255,0.65)] backdrop-blur-xl lg:grid-cols-12 lg:p-10">
+                <div className="lg:col-span-8">
+                  <p className="mb-5 inline-flex rounded-full border border-sky-300/35 bg-sky-300/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100">Amerikala Topluluğu</p>
+                  <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
                   Amerika’daki Türk topluluğunun buluşma noktası
-                </h1>
-                <p className="mx-auto mt-4 max-w-3xl text-sm text-slate-600 sm:text-lg">
+                  </h1>
+                  <p className="mt-5 max-w-3xl text-base text-slate-200 sm:text-lg">
                   Etkinlik ara, iş bul, ev keşfet, topluluğundan destek al. Amerikala’da her gün yeni bağlantılar, fırsatlar ve paylaşımlar seni bekliyor.
-                </p>
-              </div>
+                  </p>
 
-              <div ref={searchBoxRef} className="relative mx-auto mt-8 max-w-4xl">
-                <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-lg sm:flex-row sm:items-center">
-                  <div className="flex flex-1 items-center gap-3 px-2">
-                    <Search className="h-5 w-5 text-slate-400" />
-                    <input
-                      value={searchQuery}
-                      onChange={(event) => {
-                        setSearchQuery(event.target.value);
-                        setSearchOpen(true);
-                      }}
-                      onFocus={() => setSearchOpen(true)}
-                      onKeyDown={(event) => {
-                        if (event.key === "ArrowDown" && suggestions.length) {
-                          event.preventDefault();
-                          setActiveSuggestionIndex((prev) => (prev + 1) % suggestions.length);
-                        }
-                        if (event.key === "ArrowUp" && suggestions.length) {
-                          event.preventDefault();
-                          setActiveSuggestionIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1));
-                        }
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          onSearchSubmit();
-                        }
-                      }}
-                      className="h-12 w-full border-none bg-transparent text-base outline-none placeholder:text-slate-400"
-                      placeholder="Etkinlik ara, iş bul, ev ara, grup keşfet..."
-                      aria-label="Site içi arama"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={onSearchSubmit}
-                    className="h-12 rounded-xl bg-blue-600 px-6 font-semibold text-white transition hover:bg-blue-700"
-                  >
-                    {searching ? "Aranıyor..." : "Keşfet"}
-                  </button>
-                </div>
+                  <div ref={searchBoxRef} className="relative mt-8 max-w-4xl">
+                    <div className="flex flex-col gap-3 rounded-2xl border border-white/20 bg-slate-950/45 p-3 shadow-2xl sm:flex-row sm:items-center">
+                      <div className="flex flex-1 items-center gap-3 px-2">
+                        <Search className="h-5 w-5 text-slate-300" />
+                        <input
+                          value={searchQuery}
+                          onChange={(event) => {
+                            setSearchQuery(event.target.value);
+                            setSearchOpen(true);
+                          }}
+                          onFocus={() => setSearchOpen(true)}
+                          onKeyDown={(event) => {
+                            if (event.key === "ArrowDown" && suggestions.length) {
+                              event.preventDefault();
+                              setActiveSuggestionIndex((prev) => (prev + 1) % suggestions.length);
+                            }
+                            if (event.key === "ArrowUp" && suggestions.length) {
+                              event.preventDefault();
+                              setActiveSuggestionIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1));
+                            }
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              onSearchSubmit();
+                            }
+                          }}
+                          className="h-12 w-full border-none bg-transparent text-base text-white outline-none placeholder:text-slate-300"
+                          placeholder="Etkinlik ara, iş bul, ev ara, grup keşfet..."
+                          aria-label="Site içi arama"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={onSearchSubmit}
+                        className="h-12 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-400 px-8 font-semibold text-slate-950 transition hover:brightness-110"
+                      >
+                        {searching ? "Aranıyor..." : "Keşfet"}
+                      </button>
+                    </div>
 
-                {searchOpen && searchQuery.trim().length >= 2 && (
-                  <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-                    {searching ? (
-                      <p className="px-4 py-3 text-sm text-slate-500">Uygun sonuçlar aranıyor...</p>
-                    ) : suggestions.length === 0 ? (
-                      <p className="px-4 py-3 text-sm text-slate-500">Sonuç bulunamadı. Farklı bir arama deneyin.</p>
-                    ) : (
-                      <ul className="max-h-80 overflow-y-auto py-1">
-                        {suggestions.map((item, index) => (
-                          <li key={item.id}>
-                            <button
-                              type="button"
-                              className={`flex w-full items-center justify-between px-4 py-3 text-left ${index === activeSuggestionIndex ? "bg-blue-50" : "hover:bg-slate-50"}`}
-                              onClick={() => {
-                                router.push(item.href);
-                                setSearchOpen(false);
-                              }}
-                            >
-                              <span>
-                                <span className="block text-sm font-semibold text-slate-800">{item.title}</span>
-                                <span className="block text-xs text-slate-500">{item.location}</span>
-                              </span>
-                              <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">{CATEGORY_CONFIG[item.section].title}</span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
+                    {searchOpen && searchQuery.trim().length >= 2 && (
+                      <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                        {searching ? (
+                          <p className="px-4 py-3 text-sm text-slate-500">Uygun sonuçlar aranıyor...</p>
+                        ) : suggestions.length === 0 ? (
+                          <p className="px-4 py-3 text-sm text-slate-500">Sonuç bulunamadı. Farklı bir arama deneyin.</p>
+                        ) : (
+                          <ul className="max-h-80 overflow-y-auto py-1">
+                            {suggestions.map((item, index) => (
+                              <li key={item.id}>
+                                <button
+                                  type="button"
+                                  className={`flex w-full items-center justify-between px-4 py-3 text-left ${index === activeSuggestionIndex ? "bg-blue-50" : "hover:bg-slate-50"}`}
+                                  onClick={() => {
+                                    router.push(item.href);
+                                    setSearchOpen(false);
+                                  }}
+                                >
+                                  <span>
+                                    <span className="block text-sm font-semibold text-slate-800">{item.title}</span>
+                                    <span className="block text-xs text-slate-500">{item.location}</span>
+                                  </span>
+                                  <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">{CATEGORY_CONFIG[item.section].title}</span>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
 
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                <Link href="#popular-listings">
-                  <Button className="rounded-xl bg-blue-600 px-6 text-white hover:bg-blue-700">Keşfet</Button>
-                </Link>
-                {user ? (
-                  <Button className="rounded-xl bg-orange-500 px-6 text-white hover:bg-orange-600" onClick={() => setIsPostListingModalOpen(true)}>
-                    Paylaşım Yap
-                  </Button>
-                ) : (
-                  <Link href="/login">
-                    <Button className="rounded-xl bg-orange-500 px-6 text-white hover:bg-orange-600">Paylaşım Yap</Button>
-                  </Link>
-                )}
-              </div>
-            </div>
-          </section>
-
-          <section className="px-4 sm:px-6 lg:px-10">
-            <div className="mx-auto grid max-w-6xl grid-cols-2 gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-4 sm:gap-4 sm:p-6">
-              {stats.map((stat) => {
-                const Icon = stat.icon;
-                return (
-                  <div key={stat.label} className="rounded-2xl bg-slate-50 p-4">
-                    <div className="mb-2 inline-flex rounded-xl bg-white p-2 text-blue-600 shadow-sm"><Icon className="h-4 w-4" /></div>
-                    <p className="text-xl font-bold text-slate-900">{stat.value}</p>
-                    <p className="text-xs font-medium text-slate-500">{stat.label}</p>
+                  <div className="mt-6 flex flex-wrap items-center gap-3">
+                    <Link href="#popular-listings">
+                      <Button className="rounded-xl bg-white px-7 text-slate-900 hover:bg-slate-100">Keşfet</Button>
+                    </Link>
+                    {user ? (
+                      <Button className="rounded-xl bg-orange-500 px-7 text-white hover:bg-orange-600" onClick={() => setIsPostListingModalOpen(true)}>
+                        Paylaşım Yap
+                      </Button>
+                    ) : (
+                      <Link href="/login">
+                        <Button className="rounded-xl bg-orange-500 px-7 text-white hover:bg-orange-600">Paylaşım Yap</Button>
+                      </Link>
+                    )}
+                    <Link href="/feed" className="rounded-xl border border-white/50 px-6 py-2.5 text-sm font-semibold text-white hover:bg-white/10">
+                      Topluluk Akışı
+                    </Link>
                   </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="px-4 pb-14 pt-12 sm:px-6 lg:px-10">
-            <SectionHeader title="Bu Hafta Toplulukta Neler Var?" subtitle="Yeni etkinlikler, sorular ve paylaşımlarla topluluk hareketli." />
-            <div className="mx-auto grid max-w-6xl gap-4 lg:grid-cols-12">
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-8">
-                <h3 className="text-lg font-bold">Öne Çıkan Karışık İçerikler</h3>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {featuredAds.slice(0, 3).map((item) => (
-                    <AdCard key={`weekly-${item.id}`} item={item} />
-                  ))}
-                  {featuredAds.slice(3, 6).map((item) => (
-                    <AdCard key={`weekly-b-${item.id}`} item={item} compact />
-                  ))}
+                </div>
+                <div className="lg:col-span-4">
+                  <div className="rounded-3xl border border-white/15 bg-slate-950/35 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">Canlı Topluluk Nabzı</p>
+                    <div className="mt-4 space-y-3">
+                      {pulseFeed.slice(0, 4).map((item, index) => (
+                        <Link key={`pulse-${item.id}`} href={item.href} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10">
+                          <span className="mt-1 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-xs font-bold text-white">{index + 1}</span>
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-semibold text-white">{item.title}</span>
+                            <span className="mt-0.5 block text-xs text-slate-300">{item.location}</span>
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="space-y-4 lg:col-span-4">
-                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <h3 className="text-base font-bold">Şehrine Göre Keşfet</h3>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {CITY_CHIPS.map((city) => (
-                      <Link key={city.label} href={city.href} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
-                        {city.label}
-                      </Link>
+            </div>
+          </section>
+
+          <div className="bg-[linear-gradient(to_bottom,#020617_0%,#f8fafc_22%)]">
+            <section className="px-4 sm:px-6 lg:px-10">
+              <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 rounded-3xl border border-white/30 bg-white/90 p-4 shadow-[0_30px_90px_-60px_rgba(15,23,42,0.8)] sm:grid-cols-4 sm:gap-4 sm:p-6">
+                {stats.map((stat) => {
+                  const Icon = stat.icon;
+                  return (
+                    <div key={stat.label} className="rounded-2xl bg-slate-50 p-4">
+                      <div className="mb-2 inline-flex rounded-xl bg-white p-2 text-blue-600 shadow-sm"><Icon className="h-4 w-4" /></div>
+                      <p className="text-xl font-bold text-slate-900">{stat.value}</p>
+                      <p className="text-xs font-medium text-slate-500">{stat.label}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="px-4 pb-14 pt-14 sm:px-6 lg:px-10">
+              <SectionHeader title="Bu Hafta Toplulukta Neler Var?" subtitle="Güven, hareket ve sosyal bağların güçlendiği canlı merkez." />
+              <div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-12">
+                <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm lg:col-span-7">
+                  <div className="border-b border-slate-100 bg-gradient-to-r from-sky-50 to-indigo-50 px-6 py-4">
+                    <h3 className="text-lg font-black text-slate-900">Öne Çıkan Tartışmalar ve Etkinlikler</h3>
+                  </div>
+                  <div className="grid gap-3 p-4 sm:grid-cols-2">
+                    {featuredAds.slice(0, 4).map((item) => (
+                      <AdCard key={`weekly-${item.id}`} item={item} compact />
                     ))}
                   </div>
                 </div>
-                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <h3 className="text-base font-bold">Topluluk Etkileşimi</h3>
-                  <p className="mt-2 text-sm text-slate-600">Yardım talepleri ve tartışmalarla her gün yeni bağlantılar oluşuyor.</p>
-                  <div className="mt-4 space-y-2">
-                    {yardimlasmaSpotlightItems.slice(0, 3).map((item) => (
-                      <Link key={item.id} href={item.href} className="block rounded-xl bg-slate-50 p-3 text-sm hover:bg-blue-50">
-                        <p className="font-semibold text-slate-800">{item.excerpt}</p>
-                        <p className="mt-1 text-xs text-slate-500">{item.location || "ABD geneli"}</p>
-                      </Link>
-                    ))}
+                <div className="space-y-4 lg:col-span-5">
+                  <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                    <h3 className="text-lg font-black text-slate-900">Şehrine Göre Keşfet</h3>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {CITY_CHIPS.map((city) => (
+                        <Link key={city.label} href={city.href} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
+                          {city.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 p-5 text-white shadow-sm">
+                    <h3 className="text-lg font-black">Toplulukta Yardımlaşma Canlı</h3>
+                    <p className="mt-1 text-sm text-slate-200">Gerçek sorular, gerçek destek, hızlı geri dönüşler.</p>
+                    <div className="mt-4 space-y-2">
+                      {yardimlasmaSpotlightItems.slice(0, 3).map((item) => (
+                        <Link key={item.id} href={item.href} className="block rounded-xl border border-white/15 bg-white/10 p-3 text-sm hover:bg-white/15">
+                          <p className="font-semibold text-white">{item.excerpt}</p>
+                          <p className="mt-1 text-xs text-slate-200">{item.location || "ABD geneli"}</p>
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          <section id="popular-listings" className="px-4 pb-14 sm:px-6 lg:px-10">
-            <SectionHeader title="Popüler İlanlar" subtitle="Topluluk tarafından en çok görüntülenen ve etkileşim alan paylaşımlar." />
-            <div className="mx-auto max-w-6xl">
-              <div className="mb-4 flex flex-wrap gap-2">
-                <FilterButton active={latestAdsCategoryFilter === "all"} onClick={() => setLatestAdsCategoryFilter("all")}>Tümü</FilterButton>
-                {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => (
-                  <FilterButton key={key} active={latestAdsCategoryFilter === key} onClick={() => setLatestAdsCategoryFilter(key)}>
-                    {CATEGORY_CONFIG[key].title}
-                  </FilterButton>
-                ))}
+            <section id="popular-listings" className="px-4 pb-14 sm:px-6 lg:px-10">
+              <SectionHeader title="Topluluk Pazarında Öne Çıkanlar" subtitle="İlanlar artık sadece katalog değil; aktif topluluk ekonomisinin vitrini." />
+              <div className="mx-auto max-w-7xl">
+                <div className="mb-4 flex flex-wrap gap-2">
+                  <FilterButton active={latestAdsCategoryFilter === "all"} onClick={() => setLatestAdsCategoryFilter("all")}>Tümü</FilterButton>
+                  {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => (
+                    <FilterButton key={key} active={latestAdsCategoryFilter === key} onClick={() => setLatestAdsCategoryFilter(key)}>
+                      {CATEGORY_CONFIG[key].title}
+                    </FilterButton>
+                  ))}
+                </div>
+                <AdsGrid items={latestFilteredAds} loading={loading} />
               </div>
-              <AdsGrid items={latestFilteredAds} loading={loading} />
-            </div>
-          </section>
+            </section>
 
-          <section className="px-4 pb-14 sm:px-6 lg:px-10">
-            <SectionHeader title="Gruplar / Yardım / Etkileşim" subtitle="Yeni topluluk katılım alanları ile bilgi paylaşımını büyütün." />
-            <div className="mx-auto grid max-w-6xl gap-4 lg:grid-cols-3">
-              {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
-                const config = CATEGORY_CONFIG[key];
-                const Icon = config.icon;
-                return (
-                  <Link key={key} href={config.href} className={`rounded-3xl border border-slate-200 bg-gradient-to-br ${config.gradient} p-5 shadow-sm transition hover:-translate-y-0.5`}>
-                    <div className="inline-flex rounded-xl bg-white p-2 text-blue-700 shadow-sm"><Icon className="h-5 w-5" /></div>
-                    <h3 className="mt-3 text-lg font-bold text-slate-900">{config.title}</h3>
-                    <p className="mt-1 text-sm text-slate-600">{config.description}</p>
-                    <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-blue-700">Detayları gör <ArrowRight className="h-4 w-4" /></span>
+            <section className="px-4 pb-14 sm:px-6 lg:px-10">
+              <SectionHeader title="Katılım Alanları" subtitle="Keşiften etkileşime, etkileşimden topluluk üretimine geç." />
+              <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-12">
+                <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm lg:col-span-8">
+                  <h3 className="text-xl font-black text-slate-900">Nereden başlamak istersin?</h3>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    {(Object.keys(CATEGORY_CONFIG) as HomeCategoryKey[]).map((key) => {
+                      const config = CATEGORY_CONFIG[key];
+                      const Icon = config.icon;
+                      return (
+                        <Link key={key} href={config.href} className={`rounded-2xl border border-slate-200 bg-gradient-to-br ${config.gradient} p-5 shadow-sm transition hover:-translate-y-0.5`}>
+                          <div className="inline-flex rounded-xl bg-white p-2 text-blue-700 shadow-sm"><Icon className="h-5 w-5" /></div>
+                          <h3 className="mt-3 text-lg font-bold text-slate-900">{config.title}</h3>
+                          <p className="mt-1 text-sm text-slate-600">{config.description}</p>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="rounded-[30px] border border-blue-200 bg-gradient-to-b from-blue-50 to-white p-6 shadow-sm lg:col-span-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.17em] text-blue-700">Dönüşüm Anı</p>
+                  <h3 className="mt-2 text-xl font-black text-slate-900">Topluluk ekonomisine hemen katıl</h3>
+                  <div className="mt-4 space-y-3">
+                    {conversionShowcase.map((item) => (
+                      <Link key={`convert-${item.id}`} href={item.href} className="block rounded-xl border border-blue-100 bg-white p-3 hover:border-blue-300">
+                        <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                        <p className="mt-1 text-xs text-slate-500">{item.location}</p>
+                      </Link>
+                    ))}
+                  </div>
+                  <Link href="/register" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                    Hemen Üye Ol <ArrowRight className="h-4 w-4" />
                   </Link>
-                );
-              })}
-            </div>
-          </section>
-
-          <YardimlasmaSpotlight items={yardimlasmaSpotlightItems} />
-
-          <section className="px-4 pb-16 sm:px-6 lg:px-10">
-            <div className="mx-auto max-w-6xl rounded-[30px] border border-blue-200 bg-gradient-to-r from-blue-600 to-sky-500 p-8 text-white shadow-[0_30px_60px_-35px_rgba(37,99,235,0.8)] sm:p-10">
-              <h2 className="text-3xl font-black">Amerikala’ya Katıl, Topluluğunu Büyüt</h2>
-              <p className="mt-2 max-w-2xl text-sm text-blue-100 sm:text-base">Ücretsiz hesap oluştur, ilan paylaş, etkinliklere katıl ve Amerika’daki Türk topluluğunun canlı parçası ol.</p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link href="/register" className="rounded-xl bg-white px-6 py-3 font-semibold text-blue-700 transition hover:bg-blue-50">Ücretsiz Katıl</Link>
-                <Link href="/feed" className="rounded-xl border border-white/70 px-6 py-3 font-semibold text-white transition hover:bg-white/10">Topluluk Akışını Gör</Link>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+
+            <YardimlasmaSpotlight items={yardimlasmaSpotlightItems} />
+
+            <section className="px-4 pb-16 sm:px-6 lg:px-10">
+              <div className="mx-auto max-w-7xl rounded-[34px] border border-blue-200 bg-gradient-to-r from-blue-600 to-sky-500 p-8 text-white shadow-[0_40px_80px_-40px_rgba(37,99,235,0.9)] sm:p-10">
+                <h2 className="text-3xl font-black sm:text-4xl">Amerikala’ya Katıl, Topluluğunu Büyüt</h2>
+                <p className="mt-2 max-w-2xl text-sm text-blue-100 sm:text-base">Ücretsiz hesap oluştur, ilan paylaş, etkinliklere katıl ve Amerika’daki Türk topluluğunun canlı parçası ol.</p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link href="/register" className="rounded-xl bg-white px-6 py-3 font-semibold text-blue-700 transition hover:bg-blue-50">Ücretsiz Katıl</Link>
+                  <Link href="/feed" className="rounded-xl border border-white/70 px-6 py-3 font-semibold text-white transition hover:bg-white/10">Topluluk Akışını Gör</Link>
+                </div>
+              </div>
+            </section>
+          </div>
         </main>
       </div>
 
@@ -588,9 +631,9 @@ export default function Home() {
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
-    <div className="mx-auto mb-6 max-w-6xl">
-      <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">{title}</h2>
-      <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
+    <div className="mx-auto mb-6 max-w-7xl">
+      <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">{title}</h2>
+      <p className="mt-1 text-sm text-slate-600 sm:text-base">{subtitle}</p>
     </div>
   );
 }
@@ -609,17 +652,19 @@ function FilterButton({ children, active, onClick }: { children: ReactNode; acti
 
 function AdsGrid({ items, loading }: { items: UnifiedAd[]; loading: boolean }) {
   if (loading) {
-    return <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">İlanlar yükleniyor...</div>;
+    return <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">İlanlar yükleniyor...</div>;
   }
 
   if (!items.length) {
-    return <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">Henüz ilan bulunmuyor.</div>;
+    return <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">Henüz ilan bulunmuyor.</div>;
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((item) => (
-        <AdCard key={item.id} item={item} />
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-12">
+      {items.map((item, index) => (
+        <div key={item.id} className={index % 5 === 0 ? "xl:col-span-8" : "xl:col-span-4"}>
+          <AdCard item={item} compact={index % 5 !== 0} />
+        </div>
       ))}
     </div>
   );
@@ -627,8 +672,8 @@ function AdsGrid({ items, loading }: { items: UnifiedAd[]; loading: boolean }) {
 
 function AdCard({ item, compact = false }: { item: UnifiedAd; compact?: boolean }) {
   return (
-    <Link href={item.href} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className={`relative ${compact ? "h-28" : "h-40"} bg-slate-100`}>
+    <Link href={item.href} className="group block overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+      <div className={`relative ${compact ? "h-44" : "h-56"} bg-slate-100`}>
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
@@ -638,10 +683,10 @@ function AdCard({ item, compact = false }: { item: UnifiedAd; compact?: boolean 
         <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2 py-1 text-xs font-semibold text-slate-700 shadow">{labelForSection(item.section)}</span>
       </div>
       <div className="p-4">
-        <h3 className="line-clamp-2 text-sm font-bold text-slate-900">{item.title}</h3>
+        <h3 className="line-clamp-2 text-base font-bold text-slate-900">{item.title}</h3>
         <p className="mt-1 flex items-center gap-1 text-xs text-slate-500"><MapPin className="h-3.5 w-3.5" /> {item.location}</p>
-        <div className="mt-3 flex items-center justify-between text-xs">
-          <span className="font-semibold text-blue-700">{item.priceLabel || "Detaylı bilgi"}</span>
+        <div className="mt-4 flex items-center justify-between text-xs">
+          <span className="rounded-full bg-blue-50 px-2.5 py-1 font-semibold text-blue-700">{item.priceLabel || "Detaylı bilgi"}</span>
           <span className="text-slate-500">{timeAgo(item.createdAt)}</span>
         </div>
       </div>
