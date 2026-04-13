@@ -435,21 +435,33 @@ export default function Home() {
                   </div>
 
                   <div className="mt-6 flex flex-wrap items-center gap-3">
-                    <Link href="#popular-listings">
-                      <Button className="rounded-xl bg-white px-7 text-slate-900 hover:bg-slate-100">Keşfet</Button>
-                    </Link>
                     {user ? (
-                      <Button className="rounded-xl bg-orange-500 px-7 text-white hover:bg-orange-600" onClick={() => setIsPostListingModalOpen(true)}>
+                      <Link href="#popular-listings">
+                        <Button className="rounded-xl border border-[#123d8d] bg-white px-7 text-black shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#b91c1c] hover:bg-[#123d8d] hover:text-white hover:shadow-md">
+                          Keşfet
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Link href="/login">
+                        <Button className="rounded-xl border border-[#123d8d] bg-white px-7 text-black shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#b91c1c] hover:bg-[#123d8d] hover:text-white hover:shadow-md">
+                          Kayıt Ol
+                        </Button>
+                      </Link>
+                    )}
+                    {user ? (
+                      <Button
+                        className="rounded-xl bg-gradient-to-r from-[#b91c1c] via-[#dc2626] to-[#123d8d] px-7 text-white shadow-sm transition-all hover:-translate-y-0.5 hover:from-[#991b1b] hover:via-[#b91c1c] hover:to-[#0b2e69] hover:shadow-md"
+                        onClick={() => setIsPostListingModalOpen(true)}
+                      >
                         Paylaşım Yap
                       </Button>
                     ) : (
                       <Link href="/login">
-                        <Button className="rounded-xl bg-orange-500 px-7 text-white hover:bg-orange-600">Paylaşım Yap</Button>
+                        <Button className="rounded-xl bg-gradient-to-r from-[#b91c1c] via-[#dc2626] to-[#123d8d] px-7 text-white shadow-sm transition-all hover:-translate-y-0.5 hover:from-[#991b1b] hover:via-[#b91c1c] hover:to-[#0b2e69] hover:shadow-md">
+                          Paylaşım Yap
+                        </Button>
                       </Link>
                     )}
-                    <Link href="/feed" className="rounded-xl border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
-                      Topluluk Akışı
-                    </Link>
                   </div>
                 </div>
                 <div className="lg:col-span-4">
