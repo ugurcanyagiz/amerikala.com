@@ -1,0 +1,9 @@
+{
+	"appId": "com.amerikala.app",
+	"appName": "Amerikala",
+	"webDir": "out",
+	"server": {
+		"url": "https://www.amerikala.com",
+		"cleartext": false
+	}
+}
