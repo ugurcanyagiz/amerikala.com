@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Amerikala</string>
+    <string name="title_activity_main">Amerikala</string>
+    <string name="package_name">com.amerikala.app</string>
+    <string name="custom_url_scheme">com.amerikala.app</string>
+</resources>
