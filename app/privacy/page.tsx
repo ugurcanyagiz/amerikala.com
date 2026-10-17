@@ -62,7 +62,7 @@ const sections = [
     title: "8. Policy updates and contact",
     paragraphs: [
       "We may update this notice as our features or practices change. Material changes will be communicated where required by law.",
-      "Before publication, Amerikala must add a verified privacy contact email or other working contact method, identify the responsible operator and confirm the policy's effective date."
+      "For privacy questions or requests, contact info@amerikala.co. The responsible operator and this policy's effective date still require confirmation before App Store submission."
     ],
   },
 ];
