@@ -16,7 +16,7 @@ export default function SupportPage() {
         <p className="mb-8 leading-8 text-[#52657A]">Amerikala iOS ve Android uygulamalarıyla ilgili sorun, geri bildirim ve özellik önerileriniz için bize yazın.</p>
         <section className="rounded-3xl border border-[#E4E9ED] bg-white p-6 sm:p-10">
           <h2 className="mb-4 text-xl font-semibold">Destek ve iletişim</h2>
-          <a href="mailto:info@amerikala.co" className="break-words text-lg font-semibold text-[#9C2C2C] underline underline-offset-4">info@amerikala.co</a>
+          <a href="mailto:info@amerikala.com" className="break-words text-lg font-semibold text-[#9C2C2C] underline underline-offset-4">info@amerikala.com</a>
           <p className="mt-5 leading-8 text-[#52657A]">Sorunu açıklarken uygulama sürümünü, cihaz modelini, iOS veya Android sürümünü ve sorunun oluştuğu adımları paylaşın. Gerekirse kişisel bilgileri gizlenmiş bir ekran görüntüsü ekleyin. Şifrenizi veya doğrulama kodunuzu göndermeyin.</p>
           <h2 className="mb-4 mt-8 text-xl font-semibold">Hesap, içerik ve gizlilik konuları</h2>
           <p className="leading-8 text-[#52657A]">Hesabınıza erişim, bir içerikle ilgili şikâyet veya kişisel bilgileriniz hakkında soru için aynı adresten bize ulaşabilirsiniz. İlgili ekranı veya içeriği belirtin; özel mesajları ya da başka kişilerin kişisel bilgilerini gereksiz yere paylaşmayın.</p>
