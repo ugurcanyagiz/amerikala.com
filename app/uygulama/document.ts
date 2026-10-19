@@ -1,9 +1,10 @@
 type StoreLinks = { appStore?: string; googlePlay?: string };
 
 function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, (character) => ({
+  const entities: Record<string, string> = {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[character]!);
+  };
+  return value.replace(/[&<>"']/g, (character) => entities[character]);
 }
 
 function storeUrl(value: string | undefined, hostname: string) {
