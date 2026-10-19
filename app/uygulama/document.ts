@@ -58,8 +58,7 @@ export function renderLanding(links: StoreLinks = {}) {
   <div class="poster">
     <header class="masthead">
       <a class="brand" href="/" aria-label="Amerikala uygulama tanıtımı">
-        <img src="/logo.png" alt="" width="48" height="48">
-        <span>amerikala<span class="brand-period">.</span></span>
+        <img src="/marketing/amerikala-app-logo.png" alt="Amerikala" width="252" height="106" fetchpriority="high">
       </a>
       <a class="header-link" href="#indir">${anyLive ? "Uygulamayı indir" : "Çok yakında"}<span aria-hidden="true">↓</span></a>
     </header>
