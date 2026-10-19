@@ -42,12 +42,12 @@ export function renderLanding(links: StoreLinks = {}) {
   <meta name="theme-color" content="#F8F7F4">
   <title>Amerikala — Amerika’daki topluluğun.</title>
   <meta name="description" content="Amerika’daki Türk topluluğu için Amerikala. Tanış, keşfet, paylaş. Topluluğun, cebinde.">
-  <link rel="canonical" href="https://amerikala.com/uygulama">
+  <link rel="canonical" href="https://amerikala.com/">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="tr_TR">
   <meta property="og:title" content="Amerika’daki topluluğun. Artık cebinde.">
   <meta property="og:description" content="Tanış, keşfet, paylaş. Amerikala’da bir araya gel.">
-  <meta property="og:url" content="https://amerikala.com/uygulama">
+  <meta property="og:url" content="https://amerikala.com/">
   <meta property="og:image" content="https://amerikala.com/marketing/concepts/phones-concept.webp">
   <link rel="icon" href="/logo.png" type="image/png">
   <link rel="preload" href="/marketing/concepts/phones-concept.webp" as="image" type="image/webp">
@@ -57,7 +57,7 @@ export function renderLanding(links: StoreLinks = {}) {
   <a class="skip-link" href="#icerik">İçeriğe geç</a>
   <div class="poster">
     <header class="masthead">
-      <a class="brand" href="/uygulama" aria-label="Amerikala uygulama tanıtımı">
+      <a class="brand" href="/" aria-label="Amerikala uygulama tanıtımı">
         <img src="/logo.png" alt="" width="48" height="48">
         <span>amerikala<span class="brand-period">.</span></span>
       </a>

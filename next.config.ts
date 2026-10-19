@@ -11,6 +11,13 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  async rewrites() {
+    return {
+      // Serve the app poster at the root without replacing the original homepage.
+      beforeFiles: [{ source: "/", destination: "/uygulama" }],
+    };
+  },
+
   async redirects() {
     return [
       {
