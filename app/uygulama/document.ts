@@ -48,9 +48,9 @@ export function renderLanding(links: StoreLinks = {}) {
   <meta property="og:title" content="Amerika’daki topluluğun. Artık cebinde.">
   <meta property="og:description" content="Tanış, keşfet, paylaş. Amerikala’da bir araya gel.">
   <meta property="og:url" content="https://amerikala.com/">
-  <meta property="og:image" content="https://amerikala.com/marketing/concepts/phones-concept.webp">
+  <meta property="og:image" content="https://amerikala.com/marketing/community-city.webp">
   <link rel="icon" href="/logo.png" type="image/png">
-  <link rel="preload" href="/marketing/concepts/phones-concept.webp" as="image" type="image/webp">
+  <link rel="preload" href="/marketing/community-city.webp" as="image" type="image/webp">
   <link rel="stylesheet" href="/marketing/app-promo.css">
 </head>
 <body>
@@ -77,8 +77,7 @@ export function renderLanding(links: StoreLinks = {}) {
         </div>
       </div>
       <figure class="hero-art">
-        <img class="phones" src="/marketing/concepts/phones-concept.webp" alt="Amerikala’nın etkinlik ve keşif ekranlarını gösteren iki telefon maketi" width="1024" height="1536" fetchpriority="high" decoding="async">
-        <figcaption>Temsili uygulama görünümü.</figcaption>
+        <img class="hero-illustration" src="/marketing/community-city.webp" alt="New York mimarisi, bir köprü ve lacivert-kırmızı konuşma balonlarından oluşan topluluk illüstrasyonu" width="1254" height="1254" fetchpriority="high" decoding="async">
       </figure>
     </main>
     <footer class="footer">
